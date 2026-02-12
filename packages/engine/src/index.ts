@@ -10,6 +10,9 @@
 export * from './types';
 export * from './parts';
 
+// ── Theme ──
+export { HyperCardTheme, type HyperCardThemeProps } from './theme/HyperCardTheme';
+
 // ── DSL ──
 export * from './dsl/types';
 export { resolveValue, matchFilter, interpolateTemplate, type ResolveContext } from './dsl/resolver';

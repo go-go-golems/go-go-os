@@ -11,6 +11,7 @@ import { LayoutSplit } from './LayoutSplit';
 import { LayoutDrawer } from './LayoutDrawer';
 import { LayoutCardChat } from './LayoutCardChat';
 import { Toast } from '../widgets/Toast';
+import { HyperCardTheme } from '../../theme/HyperCardTheme';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { setLayout } from '../../features/navigation/navigationSlice';
@@ -113,25 +114,26 @@ export function HyperCardShell({
   }
 
   return (
-    <WindowChrome
-      title={`${stack.name} — HyperCard + AI`}
-      icon={stack.icon}
-      className={themeClass}
-    >
-      <TabBar
-        tabs={LAYOUT_TABS}
-        active={layout}
-        onSelect={(key) => dispatch(setLayout(key as any))}
-      />
-      <div data-part="content-area">
-        {layoutContent}
-      </div>
-      <div data-part="footer-line">
-        DSL-driven · {Object.keys(stack.cards).length} cards
-        {domainData?.items ? ` · ${(domainData.items as unknown[]).length} items` : ''}
-        {stack.ai ? ` · ${stack.ai.intents.length} AI intents` : ''}
-      </div>
-      {toast && <Toast message={toast} onDone={() => dispatch(clearToast())} />}
-    </WindowChrome>
+    <HyperCardTheme theme={themeClass}>
+      <WindowChrome
+        title={`${stack.name} — HyperCard + AI`}
+        icon={stack.icon}
+      >
+        <TabBar
+          tabs={LAYOUT_TABS}
+          active={layout}
+          onSelect={(key) => dispatch(setLayout(key as any))}
+        />
+        <div data-part="content-area">
+          {layoutContent}
+        </div>
+        <div data-part="footer-line">
+          DSL-driven · {Object.keys(stack.cards).length} cards
+          {domainData?.items ? ` · ${(domainData.items as unknown[]).length} items` : ''}
+          {stack.ai ? ` · ${stack.ai.intents.length} AI intents` : ''}
+        </div>
+        {toast && <Toast message={toast} onDone={() => dispatch(clearToast())} />}
+      </WindowChrome>
+    </HyperCardTheme>
   );
 }

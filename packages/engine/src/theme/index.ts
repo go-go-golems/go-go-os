@@ -7,3 +7,5 @@ import './base.css';
 // Optional theme layers:
 // import './classic.css';
 // import './modern.css';
+
+export { HyperCardTheme, type HyperCardThemeProps } from './HyperCardTheme';

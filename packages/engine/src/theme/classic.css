@@ -1,0 +1,15 @@
+/* ─── Classic Mac HyperCard Theme ─ Layer on top of base.css ──────────── */
+
+[data-widget="hypercard"].theme-classic {
+  --hc-font-family: 'Chicago', 'Geneva', 'Helvetica', monospace;
+  --hc-border-radius: 0;
+  --hc-color-bg: #fff;
+  --hc-color-fg: #000;
+  --hc-color-border: #000;
+  --hc-color-accent: #000;
+  --hc-color-muted: #555;
+  --hc-btn-bg: #ddd;
+  --hc-btn-hover-bg: #ccc;
+
+  image-rendering: pixelated;
+}

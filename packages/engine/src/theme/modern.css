@@ -1,0 +1,19 @@
+/* ─── Modern / macOS-like Theme ─ Layer on top of base.css ────────────── */
+
+[data-widget="hypercard"].theme-modern {
+  --hc-font-family: 'Inter', 'SF Pro', 'Helvetica Neue', sans-serif;
+  --hc-border-radius: 6px;
+  --hc-color-bg: #fafafa;
+  --hc-color-fg: #1a1a2e;
+  --hc-color-border: #ccc;
+  --hc-color-accent: #0a84ff;
+  --hc-color-muted: #888;
+  --hc-color-row-even: #f0f4ff;
+  --hc-color-row-hover: #e0e8ff;
+  --hc-btn-bg: #e8ecf4;
+  --hc-btn-hover-bg: #d4daf0;
+  --hc-btn-border: 1px solid #bbb;
+  --hc-btn-primary-bg: #0a84ff;
+  --hc-btn-danger-bg: #ff3b30;
+  --hc-toast-bg: #1a1a2e;
+}

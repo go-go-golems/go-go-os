@@ -1,13 +1,9 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ReactNode, ButtonHTMLAttributes } from 'react';
 
 export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-export function Chip({ children, ...props }: ChipProps) {
-  return (
-    <button data-part="chip" {...props}>
-      {children}
-    </button>
-  );
+export function Chip({ children, ...rest }: ChipProps) {
+  return <button data-part="chip" {...rest}>{children}</button>;
 }

@@ -4,77 +4,66 @@ import type { FieldConfig } from '../../types';
 export interface FieldRowProps {
   field: FieldConfig;
   value: unknown;
-  onChange?: (value: unknown) => void;
+  onChange: (value: unknown) => void;
   style?: CSSProperties;
 }
 
 export function FieldRow({ field, value, onChange, style }: FieldRowProps) {
-  if (field.type === 'label') {
-    return (
-      <>
-        <span data-part="field-label" />
-        <span
-          data-part="field-value"
-          style={{ ...(field.style === 'muted' ? { fontStyle: 'italic' } : {}), ...style }}
-        >
-          {String(field.value ?? '')}
-        </span>
-      </>
-    );
-  }
+  const { id, label, type, options, step, placeholder, required } = field;
 
-  if (field.type === 'readonly') {
+  const labelEl = (
+    <span key={id + 'l'} data-part="field-label">{label ?? id}:</span>
+  );
+
+  if (type === 'readonly' || type === 'label') {
     return (
       <>
-        <span data-part="field-label">{field.label}:</span>
+        {labelEl}
         <span data-part="field-value" style={style}>{String(value ?? '')}</span>
       </>
     );
   }
 
-  if (field.type === 'tags') {
+  if (type === 'tags') {
     return (
       <>
-        <span data-part="field-label">{field.label}:</span>
+        {labelEl}
         <span data-part="field-value" style={style}>
-          {Array.isArray(value) ? value.join(', ') : String(value ?? '')}
+          {Array.isArray(value) ? (value as string[]).join(', ') : String(value ?? '')}
         </span>
       </>
     );
   }
 
-  if (field.type === 'select') {
+  if (type === 'select') {
     return (
       <>
-        <span data-part="field-label">{field.label}:</span>
+        {labelEl}
         <select
-          data-part="field-input"
+          data-part="field-select"
           value={String(value ?? '')}
-          onChange={(e) => onChange?.(e.target.value)}
-          style={style}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ padding: '2px 4px', ...style }}
         >
-          {field.options?.map((o) => (
-            <option key={o} value={o}>{o}</option>
-          ))}
+          {options?.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       </>
     );
   }
 
-  // text or number
   return (
     <>
-      <span data-part="field-label">{field.label}:</span>
+      {labelEl}
       <input
         data-part="field-input"
-        type={field.type === 'number' ? 'number' : 'text'}
-        step={field.step}
-        placeholder={field.placeholder}
-        value={value == null ? '' : String(value)}
-        onChange={(e) => {
-          const v = field.type === 'number' ? Number(e.target.value) : e.target.value;
-          onChange?.(v);
-        }}
+        type={type === 'number' ? 'number' : 'text'}
+        value={String(value ?? '')}
+        onChange={(e) =>
+          onChange(type === 'number' ? Number(e.target.value) : e.target.value)
+        }
+        step={step}
+        placeholder={placeholder}
+        required={required}
         style={style}
       />
     </>

@@ -12,6 +12,10 @@ export function LayoutSplit({ main, side }: LayoutSplitProps) {
         {main}
       </div>
       <div data-part="ai-panel">
+        <div data-part="ai-panel-header">
+          <span>🤖 AI Copilot</span>
+          <span data-part="ai-model-label">Local LLM</span>
+        </div>
         {side}
       </div>
     </div>

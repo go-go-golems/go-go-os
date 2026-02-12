@@ -10,18 +10,24 @@ export function LayoutDrawer({ main, drawer }: LayoutDrawerProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflow: 'auto' }}>{main}</div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {main}
+      </div>
       <div
         data-part="ai-panel"
-        data-state={open ? 'open' : 'closed'}
-        style={{ maxHeight: open ? 'var(--hc-drawer-max-height, 200px)' : 26, display: 'flex', flexDirection: 'column', transition: 'max-height 0.15s' }}
+        style={{
+          borderTop: '2px solid var(--hc-color-border, #000)',
+          maxHeight: open ? 'var(--hc-drawer-max-height, 200px)' : 26,
+          transition: 'max-height 0.15s',
+        }}
       >
         <div
           data-part="ai-panel-header"
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: 'pointer', borderBottom: open ? undefined : 'none' }}
           onClick={() => setOpen(!open)}
         >
-          🤖 AI {open ? '▾' : '▸'}
+          <span>🤖 AI {open ? '▾' : '▸'}</span>
+          <span data-part="ai-model-label" style={{ fontStyle: 'italic' }}>Ask about inventory…</span>
         </div>
         {open && <div style={{ flex: 1, overflow: 'hidden' }}>{drawer}</div>}
       </div>

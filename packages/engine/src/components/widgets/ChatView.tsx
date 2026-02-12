@@ -34,11 +34,11 @@ export function ChatView({
   }
 
   return (
-    <div data-part="chat-view" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div data-part="chat-timeline" style={{ flex: 1, overflow: 'auto' }}>
+    <div data-part="chat-view">
+      <div data-part="chat-timeline">
         {messages.map((m, i) => (
-          <div key={i} data-part="chat-message" data-role={m.role} style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 10, fontWeight: 'bold' }}>
+          <div key={i} data-part="chat-message" data-role={m.role}>
+            <div data-part="chat-role">
               {m.role === 'user' ? 'You:' : 'AI:'}
             </div>
             <div style={{ fontSize: 11, whiteSpace: 'pre-wrap' }}>{m.text}</div>

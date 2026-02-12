@@ -37,6 +37,8 @@ export interface HyperCardShellProps {
   navShortcuts?: Array<{ card: string; icon: string }>;
   /** Render function for AI panel (chat) — only used in split/drawer layouts */
   renderAIPanel?: (dispatch: (action: DSLAction) => void) => React.ReactNode;
+  /** Theme class name to apply (e.g. 'theme-classic', 'theme-modern') */
+  themeClass?: string;
 }
 
 const LAYOUT_TABS = [
@@ -52,6 +54,7 @@ export function HyperCardShell({
   domainData,
   navShortcuts,
   renderAIPanel,
+  themeClass,
 }: HyperCardShellProps) {
   const dispatch = useDispatch();
   const layout = useSelector((s: ShellState) => selectLayout(s));
@@ -110,17 +113,23 @@ export function HyperCardShell({
   }
 
   return (
-    <WindowChrome title={`${stack.name} — HyperCard + AI`} icon={stack.icon}>
+    <WindowChrome
+      title={`${stack.name} — HyperCard + AI`}
+      icon={stack.icon}
+      className={themeClass}
+    >
       <TabBar
         tabs={LAYOUT_TABS}
         active={layout}
         onSelect={(key) => dispatch(setLayout(key as any))}
       />
-      <div style={{ flex: 1, overflow: 'hidden', background: 'var(--hc-color-bg, #fff)' }}>
+      <div data-part="content-area">
         {layoutContent}
       </div>
-      <div style={{ textAlign: 'center', fontSize: 9, opacity: 0.5, marginTop: 4 }}>
+      <div data-part="footer-line">
         DSL-driven · {Object.keys(stack.cards).length} cards
+        {domainData?.items ? ` · ${(domainData.items as unknown[]).length} items` : ''}
+        {stack.ai ? ` · ${stack.ai.intents.length} AI intents` : ''}
       </div>
       {toast && <Toast message={toast} onDone={() => dispatch(clearToast())} />}
     </WindowChrome>

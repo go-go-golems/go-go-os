@@ -1,5 +1,5 @@
 import type { CardDefinition, ChatCardDef, DSLAction, ChatMessage } from '@hypercard/engine';
-import { ChatView, matchFilter, resolveValue } from '@hypercard/engine';
+import { ChatView, DataTable, matchFilter, resolveValue } from '@hypercard/engine';
 import type { CardRendererContext } from '@hypercard/engine';
 import type { Item, SaleEntry } from '../domain/types';
 import { STACK } from '../domain/stack';
@@ -58,6 +58,16 @@ function ChatCardInner({ def, ctx }: { def: ChatCardDef; ctx: CardRendererContex
 
       if (intent.compute) {
         responseText = computeAIResponse(intent.compute, items, sales, ctx);
+        // For bestSellers + margin, also add result items
+        if (intent.compute === 'bestSellers') {
+          const counts: Record<string, number> = {};
+          sales.forEach((s) => { counts[s.sku] = (counts[s.sku] ?? 0) + s.qty; });
+          const topSkus = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([sku]) => sku);
+          results = items.filter((i) => topSkus.includes(i.sku));
+        }
+        if (intent.compute === 'marginReport') {
+          results = [...items].sort((a, b) => (b.price - b.cost) / b.price - (a.price - a.cost) / a.price).slice(0, 4);
+        }
       }
 
       const aiMsg: ChatMessage = {
@@ -100,15 +110,32 @@ function ChatCardInner({ def, ctx }: { def: ChatCardDef; ctx: CardRendererContex
           ctx.dispatch(a);
         }
       }}
-      renderResults={(results) => (
-        <div style={{ fontSize: 10 }}>
-          {(results as Record<string, unknown>[]).map((r, i) => (
-            <div key={i}>
-              {r.sku ? `${r.sku} ${r.name} — qty: ${r.qty}` : JSON.stringify(r)}
+      renderResults={(results) => {
+        const rows = results as Record<string, unknown>[];
+        if (rows.length === 0) return null;
+        // If rows have sku, show as inventory table
+        if (rows[0]?.sku !== undefined) {
+          return (
+            <div style={{ marginTop: 3, border: '1px solid #000', background: '#fff', padding: 3 }}>
+              <DataTable
+                items={rows}
+                columns={[
+                  { key: 'sku', label: 'SKU', width: 65 },
+                  { key: 'qty', label: 'QTY', width: 35 },
+                  { key: 'price', label: 'PRICE', width: 55, format: (v) => formatCurrency(v) },
+                  { key: 'name', label: 'NAME', width: '1fr' },
+                ]}
+                onRowClick={(item) => ctx.dispatch({ type: 'navigate', card: 'itemDetail', paramValue: String(item.sku) })}
+              />
             </div>
-          ))}
-        </div>
-      )}
+          );
+        }
+        return (
+          <div style={{ fontSize: 10 }}>
+            {rows.map((r, i) => <div key={i}>{JSON.stringify(r)}</div>)}
+          </div>
+        );
+      }}
     />
   );
 }
@@ -118,20 +145,18 @@ function computeAIResponse(compute: string, items: Item[], sales: SaleEntry[], c
     case 'bestSellers': {
       const counts: Record<string, number> = {};
       sales.forEach((s) => { counts[s.sku] = (counts[s.sku] ?? 0) + s.qty; });
-      return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([sku, qty]) => `${sku}: ${qty} units`)
-        .join('\n') || 'No sales data.';
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      return 'Top sellers by volume:\n' + sorted.slice(0, 3).map(([sku, qty]) => `  ${sku}: ${qty} units sold`).join('\n');
     }
     case 'inventoryValue': {
-      const total = items.reduce((a, i) => a + i.price * i.qty, 0);
-      return `Total inventory retail value: ${formatCurrency(total)} across ${items.length} SKUs.`;
+      const rv = items.reduce((a, i) => a + i.price * i.qty, 0);
+      const cv = items.reduce((a, i) => a + i.cost * i.qty, 0);
+      return `Total retail value: ${formatCurrency(rv)}\nCost basis: ${formatCurrency(cv)}\nPotential profit: ${formatCurrency(rv - cv)}`;
     }
     case 'marginReport': {
       const sorted = [...items].sort((a, b) => (b.price - b.cost) / b.price - (a.price - a.cost) / a.price);
-      return sorted.slice(0, 3).map((i) =>
-        `${i.sku} ${i.name}: ${((i.price - i.cost) / i.price * 100).toFixed(0)}% margin`,
+      return 'Top margin items:\n' + sorted.slice(0, 4).map((i) =>
+        `  ${i.sku} ${i.name}: ${((i.price - i.cost) / i.price * 100).toFixed(0)}%`,
       ).join('\n');
     }
     default:

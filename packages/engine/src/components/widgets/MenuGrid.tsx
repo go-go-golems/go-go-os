@@ -13,7 +13,15 @@ export function MenuGrid({ icon, labels, buttons, onAction }: MenuGridProps) {
     <div data-part="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'center' }}>
       {icon && <div style={{ fontSize: 32 }}>{icon}</div>}
       {labels?.map((l, i) => (
-        <div key={i} data-part={l.style === 'muted' ? 'field-value' : 'card-title'}>
+        <div
+          key={i}
+          style={{
+            fontSize: l.style === 'muted' ? 11 : 16,
+            color: l.style === 'muted' ? 'var(--hc-color-muted, #777)' : 'inherit',
+            fontWeight: l.style === 'muted' ? 'normal' : 'bold',
+            textAlign: 'center',
+          }}
+        >
           {l.value}
         </div>
       ))}

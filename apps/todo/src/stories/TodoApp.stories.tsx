@@ -1,22 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { navigationReducer, notificationsReducer, navigate } from '@hypercard/engine';
+import { hypercardRuntimeReducer, navigationReducer, notificationsReducer, navigate } from '@hypercard/engine';
 import type { NavigationStateSlice } from '@hypercard/engine';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { tasksReducer } from '../features/tasks/tasksSlice';
-import { selectTasks, type TasksStateSlice } from '../features/tasks/selectors';
 import { App } from '../App';
 import { STACK } from '../domain/stack';
-import { todoActionHandler } from '../app/domainActionHandler';
-import { todoRenderers } from '../overrides/cardRenderers';
+import { todoSharedActions, todoSharedSelectors } from '../app/cardRuntime';
 import { HyperCardShell } from '@hypercard/engine';
 import { selectCurrentCardId } from '@hypercard/engine';
 
 function freshStore() {
   return configureStore({
     reducer: {
+      hypercardRuntime: hypercardRuntimeReducer,
       navigation: navigationReducer,
       notifications: notificationsReducer,
       tasks: tasksReducer,
@@ -48,12 +47,11 @@ export const Default: Story = {};
 
 // ── Individual Cards ──
 
-type AppState = TasksStateSlice & NavigationStateSlice;
+type AppState = NavigationStateSlice;
 
 function TodoShellAtCard({ card, param }: { card: string; param?: string }) {
   const dispatch = useDispatch();
   const currentCard = useSelector((s: AppState) => selectCurrentCardId(s));
-  const tasks = useSelector((s: AppState) => selectTasks(s));
 
   useEffect(() => {
     if (currentCard !== card) {
@@ -63,10 +61,9 @@ function TodoShellAtCard({ card, param }: { card: string; param?: string }) {
 
   return (
     <HyperCardShell
-      stack={STACK as any}
-      domainActionHandler={todoActionHandler}
-      customRenderers={todoRenderers}
-      domainData={{ tasks }}
+      stack={STACK}
+      sharedSelectors={todoSharedSelectors}
+      sharedActions={todoSharedActions}
       navShortcuts={[
         { card: 'home', icon: '🏠' },
         { card: 'browse', icon: '📋' },

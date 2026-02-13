@@ -1,9 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { navigationReducer, notificationsReducer } from '@hypercard/engine';
+import { hypercardRuntimeReducer, navigationReducer, notificationsReducer } from '@hypercard/engine';
 import { tasksReducer } from '../features/tasks/tasksSlice';
 
 export const store = configureStore({
   reducer: {
+    hypercardRuntime: hypercardRuntimeReducer,
     navigation: navigationReducer,
     notifications: notificationsReducer,
     tasks: tasksReducer,

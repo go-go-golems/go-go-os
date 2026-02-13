@@ -11,6 +11,14 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: packages/engine/src/cards/index.ts
+      Note: Task 1 exported runtime debug hook API surface (commit 3a0976a)
+    - Path: packages/engine/src/cards/runtime.ts
+      Note: Task 1 runtime debug event types/hooks and selector/action instrumentation (commit 3a0976a)
+    - Path: packages/engine/src/components/shell/CardRenderer.tsx
+      Note: Task 1 widget emit boundary debug events (commit 3a0976a)
+    - Path: packages/engine/src/components/shell/HyperCardShell.tsx
+      Note: Task 1 shell dispatch/context debug hook wiring (commit 3a0976a)
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/01-debug-pane-and-introspection-system-implementation-guide.md
       Note: |-
         Main implementation guide written in this ticket.
@@ -33,10 +41,11 @@ RelatedFiles:
         Backlog and completion tracking for the debug-pane initiative.
 ExternalSources: []
 Summary: Step-by-step diary for creating HC-018 ticket, producing debug-pane/introspection architecture guidance, and publishing the deliverable.
-LastUpdated: 2026-02-13T16:12:00-05:00
+LastUpdated: 2026-02-13T11:41:00-05:00
 WhatFor: Record execution details, decisions, and validation outputs for the debug-pane planning work.
 WhenToUse: Use when reviewing how the HC-018 design package was produced and what commands/artifacts back it.
 ---
+
 
 
 # Diary
@@ -210,3 +219,95 @@ This step confirms the deliverable is not only stored in-repo but also published
 - `/ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP`
 - Uploaded document basename:
 - `01-debug-pane-and-introspection-system-implementation-guide`
+
+
+## Step 3: Implement Runtime Debug Hook Plumbing (Task 1)
+
+I started execution of the implementation backlog by finishing the first open engineering task: adding a concrete runtime introspection hook surface to the engine and threading it through selector resolution, action execution, UI emit boundaries, and Redux dispatch boundaries.
+
+This step intentionally kept hooks optional and non-invasive: if no `debugHooks` are passed, runtime behavior remains unchanged. The result is an opt-in instrumentation layer that can feed the upcoming debug pane without forcing architecture changes on non-debug consumers.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Now implement it, step by step, task by task, committing as you go, keeping a diary."
+
+**Assistant interpretation:** Execute the ticket's remaining implementation tasks in order, with focused commits and continuous diary updates.
+
+**Inferred user intent:** Move from planning docs to actual working code with traceable milestones.
+
+**Commit (code):** 3a0976a — "feat(engine): add RuntimeDebugHooks instrumentation plumbing"
+
+### What I did
+
+- Added runtime hook model in `packages/engine/src/cards/runtime.ts`:
+- `RuntimeDebugEvent`
+- `RuntimeDebugHooks`
+- `RuntimeDebugContext`
+- `RuntimeDebugEventInput`
+- `emitRuntimeDebugEvent(...)`
+- Instrumented selector resolution in `createSelectorResolver(...)` to emit `selector.resolve` events with scope, args, and timing.
+- Instrumented command/action path:
+- `executeCommand(...)` emits argument-resolution timing events.
+- `executeActionDescriptor(...)` emits start/end/error events plus `state.mutation` events for scoped state built-ins.
+- Added async-action completion/error handling to preserve meaningful action lifecycle events.
+- Updated shell wiring in `packages/engine/src/components/shell/HyperCardShell.tsx`:
+- Added optional `debugHooks?: RuntimeDebugHooks` on `HyperCardShellProps`.
+- Wrapped context dispatch/nav/toast dispatches with `redux.dispatch.*` debug events.
+- Passed debug hooks into selector/action runtime helpers.
+- Updated renderer boundary in `packages/engine/src/components/shell/CardRenderer.tsx`:
+- Added optional runtime `debugEvent(...)`.
+- Emit `ui.emit` and `ui.inlineAction` events before runtime execution.
+- Exported hook types/util from `packages/engine/src/cards/index.ts`.
+- Ran typecheck:
+- `npm run typecheck`
+
+### Why
+
+- The debug pane planned in HC-018 needs first-class observability events from DSL runtime boundaries, not only raw Redux actions.
+
+### What worked
+
+- Hook plumbing compiled cleanly and remained opt-in.
+- Task checklist item for Task 1 is now marked complete in `tasks.md`.
+
+### What didn't work
+
+- `npm run -w packages/engine build` failed because no workspace build script exists:
+- `npm error Missing script: "build"`
+- Initial typecheck failed once with:
+- `packages/engine/src/cards/runtime.ts(...): error TS2774: This condition will always return true...`
+- Cause: `Record<string, Fn>` index signatures were treated as always-defined.
+- Fix: switched to explicit `hasOwnProperty` checks before resolving shared selectors/actions.
+
+### What I learned
+
+- For `Record<string, Fn>` maps, runtime existence checks should use `hasOwnProperty` to avoid false positives in both typing and debug event semantics.
+
+### What was tricky to build
+
+- Ensuring instrumentation catches both sync and async action handlers without changing existing call signatures required promise-like detection and asynchronous finalize/error event emission.
+
+### What warrants a second pair of eyes
+
+- Payload size and privacy controls: current event payloads include resolved args/value snapshots; the later pane integration should verify sanitization defaults are strict enough for real datasets.
+
+### What should be done in the future
+
+- Implement Task 2: build the collapsible debug pane UI and event reducer in the new DSL-driven Book Tracking app.
+
+### Code review instructions
+
+- Start with `packages/engine/src/cards/runtime.ts`.
+- Then review shell integration in `packages/engine/src/components/shell/HyperCardShell.tsx`.
+- Confirm renderer boundary events in `packages/engine/src/components/shell/CardRenderer.tsx`.
+- Validate compile with:
+- `npm run typecheck`
+
+### Technical details
+
+- Commit:
+- `git commit -m "feat(engine): add RuntimeDebugHooks instrumentation plumbing"`
+- Validation:
+- `npm run typecheck`
+- Task bookkeeping:
+- `docmgr task check --ticket HC-018-DSL-DEBUG-BOOKAPP --id 5`

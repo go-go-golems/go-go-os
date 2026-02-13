@@ -44,7 +44,9 @@ function deepGet(obj: unknown, path: string): unknown {
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
 }
 
 function selectorFromScope(
@@ -112,6 +114,10 @@ export function resolveValueExpr(
     selectors: (name: string, from: SelectorScope | undefined, args: unknown) => unknown;
   },
 ): unknown {
+  if (typeof expr === 'function') {
+    return expr;
+  }
+
   if (
     expr == null ||
     typeof expr === 'string' ||
@@ -125,7 +131,8 @@ export function resolveValueExpr(
     return expr.map((item) => resolveValueExpr(item, context));
   }
 
-  if (!isPlainObject(expr)) return undefined;
+  // Pass through non-plain objects (Date, class instances, React-ish values) unchanged.
+  if (!isPlainObject(expr)) return expr;
 
   if (!('$' in expr)) {
     const out: Record<string, unknown> = {};

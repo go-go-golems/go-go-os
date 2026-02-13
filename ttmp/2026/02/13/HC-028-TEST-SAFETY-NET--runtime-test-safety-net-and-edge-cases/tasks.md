@@ -3,17 +3,17 @@
 ## TODO
 
 - [ ] Decide test runner placement and scope (engine package, app package, or dedicated workspace)
-- [ ] Add baseline test infrastructure for runtime-focused tests
-- [ ] Add tests for `executeActionDescriptor` behavior:
-  - [ ] builtin navigation and toast actions
-  - [ ] local action handler precedence
-  - [ ] shared action handler fallback
-  - [ ] unhandled action signaling path
-- [ ] Add tests for selector resolution order (`card` -> `cardType` -> `background` -> `stack` -> `global` -> `shared`)
-- [ ] Add tests for scoped state mutation commands:
-  - [ ] `state.set`
-  - [ ] `state.setField`
-  - [ ] `state.patch`
+- [x] Add baseline test infrastructure for runtime-focused tests
+- [x] Add tests for `executeActionDescriptor` behavior:
+- [x] builtin navigation and toast actions
+- [x] local action handler precedence
+- [x] shared action handler fallback
+- [x] unhandled action signaling path
+- [x] Add tests for selector resolution order (`card` -> `cardType` -> `background` -> `stack` -> `global` -> `shared`)
+- [x] Add tests for scoped state mutation commands:
+- [x] `state.set`
+- [x] `state.setField`
+- [x] `state.patch`
   - [ ] `state.reset`
 - [ ] Add navigation reducer tests for initialization/reset semantics including non-`home` `homeCard`
 - [ ] Add `ListView` footer tests for empty and non-empty datasets (`sum`, `count`, `avg`, `min`, `max`)

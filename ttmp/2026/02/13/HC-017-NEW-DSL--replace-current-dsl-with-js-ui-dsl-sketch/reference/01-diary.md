@@ -810,3 +810,88 @@ I removed the legacy DSL implementation files and outdated registry APIs from th
 
 - Task progression intentionally accepts temporary compile breakage between removal and downstream ports.
 
+
+## Step 12: Tasks 13-14 - Port Inventory and Todo Apps to New DSL/JS API
+
+I migrated both app examples from old DSL + override renderers to the new CardDefinition stack model using shared selector/action registries. This removed old app-layer DSL plumbing and connected both apps to the new shell runtime path.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 6)
+
+**Assistant interpretation:** Continue task-by-task execution through app migration, deleting old DSL usage in examples.
+
+**Inferred user intent:** Ensure migration is real in running examples, not just engine internals.
+
+**Commit (code):** `288f111` — "apps(inventory): port to CardDefinition runtime and shared registries"
+
+**Commit (code):** `e62a45c` — "apps(todo): port to CardDefinition runtime and shared registries"
+
+### What I did
+
+- Inventory app:
+- rewrote `apps/inventory/src/domain/stack.ts` to CardDefinition stack (`defineCardStack`, `ui.*`, `Act/Sel/Ev`)
+- added `apps/inventory/src/app/cardRuntime.ts` shared selector/action registries
+- added `apps/inventory/src/domain/seedData.ts` and switched slices to seed data
+- updated `App.tsx`, store, and stories to new shell props (`sharedSelectors`, `sharedActions`)
+- removed old app DSL plumbing:
+- `apps/inventory/src/app/domainActionHandler.ts`
+- `apps/inventory/src/app/domainDataRegistry.ts`
+- `apps/inventory/src/overrides/*`
+
+- Todo app:
+- rewrote `apps/todo/src/domain/stack.ts` to CardDefinition stack
+- added `apps/todo/src/app/cardRuntime.ts` shared selector/action registries
+- added `apps/todo/src/domain/seedData.ts` and switched tasks slice seed source
+- updated `App.tsx`, store, and stories to new shell props
+- removed old app DSL plumbing:
+- `apps/todo/src/app/domainActionHandler.ts`
+- `apps/todo/src/app/domainDataRegistry.ts`
+- `apps/todo/src/overrides/*`
+
+- Runtime support added for form/detail field updates:
+- `state.setField` built-in action in `packages/engine/src/cards/runtime.ts`
+
+- Checked off Tasks 13 and 14 in ticket tasks.
+
+### Why
+
+- App examples were the largest remaining old-DSL surface and the primary proof that the new runtime can replace the old architecture.
+
+### What worked
+
+- Both apps now define cards through new CardDefinition stack objects and shared selector/action registries.
+- Old override renderer layer removed in both apps.
+
+### What didn't work
+
+- `docmgr task list` output temporarily lagged and still showed unchecked entries even after `task check`; the underlying `tasks.md` file reflects correct checked state.
+
+### What I learned
+
+- Shared registries are enough to keep app logic clean without reintroducing custom renderer sprawl.
+
+### What was tricky to build
+
+- Preserving old behavior while converting forms/detail editing to event+binding-driven state updates.
+- Solved by adding `state.setField` runtime built-in for dynamic field-path updates.
+
+### What warrants a second pair of eyes
+
+- Inventory chat behavior parity is intentionally simplified compared to old override implementation; verify expected UX depth.
+
+### What should be done in the future
+
+- Add integration tests around form submit/reset and detail edit/save flows now that app-level overrides are removed.
+
+### Code review instructions
+
+- Inventory: start at `apps/inventory/src/domain/stack.ts` then `apps/inventory/src/app/cardRuntime.ts`.
+- Todo: start at `apps/todo/src/domain/stack.ts` then `apps/todo/src/app/cardRuntime.ts`.
+- Confirm deleted override and domain registry files are no longer referenced.
+
+### Technical details
+
+- Store reducers now include `hypercardRuntime` in both apps.
+- Storybook decorators/stories were updated to use new shell runtime props.
+

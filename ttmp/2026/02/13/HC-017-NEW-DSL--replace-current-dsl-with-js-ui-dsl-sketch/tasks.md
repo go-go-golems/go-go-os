@@ -14,7 +14,7 @@
 - [x] Implement scoped runtime state in Redux (card/cardType/background/stack/global) with set/patch/reset reducers and selectors
 - [x] Rewrite HyperCardShell/CardRenderer runtime to execute new DSL commands and expressions using shared selector/action registries
 - [x] Remove old DSL runtime files and exports (dsl/types.ts, dsl/resolver.ts, app/dispatchDSLAction.ts, obsolete registry APIs)
-- [ ] Port inventory app to new DSL/JS API card stack and shared selectors/actions; remove old overrides/domain registries
-- [ ] Port todo app to new DSL/JS API card stack and shared selectors/actions; remove old overrides/domain registries
+- [x] Port inventory app to new DSL/JS API card stack and shared selectors/actions; remove old overrides/domain registries
+- [x] Port todo app to new DSL/JS API card stack and shared selectors/actions; remove old overrides/domain registries
 - [ ] Port BookTracker and app story examples to new DSL/JS API
 - [ ] Run typecheck/build validation, fix fallout, finalize docs/diary/changelog, and upload refreshed migration bundle

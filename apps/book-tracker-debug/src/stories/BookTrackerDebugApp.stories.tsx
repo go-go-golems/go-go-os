@@ -1,20 +1,14 @@
-import { generateCardStories } from '@hypercard/engine';
+import type { Meta, StoryObj } from '@storybook/react';
+import { createStoryHelpers } from '@hypercard/engine';
 import { bookSharedActions, bookSharedSelectors } from '../app/cardRuntime';
 import { createBookStore } from '../app/store';
 import { BOOK_STACK } from '../domain/stack';
 
-const snapshotSelector = (state: any) => ({
-  navigation: state.navigation,
-  books: state.books,
-  runtime: state.hypercardRuntime,
-});
-
-const { meta, stories } = generateCardStories({
+const { storeDecorator, createStory, FullApp } = createStoryHelpers({
   stack: BOOK_STACK,
   sharedSelectors: bookSharedSelectors,
   sharedActions: bookSharedActions,
   createStore: createBookStore,
-  title: 'BookTrackerDebug',
   navShortcuts: [
     { card: 'home', icon: '🏠' },
     { card: 'browse', icon: '📋' },
@@ -22,20 +16,29 @@ const { meta, stories } = generateCardStories({
     { card: 'readingReport', icon: '📊' },
     { card: 'addBook', icon: '➕' },
   ],
-  cardParams: {
-    bookDetail: 'b1',
-  },
-  snapshotSelector,
+  cardParams: { bookDetail: 'b1' },
+  snapshotSelector: (state: any) => ({
+    navigation: state.navigation,
+    books: state.books,
+    runtime: state.hypercardRuntime,
+  }),
   debugTitle: 'Book Tracker Debug',
 });
 
+const meta = {
+  title: 'BookTrackerDebug/Full App',
+  component: FullApp,
+  decorators: [storeDecorator],
+  parameters: { layout: 'fullscreen' },
+} satisfies Meta<typeof FullApp>;
+
 export default meta;
-export const {
-  Default,
-  Home,
-  Browse,
-  ReadingNow,
-  BookDetail,
-  AddBook,
-  ReadingReport,
-} = stories;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+export const Home: Story = createStory('home');
+export const Browse: Story = createStory('browse');
+export const ReadingNow: Story = createStory('readingNow');
+export const BookDetail: Story = createStory('bookDetail');
+export const AddBook: Story = createStory('addBook');
+export const ReadingReport: Story = createStory('readingReport');

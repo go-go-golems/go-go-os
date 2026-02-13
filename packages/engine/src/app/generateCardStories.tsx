@@ -16,8 +16,6 @@ export interface CardStoriesConfig<TRootState = unknown> {
   sharedActions: SharedActionRegistry<TRootState>;
   /** Factory to create a fresh store (for story isolation) */
   createStore: () => any;
-  /** Storybook story title prefix (e.g., 'CRM') */
-  title: string;
   /** Navigation shortcut buttons */
   navShortcuts: Array<{ card: string; icon: string }>;
   /** Map of card → param value for detail/param cards in stories */
@@ -29,22 +27,36 @@ export interface CardStoriesConfig<TRootState = unknown> {
 }
 
 /**
- * Generates Storybook meta + per-card story exports from a stack definition.
+ * Creates a Storybook store decorator and per-card story objects from a stack definition.
+ *
+ * The `meta` object (title, component, etc.) must be defined in the story file itself
+ * because Storybook's CSF parser requires a statically-visible `export default`.
  *
  * @example
- * ```ts
- * const stories = generateCardStories({ stack, sharedSelectors, sharedActions, createStore, title: 'CRM', ... });
- * export default stories.meta;
- * export const { Home, Contacts, ContactDetail } = stories.stories;
+ * ```tsx
+ * import { createStoryHelpers } from '@hypercard/engine';
+ *
+ * const { storeDecorator, createStory, FullApp } = createStoryHelpers({ ... });
+ *
+ * const meta = {
+ *   title: 'CRM/Full App',
+ *   component: FullApp,
+ *   decorators: [storeDecorator],
+ *   parameters: { layout: 'fullscreen' },
+ * } satisfies Meta<typeof FullApp>;
+ * export default meta;
+ *
+ * export const Default: StoryObj<typeof meta> = {};
+ * export const Home: StoryObj<typeof meta> = createStory('home');
+ * export const ContactDetail: StoryObj<typeof meta> = createStory('contactDetail', 'c1');
  * ```
  */
-export function generateCardStories<TRootState = unknown>(config: CardStoriesConfig<TRootState>) {
+export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConfig<TRootState>) {
   const {
     stack,
     sharedSelectors,
     sharedActions,
     createStore,
-    title,
     navShortcuts,
     cardParams = {},
     snapshotSelector,
@@ -52,7 +64,7 @@ export function generateCardStories<TRootState = unknown>(config: CardStoriesCon
   } = config;
 
   // Store decorator for story isolation
-  function StoreDecorator(Story: ComponentType) {
+  function storeDecorator(Story: ComponentType) {
     return (
       <Provider store={createStore()}>
         <Story />
@@ -60,7 +72,7 @@ export function generateCardStories<TRootState = unknown>(config: CardStoriesCon
     );
   }
 
-  // Shell-at-card component
+  // Shell-at-card component for navigating to a specific card
   function ShellAtCard({ card, param }: { card: string; param?: string }) {
     const debugHooks = useStandardDebugHooks();
     const dispatch = useDispatch();
@@ -81,7 +93,7 @@ export function generateCardStories<TRootState = unknown>(config: CardStoriesCon
         layoutMode="debugPane"
         renderDebugPane={() => (
           <StandardDebugPane
-            title={debugTitle ?? `${title} Debug`}
+            title={debugTitle ?? `${stack.name} Debug`}
             snapshotSelector={snapshotSelector}
           />
         )}
@@ -90,7 +102,7 @@ export function generateCardStories<TRootState = unknown>(config: CardStoriesCon
     );
   }
 
-  // Full app component (default story)
+  // Full app component (for default story / meta.component)
   function FullApp() {
     const debugHooks = useStandardDebugHooks();
     return (
@@ -102,7 +114,7 @@ export function generateCardStories<TRootState = unknown>(config: CardStoriesCon
         layoutMode="debugPane"
         renderDebugPane={() => (
           <StandardDebugPane
-            title={debugTitle ?? `${title} Debug`}
+            title={debugTitle ?? `${stack.name} Debug`}
             snapshotSelector={snapshotSelector}
           />
         )}
@@ -111,29 +123,17 @@ export function generateCardStories<TRootState = unknown>(config: CardStoriesCon
     );
   }
 
-  // Build meta
-  const meta = {
-    title: `${title}/Full App`,
-    component: FullApp,
-    decorators: [StoreDecorator],
-    parameters: { layout: 'fullscreen' as const },
-  };
-
-  // Build per-card stories
-  const storyEntries: Record<string, { render: () => React.JSX.Element }> = {};
-
-  // Default story
-  storyEntries.Default = { render: () => <FullApp /> };
-
-  // One story per card
-  for (const cardId of Object.keys(stack.cards)) {
-    // Convert cardId to PascalCase for export name
-    const storyName = cardId.charAt(0).toUpperCase() + cardId.slice(1);
-    const param = cardParams[cardId];
-    storyEntries[storyName] = {
-      render: () => <ShellAtCard card={cardId} param={param} />,
+  /**
+   * Creates a story object for a specific card.
+   * @param card — card ID from the stack
+   * @param param — optional param value (for detail cards)
+   */
+  function createStory(card: string, param?: string) {
+    const resolvedParam = param ?? cardParams[card];
+    return {
+      render: () => <ShellAtCard card={card} param={resolvedParam} />,
     };
   }
 
-  return { meta, stories: storyEntries };
+  return { storeDecorator, createStory, FullApp };
 }

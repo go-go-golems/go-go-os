@@ -1,23 +1,14 @@
-import { generateCardStories } from '@hypercard/engine';
+import type { Meta, StoryObj } from '@storybook/react';
+import { createStoryHelpers } from '@hypercard/engine';
 import { crmSharedActions, crmSharedSelectors } from '../app/cardRuntime';
 import { createCrmStore } from '../app/store';
 import { CRM_STACK } from '../domain/stack';
 
-const snapshotSelector = (state: any) => ({
-  navigation: state.navigation,
-  contacts: state.contacts,
-  companies: state.companies,
-  deals: state.deals,
-  activities: state.activities,
-  runtime: state.hypercardRuntime,
-});
-
-const { meta, stories } = generateCardStories({
+const { storeDecorator, createStory, FullApp } = createStoryHelpers({
   stack: CRM_STACK,
   sharedSelectors: crmSharedSelectors,
   sharedActions: crmSharedActions,
   createStore: createCrmStore,
-  title: 'CRM',
   navShortcuts: [
     { card: 'home', icon: '🏠' },
     { card: 'contacts', icon: '👤' },
@@ -26,29 +17,39 @@ const { meta, stories } = generateCardStories({
     { card: 'pipeline', icon: '📊' },
     { card: 'activityLog', icon: '📝' },
   ],
-  cardParams: {
-    contactDetail: 'c1',
-    companyDetail: 'co1',
-    dealDetail: 'd1',
-  },
-  snapshotSelector,
+  cardParams: { contactDetail: 'c1', companyDetail: 'co1', dealDetail: 'd1' },
+  snapshotSelector: (state: any) => ({
+    navigation: state.navigation,
+    contacts: state.contacts,
+    companies: state.companies,
+    deals: state.deals,
+    activities: state.activities,
+    runtime: state.hypercardRuntime,
+  }),
   debugTitle: 'CRM Debug',
 });
 
+const meta = {
+  title: 'CRM/Full App',
+  component: FullApp,
+  decorators: [storeDecorator],
+  parameters: { layout: 'fullscreen' },
+} satisfies Meta<typeof FullApp>;
+
 export default meta;
-export const {
-  Default,
-  Home,
-  Contacts,
-  ContactDetail,
-  AddContact,
-  Companies,
-  CompanyDetail,
-  Deals,
-  OpenDeals,
-  DealDetail,
-  AddDeal,
-  Pipeline,
-  ActivityLog,
-  AddActivity,
-} = stories;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+export const Home: Story = createStory('home');
+export const Contacts: Story = createStory('contacts');
+export const ContactDetail: Story = createStory('contactDetail');
+export const AddContact: Story = createStory('addContact');
+export const Companies: Story = createStory('companies');
+export const CompanyDetail: Story = createStory('companyDetail');
+export const Deals: Story = createStory('deals');
+export const OpenDeals: Story = createStory('openDeals');
+export const DealDetail: Story = createStory('dealDetail');
+export const AddDeal: Story = createStory('addDeal');
+export const Pipeline: Story = createStory('pipeline');
+export const ActivityLog: Story = createStory('activityLog');
+export const AddActivity: Story = createStory('addActivity');

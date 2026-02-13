@@ -1,11 +1,22 @@
-import { HyperCardShell } from '@hypercard/engine';
+import {
+  HyperCardShell,
+  StandardDebugPane,
+  useStandardDebugHooks,
+} from '@hypercard/engine';
 import { crmSharedActions, crmSharedSelectors } from './app/cardRuntime';
-import { DebugPane } from './debug/DebugPane';
-import { useRuntimeDebugHooks } from './debug/useRuntimeDebugHooks';
 import { CRM_STACK } from './domain/stack';
 
+const snapshotSelector = (state: any) => ({
+  navigation: state.navigation,
+  contacts: state.contacts,
+  companies: state.companies,
+  deals: state.deals,
+  activities: state.activities,
+  runtime: state.hypercardRuntime,
+});
+
 export function App() {
-  const debugHooks = useRuntimeDebugHooks();
+  const debugHooks = useStandardDebugHooks();
 
   return (
     <HyperCardShell
@@ -14,7 +25,12 @@ export function App() {
       sharedActions={crmSharedActions}
       debugHooks={debugHooks}
       layoutMode="debugPane"
-      renderDebugPane={() => <DebugPane />}
+      renderDebugPane={() => (
+        <StandardDebugPane
+          title="CRM Debug"
+          snapshotSelector={snapshotSelector}
+        />
+      )}
       navShortcuts={[
         { card: 'home', icon: '🏠' },
         { card: 'contacts', icon: '👤' },

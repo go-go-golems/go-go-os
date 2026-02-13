@@ -24,6 +24,7 @@ const { storeDecorator, createStory, FullApp } = createStoryHelpers({
     companies: state.companies,
     deals: state.deals,
     activities: state.activities,
+    streamingChat: state.streamingChat,
     runtime: state.hypercardRuntime,
   }),
   debugTitle: 'CRM Debug',

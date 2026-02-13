@@ -65,7 +65,7 @@ RelatedFiles:
         Backlog and completion tracking for the debug-pane initiative.
 ExternalSources: []
 Summary: Step-by-step diary for creating HC-018 ticket, producing debug-pane/introspection architecture guidance, and publishing the deliverable.
-LastUpdated: 2026-02-13T12:32:00-05:00
+LastUpdated: 2026-02-13T12:36:00-05:00
 WhatFor: Record execution details, decisions, and validation outputs for the debug-pane planning work.
 WhenToUse: Use when reviewing how the HC-018 design package was produced and what commands/artifacts back it.
 ---
@@ -706,7 +706,7 @@ After writing, I added ticket index links and updated metadata so both documents
 
 **Inferred user intent:** Convert implementation knowledge into reusable engineering documentation and distribute it to reading workflows.
 
-**Commit (code):** N/A (docs + upload bookkeeping committed after this step)
+**Commit (code):** e8b7e42 — "docs(ticket): add HC-018 postmortem and card-stacks DSL tutorial"
 
 ### What I did
 

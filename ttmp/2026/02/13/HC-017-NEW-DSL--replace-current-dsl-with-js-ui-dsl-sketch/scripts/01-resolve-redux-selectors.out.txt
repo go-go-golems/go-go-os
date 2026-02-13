@@ -1,0 +1,11 @@
+PASS: selector reads Redux state
+PASS: param resolves from context
+PASS: selector args are resolved and passed
+PASS: event top-level payload field
+PASS: event nested payload field
+PASS: nested object resolves recursively
+PASS: composed expression resolves selector value
+PASS: selector list returned for options
+PASS: event value feeds selector args
+
+All resolver experiments passed.

@@ -895,3 +895,140 @@ I migrated both app examples from old DSL + override renderers to the new CardDe
 - Store reducers now include `hypercardRuntime` in both apps.
 - Storybook decorators/stories were updated to use new shell runtime props.
 
+
+## Step 13: Task 15 - Port BookTracker Story Examples to New CardDefinition API
+
+I replaced the old BookTracker story usage of removed `dsl/types` and old shell renderer contracts with a fully new CardDefinition-based story implementation.
+
+The rewritten story now demonstrates both widget-level demos and a working shell flow backed by shared selector/action registries and scoped runtime state.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 6)
+
+**Assistant interpretation:** Complete example migration so no current examples depend on removed DSL APIs.
+
+**Inferred user intent:** Ensure migration coverage includes examples used for validation and demos.
+
+**Commit (code):** `fe9da05` — "stories: port BookTracker examples to CardDefinition API"
+
+### What I did
+
+- Rewrote `packages/engine/src/components/widgets/BookTracker.stories.tsx`:
+- removed imports from deleted old DSL files
+- removed old `CardRendererContext`/`CardTypeRenderer` story wiring
+- added CardDefinition stack (`defineCardStack`) with `ui.*`, `Sel`, `Act`, `Ev`
+- added story-local books Redux slice for realistic updates
+- added shared selector/action registries for shell story runtime
+
+### Why
+
+- BookTracker story was the last compile blocker still tied to old DSL contracts.
+
+### What worked
+
+- Story now compiles against new shell/runtime API.
+- Story demonstrates the new runtime behavior end-to-end.
+
+### What didn't work
+
+- N/A.
+
+### What I learned
+
+- Story-local reducer + shared registries are a clean pattern for example-driven runtime validation.
+
+### What was tricky to build
+
+- Preserving a meaningful shell demo while removing old custom renderer dependencies.
+
+### What warrants a second pair of eyes
+
+- Confirm story-level behavior parity expectations (navigation/detail/form flow) are sufficient for migration demos.
+
+### What should be done in the future
+
+- Add one focused Storybook interaction test for create/edit/delete path.
+
+### Code review instructions
+
+- Review `BookTracker.stories.tsx` from top to bottom, especially the `BOOK_STACK`, `bookSharedSelectors`, and `bookSharedActions` sections.
+
+### Technical details
+
+- This step resolves the last old-DSL import path still present in engine stories.
+
+
+## Step 14: Task 16 - Validation, Finalization, and Refreshed Upload
+
+I ran final validation passes, resolved remaining compile blockers, and published a refreshed implementation-progress bundle to reMarkable containing both design docs plus the diary.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 6)
+
+**Assistant interpretation:** Complete remaining migration tasks, verify build health, and finish ticket publishing/documentation loop.
+
+**Inferred user intent:** End this implementation phase with traceable, reviewable, and shared artifacts.
+
+**Commit (code):** N/A (validation + publication + ticket docs updates)
+
+### What I did
+
+- Validation:
+- `npm run -s typecheck` (pass)
+- `npm run -w apps/inventory build` (pass)
+- `npm run -w apps/todo build` (pass)
+- Noted root `npm run build` failure due missing `build` script in `packages/engine` workspace (pre-existing workspace script configuration issue).
+
+- Ticket finalization:
+- checked off Tasks 15 and 16 in `tasks.md`
+- continued diary entries for Task 15 and Task 16
+
+- ReMarkable upload:
+- bundled and uploaded:
+- `design/01-current-dsl-deep-dive-and-migration-guide-to-new-screen-dsl.md`
+- `design/02-carddefinition-scoped-state-architecture-card-background-stack-global.md`
+- `reference/01-diary.md`
+- uploaded name: `HC-017 DSL Migration Implementation Progress`
+- remote folder: `/ai/2026/02/13/HC-017-NEW-DSL`
+
+### Why
+
+- The migration needed an explicit verification checkpoint and refreshed published artifact set after all task execution commits.
+
+### What worked
+
+- Typecheck is green after full port work.
+- Both app builds pass.
+- reMarkable bundle upload succeeded and is visible in cloud listing.
+
+### What didn't work
+
+- Root workspace `npm run build` fails because the workspace script expects a `build` script in `packages/engine`, which does not exist.
+
+### What I learned
+
+- In this repo, actionable validation should use `typecheck` + app-level build commands rather than root build until workspace scripts are harmonized.
+
+### What was tricky to build
+
+- Sequencing deletion-first migration with compile restoration required careful task ordering to avoid losing momentum mid-refactor.
+
+### What warrants a second pair of eyes
+
+- Decide whether to add an explicit `build` script in `packages/engine` or adjust root workspace build command to avoid false-negative CI/dev experience.
+
+### What should be done in the future
+
+- Add automated tests around shared selector/action registries and scoped state reducers.
+
+### Code review instructions
+
+- Verify final validation commands and outputs.
+- Confirm reMarkable listing includes `HC-017 DSL Migration Implementation Progress`.
+
+### Technical details
+
+- Final task status: all tasks in `tasks.md` marked complete.
+

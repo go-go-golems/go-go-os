@@ -1,0 +1,17 @@
+PASS: card scope value is visible
+PASS: cardType scope value is visible
+PASS: background scope value is visible
+PASS: stack scope value is visible
+PASS: global scope value is visible
+HANDLED filter.setDate at scope=card
+HANDLED view.setPageSize at scope=cardType
+HANDLED filter.setCategory at scope=background
+HANDLED threshold.set at scope=stack
+HANDLED prefs.setCurrency at scope=global
+PASS: card action updates card state
+PASS: cardType action updates card-type state
+PASS: background action updates background state
+PASS: stack action updates stack state
+PASS: global action updates global state
+
+CardDefinition scoped state simulation passed.

@@ -1,0 +1,7 @@
+PASS: initial binding dispatches action
+PASS: updated rowClick binding takes effect
+PASS: screen-local action overrides global action
+PASS: screen-local handler executes
+PASS: preview mode ignores events
+
+Runtime update semantics experiment passed.

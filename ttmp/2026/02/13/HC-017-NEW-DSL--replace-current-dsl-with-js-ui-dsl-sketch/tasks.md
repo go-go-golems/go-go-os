@@ -16,5 +16,5 @@
 - [x] Remove old DSL runtime files and exports (dsl/types.ts, dsl/resolver.ts, app/dispatchDSLAction.ts, obsolete registry APIs)
 - [x] Port inventory app to new DSL/JS API card stack and shared selectors/actions; remove old overrides/domain registries
 - [x] Port todo app to new DSL/JS API card stack and shared selectors/actions; remove old overrides/domain registries
-- [ ] Port BookTracker and app story examples to new DSL/JS API
-- [ ] Run typecheck/build validation, fix fallout, finalize docs/diary/changelog, and upload refreshed migration bundle
+- [x] Port BookTracker and app story examples to new DSL/JS API
+- [x] Run typecheck/build validation, fix fallout, finalize docs/diary/changelog, and upload refreshed migration bundle

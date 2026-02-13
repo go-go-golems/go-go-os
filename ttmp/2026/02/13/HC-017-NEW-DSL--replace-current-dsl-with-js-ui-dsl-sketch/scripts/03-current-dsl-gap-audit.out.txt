@@ -1,0 +1,98 @@
+== Card types in app stacks ==
+  apps/todo/src/domain/stack.ts:24:      type: 'menu',
+  apps/todo/src/domain/stack.ts:39:      type: 'list',
+  apps/todo/src/domain/stack.ts:55:      type: 'list',
+  apps/todo/src/domain/stack.ts:65:      type: 'list',
+  apps/todo/src/domain/stack.ts:75:      type: 'detail',
+  apps/todo/src/domain/stack.ts:95:      type: 'form',
+  apps/inventory/src/domain/stack.ts:37:      type: 'menu', title: 'Home', icon: '🏠',
+  apps/inventory/src/domain/stack.ts:54:      type: 'list', title: 'Browse Inventory', icon: '📋',
+  apps/inventory/src/domain/stack.ts:64:      type: 'list', title: 'Low Stock', icon: '⚠️',
+  apps/inventory/src/domain/stack.ts:74:      type: 'list', title: 'Sales Log', icon: '💰',
+  apps/inventory/src/domain/stack.ts:80:      type: 'detail', title: 'Item: {{name}}', icon: '📦',
+  apps/inventory/src/domain/stack.ts:105:      type: 'form', title: 'New Item', icon: '➕',
+  apps/inventory/src/domain/stack.ts:118:      type: 'form', title: 'Receive Shipment', icon: '📦',
+  apps/inventory/src/domain/stack.ts:128:      type: 'form', title: 'Price Checker', icon: '🏷',
+  apps/inventory/src/domain/stack.ts:136:      type: 'report', title: 'Inventory Report', icon: '📊',
+  apps/inventory/src/domain/stack.ts:150:      type: 'chat', title: 'AI Assistant', icon: '💬',
+
+== DSL action types referenced in app stacks and overrides ==
+  apps/todo/src/domain/stack.ts:32:        { label: '📋 All Tasks',     action: { type: 'navigate', card: 'browse' } },
+  apps/todo/src/domain/stack.ts:33:        { label: '🔥 In Progress',   action: { type: 'navigate', card: 'inProgress' } },
+  apps/todo/src/domain/stack.ts:34:        { label: '✅ Completed',      action: { type: 'navigate', card: 'completed' } },
+  apps/todo/src/domain/stack.ts:35:        { label: '➕ New Task',       action: { type: 'navigate', card: 'newTask' } },
+  apps/todo/src/domain/stack.ts:49:      rowAction: { type: 'navigate', card: 'taskDetail', param: 'id' },
+  apps/todo/src/domain/stack.ts:51:        { label: '➕ New', action: { type: 'navigate', card: 'newTask' } },
+  apps/todo/src/domain/stack.ts:62:      rowAction: { type: 'navigate', card: 'taskDetail', param: 'id' },
+  apps/todo/src/domain/stack.ts:72:      rowAction: { type: 'navigate', card: 'taskDetail', param: 'id' },
+  apps/todo/src/domain/stack.ts:88:        { label: '▶️ Start',   action: { type: 'setStatus', status: 'doing' }, style: 'primary' },
+  apps/todo/src/domain/stack.ts:89:        { label: '✅ Complete', action: { type: 'setStatus', status: 'done' }, style: 'primary' },
+  apps/todo/src/domain/stack.ts:90:        { label: '✏️ Save',    action: { type: 'saveTask' }, style: 'primary' },
+  apps/todo/src/domain/stack.ts:91:        { label: '🗑 Delete',  action: { type: 'deleteTask' }, style: 'danger' },
+  apps/todo/src/domain/stack.ts:103:      submitAction: { type: 'createTask' },
+  apps/inventory/src/overrides/ChatCardOverride.tsx:128:                onRowClick={(item) => ctx.dispatch({ type: 'navigate', card: 'itemDetail', paramValue: String(item.sku) })}
+  apps/inventory/src/overrides/ReportCardOverride.tsx:21:    { label: '🖨 Print', action: { type: 'toast', message: 'Report sent to printer (mock)' } as unknown, variant: 'default' },
+  apps/inventory/src/overrides/ReportCardOverride.tsx:22:    { label: '📧 Email', action: { type: 'toast', message: 'Report emailed (mock)' } as unknown, variant: 'default' },
+  apps/inventory/src/domain/stack.ts:43:        { label: '📋 Browse Items',    action: { type: 'navigate', card: 'browse' } },
+  apps/inventory/src/domain/stack.ts:44:        { label: '⚠️ Low Stock',        action: { type: 'navigate', card: 'lowStock' } },
+  apps/inventory/src/domain/stack.ts:45:        { label: '💰 Sales Today',      action: { type: 'navigate', card: 'salesToday' } },
+  apps/inventory/src/domain/stack.ts:46:        { label: '📊 Inventory Report', action: { type: 'navigate', card: 'report' } },
+  apps/inventory/src/domain/stack.ts:47:        { label: '📦 Receive Shipment', action: { type: 'navigate', card: 'receive' } },
+  apps/inventory/src/domain/stack.ts:48:        { label: '💬 Ask AI',           action: { type: 'navigate', card: 'assistant' } },
+  apps/inventory/src/domain/stack.ts:49:        { label: '➕ New Item',          action: { type: 'navigate', card: 'newItem' } },
+  apps/inventory/src/domain/stack.ts:50:        { label: '🏷 Price Checker',    action: { type: 'navigate', card: 'priceCheck' } },
+  apps/inventory/src/domain/stack.ts:60:      rowAction: { type: 'navigate', card: 'itemDetail', param: 'sku' },
+  apps/inventory/src/domain/stack.ts:61:      toolbar: [{ label: '➕ New', action: { type: 'navigate', card: 'newItem' } }],
+  apps/inventory/src/domain/stack.ts:69:        { label: '📧 Email Supplier', action: { type: 'toast', message: 'Reorder email drafted (mock)' } },
+  apps/inventory/src/domain/stack.ts:70:        { label: '🖨 Print', action: { type: 'toast', message: 'Sent to printer (mock)' } },
+  apps/inventory/src/domain/stack.ts:77:      footer: { type: 'sum', field: 'total', label: 'Total Revenue' },
+  apps/inventory/src/domain/stack.ts:96:        { label: '🛒 Sell 1', action: { type: 'updateQty', delta: -1 }, style: 'primary' },
+  apps/inventory/src/domain/stack.ts:97:        { label: '🛒 Sell 5', action: { type: 'updateQty', delta: -5 } },
+  apps/inventory/src/domain/stack.ts:98:        { label: '📦 Receive +5', action: { type: 'updateQty', delta: 5 } },
+  apps/inventory/src/domain/stack.ts:99:        { label: '📦 Receive +10', action: { type: 'updateQty', delta: 10 } },
+  apps/inventory/src/domain/stack.ts:100:        { label: '✏️ Save Changes', action: { type: 'saveItem' }, style: 'primary' },
+  apps/inventory/src/domain/stack.ts:101:        { label: '🗑 Delete', action: { type: 'deleteItem' }, style: 'danger' },
+  apps/inventory/src/domain/stack.ts:114:      submitAction: { type: 'createItem' },
+  apps/inventory/src/domain/stack.ts:124:      submitAction: { type: 'receiveStock' },
+  apps/inventory/src/domain/stack.ts:132:      submitAction: { type: 'priceCheck' },
+  apps/inventory/src/domain/stack.ts:160:        actions: [{ label: '📋 Open Low Stock', action: { type: 'navigate', card: 'lowStock' } }] },
+  apps/inventory/src/domain/stack.ts:164:        actions: [{ label: '📋 Browse all', action: { type: 'navigate', card: 'browse' } }] },
+  apps/inventory/src/domain/stack.ts:168:        actions: [{ label: '💰 Sales log', action: { type: 'navigate', card: 'salesToday' } }] },
+  apps/inventory/src/domain/stack.ts:171:        actions: [{ label: '📊 Full report', action: { type: 'navigate', card: 'report' } }] },
+  apps/inventory/src/domain/stack.ts:174:        actions: [{ label: '📊 Full report', action: { type: 'navigate', card: 'report' } }] },
+  apps/inventory/src/domain/stack.ts:178:        actions: [{ label: '💰 Full sales log', action: { type: 'navigate', card: 'salesToday' } }] },
+  apps/inventory/src/domain/stack.ts:183:        { label: '⚠️ Low stock', action: { type: 'aiSend', text: 'low stock' } },
+  apps/inventory/src/domain/stack.ts:184:        { label: '💰 Best sellers', action: { type: 'aiSend', text: 'best sellers' } },
+  apps/inventory/src/domain/stack.ts:185:        { label: '📊 Inventory value', action: { type: 'aiSend', text: 'total inventory value' } },
+
+== Current DSL helper usage (resolver primitives) ==
+  apps/inventory/src/overrides/ListCardOverride.tsx:18:          matchFilter(i, {
+  apps/inventory/src/overrides/ListCardOverride.tsx:20:            value: resolveValue(def.dataFilter!.value, { settings: ctx.settings }),
+  apps/inventory/src/overrides/ChatCardOverride.tsx:46:            matchFilter(i, {
+  apps/inventory/src/overrides/ChatCardOverride.tsx:48:              value: resolveValue(intent.query!.filter!.value, { settings: ctx.settings, match: matched }),
+  apps/todo/src/overrides/ListCardOverride.tsx:14:          matchFilter(i, {
+  apps/todo/src/overrides/ListCardOverride.tsx:16:            value: resolveValue(def.dataFilter!.value, { settings: ctx.settings }),
+  packages/engine/src/dsl/resolver.ts:9:export function resolveValue(val: string | number, ctx: ResolveContext): string | number {
+  packages/engine/src/dsl/resolver.ts:18:export function matchFilter(
+  packages/engine/src/dsl/resolver.ts:23:  const v = resolveValue(filter.value, ctx);
+
+== Renderer override files ==
+  apps/todo/src/overrides/MenuCardOverride.tsx
+  apps/todo/src/overrides/DetailCardOverride.tsx
+  apps/todo/src/overrides/FormCardOverride.tsx
+  apps/todo/src/overrides/cardRenderers.ts
+  apps/todo/src/overrides/ListCardOverride.tsx
+  apps/inventory/src/overrides/ReportCardOverride.tsx
+  apps/inventory/src/overrides/MenuCardOverride.tsx
+  apps/inventory/src/overrides/DetailCardOverride.tsx
+  apps/inventory/src/overrides/FormCardOverride.tsx
+  apps/inventory/src/overrides/cardRenderers.ts
+  apps/inventory/src/overrides/ListCardOverride.tsx
+  apps/inventory/src/overrides/ChatCardOverride.tsx
+
+== Engine DSL entry points ==
+  packages/engine/src/dsl/resolver.ts
+  packages/engine/src/dsl/types.ts
+  packages/engine/src/api/selectorRegistry.ts
+  packages/engine/src/api/actionRegistry.ts
+  packages/engine/src/app/dispatchDSLAction.ts

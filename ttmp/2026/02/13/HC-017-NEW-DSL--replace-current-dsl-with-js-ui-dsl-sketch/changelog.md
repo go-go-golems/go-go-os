@@ -105,3 +105,13 @@ Expanded BookTracker story into a fuller CardDefinition-driven shell app from ho
 - /home/manuel/code/wesen/2026-02-12--hypercard-react/packages/engine/src/components/widgets/BookTracker.stories.tsx — Full app story flow and shared selectors/actions expansion.
 - /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/reference/01-diary.md — Step 16 debugging and validation record.
 
+
+## 2026-02-13
+
+Added and committed a textbook-style CardDefinition DSL implementation guide/developer reference (design/03) and uploaded it to reMarkable in /ai/2026/02/13/HC-017-NEW-DSL.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/design/03-carddefinition-dsl-implementation-guide-and-developer-reference.md — Primary deliverable document for DSL implementation/usage reference.
+- /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/reference/01-diary.md — Step 17 records authoring + upload workflow and verification.
+

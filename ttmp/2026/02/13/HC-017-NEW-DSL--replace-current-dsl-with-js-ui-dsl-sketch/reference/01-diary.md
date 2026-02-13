@@ -20,6 +20,10 @@ RelatedFiles:
       Note: Primary deliverable documented by diary steps.
     - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/design/02-carddefinition-scoped-state-architecture-card-background-stack-global.md
       Note: Follow-up design analysis for CardDefinition scoped state architecture.
+    - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/design/03-carddefinition-dsl-implementation-guide-and-developer-reference.md
+      Note: New textbook-style implementation guide and reference published in this step.
+    - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/index.md
+      Note: Ticket index updated to include new guide link.
     - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/scripts/01-resolve-redux-selectors.mjs
       Note: Experiment verifying selectors over Redux-shaped state.
     - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/scripts/03-current-dsl-gap-audit.sh
@@ -36,6 +40,8 @@ RelatedFiles:
       Note: Captured experiment output for resolver pass-through checks.
     - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/sources/local/js-ui-dsl.md
       Note: Imported spec source referenced throughout diary.
+    - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/tasks.md
+      Note: Task list updated for guide authoring/upload completion.
 ExternalSources:
     - local:js-ui-dsl.md
 Summary: Step-by-step implementation diary for HC-017 migration analysis, experiments, and publishing.
@@ -43,6 +49,7 @@ LastUpdated: 2026-02-13T10:17:00-05:00
 WhatFor: Capture exact process, decisions, failures, and validation artifacts for replacing the current DSL with the new screen DSL sketch.
 WhenToUse: Use when reviewing how the guide was produced and replaying experiments.
 ---
+
 
 
 
@@ -1248,3 +1255,84 @@ I fixed that resolver behavior, added a focused regression experiment, and valid
 - `1e325fe` (`resolveValueExpr` pass-through fix for non-value-expression tagged objects)
 - `f9ae020` (BookTracker full app DSL expansion)
 - `33d5edc` (ignore `.idea/` workspace noise)
+
+## Step 17: Textbook-Style CardDefinition DSL Guide + reMarkable Publication
+
+I authored a new long-form implementation guide that explains the CardDefinition DSL as a complete system: type contracts, runtime execution model, scoped selector/action/state semantics, practical authoring patterns, failure modes, and symbol-level reference. The document is intended as an onboarding and maintenance manual for developers joining the project.
+
+After writing and validating the document in the ticket workspace, I committed the guide and uploaded it as a single document to reMarkable in the HC-017 folder.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a detailed implementation guide on how you built the DSL, how it works, how to use it, with examples. Be engaging and detailed and exhaustive, for new developers to understand the whole thing. Write it like a textbook, with prose paragraphs, bullet points, pseudocode, code examples, add detailed reference section. Store in the ticket aand then upload to remarkable after committing"
+
+**Assistant interpretation:** Produce a comprehensive, textbook-style developer manual for the new DSL and publish it to reMarkable after committing it.
+
+**Inferred user intent:** Create a durable onboarding/reference artifact so new developers can confidently understand and extend the DSL runtime.
+
+**Commit (code):** ebbfee6 — "docs(ticket): add comprehensive CardDefinition DSL implementation guide"
+
+### What I did
+
+- Created new ticket document:
+- `design/03-carddefinition-dsl-implementation-guide-and-developer-reference.md`
+- Wrote full guide with:
+- architecture overview and diagrams
+- type-system breakdown (`CardDefinition`, expressions, scopes)
+- runtime flow (`HyperCardShell` -> `CardRenderer` -> `executeCommand`)
+- selector/action precedence model
+- scoped Redux runtime state model
+- practical authoring patterns and complete example snippets
+- failure-mode debugging playbook
+- migration checklist and symbol-level reference section
+- Updated ticket pointers:
+- `index.md` key links and related files
+- `tasks.md` with completion item for this deliverable
+- Validated frontmatter:
+- `docmgr validate frontmatter --doc .../design/03-carddefinition-dsl-implementation-guide-and-developer-reference.md`
+- Committed docs.
+- Uploaded to reMarkable:
+- dry-run: `remarquee upload md --dry-run ... --remote-dir /ai/2026/02/13/HC-017-NEW-DSL --non-interactive`
+- upload: `remarquee upload md ... --remote-dir /ai/2026/02/13/HC-017-NEW-DSL --non-interactive`
+- verified listing: `remarquee cloud ls /ai/2026/02/13/HC-017-NEW-DSL --long --non-interactive`
+
+### Why
+
+- Existing docs covered migration and scoped-state architecture, but not a single end-to-end implementation textbook for daily developer use.
+
+### What worked
+
+- The new guide was generated, committed, and stored in the ticket.
+- Upload succeeded and remote listing contains:
+- `03-carddefinition-dsl-implementation-guide-and-developer-reference`
+
+### What didn't work
+
+- Initial listing immediately after upload did not show the new file; a short follow-up listing showed it correctly.
+
+### What I learned
+
+- reMarkable cloud listing can lag slightly after upload; immediate verification should allow brief propagation delay.
+
+### What was tricky to build
+
+- Balancing implementation internals with practical authoring guidance required carefully mapping runtime symbols to developer-facing patterns without duplicating earlier migration docs.
+
+### What warrants a second pair of eyes
+
+- Review whether the reference section should be split into a dedicated API index document if this guide grows further.
+
+### What should be done in the future
+
+- Add direct links from engine package README/docs to this guide so developers find it without traversing ticket history.
+
+### Code review instructions
+
+- Start with `design/03-carddefinition-dsl-implementation-guide-and-developer-reference.md`.
+- Verify ticket index/task updates in `index.md` and `tasks.md`.
+- Confirm reMarkable cloud listing includes the new uploaded document in `/ai/2026/02/13/HC-017-NEW-DSL`.
+
+### Technical details
+
+- Guide commit hash: `ebbfee6`.
+- Uploaded remote entry: `03-carddefinition-dsl-implementation-guide-and-developer-reference`.

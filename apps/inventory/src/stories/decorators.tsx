@@ -1,32 +1,4 @@
-import { hypercardRuntimeReducer, navigationReducer, notificationsReducer } from '@hypercard/engine';
-import { configureStore } from '@reduxjs/toolkit';
-import type { ReactNode } from 'react';
-import { Provider } from 'react-redux';
-import { chatReducer } from '../features/chat/chatSlice';
-import { inventoryReducer } from '../features/inventory/inventorySlice';
-import { salesReducer } from '../features/sales/salesSlice';
-
-function createFreshStore() {
-  return configureStore({
-    reducer: {
-      hypercardRuntime: hypercardRuntimeReducer,
-      navigation: navigationReducer,
-      notifications: notificationsReducer,
-      inventory: inventoryReducer,
-      sales: salesReducer,
-      chat: chatReducer,
-    },
-  });
-}
-
-export function StoreDecorator({ children }: { children: ReactNode }) {
-  return <Provider store={createFreshStore()}>{children}</Provider>;
-}
-
-export function storeDecorator() {
-  return (Story: React.ComponentType) => (
-    <StoreDecorator>
-      <Story />
-    </StoreDecorator>
-  );
-}
+// Legacy decorators.tsx — kept for reference but no longer used.
+// All story setup migrated to createStoryHelpers pattern.
+// See CardPages.stories.tsx.
+export {};

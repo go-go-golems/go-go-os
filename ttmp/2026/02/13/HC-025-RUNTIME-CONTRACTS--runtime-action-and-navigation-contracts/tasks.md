@@ -3,16 +3,16 @@
 ## TODO
 
 - [ ] Decide `ActionDescriptor.to` strategy and document decision:
-  - [ ] Implement full scope-aware execution semantics
-  - [ ] Or remove/deprecate `to` from API surface if not supported
-- [ ] If implementing `to` semantics, update runtime dispatch flow in `packages/engine/src/cards/runtime.ts`
-- [ ] Add coverage for each action scope target:
-  - [ ] `card`
-  - [ ] `cardType`
-  - [ ] `background`
-  - [ ] `stack`
-  - [ ] `global`
-  - [ ] `shared`
+- [x] Implement full scope-aware execution semantics
+- [x] Or remove/deprecate `to` from API surface if not supported
+- [x] If implementing `to` semantics, update runtime dispatch flow in `packages/engine/src/cards/runtime.ts`
+- [x] Add coverage for each action scope target:
+- [x] `card`
+- [x] `cardType`
+- [x] `background`
+- [x] `stack`
+- [x] `global`
+- [x] `shared`
   - [ ] `auto`
 - [ ] Add explicit unhandled action signal path:
   - [ ] dev warning and debug metadata

@@ -1,14 +1,8 @@
-import { hypercardRuntimeReducer, navigationReducer, notificationsReducer } from '@hypercard/engine';
-import { configureStore } from '@reduxjs/toolkit';
+import { createAppStore } from '@hypercard/engine';
 import { tasksReducer } from '../features/tasks/tasksSlice';
 
-export const store = configureStore({
-  reducer: {
-    hypercardRuntime: hypercardRuntimeReducer,
-    navigation: navigationReducer,
-    notifications: notificationsReducer,
-    tasks: tasksReducer,
-  },
+export const { store, createStore: createTodoStore } = createAppStore({
+  tasks: tasksReducer,
 });
 
 export type RootState = ReturnType<typeof store.getState>;

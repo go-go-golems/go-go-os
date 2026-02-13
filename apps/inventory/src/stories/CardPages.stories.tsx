@@ -1,55 +1,49 @@
-import { HyperCardShell, type NavigationStateSlice, navigate, selectCurrentCardId } from '@hypercard/engine';
+import { createStoryHelpers } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { inventorySharedActions, inventorySharedSelectors } from '../app/cardRuntime';
+import { createInventoryStore } from '../app/store';
 import { STACK } from '../domain/stack';
-import { storeDecorator } from './decorators';
 
-type AppState = NavigationStateSlice;
-
-function ShellAtCard({ card, param }: { card: string; param?: string }) {
-  const dispatch = useDispatch();
-  const currentCard = useSelector((s: AppState) => selectCurrentCardId(s));
-
-  useEffect(() => {
-    if (currentCard !== card) {
-      dispatch(navigate({ card, paramValue: param }));
-    }
-  }, [dispatch, card, param, currentCard]);
-
-  return (
-    <HyperCardShell
-      stack={STACK}
-      sharedSelectors={inventorySharedSelectors}
-      sharedActions={inventorySharedActions}
-      navShortcuts={[
-        { card: 'home', icon: '🏠' },
-        { card: 'browse', icon: '📋' },
-        { card: 'report', icon: '📊' },
-        { card: 'assistant', icon: '💬' },
-      ]}
-    />
-  );
-}
+const { storeDecorator, createStory, FullApp } = createStoryHelpers({
+  stack: STACK,
+  sharedSelectors: inventorySharedSelectors,
+  sharedActions: inventorySharedActions,
+  createStore: createInventoryStore,
+  navShortcuts: [
+    { card: 'home', icon: '🏠' },
+    { card: 'browse', icon: '📋' },
+    { card: 'report', icon: '📊' },
+    { card: 'assistant', icon: '💬' },
+  ],
+  cardParams: { itemDetail: 'A-1002' },
+  snapshotSelector: (state: any) => ({
+    navigation: state.navigation,
+    inventory: state.inventory,
+    sales: state.sales,
+    chat: state.chat,
+    runtime: state.hypercardRuntime,
+  }),
+  debugTitle: 'Inventory Debug',
+});
 
 const meta = {
   title: 'Pages/Cards',
-  component: ShellAtCard,
-  decorators: [storeDecorator()],
+  component: FullApp,
+  decorators: [storeDecorator],
   parameters: { layout: 'fullscreen' },
-} satisfies Meta<typeof ShellAtCard>;
+} satisfies Meta<typeof FullApp>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Home: Story = { args: { card: 'home' } };
-export const Browse: Story = { args: { card: 'browse' } };
-export const LowStock: Story = { args: { card: 'lowStock' } };
-export const SalesLog: Story = { args: { card: 'salesToday' } };
-export const ItemDetail: Story = { args: { card: 'itemDetail', param: 'A-1002' } };
-export const NewItem: Story = { args: { card: 'newItem' } };
-export const Receive: Story = { args: { card: 'receive' } };
-export const PriceChecker: Story = { args: { card: 'priceCheck' } };
-export const Report: Story = { args: { card: 'report' } };
-export const AIAssistant: Story = { args: { card: 'assistant' } };
+export const Default: Story = {};
+export const Home: Story = createStory('home');
+export const Browse: Story = createStory('browse');
+export const LowStock: Story = createStory('lowStock');
+export const SalesLog: Story = createStory('salesToday');
+export const ItemDetail: Story = createStory('itemDetail');
+export const NewItem: Story = createStory('newItem');
+export const Receive: Story = createStory('receive');
+export const PriceChecker: Story = createStory('priceCheck');
+export const Report: Story = createStory('report');
+export const AIAssistant: Story = createStory('assistant');

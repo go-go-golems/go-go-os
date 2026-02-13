@@ -1,11 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { Provider } from 'react-redux';
 import { App } from '../App';
-import { storeDecorator } from './decorators';
+import { createInventoryStore } from '../app/store';
+
+function FullAppStoreDecorator(Story: React.ComponentType) {
+  return (
+    <Provider store={createInventoryStore()}>
+      <Story />
+    </Provider>
+  );
+}
 
 const meta = {
   title: 'Pages/Full App',
   component: App,
-  decorators: [storeDecorator()],
+  decorators: [FullAppStoreDecorator],
   parameters: {
     layout: 'fullscreen',
   },

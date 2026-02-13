@@ -1,8 +1,9 @@
 import { HyperCardShell } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
+import { Provider } from 'react-redux';
 import { inventorySharedActions, inventorySharedSelectors } from '../app/cardRuntime';
+import { createInventoryStore } from '../app/store';
 import { STACK } from '../domain/stack';
-import { storeDecorator } from './decorators';
 import '../../../../packages/engine/src/theme/classic.css';
 import '../../../../packages/engine/src/theme/modern.css';
 
@@ -23,10 +24,18 @@ function ThemedShell({ themeClass }: { themeClass?: string }) {
   );
 }
 
+function ThemedStoreDecorator(Story: React.ComponentType) {
+  return (
+    <Provider store={createInventoryStore()}>
+      <Story />
+    </Provider>
+  );
+}
+
 const meta = {
   title: 'Pages/Themed',
   component: ThemedShell,
-  decorators: [storeDecorator()],
+  decorators: [ThemedStoreDecorator],
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof ThemedShell>;
 

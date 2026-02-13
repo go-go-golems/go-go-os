@@ -1,11 +1,19 @@
-import { HyperCardShell } from '@hypercard/engine';
+import {
+  HyperCardShell,
+  StandardDebugPane,
+  useStandardDebugHooks,
+} from '@hypercard/engine';
 import { bookSharedActions, bookSharedSelectors } from './app/cardRuntime';
-import { DebugPane } from './debug/DebugPane';
-import { useRuntimeDebugHooks } from './debug/useRuntimeDebugHooks';
 import { BOOK_STACK } from './domain/stack';
 
+const snapshotSelector = (state: any) => ({
+  navigation: state.navigation,
+  books: state.books,
+  runtime: state.hypercardRuntime,
+});
+
 export function App() {
-  const debugHooks = useRuntimeDebugHooks();
+  const debugHooks = useStandardDebugHooks();
 
   return (
     <HyperCardShell
@@ -14,7 +22,12 @@ export function App() {
       sharedActions={bookSharedActions}
       debugHooks={debugHooks}
       layoutMode="debugPane"
-      renderDebugPane={() => <DebugPane />}
+      renderDebugPane={() => (
+        <StandardDebugPane
+          title="Book Tracker Debug"
+          snapshotSelector={snapshotSelector}
+        />
+      )}
       navShortcuts={[
         { card: 'home', icon: '🏠' },
         { card: 'browse', icon: '📋' },

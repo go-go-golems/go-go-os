@@ -69,10 +69,10 @@ export function ListView<T extends Record<string, unknown>>({
         result = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
         break;
       case 'min':
-        result = Math.min(...vals);
+        result = vals.length ? Math.min(...vals) : 0;
         break;
       case 'max':
-        result = Math.max(...vals);
+        result = vals.length ? Math.max(...vals) : 0;
         break;
     }
     footerText = `${footer.label}: ${footer.format ? footer.format(result) : result.toFixed(2)}`;

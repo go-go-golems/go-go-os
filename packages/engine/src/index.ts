@@ -22,10 +22,12 @@ export * from './debug';
 // ── State ──
 export {
   goBack,
+  initializeNavigation,
   type LayoutMode,
   type NavEntry,
   navigate,
   navigationReducer,
+  resetNavigation,
   setLayout,
 } from './features/navigation/navigationSlice';
 export * from './features/navigation/selectors';

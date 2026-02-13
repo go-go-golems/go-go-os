@@ -458,47 +458,70 @@ export function executeActionDescriptor(
     return;
   }
 
-  const localHandler = resolveActionHandler(actionType, lookup);
-  if (localHandler) {
-    const result = localHandler(ctx, args);
+  // ── Scope-aware action resolution (honors descriptor.to) ──
+  const scope = descriptor.to ?? 'auto';
+
+  const runHandler = (handler: (ctx: CardContext, args: unknown) => void | Promise<void>, target: string) => {
+    const result = handler(ctx, args);
     if (isPromiseLike(result)) {
       void result
-        .then(() => finalize('local'))
+        .then(() => finalize(target))
         .catch((error) => {
           emitRuntimeDebugEvent(debugHooks, ctx, {
             kind: 'action.execute.error',
             actionType,
             payload: { args, error: String(error) },
           });
-          finalize('local', { status: 'error' });
+          finalize(target, { status: 'error' });
         });
+      return true;
+    }
+    finalize(target);
+    return true;
+  };
+
+  if (scope === 'shared') {
+    // Only check shared actions
+    const hasSharedAction = Object.hasOwn(sharedActions, actionType);
+    const shared = hasSharedAction ? sharedActions[actionType] : undefined;
+    if (shared) {
+      runHandler(shared, 'shared');
       return;
     }
-    finalize('local');
-    return;
-  }
-
-  const hasSharedAction = Object.hasOwn(sharedActions, actionType);
-  const shared = hasSharedAction ? sharedActions[actionType] : undefined;
-  if (shared) {
-    const result = shared(ctx, args);
-    if (isPromiseLike(result)) {
-      void result
-        .then(() => finalize('shared'))
-        .catch((error) => {
-          emitRuntimeDebugEvent(debugHooks, ctx, {
-            kind: 'action.execute.error',
-            actionType,
-            payload: { args, error: String(error) },
-          });
-          finalize('shared', { status: 'error' });
-        });
+  } else if (scope !== 'auto') {
+    // Scoped to a specific local scope — check only that scope
+    const scopeRegistry = {
+      card: lookup.cardDef.actions,
+      cardType: lookup.cardTypeDef?.actions,
+      background: lookup.backgroundDef?.actions,
+      stack: lookup.stackDef.stack?.actions,
+      global: lookup.stackDef.global?.actions,
+    };
+    const handler = scopeRegistry[scope]?.[actionType];
+    if (handler) {
+      runHandler(handler, `local:${scope}`);
       return;
     }
-    finalize('shared');
-    return;
+  } else {
+    // auto: local (card→cardType→background→stack→global) then shared
+    const localHandler = resolveActionHandler(actionType, lookup);
+    if (localHandler) {
+      runHandler(localHandler, 'local');
+      return;
+    }
+
+    const hasSharedAction = Object.hasOwn(sharedActions, actionType);
+    const shared = hasSharedAction ? sharedActions[actionType] : undefined;
+    if (shared) {
+      runHandler(shared, 'shared');
+      return;
+    }
   }
 
+  // ── Unhandled action: warn in dev ──
+  if (typeof console !== 'undefined') {
+    console.warn(`[hypercard] Unhandled action: "${actionType}"`, { cardId: ctx.cardId, scope, stackId: ctx.stackId });
+  }
   finalize('unhandled');
 }
 

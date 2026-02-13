@@ -16,7 +16,7 @@ import {
   type RuntimeLookup,
   resolveValueExpr,
 } from '../../cards/runtime';
-import { goBack, navigate, setLayout } from '../../features/navigation/navigationSlice';
+import { goBack, initializeNavigation, navigate, setLayout } from '../../features/navigation/navigationSlice';
 import {
   type NavigationStateSlice,
   selectCurrentNav,
@@ -70,6 +70,11 @@ export function HyperCardShell({
 }: HyperCardShellProps) {
   const dispatch = useDispatch();
   const store = useStore<ShellState>();
+
+  // Initialize navigation from stack's homeCard on mount
+  useEffect(() => {
+    dispatch(initializeNavigation({ homeCard: stack.homeCard }));
+  }, [dispatch, stack.homeCard]);
 
   const layout = useSelector((s: ShellState) => selectLayout(s));
   const current = useSelector((s: ShellState) => selectCurrentNav(s));

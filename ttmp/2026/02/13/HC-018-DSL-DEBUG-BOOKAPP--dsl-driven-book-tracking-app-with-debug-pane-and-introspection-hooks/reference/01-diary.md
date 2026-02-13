@@ -11,6 +11,14 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: apps/book-tracker-debug/src/App.tsx
+      Note: Task 2/3 debug shell profile wiring and debug-pane layout mode usage (commits fa65b66
+    - Path: apps/book-tracker-debug/src/debug/DebugPane.tsx
+      Note: Task 2 collapsible timeline/details/state inspector UI (commit fa65b66)
+    - Path: apps/book-tracker-debug/src/debug/debugSlice.ts
+      Note: Task 2/4 debug event ring buffer and filtering model (commits fa65b66
+    - Path: apps/book-tracker-debug/src/debug/useRuntimeDebugHooks.ts
+      Note: Task 2 hook adapter and Task 4 sanitizer export for tests (commits fa65b66
     - Path: packages/engine/src/cards/index.ts
       Note: Task 1 exported runtime debug hook API surface (commit 3a0976a)
     - Path: packages/engine/src/cards/runtime.ts
@@ -18,7 +26,9 @@ RelatedFiles:
     - Path: packages/engine/src/components/shell/CardRenderer.tsx
       Note: Task 1 widget emit boundary debug events (commit 3a0976a)
     - Path: packages/engine/src/components/shell/HyperCardShell.tsx
-      Note: Task 1 shell dispatch/context debug hook wiring (commit 3a0976a)
+      Note: |-
+        Task 1 shell dispatch/context debug hook wiring (commit 3a0976a)
+        Task 3 added debugPane layout mode and no-tab shell variant (commit e5c0d48)
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/01-debug-pane-and-introspection-system-implementation-guide.md
       Note: |-
         Main implementation guide written in this ticket.
@@ -35,16 +45,21 @@ RelatedFiles:
       Note: |-
         Captured output for the debug-event pipeline simulation.
         Output evidence for ring-buffer/redaction/filtering behavior.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.mjs
+      Note: Task 4 executable validation script
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.out.txt
+      Note: Task 4 captured pass output evidence
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/tasks.md
       Note: |-
         Task checklist updated with analysis completion and future implementation backlog.
         Backlog and completion tracking for the debug-pane initiative.
 ExternalSources: []
 Summary: Step-by-step diary for creating HC-018 ticket, producing debug-pane/introspection architecture guidance, and publishing the deliverable.
-LastUpdated: 2026-02-13T11:41:00-05:00
+LastUpdated: 2026-02-13T12:08:00-05:00
 WhatFor: Record execution details, decisions, and validation outputs for the debug-pane planning work.
 WhenToUse: Use when reviewing how the HC-018 design package was produced and what commands/artifacts back it.
 ---
+
 
 
 
@@ -311,3 +326,264 @@ This step intentionally kept hooks optional and non-invasive: if no `debugHooks`
 - `npm run typecheck`
 - Task bookkeeping:
 - `docmgr task check --ticket HC-018-DSL-DEBUG-BOOKAPP --id 5`
+
+
+## Step 4: Build DSL-Driven Book Tracker Debug App and Collapsible Pane (Task 2)
+
+I implemented a dedicated `apps/book-tracker-debug` workspace that runs a full book-tracking flow using CardDefinition DSL widgets and a live collapsible debug pane. This converts the planning work into a runnable app profile with practical observability.
+
+I also fixed the rendering crash path the user reported (`cf.compute is not a function`) by hardening detail computed-field handling in `CardRenderer` so malformed/non-function computed entries no longer crash rendering.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Continue implementation by delivering the debug-pane app and core UI instrumentation behavior.
+
+**Inferred user intent:** Validate end-to-end DSL capability in a real app while having first-class runtime visibility.
+
+**Commit (code):** fa65b66 — "feat(book-tracker-debug): add DSL app with collapsible debug pane"
+
+### What I did
+
+- Created new workspace app:
+- `apps/book-tracker-debug/package.json`
+- `apps/book-tracker-debug/tsconfig.json`
+- `apps/book-tracker-debug/vite.config.ts`
+- `apps/book-tracker-debug/index.html`
+- Added full app structure:
+- `src/main.tsx`
+- `src/App.tsx`
+- `src/app/store.ts`
+- `src/app/cardRuntime.ts`
+- `src/domain/stack.ts`
+- `src/domain/types.ts`
+- `src/features/books/*`
+- `src/debug/*`
+- `src/stories/BookTrackerDebugApp.stories.tsx`
+- Built `debugSlice` ring-buffer event storage with filtering and selection controls.
+- Built `DebugPane` with:
+- collapsible behavior
+- event timeline
+- selected-event JSON detail
+- state inspector snapshot
+- kind/text filters and clear action
+- Added `useRuntimeDebugHooks` adapter to bridge engine `RuntimeDebugHooks` into app debug reducer.
+- Integrated Storybook stories for this app and wired story discovery in:
+- `apps/inventory/.storybook/main.ts`
+- Added new app to root TypeScript project references in:
+- `tsconfig.json`
+- Fixed DetailView crash path by normalizing `node.computed` entries before passing to `DetailView`:
+- `packages/engine/src/components/shell/CardRenderer.tsx`
+- Validation run:
+- `npm run typecheck`
+- `npm run -w apps/book-tracker-debug build`
+- `npm run -w apps/inventory build-storybook`
+
+### Why
+
+- Task 2 required a concrete UI debug surface and not just runtime hook plumbing. A dedicated app profile is the fastest way to verify behavior under realistic interactions.
+
+### What worked
+
+- New app builds and Storybook includes the new debug app stories.
+- Full book flow is represented in DSL cards and shared actions/selectors.
+- Debug pane collects and displays emitted runtime events.
+- Storybook static build succeeded with the new stories included.
+
+### What didn't work
+
+- N/A for this step after the final patch set; validations passed.
+
+### What I learned
+
+- A lightweight app-scoped reducer is enough for useful introspection without coupling engine internals to a specific debug UI implementation.
+
+### What was tricky to build
+
+- Ensuring the detail widget stayed resilient under resolved DSL payloads required normalization logic rather than trusting every `computed` item to carry a callable `compute`.
+
+### What warrants a second pair of eyes
+
+- The `DebugPane` currently renders full JSON snapshots; for very large states, virtualization or selective subtree rendering may be desirable.
+
+### What should be done in the future
+
+- Implement Task 3 by removing legacy 3-tab layout for this app profile and using a dedicated debug-pane shell mode.
+
+### Code review instructions
+
+- Start from `apps/book-tracker-debug/src/App.tsx` and `apps/book-tracker-debug/src/debug/DebugPane.tsx`.
+- Review DSL book cards in `apps/book-tracker-debug/src/domain/stack.ts`.
+- Check robustness patch in `packages/engine/src/components/shell/CardRenderer.tsx`.
+- Re-run:
+- `npm run typecheck`
+- `npm run -w apps/inventory build-storybook`
+
+### Technical details
+
+- Commit:
+- `git commit -m "feat(book-tracker-debug): add DSL app with collapsible debug pane"`
+- Storybook story registration:
+- `apps/inventory/.storybook/main.ts`
+
+
+## Step 5: Replace Legacy Tab Layout with Debug-Pane Shell Mode (Task 3)
+
+I added a new shell layout variant so the Book Tracker debug profile can run without the legacy `split/drawer/cardChat` tab bar. This cleanly separates observability-first app mode from the older AI-panel-oriented mode.
+
+The change is backward-compatible for existing consumers because the default remains `legacyTabs`; the new mode is opt-in via props.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Continue backlog execution by replacing 3-tab layout for the new profile.
+
+**Inferred user intent:** Use a dedicated debug-pane UX instead of tabbed shell layout in the new Book Tracker app.
+
+**Commit (code):** e5c0d48 — "feat(shell): add debug-pane layout mode without legacy tabs"
+
+### What I did
+
+- Extended `HyperCardShellProps`:
+- `layoutMode?: 'legacyTabs' | 'debugPane'`
+- `renderDebugPane?: (dispatch) => ReactNode`
+- Implemented debug-pane branch in shell layout resolution:
+- `packages/engine/src/components/shell/HyperCardShell.tsx`
+- In debug-pane mode:
+- no top layout tab bar
+- side pane rendered through `renderDebugPane`
+- title/footer reflect debug mode
+- Updated Book Tracker debug app to use new shell mode:
+- `apps/book-tracker-debug/src/App.tsx`
+- `apps/book-tracker-debug/src/stories/BookTrackerDebugApp.stories.tsx`
+- Validation run:
+- `npm run typecheck`
+- `npm run -w apps/book-tracker-debug build`
+- `npm run -w apps/inventory build-storybook`
+
+### Why
+
+- Task 3 explicitly required replacing legacy 3-tab shell behavior for this profile with debug-pane-first layout.
+
+### What worked
+
+- Debug profile now runs in dedicated debug-pane mode.
+- Existing shells retain legacy behavior by default.
+
+### What didn't work
+
+- N/A in this step; validations succeeded.
+
+### What I learned
+
+- Keeping layout mode as an explicit prop makes feature-specific shell behavior straightforward without branching app forks.
+
+### What was tricky to build
+
+- Preserving default behavior while introducing a new top-level layout contract required careful prop defaults and minimal existing branch disruption.
+
+### What warrants a second pair of eyes
+
+- UX sizing for debug pane on narrow screens may need follow-up tuning.
+
+### What should be done in the future
+
+- Implement Task 4 validation scripts covering hook emission + reducer behavior.
+
+### Code review instructions
+
+- Review `HyperCardShell` layout branch changes in:
+- `packages/engine/src/components/shell/HyperCardShell.tsx`
+- Confirm profile usage in:
+- `apps/book-tracker-debug/src/App.tsx`
+- `apps/book-tracker-debug/src/stories/BookTrackerDebugApp.stories.tsx`
+
+### Technical details
+
+- Commit:
+- `git commit -m "feat(shell): add debug-pane layout mode without legacy tabs"`
+
+
+## Step 6: Add Runtime/Reducer Validation Tests in Ticket Scripts (Task 4)
+
+I added a dedicated executable validation script in the ticket `scripts/` directory to test runtime hook emission, debug reducer ring-buffer retention/filtering, and payload redaction/truncation behavior. This aligns with the explicit requirement to keep experiments/tests in ticket scripts.
+
+I captured both an initial failing run and the final passing run. The failing assertion surfaced a realistic filter-string mismatch (`books/delete` vs `books.delete`) and was corrected directly in the test.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Finish the backlog with concrete tests and preserve evidence artifacts under ticket scripts.
+
+**Inferred user intent:** Ensure debug architecture is validated beyond manual UI checks.
+
+**Commit (code):** d51172d — "test(debug): add HC-018 runtime/debug-state validation script"
+
+### What I did
+
+- Exported sanitizer utility for direct testing:
+- `apps/book-tracker-debug/src/debug/useRuntimeDebugHooks.ts`
+- Added executable test script:
+- `ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.mjs`
+- Added captured output:
+- `ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.out.txt`
+- Script coverage:
+- runtime selector/action hook emission
+- ring-buffer retention
+- kind/text filtering behavior
+- sanitization redaction/truncation
+- Ran script:
+- `npm exec -y tsx .../02-runtime-debug-hooks-and-debug-slice-tests.mjs | tee .../02-runtime-debug-hooks-and-debug-slice-tests.out.txt`
+- Ran full validation again:
+- `npm run typecheck`
+- `npm run -w apps/book-tracker-debug build`
+- `npm run -w apps/inventory build-storybook`
+
+### Why
+
+- Task 4 required explicit tests for hook emission + data pipeline behavior and the project asked to keep tests/experiments in ticket scripts.
+
+### What worked
+
+- Final test script run passed all checks.
+- Root typecheck, app build, and Storybook build all passed after test-related changes.
+
+### What didn't work
+
+- First script run failed with:
+- `AssertionError [ERR_ASSERTION]: text filter should match payload/action strings`
+- Cause: test expected `books/delete`, while filterable action key is `books.delete`.
+- Fix: adjusted test filter literal to `books.delete`.
+
+### What I learned
+
+- Debug search expectations must align with normalized action naming (`.`-delimited action types vs `/`-delimited Redux action type strings).
+
+### What was tricky to build
+
+- Writing stable tests across runtime + app-level modules required careful isolation of each boundary while still covering the integrated behavior chain.
+
+### What warrants a second pair of eyes
+
+- If filter semantics should support punctuation normalization (e.g., slash vs dot), we may want explicit normalization in reducer selectors later.
+
+### What should be done in the future
+
+- Ticket can be closed after final documentation/review confirmation.
+
+### Code review instructions
+
+- Run the script directly from repo root:
+- `npm exec -y tsx ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.mjs`
+- Check captured output file next to script.
+- Review sanitizer export and reducer selectors:
+- `apps/book-tracker-debug/src/debug/useRuntimeDebugHooks.ts`
+- `apps/book-tracker-debug/src/debug/debugSlice.ts`
+
+### Technical details
+
+- Commit:
+- `git commit -m "test(debug): add HC-018 runtime/debug-state validation script"`

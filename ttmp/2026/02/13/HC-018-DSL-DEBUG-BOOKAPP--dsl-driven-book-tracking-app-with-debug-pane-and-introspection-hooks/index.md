@@ -19,9 +19,13 @@ RelatedFiles:
       Note: Debug event bus prototype script demonstrating retention/redaction/filtering.
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/01-debug-event-pipeline-simulation.out.txt
       Note: Captured simulation output used as design evidence.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.mjs
+      Note: Executable validation script for runtime hook emission and debug reducer behavior.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.out.txt
+      Note: Captured output proving Task 4 validation checks pass.
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-02-13T11:27:28.45161068-05:00
+Summary: Implementation package for HC-018 including engine hook plumbing, new debug-pane app profile, shell layout mode replacement, and executable validation scripts.
+LastUpdated: 2026-02-13T12:10:00-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -38,10 +42,12 @@ This ticket defines a new DSL-driven Book Tracking app profile centered on obser
 - `reference/01-diary.md` - execution diary with commands and outcomes
 - `scripts/01-debug-event-pipeline-simulation.mjs` - prototype simulation for debug-event pipeline
 - `scripts/01-debug-event-pipeline-simulation.out.txt` - simulation output log
+- `scripts/02-runtime-debug-hooks-and-debug-slice-tests.mjs` - executable Task 4 validation suite
+- `scripts/02-runtime-debug-hooks-and-debug-slice-tests.out.txt` - Task 4 pass output evidence
 
 ## Status
 
-Current status: **active**
+Current status: **active (all implementation tasks complete)**
 
 ## Topics
 

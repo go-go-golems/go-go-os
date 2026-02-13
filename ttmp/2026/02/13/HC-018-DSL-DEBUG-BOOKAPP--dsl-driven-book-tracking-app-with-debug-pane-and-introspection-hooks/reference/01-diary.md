@@ -12,21 +12,32 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/01-debug-pane-and-introspection-system-implementation-guide.md
-      Note: Main implementation guide written in this ticket.
-    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/01-debug-event-pipeline-simulation.mjs
-      Note: Prototype script used to validate event retention/redaction/filtering behavior.
-    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/01-debug-event-pipeline-simulation.out.txt
-      Note: Captured output for the debug-event pipeline simulation.
-    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/tasks.md
-      Note: Task checklist updated with analysis completion and future implementation backlog.
+      Note: |-
+        Main implementation guide written in this ticket.
+        Detailed analysis and implementation guide delivered in Step 1 and published in Step 2.
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/index.md
-      Note: Ticket index updated with links to design and script evidence.
+      Note: |-
+        Ticket index updated with links to design and script evidence.
+        Ticket index linking design and evidence artifacts.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/01-debug-event-pipeline-simulation.mjs
+      Note: |-
+        Prototype script used to validate event retention/redaction/filtering behavior.
+        Prototype event pipeline model used to validate debug architecture assumptions.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/01-debug-event-pipeline-simulation.out.txt
+      Note: |-
+        Captured output for the debug-event pipeline simulation.
+        Output evidence for ring-buffer/redaction/filtering behavior.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/tasks.md
+      Note: |-
+        Task checklist updated with analysis completion and future implementation backlog.
+        Backlog and completion tracking for the debug-pane initiative.
 ExternalSources: []
 Summary: Step-by-step diary for creating HC-018 ticket, producing debug-pane/introspection architecture guidance, and publishing the deliverable.
 LastUpdated: 2026-02-13T16:12:00-05:00
 WhatFor: Record execution details, decisions, and validation outputs for the debug-pane planning work.
 WhenToUse: Use when reviewing how the HC-018 design package was produced and what commands/artifacts back it.
 ---
+
 
 # Diary
 
@@ -54,7 +65,7 @@ Be detailed. Then upload to remarkable. Keep a diary."
 
 **Inferred user intent:** Establish a serious implementation-ready plan for observability tooling in the DSL engine and shell so future development/debugging is much easier.
 
-**Commit (code):** N/A (commit will be recorded after final ticket updates/upload)
+**Commit (code):** fdddde4 — "docs(ticket): create HC-018 debug-pane introspection design package"
 
 ### What I did
 
@@ -125,3 +136,77 @@ Be detailed. Then upload to remarkable. Keep a diary."
 - Prototype validation command:
 - `set -o pipefail; npm exec -y tsx ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/01-debug-event-pipeline-simulation.mjs | tee ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/01-debug-event-pipeline-simulation.out.txt`
 - Result: all assertions passed (`ring buffer`, `redaction`, `truncation`, `filtering`).
+
+
+## Step 2: reMarkable Upload and Ticket Finalization
+
+After committing the initial ticket package, I uploaded the design guide to reMarkable under the ticket-specific folder and verified the remote listing. I then updated task tracking to mark upload complete and prepared final changelog/diary bookkeeping.
+
+This step confirms the deliverable is not only stored in-repo but also published to the requested reading surface.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Publish the created guide to reMarkable and keep ticket records up to date.
+
+**Inferred user intent:** Ensure the architecture guide is available both in ticket docs and on the tablet workflow.
+
+**Commit (code):** N/A (docs finalization commit recorded after this step)
+
+### What I did
+
+- Ran upload dry-run:
+- `remarquee upload md --dry-run .../design/01-debug-pane-and-introspection-system-implementation-guide.md --remote-dir /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP --non-interactive`
+- Ran real upload:
+- `remarquee upload md .../design/01-debug-pane-and-introspection-system-implementation-guide.md --remote-dir /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP --non-interactive`
+- Verified remote listing:
+- `remarquee cloud ls /ai/2026/02/13 --long --non-interactive`
+- `remarquee cloud ls /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP/ --long --non-interactive`
+- Updated `tasks.md` to mark upload task complete.
+
+### Why
+
+- The user requested explicit publication to reMarkable after document creation.
+
+### What worked
+
+- Upload succeeded:
+- `OK: uploaded 01-debug-pane-and-introspection-system-implementation-guide.pdf -> /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP`
+- Remote folder contains:
+- `01-debug-pane-and-introspection-system-implementation-guide`
+
+### What didn't work
+
+- One listing command without trailing slash failed:
+- `remarquee cloud ls /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP --long --non-interactive`
+- Error: `no matches for 'HC-018-DSL-DEBUG-BOOKAPP'`
+- Retrying with trailing slash succeeded.
+
+### What I learned
+
+- `remarquee cloud ls` can be path-format sensitive for some nested folder lookups; using a trailing slash is safer for verification.
+
+### What was tricky to build
+
+- Ensuring deterministic upload verification required checking parent directory and then child directory explicitly when the first direct lookup returned no match.
+
+### What warrants a second pair of eyes
+
+- None required for upload behavior itself; implementation risk remains in future engine hook coding, not publication.
+
+### What should be done in the future
+
+- Proceed to implementation tasks in `tasks.md` (engine hook plumbing + debug pane UI build).
+
+### Code review instructions
+
+- Verify upload command/output and cloud listing.
+- Confirm task completion toggle in `tasks.md`.
+
+### Technical details
+
+- Remote upload target:
+- `/ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP`
+- Uploaded document basename:
+- `01-debug-pane-and-introspection-system-implementation-guide`

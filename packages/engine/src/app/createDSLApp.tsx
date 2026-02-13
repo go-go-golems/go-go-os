@@ -17,7 +17,7 @@ export interface DSLAppConfig<TRootState = unknown> {
   /** Navigation shortcut buttons */
   navShortcuts: Array<{ card: string; icon: string }>;
   /** Snapshot selector for the debug pane state inspector */
-  snapshotSelector?: (state: any) => Record<string, unknown>;
+  snapshotSelector?: (state: unknown) => Record<string, unknown>;
   /** Debug pane title */
   debugTitle?: string;
 }

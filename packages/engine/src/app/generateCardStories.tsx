@@ -14,14 +14,14 @@ export interface CardStoriesConfig<TRootState = unknown> {
   sharedSelectors: SharedSelectorRegistry<TRootState>;
   /** Shared actions registry */
   sharedActions: SharedActionRegistry<TRootState>;
-  /** Factory to create a fresh store (for story isolation) */
-  createStore: () => any;
+  /** Factory to create a fresh store (for story isolation). Use createAppStore().createStore. */
+  createStore: () => any; // eslint-disable-line -- Store type varies per app; typed at call site
   /** Navigation shortcut buttons */
   navShortcuts: Array<{ card: string; icon: string }>;
   /** Map of card → param value for detail/param cards in stories */
   cardParams?: Record<string, string>;
   /** Snapshot selector for the debug pane state inspector */
-  snapshotSelector?: (state: any) => Record<string, unknown>;
+  snapshotSelector?: (state: unknown) => Record<string, unknown>;
   /** Debug pane title */
   debugTitle?: string;
 }

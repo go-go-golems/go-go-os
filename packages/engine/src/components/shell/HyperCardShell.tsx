@@ -4,6 +4,7 @@ import {
   type ActionDescriptor,
   type CardStackDefinition,
   ensureCardRuntime,
+  type HypercardRuntimeStateSlice,
   type SharedActionRegistry,
   type SharedSelectorRegistry,
 } from '../../cards';
@@ -16,7 +17,13 @@ import {
   type RuntimeLookup,
   resolveValueExpr,
 } from '../../cards/runtime';
-import { goBack, initializeNavigation, navigate, setLayout } from '../../features/navigation/navigationSlice';
+import {
+  goBack,
+  initializeNavigation,
+  type LayoutMode,
+  navigate,
+  setLayout,
+} from '../../features/navigation/navigationSlice';
 import {
   type NavigationStateSlice,
   selectCurrentNav,
@@ -43,7 +50,12 @@ const LAYOUT_TABS = [
 
 type ShellState = NavigationStateSlice & NotificationsStateSlice & { hypercardRuntime?: unknown };
 
-export interface HyperCardShellProps<_TRootState = unknown> {
+/**
+ * Shell props use `any` for registry generics because CardSelectorFn/CardActionHandler
+ * are contravariant in TRootState — the shell is a pass-through wiring layer and cannot
+ * know the app's concrete state type. Type safety is enforced at the card/app definition level.
+ */
+export interface HyperCardShellProps {
   stack: CardStackDefinition<any>;
   sharedSelectors?: SharedSelectorRegistry<any>;
   sharedActions?: SharedActionRegistry<any>;
@@ -80,7 +92,9 @@ export function HyperCardShell({
   const current = useSelector((s: ShellState) => selectCurrentNav(s));
   const navDepth = useSelector((s: ShellState) => selectNavDepth(s));
   const toast = useSelector((s: ShellState) => selectToast(s));
-  const runtimeSlice = useSelector((s: ShellState) => s.hypercardRuntime as any);
+  const runtimeSlice = useSelector((s: ShellState) => s.hypercardRuntime) as
+    | HypercardRuntimeStateSlice['hypercardRuntime']
+    | undefined;
 
   const currentCardId = stack.cards[current.card] ? current.card : stack.homeCard;
   const cardDef = stack.cards[currentCardId];
@@ -158,7 +172,8 @@ export function HyperCardShell({
         payload: { action },
       });
       const startedAt = Date.now();
-      const result = dispatch(action as any);
+      // Internal cast: dispatch expects AnyAction but we accept unknown from DSL runtime
+      const result = dispatch(action as any); // eslint-disable-line @typescript-eslint/no-explicit-any
       emitRuntimeDebugEvent(debugHooks, debugContext, {
         kind: 'redux.dispatch',
         durationMs: Date.now() - startedAt,
@@ -327,7 +342,7 @@ export function HyperCardShell({
         icon={stack.icon}
       >
         {layoutMode === 'legacyTabs' ? (
-          <TabBar tabs={LAYOUT_TABS} active={layout} onSelect={(key) => dispatch(setLayout(key as any))} />
+          <TabBar tabs={LAYOUT_TABS} active={layout} onSelect={(key) => dispatch(setLayout(key as LayoutMode))} />
         ) : null}
         <div data-part="content-area">{layoutContent}</div>
         <div data-part="footer-line">

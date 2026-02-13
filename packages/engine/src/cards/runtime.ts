@@ -18,15 +18,15 @@ import type {
   ValueExpr,
 } from './types';
 
-interface RuntimeLookup {
-  cardDef: CardDefinition<any>;
-  stackDef: CardStackDefinition<any>;
-  backgroundDef?: CardStackDefinition['backgrounds'] extends infer T
+interface RuntimeLookup<TRootState = unknown> {
+  cardDef: CardDefinition<TRootState>;
+  stackDef: CardStackDefinition<TRootState>;
+  backgroundDef?: CardStackDefinition<TRootState>['backgrounds'] extends infer T
     ? T extends Record<string, infer B>
       ? B
       : never
     : never;
-  cardTypeDef?: CardStackDefinition['cardTypes'] extends infer T
+  cardTypeDef?: CardStackDefinition<TRootState>['cardTypes'] extends infer T
     ? T extends Record<string, infer C>
       ? C
       : never

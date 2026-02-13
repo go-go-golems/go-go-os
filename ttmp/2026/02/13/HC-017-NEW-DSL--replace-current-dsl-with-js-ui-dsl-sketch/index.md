@@ -14,6 +14,8 @@ RelatedFiles:
       Note: Primary migration analysis and implementation guide.
     - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/design/02-carddefinition-scoped-state-architecture-card-background-stack-global.md
       Note: New state-management architecture deep dive requested by follow-up prompt.
+    - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/design/03-carddefinition-dsl-implementation-guide-and-developer-reference.md
+      Note: Textbook-style implementation and authoring reference for the new CardDefinition DSL runtime.
     - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/reference/01-diary.md
       Note: Step-by-step diary with commands
     - Path: ttmp/2026/02/13/HC-017-NEW-DSL--replace-current-dsl-with-js-ui-dsl-sketch/scripts/03-current-dsl-gap-audit.out.txt
@@ -41,6 +43,7 @@ This ticket documents a no-backwards-compat migration path from the current card
 
 - `design/01-current-dsl-deep-dive-and-migration-guide-to-new-screen-dsl.md` - main migration guide
 - `design/02-carddefinition-scoped-state-architecture-card-background-stack-global.md` - scoped state architecture update (`CardDefinition`, local + shared state/actions)
+- `design/03-carddefinition-dsl-implementation-guide-and-developer-reference.md` - in-depth implementation and developer reference guide
 - `reference/01-diary.md` - detailed execution diary
 - `sources/local/js-ui-dsl.md` - imported source specification
 - `scripts/01-resolve-redux-selectors.mjs` - selector + expression resolution prototype

@@ -23,9 +23,13 @@ RelatedFiles:
       Note: Executable validation script for runtime hook emission and debug reducer behavior.
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/scripts/02-runtime-debug-hooks-and-debug-slice-tests.out.txt
       Note: Captured output proving Task 4 validation checks pass.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/02-engineering-postmortem-dsl-debug-app-build.md
+      Note: Postmortem recap covering implementation decisions, failures, and lessons learned.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/03-how-to-create-an-app-using-card-stacks-dsl.md
+      Note: Full tutorial for new developers building apps with Card Stacks DSL.
 ExternalSources: []
-Summary: Implementation package for HC-018 including engine hook plumbing, new debug-pane app profile, shell layout mode replacement, and executable validation scripts.
-LastUpdated: 2026-02-13T12:10:00-05:00
+Summary: Implementation package for HC-018 including runtime hooks, debug app delivery, shell/debug refactors, executable tests, postmortem, and onboarding tutorial.
+LastUpdated: 2026-02-13T12:24:00-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -44,6 +48,8 @@ This ticket defines a new DSL-driven Book Tracking app profile centered on obser
 - `scripts/01-debug-event-pipeline-simulation.out.txt` - simulation output log
 - `scripts/02-runtime-debug-hooks-and-debug-slice-tests.mjs` - executable Task 4 validation suite
 - `scripts/02-runtime-debug-hooks-and-debug-slice-tests.out.txt` - Task 4 pass output evidence
+- `design/02-engineering-postmortem-dsl-debug-app-build.md` - engineering postmortem recap
+- `design/03-how-to-create-an-app-using-card-stacks-dsl.md` - full onboarding tutorial
 
 ## Status
 

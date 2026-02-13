@@ -19,6 +19,8 @@ RelatedFiles:
       Note: Task 2/4 debug event ring buffer and filtering model (commits fa65b66
     - Path: apps/book-tracker-debug/src/debug/useRuntimeDebugHooks.ts
       Note: Task 2 hook adapter and Task 4 sanitizer export for tests (commits fa65b66
+    - Path: apps/book-tracker-debug/src/domain/cards
+      Note: Step 7 card split refactor (commit 8c99abf)
     - Path: packages/engine/src/cards/index.ts
       Note: Task 1 exported runtime debug hook API surface (commit 3a0976a)
     - Path: packages/engine/src/cards/runtime.ts
@@ -29,10 +31,18 @@ RelatedFiles:
       Note: |-
         Task 1 shell dispatch/context debug hook wiring (commit 3a0976a)
         Task 3 added debugPane layout mode and no-tab shell variant (commit e5c0d48)
+    - Path: packages/engine/src/components/shell/RuntimeDebugPane.stories.tsx
+      Note: Step 7 Storybook coverage for reusable pane (commit 8c99abf)
+    - Path: packages/engine/src/components/shell/RuntimeDebugPane.tsx
+      Note: Step 7 reusable debug pane extraction (commit 8c99abf)
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/01-debug-pane-and-introspection-system-implementation-guide.md
       Note: |-
         Main implementation guide written in this ticket.
         Detailed analysis and implementation guide delivered in Step 1 and published in Step 2.
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/02-engineering-postmortem-dsl-debug-app-build.md
+      Note: Step 8 postmortem document authored and uploaded
+    - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/03-how-to-create-an-app-using-card-stacks-dsl.md
+      Note: Step 8 tutorial document authored and uploaded
     - Path: ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/index.md
       Note: |-
         Ticket index updated with links to design and script evidence.
@@ -55,10 +65,11 @@ RelatedFiles:
         Backlog and completion tracking for the debug-pane initiative.
 ExternalSources: []
 Summary: Step-by-step diary for creating HC-018 ticket, producing debug-pane/introspection architecture guidance, and publishing the deliverable.
-LastUpdated: 2026-02-13T12:08:00-05:00
+LastUpdated: 2026-02-13T12:32:00-05:00
 WhatFor: Record execution details, decisions, and validation outputs for the debug-pane planning work.
 WhenToUse: Use when reviewing how the HC-018 design package was produced and what commands/artifacts back it.
 ---
+
 
 
 
@@ -587,3 +598,171 @@ I captured both an initial failing run and the final passing run. The failing as
 
 - Commit:
 - `git commit -m "test(debug): add HC-018 runtime/debug-state validation script"`
+
+## Step 7: Split Card Files and Extract Reusable Runtime Debug Pane
+
+I refactored the debug app stack from a single large card-definition file into a one-card-per-file module structure and extracted the debug pane UI into the engine package as a reusable shell component. This step was driven by maintainability and reuse: the app had become a proving ground, and keeping core UI primitives app-local would duplicate effort across future DSL apps.
+
+The refactor preserved runtime behavior while improving architecture boundaries: app code now provides store bindings and domain snapshots, while engine owns the generic pane renderer.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Split out each card into its own file in the debug app. 
+
+Move the debugpane into the main package to make it reusable.
+
+Then write a detailed postmortem document, basically a detailed engineering focus recap of the diary while building.
+
+THen also write a \"how-to-create-an-app-using-card-stacks-dsl\" that is a full detailed tutorial (that also explains all the relevant context) for a newbie developer to go from start to finish with a full app and learn everything about our system. Upload both documents to remarkable."
+
+**Assistant interpretation:** Perform architecture refactors first (card split + reusable debug pane), then author and publish two substantial documents.
+
+**Inferred user intent:** Make the debug app production-maintainable, promote reusable UI primitives to engine, and leave high-quality learning/review documentation.
+
+**Commit (code):** 8c99abf — "refactor(debug-app): split cards and extract reusable RuntimeDebugPane"
+
+### What I did
+
+- Split monolithic card definitions into dedicated files:
+- `apps/book-tracker-debug/src/domain/cards/homeCard.ts`
+- `apps/book-tracker-debug/src/domain/cards/browseCard.ts`
+- `apps/book-tracker-debug/src/domain/cards/readingNowCard.ts`
+- `apps/book-tracker-debug/src/domain/cards/bookDetailCard.ts`
+- `apps/book-tracker-debug/src/domain/cards/addBookCard.ts`
+- `apps/book-tracker-debug/src/domain/cards/readingReportCard.ts`
+- Added shared card schema constants:
+- `apps/book-tracker-debug/src/domain/cards/common.ts`
+- Updated stack composition:
+- `apps/book-tracker-debug/src/domain/stack.ts`
+- Extracted reusable debug pane into engine:
+- `packages/engine/src/components/shell/RuntimeDebugPane.tsx`
+- Exported reusable pane:
+- `packages/engine/src/components/shell/index.ts`
+- Added component Storybook story:
+- `packages/engine/src/components/shell/RuntimeDebugPane.stories.tsx`
+- Rewired app-local pane to wrapper that binds Redux state/actions into engine pane props:
+- `apps/book-tracker-debug/src/debug/DebugPane.tsx`
+- Validation run:
+- `npm run typecheck`
+- `npm run -w apps/book-tracker-debug build`
+- `npm run -w apps/inventory build-storybook`
+
+### Why
+
+- Card split: reduce stack-file complexity and improve ownership/reviewability.
+- Pane extraction: avoid app-specific duplication and make debug UI reusable across future apps.
+
+### What worked
+
+- Refactor compiled and built cleanly.
+- Storybook includes new reusable pane story and existing app stories continue working.
+
+### What didn't work
+
+- Initial typecheck failed after adding new pane story:
+- `RuntimeDebugPane.stories.tsx ... Property 'args' is missing ...`
+- Cause: Storybook meta typing required args because component props are required.
+- Fix: added minimal `args` object in story meta.
+
+### What I learned
+
+- For strongly typed Storybook stories on prop-heavy components, adding explicit `args` in meta avoids inferred required-prop failures even when render wrappers provide runtime values.
+
+### What was tricky to build
+
+- Extracting a reusable pane without coupling it to app-specific reducers required defining a clean prop contract (`events`, `filters`, callbacks, snapshots) and keeping all state derivation in the wrapper.
+
+### What warrants a second pair of eyes
+
+- The reusable pane currently uses inline styles; if engine theming requirements grow, a tokenized style layer may be preferable.
+
+### What should be done in the future
+
+- Complete requested documentation and reMarkable uploads (Step 8).
+
+### Code review instructions
+
+- Start at `apps/book-tracker-debug/src/domain/stack.ts` to see composition-only stack assembly.
+- Review reusable component API in `packages/engine/src/components/shell/RuntimeDebugPane.tsx`.
+- Confirm app wrapper adaptation in `apps/book-tracker-debug/src/debug/DebugPane.tsx`.
+
+### Technical details
+
+- Commit command:
+- `git commit -m "refactor(debug-app): split cards and extract reusable RuntimeDebugPane"`
+
+
+## Step 8: Author Postmortem + Tutorial Docs and Publish to reMarkable
+
+I authored two long-form engineering documents requested in the prompt: a postmortem-focused recap of implementation work and a beginner-friendly end-to-end tutorial for building Card Stacks DSL apps. These docs are intended to be durable onboarding and review assets, not quick notes.
+
+After writing, I added ticket index links and updated metadata so both documents are discoverable from the ticket root and ready for publication.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Produce detailed docs in ticket and upload both to reMarkable.
+
+**Inferred user intent:** Convert implementation knowledge into reusable engineering documentation and distribute it to reading workflows.
+
+**Commit (code):** N/A (docs + upload bookkeeping committed after this step)
+
+### What I did
+
+- Added postmortem design doc:
+- `ttmp/.../design/02-engineering-postmortem-dsl-debug-app-build.md`
+- Added full tutorial design doc:
+- `ttmp/.../design/03-how-to-create-an-app-using-card-stacks-dsl.md`
+- Updated ticket index to include both docs:
+- `ttmp/.../index.md`
+- Prepared for reMarkable upload to ticket folder:
+- `/ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP`
+
+### Why
+
+- The implementation had enough depth and incidents that explicit recap + onboarding docs are necessary to prevent rediscovery and repeated mistakes.
+
+### What worked
+
+- Both documents were authored in full with architecture context, practical examples, and file/symbol references.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Writing the tutorial against the actual book-tracker-debug implementation exposes weak points quickly (for example, where runtime abstractions are clean vs where app wrappers still leak complexity).
+
+### What was tricky to build
+
+- Balancing theory and execution detail required anchoring every major concept to concrete repository files so readers can move from document to code immediately.
+
+### What warrants a second pair of eyes
+
+- Ensure tutorial pacing matches new engineer expectations (not too shallow for advanced readers, not too dense for first-time DSL contributors).
+
+### What should be done in the future
+
+- Keep both docs updated when runtime APIs or shell profile conventions change.
+
+### Code review instructions
+
+- Read postmortem first (`design/02-...postmortem...md`) for historical context.
+- Then read tutorial (`design/03-...card-stacks-dsl.md`) to verify onboarding flow and correctness.
+
+### Technical details
+
+- Dry-run:
+- `remarquee upload md --dry-run /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/02-engineering-postmortem-dsl-debug-app-build.md /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/03-how-to-create-an-app-using-card-stacks-dsl.md --remote-dir /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP --non-interactive`
+- Upload:
+- `remarquee upload md /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/02-engineering-postmortem-dsl-debug-app-build.md /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/03-how-to-create-an-app-using-card-stacks-dsl.md --remote-dir /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP --non-interactive`
+- Result:
+- `OK: uploaded 02-engineering-postmortem-dsl-debug-app-build.pdf`
+- `OK: uploaded 03-how-to-create-an-app-using-card-stacks-dsl.pdf`
+- Verification:
+- `remarquee cloud ls /ai/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP --long --non-interactive`
+- Includes:
+- `02-engineering-postmortem-dsl-debug-app-build`
+- `03-how-to-create-an-app-using-card-stacks-dsl`

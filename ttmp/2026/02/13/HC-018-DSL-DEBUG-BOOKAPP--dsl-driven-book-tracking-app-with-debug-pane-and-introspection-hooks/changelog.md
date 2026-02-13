@@ -57,3 +57,24 @@ Step 5: introduced shell debug-pane layout mode replacing legacy tabs for the de
 - /home/manuel/code/wesen/2026-02-12--hypercard-react/apps/book-tracker-debug/src/App.tsx — Switched profile to layoutMode=debugPane
 - /home/manuel/code/wesen/2026-02-12--hypercard-react/packages/engine/src/components/shell/HyperCardShell.tsx — Added layoutMode and renderDebugPane support
 
+
+## 2026-02-13
+
+Step 8: authored detailed postmortem and beginner DSL tutorial documents and uploaded both to reMarkable ticket folder.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/02-engineering-postmortem-dsl-debug-app-build.md — Comprehensive engineering recap
+- /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/13/HC-018-DSL-DEBUG-BOOKAPP--dsl-driven-book-tracking-app-with-debug-pane-and-introspection-hooks/design/03-how-to-create-an-app-using-card-stacks-dsl.md — Full onboarding tutorial
+
+
+## 2026-02-13
+
+Step 7: split book-tracker-debug cards into per-card modules and extracted reusable RuntimeDebugPane into engine (commit 8c99abf).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-02-12--hypercard-react/apps/book-tracker-debug/src/domain/cards — CardDefinition modules split by screen/card
+- /home/manuel/code/wesen/2026-02-12--hypercard-react/packages/engine/src/components/shell/RuntimeDebugPane.stories.tsx — Storybook coverage for reusable debug pane
+- /home/manuel/code/wesen/2026-02-12--hypercard-react/packages/engine/src/components/shell/RuntimeDebugPane.tsx — Reusable debug pane component added
+

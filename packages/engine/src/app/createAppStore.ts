@@ -3,10 +3,11 @@ import { hypercardRuntimeReducer } from '../cards/runtimeStateSlice';
 import { debugReducer } from '../debug/debugSlice';
 import { navigationReducer } from '../features/navigation/navigationSlice';
 import { notificationsReducer } from '../features/notifications/notificationsSlice';
+import { windowingReducer } from '../features/windowing/windowingSlice';
 
 /**
  * Creates a Redux store factory pre-wired with all HyperCard engine reducers
- * (hypercardRuntime, navigation, notifications, debug).
+ * (hypercardRuntime, navigation, windowing, notifications, debug).
  *
  * Returns both a singleton store and a createStore() factory for Storybook.
  *
@@ -22,6 +23,7 @@ export function createAppStore<T extends Record<string, Reducer>>(domainReducers
   const reducer = {
     hypercardRuntime: hypercardRuntimeReducer,
     navigation: navigationReducer,
+    windowing: windowingReducer,
     notifications: notificationsReducer,
     debug: debugReducer,
     ...domainReducers,

@@ -37,6 +37,8 @@ export {
   showToast,
 } from './features/notifications/notificationsSlice';
 export * from './features/notifications/selectors';
+// ── Windowing ──
+export * from './features/windowing';
 export * from './parts';
 // ── Theme ──
 export { HyperCardTheme, type HyperCardThemeProps } from './theme/HyperCardTheme';

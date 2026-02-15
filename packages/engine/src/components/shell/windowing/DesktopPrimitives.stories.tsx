@@ -1,21 +1,52 @@
+import { configureStore } from '@reduxjs/toolkit';
 import type { Meta, StoryObj } from '@storybook/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import {
+  selectActiveMenuId,
+  selectFocusedWindow,
+  selectSelectedIconId,
+  selectWindowsByZ,
+} from '../../../features/windowing/selectors';
+import type { OpenWindowPayload } from '../../../features/windowing/types';
+import {
+  clearDesktopTransient,
+  closeWindow,
+  focusWindow,
+  moveWindow,
+  openWindow,
+  resizeWindow,
+  setActiveMenu,
+  setSelectedIcon,
+  windowingReducer,
+} from '../../../features/windowing/windowingSlice';
 import { DesktopIconLayer } from './DesktopIconLayer';
 import { DesktopMenuBar } from './DesktopMenuBar';
 import type { DesktopIconDef, DesktopMenuSection, DesktopWindowDef } from './types';
 import { useWindowInteractionController } from './useWindowInteractionController';
 import { WindowLayer } from './WindowLayer';
 
-interface DesktopDemoProps {
-  initialWindows: DesktopWindowDef[];
-  icons?: DesktopIconDef[];
-}
+// ── Fixtures ──
 
 const DESKTOP_ICONS: DesktopIconDef[] = [
-  { id: 'inventory', label: 'Inventory', icon: '📦', x: 18, y: 44 },
-  { id: 'sales', label: 'Sales', icon: '📈', x: 18, y: 132 },
-  { id: 'contacts', label: 'Contacts', icon: '👥', x: 18, y: 220 },
-  { id: 'ai-assistant', label: 'AI', icon: '🤖', x: 18, y: 308 },
+  { id: 'inventory', label: 'Inventory', icon: '📦', x: 18, y: 16 },
+  { id: 'sales', label: 'Sales', icon: '📈', x: 18, y: 104 },
+  { id: 'contacts', label: 'Contacts', icon: '👥', x: 18, y: 192 },
+  { id: 'ai-assistant', label: 'AI', icon: '🤖', x: 18, y: 280 },
+];
+
+const BIG_DESKTOP_ICONS: DesktopIconDef[] = [
+  { id: 'inventory', label: 'Inventory', icon: '📦', x: 20, y: 16 },
+  { id: 'sales', label: 'Sales', icon: '📈', x: 20, y: 104 },
+  { id: 'contacts', label: 'Contacts', icon: '👥', x: 20, y: 192 },
+  { id: 'ai-assistant', label: 'AI Assistant', icon: '🤖', x: 20, y: 280 },
+  { id: 'reports', label: 'Reports', icon: '📊', x: 20, y: 368 },
+  { id: 'settings', label: 'Settings', icon: '⚙️', x: 20, y: 456 },
+  { id: 'calendar', label: 'Calendar', icon: '📅', x: 20, y: 544 },
+  { id: 'notes', label: 'Notes', icon: '📝', x: 20, y: 632 },
+  { id: 'mail', label: 'Mail', icon: '✉️', x: 112, y: 16 },
+  { id: 'calculator', label: 'Calculator', icon: '🧮', x: 112, y: 104 },
+  { id: 'trash', label: 'Trash', icon: '🗑️', x: 112, y: 192 },
 ];
 
 const MENU_SECTIONS: DesktopMenuSection[] = [
@@ -46,192 +77,192 @@ const MENU_SECTIONS: DesktopMenuSection[] = [
   },
 ];
 
-function makeWindow(iconId: string, zIndex: number, icons: DesktopIconDef[]): DesktopWindowDef {
-  const icon = icons.find((entry) => entry.id === iconId);
+// ── Helpers ──
+
+/** Convert windowing slice WindowInstance to the presentational DesktopWindowDef */
+function toWindowDef(
+  win: {
+    id: string;
+    title: string;
+    icon?: string;
+    bounds: { x: number; y: number; w: number; h: number };
+    z: number;
+    isDialog?: boolean;
+    isResizable?: boolean;
+  },
+  focused: boolean,
+): DesktopWindowDef {
+  return {
+    id: win.id,
+    title: win.title,
+    icon: win.icon,
+    x: win.bounds.x,
+    y: win.bounds.y,
+    width: win.bounds.w,
+    height: win.bounds.h,
+    zIndex: win.z,
+    focused,
+    isDialog: win.isDialog,
+    isResizable: win.isResizable,
+  };
+}
+
+let windowCounter = 0;
+function makeOpenPayload(iconId: string, icons: DesktopIconDef[]): OpenWindowPayload {
+  windowCounter += 1;
+  const icon = icons.find((i) => i.id === iconId);
   return {
     id: `window:${iconId}`,
     title: icon?.label ?? iconId,
     icon: icon?.icon,
-    x: 120 + (zIndex % 4) * 42,
-    y: 72 + (zIndex % 3) * 34,
-    width: 320,
-    height: 220,
-    zIndex,
-    focused: true,
+    bounds: { x: 140 + (windowCounter % 4) * 36, y: 40 + (windowCounter % 3) * 28, w: 320, h: 220 },
+    content: { kind: 'app', appKey: iconId },
+    dedupeKey: iconId,
   };
 }
 
-function DesktopDemo({ initialWindows, icons: iconsProp }: DesktopDemoProps) {
-  const icons = iconsProp ?? DESKTOP_ICONS;
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
-  const [statusText, setStatusText] = useState('Ready');
-  const [windows, setWindows] = useState<DesktopWindowDef[]>(() => initialWindows);
-  const windowsRef = useRef<DesktopWindowDef[]>(initialWindows);
+// ── Store factory ──
 
-  useEffect(() => {
-    windowsRef.current = windows;
-  }, [windows]);
+function createWindowingStore(preloadWindows?: OpenWindowPayload[]) {
+  const store = configureStore({ reducer: { windowing: windowingReducer } });
+  if (preloadWindows) {
+    for (const win of preloadWindows) {
+      store.dispatch(openWindow(win));
+    }
+  }
+  return store;
+}
 
-  const focusWindow = useCallback((windowId: string) => {
-    setWindows((prev) => {
-      const maxZIndex = prev.length === 0 ? 1 : Math.max(...prev.map((window) => window.zIndex));
-      return prev.map((window) => {
-        if (window.id === windowId) {
-          return { ...window, focused: true, zIndex: maxZIndex + 1 };
-        }
-        return { ...window, focused: false };
-      });
-    });
-  }, []);
+// ── Connected Desktop ──
 
-  const openIconWindow = useCallback(
-    (iconId: string) => {
-      setSelectedIconId(iconId);
-      setWindows((prev) => {
-        const maxZIndex = prev.length === 0 ? 0 : Math.max(...prev.map((window) => window.zIndex));
-        const existing = prev.find((window) => window.id === `window:${iconId}`);
-        if (existing) {
-          return prev.map((window) => {
-            if (window.id === existing.id) {
-              return { ...window, focused: true, zIndex: maxZIndex + 1 };
-            }
-            return { ...window, focused: false };
-          });
-        }
+interface DesktopDemoInnerProps {
+  icons: DesktopIconDef[];
+}
 
-        return [...prev.map((window) => ({ ...window, focused: false })), makeWindow(iconId, maxZIndex + 1, icons)];
-      });
-      setStatusText(`Opened ${iconId}`);
-    },
-    [icons],
+function DesktopDemoInner({ icons }: DesktopDemoInnerProps) {
+  const dispatch = useDispatch();
+  const windows = useSelector(selectWindowsByZ);
+  const focusedWin = useSelector(selectFocusedWindow);
+  const activeMenuId = useSelector(selectActiveMenuId);
+  const selectedIconId = useSelector(selectSelectedIconId);
+
+  const windowDefs: DesktopWindowDef[] = windows.map((w) => toWindowDef(w, w.id === focusedWin?.id));
+
+  const handleFocus = useCallback((id: string) => dispatch(focusWindow(id)), [dispatch]);
+  const handleClose = useCallback((id: string) => dispatch(closeWindow(id)), [dispatch]);
+  const handleMove = useCallback(
+    (id: string, next: { x: number; y: number }) => dispatch(moveWindow({ id, x: next.x, y: next.y })),
+    [dispatch],
+  );
+  const handleResize = useCallback(
+    (id: string, next: { width: number; height: number }) =>
+      dispatch(resizeWindow({ id, w: next.width, h: next.height })),
+    [dispatch],
   );
 
-  const closeWindow = useCallback((windowId: string) => {
-    setWindows((prev) => {
-      const remaining = prev.filter((window) => window.id !== windowId);
-      if (remaining.length === 0) {
-        return remaining;
-      }
-      const highest = remaining.reduce((acc, window) => (window.zIndex > acc.zIndex ? window : acc));
-      return remaining.map((window) => ({ ...window, focused: window.id === highest.id }));
-    });
-  }, []);
-
-  const moveWindow = useCallback((windowId: string, next: { x: number; y: number }) => {
-    setWindows((prev) => prev.map((window) => (window.id === windowId ? { ...window, x: next.x, y: next.y } : window)));
-  }, []);
-
-  const resizeWindow = useCallback((windowId: string, next: { width: number; height: number }) => {
-    setWindows((prev) =>
-      prev.map((window) => (window.id === windowId ? { ...window, width: next.width, height: next.height } : window)),
-    );
-  }, []);
-
+  // Interaction controller reads current geometry from store-derived defs
   const { beginMove, beginResize } = useWindowInteractionController({
-    getWindowById: (windowId) => windowsRef.current.find((window) => window.id === windowId),
-    onMoveWindow: moveWindow,
-    onResizeWindow: resizeWindow,
-    onFocusWindow: focusWindow,
+    getWindowById: (id) => windowDefs.find((w) => w.id === id),
+    onMoveWindow: handleMove,
+    onResizeWindow: handleResize,
+    onFocusWindow: handleFocus,
     constraints: { minX: 0, minY: 0, minWidth: 220, minHeight: 140 },
   });
 
-  const onCommand = useCallback(
+  const handleOpenIcon = useCallback(
+    (iconId: string) => {
+      dispatch(setSelectedIcon(iconId));
+      dispatch(openWindow(makeOpenPayload(iconId, icons)));
+    },
+    [dispatch, icons],
+  );
+
+  const handleCommand = useCallback(
     (commandId: string) => {
       if (commandId === 'file.new-window') {
-        openIconWindow(icons[0].id);
+        handleOpenIcon(icons[0].id);
         return;
       }
-
-      if (commandId === 'file.close-focused') {
-        const focused = windows.find((window) => window.focused);
-        if (focused) {
-          closeWindow(focused.id);
-          setStatusText(`Closed ${focused.title}`);
-        }
+      if (commandId === 'file.close-focused' && focusedWin) {
+        dispatch(closeWindow(focusedWin.id));
         return;
       }
-
+      // tile/cascade are cosmetic — dispatch individual moves
       if (commandId === 'window.tile') {
-        setWindows((prev) =>
-          prev.map((window, index) => ({
-            ...window,
-            x: 120 + (index % 3) * 250,
-            y: 52 + Math.floor(index / 3) * 200,
-            width: 240,
-            height: 180,
-          })),
-        );
-        setStatusText('Tiled windows');
+        windows.forEach((w, i) => {
+          dispatch(moveWindow({ id: w.id, x: 140 + (i % 3) * 280, y: 10 + Math.floor(i / 3) * 220 }));
+          dispatch(resizeWindow({ id: w.id, w: 260, h: 200 }));
+        });
         return;
       }
-
       if (commandId === 'window.cascade') {
-        setWindows((prev) =>
-          prev.map((window, index) => ({
-            ...window,
-            x: 120 + index * 36,
-            y: 60 + index * 24,
-            width: 320,
-            height: 220,
-          })),
-        );
-        setStatusText('Cascaded windows');
+        windows.forEach((w, i) => {
+          dispatch(moveWindow({ id: w.id, x: 140 + i * 36, y: 20 + i * 28 }));
+          dispatch(resizeWindow({ id: w.id, w: 340, h: 240 }));
+        });
         return;
       }
-
-      setStatusText('Windowing shell primitives demo');
     },
-    [closeWindow, icons, openIconWindow, windows],
+    [dispatch, focusedWin, handleOpenIcon, icons, windows],
   );
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <div
+      style={{ position: 'absolute', inset: 0 }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          dispatch(clearDesktopTransient());
+        }
+      }}
+    >
       <DesktopMenuBar
         sections={MENU_SECTIONS}
         activeMenuId={activeMenuId}
-        onActiveMenuChange={setActiveMenuId}
-        onCommand={onCommand}
+        onActiveMenuChange={(id) => dispatch(setActiveMenu(id))}
+        onCommand={handleCommand}
       />
       <DesktopIconLayer
         icons={icons}
         selectedIconId={selectedIconId}
-        onSelectIcon={setSelectedIconId}
-        onOpenIcon={openIconWindow}
+        onSelectIcon={(id) => dispatch(setSelectedIcon(id))}
+        onOpenIcon={handleOpenIcon}
       />
       <WindowLayer
-        windows={windows}
-        onFocusWindow={focusWindow}
-        onCloseWindow={closeWindow}
-        onWindowDragStart={(windowId, event) => beginMove(windowId, event)}
-        onWindowResizeStart={(windowId, event) => beginResize(windowId, event)}
-        renderWindowBody={(window) => (
-          <div>
-            <div style={{ marginBottom: 8, fontWeight: 'bold' }}>{window.title}</div>
+        windows={windowDefs}
+        onFocusWindow={handleFocus}
+        onCloseWindow={handleClose}
+        onWindowDragStart={(id, event) => beginMove(id, event)}
+        onWindowResizeStart={(id, event) => beginResize(id, event)}
+        renderWindowBody={(w) => (
+          <div style={{ padding: 10 }}>
+            <div style={{ marginBottom: 8, fontWeight: 'bold' }}>{w.title}</div>
             <p style={{ margin: 0, lineHeight: 1.4 }}>
-              This is a window primitive body. Drag the title bar, resize from the corner, and use desktop icons to
-              open/focus app windows.
+              Window content. Drag the title bar, resize from the corner, use desktop icons to open/focus windows.
             </p>
           </div>
         )}
       />
-      <div
-        data-part="footer-line"
-        style={{
-          position: 'absolute',
-          left: 10,
-          right: 10,
-          bottom: 6,
-          textAlign: 'left',
-          color: '#1f2733',
-          fontSize: 10,
-        }}
-      >
-        {statusText}
-      </div>
     </div>
   );
 }
+
+// ── Story wrapper ──
+
+interface DesktopDemoProps {
+  icons?: DesktopIconDef[];
+  preloadWindows?: OpenWindowPayload[];
+}
+
+function DesktopDemo({ icons, preloadWindows }: DesktopDemoProps) {
+  const store = createWindowingStore(preloadWindows);
+  return (
+    <Provider store={store}>
+      <DesktopDemoInner icons={icons ?? DESKTOP_ICONS} />
+    </Provider>
+  );
+}
+
+// ── Meta ──
 
 const meta = {
   title: 'Shell/Windowing/Desktop Primitives',
@@ -244,36 +275,28 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// ── Stories ──
+
 export const Idle: Story = {
-  args: {
-    initialWindows: [],
-  },
+  args: {},
 };
 
 export const TwoWindowOverlap: Story = {
   args: {
-    initialWindows: [
+    preloadWindows: [
       {
-        id: 'window:inventory',
+        id: 'w:inventory',
         title: 'Inventory',
         icon: '📦',
-        x: 180,
-        y: 82,
-        width: 340,
-        height: 230,
-        zIndex: 1,
-        focused: false,
+        bounds: { x: 180, y: 60, w: 360, h: 260 },
+        content: { kind: 'app', appKey: 'inventory' },
       },
       {
-        id: 'window:contacts',
+        id: 'w:contacts',
         title: 'Contacts',
         icon: '👥',
-        x: 270,
-        y: 148,
-        width: 320,
-        height: 220,
-        zIndex: 2,
-        focused: true,
+        bounds: { x: 300, y: 140, w: 340, h: 240 },
+        content: { kind: 'app', appKey: 'contacts' },
       },
     ],
   },
@@ -281,50 +304,34 @@ export const TwoWindowOverlap: Story = {
 
 export const DenseWindowSet: Story = {
   args: {
-    initialWindows: [
+    preloadWindows: [
       {
-        id: 'window:inventory',
+        id: 'w:inventory',
         title: 'Inventory',
         icon: '📦',
-        x: 120,
-        y: 60,
-        width: 300,
-        height: 210,
-        zIndex: 1,
-        focused: false,
+        bounds: { x: 140, y: 30, w: 320, h: 230 },
+        content: { kind: 'app', appKey: 'inventory' },
       },
       {
-        id: 'window:sales',
+        id: 'w:sales',
         title: 'Sales',
         icon: '📈',
-        x: 250,
-        y: 90,
-        width: 290,
-        height: 220,
-        zIndex: 2,
-        focused: false,
+        bounds: { x: 280, y: 70, w: 310, h: 240 },
+        content: { kind: 'app', appKey: 'sales' },
       },
       {
-        id: 'window:contacts',
+        id: 'w:contacts',
         title: 'Contacts',
         icon: '👥',
-        x: 380,
-        y: 120,
-        width: 300,
-        height: 210,
-        zIndex: 3,
-        focused: false,
+        bounds: { x: 420, y: 110, w: 320, h: 230 },
+        content: { kind: 'app', appKey: 'contacts' },
       },
       {
-        id: 'window:ai-assistant',
+        id: 'w:ai',
         title: 'AI',
         icon: '🤖',
-        x: 520,
-        y: 158,
-        width: 280,
-        height: 220,
-        zIndex: 4,
-        focused: true,
+        bounds: { x: 560, y: 150, w: 300, h: 240 },
+        content: { kind: 'app', appKey: 'ai' },
       },
     ],
   },
@@ -332,50 +339,28 @@ export const DenseWindowSet: Story = {
 
 export const WithDialogWindow: Story = {
   args: {
-    initialWindows: [
+    preloadWindows: [
       {
-        id: 'window:inventory',
+        id: 'w:inventory',
         title: 'Inventory',
         icon: '📦',
-        x: 140,
-        y: 72,
-        width: 340,
-        height: 240,
-        zIndex: 1,
-        focused: false,
+        bounds: { x: 160, y: 50, w: 360, h: 260 },
+        content: { kind: 'app', appKey: 'inventory' },
       },
       {
-        id: 'window:about',
+        id: 'w:about',
         title: 'About HyperCard Desktop',
-        x: 280,
-        y: 140,
-        width: 300,
-        height: 200,
-        zIndex: 2,
-        focused: true,
+        bounds: { x: 320, y: 160, w: 300, h: 200 },
         isDialog: true,
+        isResizable: false,
+        content: { kind: 'dialog', dialogKey: 'about' },
       },
     ],
   },
 };
 
-const BIG_DESKTOP_ICONS: DesktopIconDef[] = [
-  { id: 'inventory', label: 'Inventory', icon: '📦', x: 20, y: 16 },
-  { id: 'sales', label: 'Sales', icon: '📈', x: 20, y: 104 },
-  { id: 'contacts', label: 'Contacts', icon: '👥', x: 20, y: 192 },
-  { id: 'ai-assistant', label: 'AI Assistant', icon: '🤖', x: 20, y: 280 },
-  { id: 'reports', label: 'Reports', icon: '📊', x: 20, y: 368 },
-  { id: 'settings', label: 'Settings', icon: '⚙️', x: 20, y: 456 },
-  { id: 'calendar', label: 'Calendar', icon: '📅', x: 20, y: 544 },
-  { id: 'notes', label: 'Notes', icon: '📝', x: 20, y: 632 },
-  { id: 'mail', label: 'Mail', icon: '✉️', x: 112, y: 16 },
-  { id: 'calculator', label: 'Calculator', icon: '🧮', x: 112, y: 104 },
-  { id: 'trash', label: 'Trash', icon: '🗑️', x: 112, y: 192 },
-];
-
 export const BigDesktopIdle: Story = {
   args: {
-    initialWindows: [],
     icons: BIG_DESKTOP_ICONS,
   },
 };
@@ -383,61 +368,41 @@ export const BigDesktopIdle: Story = {
 export const BigDesktopWorkspace: Story = {
   args: {
     icons: BIG_DESKTOP_ICONS,
-    initialWindows: [
+    preloadWindows: [
       {
-        id: 'window:inventory',
+        id: 'w:inventory',
         title: 'Inventory — Browse Items',
         icon: '📦',
-        x: 220,
-        y: 20,
-        width: 480,
-        height: 360,
-        zIndex: 1,
-        focused: false,
+        bounds: { x: 220, y: 20, w: 480, h: 360 },
+        content: { kind: 'app', appKey: 'inventory' },
       },
       {
-        id: 'window:contacts',
+        id: 'w:contacts',
         title: 'Contacts — All',
         icon: '👥',
-        x: 340,
-        y: 80,
-        width: 420,
-        height: 320,
-        zIndex: 2,
-        focused: false,
+        bounds: { x: 340, y: 80, w: 420, h: 320 },
+        content: { kind: 'app', appKey: 'contacts' },
       },
       {
-        id: 'window:ai-assistant',
+        id: 'w:ai',
         title: 'AI Assistant',
         icon: '🤖',
-        x: 780,
-        y: 30,
-        width: 380,
-        height: 500,
-        zIndex: 3,
-        focused: false,
+        bounds: { x: 780, y: 30, w: 380, h: 500 },
+        content: { kind: 'app', appKey: 'ai' },
       },
       {
-        id: 'window:reports',
+        id: 'w:reports',
         title: 'Reports — Monthly Summary',
         icon: '📊',
-        x: 500,
-        y: 300,
-        width: 520,
-        height: 340,
-        zIndex: 4,
-        focused: false,
+        bounds: { x: 500, y: 300, w: 520, h: 340 },
+        content: { kind: 'app', appKey: 'reports' },
       },
       {
-        id: 'window:notes',
+        id: 'w:notes',
         title: 'Notes',
         icon: '📝',
-        x: 180,
-        y: 420,
-        width: 300,
-        height: 260,
-        zIndex: 5,
-        focused: true,
+        bounds: { x: 180, y: 420, w: 300, h: 260 },
+        content: { kind: 'app', appKey: 'notes' },
       },
     ],
   },
@@ -446,72 +411,48 @@ export const BigDesktopWorkspace: Story = {
 export const BigDesktopSixWindows: Story = {
   args: {
     icons: BIG_DESKTOP_ICONS,
-    initialWindows: [
+    preloadWindows: [
       {
-        id: 'window:inventory',
+        id: 'w:inventory',
         title: 'Inventory',
         icon: '📦',
-        x: 220,
-        y: 10,
-        width: 400,
-        height: 300,
-        zIndex: 1,
-        focused: false,
+        bounds: { x: 220, y: 10, w: 400, h: 300 },
+        content: { kind: 'app', appKey: 'inventory' },
       },
       {
-        id: 'window:sales',
+        id: 'w:sales',
         title: 'Sales Dashboard',
         icon: '📈',
-        x: 640,
-        y: 10,
-        width: 420,
-        height: 280,
-        zIndex: 2,
-        focused: false,
+        bounds: { x: 640, y: 10, w: 420, h: 280 },
+        content: { kind: 'app', appKey: 'sales' },
       },
       {
-        id: 'window:contacts',
+        id: 'w:contacts',
         title: 'Contacts',
         icon: '👥',
-        x: 1080,
-        y: 10,
-        width: 380,
-        height: 300,
-        zIndex: 3,
-        focused: false,
+        bounds: { x: 1080, y: 10, w: 380, h: 300 },
+        content: { kind: 'app', appKey: 'contacts' },
       },
       {
-        id: 'window:reports',
+        id: 'w:reports',
         title: 'Reports',
         icon: '📊',
-        x: 220,
-        y: 340,
-        width: 440,
-        height: 320,
-        zIndex: 4,
-        focused: false,
+        bounds: { x: 220, y: 340, w: 440, h: 320 },
+        content: { kind: 'app', appKey: 'reports' },
       },
       {
-        id: 'window:ai-assistant',
+        id: 'w:ai',
         title: 'AI Assistant',
         icon: '🤖',
-        x: 680,
-        y: 320,
-        width: 360,
-        height: 360,
-        zIndex: 5,
-        focused: false,
+        bounds: { x: 680, y: 320, w: 360, h: 360 },
+        content: { kind: 'app', appKey: 'ai' },
       },
       {
-        id: 'window:mail',
+        id: 'w:mail',
         title: 'Mail — Inbox',
         icon: '✉️',
-        x: 1060,
-        y: 340,
-        width: 400,
-        height: 320,
-        zIndex: 6,
-        focused: true,
+        bounds: { x: 1060, y: 340, w: 400, h: 320 },
+        content: { kind: 'app', appKey: 'mail' },
       },
     ],
   },

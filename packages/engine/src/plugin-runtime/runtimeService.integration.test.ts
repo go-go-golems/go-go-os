@@ -1,55 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import COLUMN_STACK from './fixtures/column-stack.vm.js?raw';
+import INVENTORY_STACK from './fixtures/inventory-stack.vm.js?raw';
+import LOOP_STACK from './fixtures/loop-stack.vm.js?raw';
 import { QuickJSCardRuntimeService } from './runtimeService';
-
-const INVENTORY_STACK = `
-defineStackBundle(({ ui }) => {
-  return {
-    id: 'inventory',
-    title: 'Inventory',
-    initialSessionState: { filter: 'all' },
-    initialCardState: { lowStock: { limit: 5 } },
-    cards: {
-      lowStock: {
-        render({ cardState, sessionState }) {
-          return ui.panel([
-            ui.text('Filter: ' + String(sessionState?.filter ?? 'all')),
-            ui.text('Limit: ' + String(cardState?.limit ?? 0)),
-            ui.button('Reserve', { onClick: { handler: 'reserve', args: { sku: 'A-1' } } }),
-          ]);
-        },
-        handlers: {
-          reserve({ dispatchCardAction, dispatchSessionAction, dispatchDomainAction, dispatchSystemCommand }, args) {
-            dispatchCardAction('set.lastSku', args?.sku);
-            dispatchSessionAction('set.filter', 'low-stock');
-            dispatchDomainAction('inventory', 'reserve-item', { sku: args?.sku });
-            dispatchSystemCommand('notify', { level: 'info', message: 'reserved' });
-          },
-        },
-      },
-    },
-  };
-});
-`;
-
-const COLUMN_STACK = `
-defineStackBundle(({ ui }) => {
-  return {
-    id: 'column-demo',
-    title: 'Column Demo',
-    cards: {
-      main: {
-        render() {
-          return ui.column([
-            ui.text('top'),
-            ui.text('bottom'),
-          ]);
-        },
-        handlers: {},
-      },
-    },
-  };
-});
-`;
 
 describe('QuickJSCardRuntimeService', () => {
   const services: QuickJSCardRuntimeService[] = [];
@@ -154,26 +107,7 @@ describe('QuickJSCardRuntimeService', () => {
     const service = new QuickJSCardRuntimeService({ renderTimeoutMs: 10 });
     services.push(service);
 
-    await service.loadStackBundle(
-      'loop',
-      'loop@one',
-      `
-defineStackBundle(({ ui }) => {
-  return {
-    id: 'loop',
-    title: 'Loop',
-    cards: {
-      loop: {
-        render() {
-          while (true) {}
-        },
-        handlers: {},
-      },
-    },
-  };
-});
-      `
-    );
+    await service.loadStackBundle('loop', 'loop@one', LOOP_STACK);
 
     expect(() => service.renderCard('loop@one', 'loop', {}, {}, {})).toThrow(/interrupted/i);
   });

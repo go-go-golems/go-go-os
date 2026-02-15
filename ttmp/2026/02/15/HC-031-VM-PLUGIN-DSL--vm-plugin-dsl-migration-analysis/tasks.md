@@ -44,14 +44,14 @@
 
 ### Phase C: Shell Integration
 
-- [ ] [C1] Add `PluginCardSessionHost` under `packages/engine/src/components/shell/windowing/`.
-- [ ] [C2] Update `DesktopShell` to mount `PluginCardSessionHost` for card windows.
-- [ ] [C3] Project host `globalState` for each render (`self`, `domains`, `nav`, `system`).
-- [ ] [C4] Route runtime intents:
-  - [ ] [C4.1] card/session intents -> `pluginCardRuntime` reducers
-  - [ ] [C4.2] system intents -> windowing/notifications reducers
-  - [ ] [C4.3] domain intents -> shared/domain action adapters
-- [ ] [C5] Preserve current windowing behavior (open/focus/close/session nav) with parity tests.
+- [x] [C1] Add `PluginCardSessionHost` under `packages/engine/src/components/shell/windowing/`.
+- [x] [C2] Update `DesktopShell` to mount `PluginCardSessionHost` for card windows.
+- [x] [C3] Project host `globalState` for each render (`self`, `domains`, `nav`, `system`).
+- [x] [C4] Route runtime intents:
+  - [x] [C4.1] card/session intents -> `pluginCardRuntime` reducers
+  - [x] [C4.2] system intents -> windowing/notifications reducers
+  - [x] [C4.3] domain intents -> shared/domain action adapters
+- [x] [C5] Preserve current windowing behavior (open/focus/close/session nav) with parity tests.
 
 ### Phase D: Storybook Runtime Migration
 

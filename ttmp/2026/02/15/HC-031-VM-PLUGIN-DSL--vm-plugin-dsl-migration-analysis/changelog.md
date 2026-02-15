@@ -121,3 +121,28 @@ Implemented HC-031 Phase B host-state layer: `pluginCardRuntime` Redux slice wit
 ### Commit
 
 - `583fe38` — `feat(engine): add plugin card runtime redux slice (Phase B)`
+
+
+## 2026-02-15
+
+Implemented HC-031 Phase C shell integration: Desktop now mounts `PluginCardSessionHost` for card windows, plugin runtime intents are routed through host adapters, and a plugin UI renderer was added for VM tree output. Added tests for routing and denial behavior to preserve windowing/nav semantics.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/PluginCardSessionHost.tsx — New plugin-aware card session host with runtime load/render/event flow
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/pluginIntentRouting.ts — Runtime intent routing adapter to pluginCardRuntime + windowing/notifications/domain reducers
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/PluginCardRenderer.tsx — Data-tree renderer for plugin runtime UINode output
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopShell.tsx — Updated card window body mount to plugin session host
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/cards/types.ts — Added optional stack plugin config contract (`bundleCode`, capabilities)
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/__tests__/plugin-intent-routing.test.ts — Routing/nav parity tests and denied-system-intent behavior
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked C1-C5 complete
+
+### Validation
+
+- `npm run test -w packages/engine` — pass (`10` files, `107` tests)
+- `npm run typecheck -w packages/engine` — pass
+- `npm run build -w packages/engine` — pass
+
+### Commit
+
+- `d69a427` — `feat(engine): integrate plugin session host into desktop shell (Phase C)`

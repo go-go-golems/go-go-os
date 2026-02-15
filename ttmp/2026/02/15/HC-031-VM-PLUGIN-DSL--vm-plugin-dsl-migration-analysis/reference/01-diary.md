@@ -24,7 +24,7 @@ RelatedFiles:
         Primary deliverable documented by diary steps
 ExternalSources: []
 Summary: Detailed implementation diary for HC-031 analysis and documentation workflow.
-LastUpdated: 2026-02-15T18:55:00-05:00
+LastUpdated: 2026-02-15T19:05:00-05:00
 WhatFor: Record how the migration analysis document was produced, with command evidence and constraints encountered.
 WhenToUse: Use when reviewing the provenance and reliability of HC-031 conclusions.
 ---
@@ -768,3 +768,100 @@ I wired the reducer into `createAppStore`, exported the feature from the engine 
 
 - Intent ingestion uses reducer `prepare` to stamp id/timestamp for timeline consistency.
 - Domain/system authorization reasons are persisted in timeline entries for debugging (`domain_not_allowed:*`, `system_command_not_allowed:*`).
+
+## Step 10: Implement Phase C shell integration with plugin session host
+
+I integrated the new runtime foundation into the desktop shell path by introducing `PluginCardSessionHost` and making `DesktopShell` mount it for card windows. The host uses plugin runtime code when stack config provides `plugin.bundleCode`, and falls back to legacy `CardSessionHost` when plugin config is absent, allowing incremental migration while preserving current stories/apps.
+
+I added intent routing glue (`dispatchRuntimeIntent`) to connect runtime intents to host reducers and domain actions, including capability-aware suppression of denied side effects. I also added focused tests for routing behavior and denial handling.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Continue implementation phases with concrete integrations, testing, and commit checkpoints.
+
+**Inferred user intent:** See migration become operational in actual shell execution paths, not only isolated runtime/store modules.
+
+**Commit (code):** d69a427 — "feat(engine): integrate plugin session host into desktop shell (Phase C)"
+
+### What I did
+
+- Added plugin shell components:
+  - `packages/engine/src/components/shell/windowing/PluginCardSessionHost.tsx`
+  - `packages/engine/src/components/shell/windowing/PluginCardRenderer.tsx`
+- Added runtime intent routing adapter:
+  - `packages/engine/src/components/shell/windowing/pluginIntentRouting.ts`
+  - Routes:
+    - card/session intents -> `ingestRuntimeIntent`
+    - domain intents -> dynamic domain action dispatch (`${domain}/${actionType}`)
+    - system intents -> windowing/notifications actions (`nav.go`, `nav.back`, `notify`, `window.close`)
+  - Uses session capability policy to avoid routing denied system/domain side effects.
+- Updated shell wiring:
+  - `packages/engine/src/components/shell/windowing/DesktopShell.tsx` now mounts `PluginCardSessionHost` for card windows.
+  - `packages/engine/src/components/shell/windowing/index.ts` exports new host/renderer/routing helper.
+- Updated stack type contract:
+  - `packages/engine/src/cards/types.ts` added optional `plugin` config (`bundleCode`, capabilities).
+- Added tests:
+  - `packages/engine/src/__tests__/plugin-intent-routing.test.ts`
+  - Covers domain/system routing, nav behavior parity, and denied-system-intent suppression.
+- Validation commands:
+  - `npm run test -w packages/engine`
+  - `npm run typecheck -w packages/engine`
+  - `npm run build -w packages/engine`
+- Checked off `C1..C5` in `tasks.md`.
+
+### Why
+
+- Phase C required actual shell integration so runtime events could influence navigation/toasts/domain writes through standardized intent paths.
+- Maintaining fallback host behavior keeps existing non-plugin stacks working while migration continues.
+
+### What worked
+
+- All tests remain green after shell integration:
+  - `10` files, `107` tests.
+- Typecheck and build pass.
+- New routing tests verify nav/system behavior and denial guard semantics.
+
+### What didn't work
+
+- Initial typecheck failed after first implementation:
+  - `PluginCardRenderer.tsx`: table branch lacked strict type narrowing (`node.props` possibly undefined/unknown).
+  - `PluginCardSessionHost.tsx`: async closure captured `pluginConfig` as possibly `null`.
+- Fixes:
+  - Added explicit `node.kind === 'table'` branch with typed map parameters.
+  - Captured non-null config in local constant before async load call.
+
+### What I learned
+
+- Capability checks must guard both reducer outcome tracking and side-effect routing; without this, denied intents can still leak to domain/system reducers.
+- Projecting global host state in-session is easiest when subscribing to full root state in host component, even if later optimization may narrow subscription scope.
+
+### What was tricky to build
+
+- The tricky part was preserving current behavior while introducing new runtime flow. A direct hard switch to plugin runtime would break all existing DSL stacks immediately. The practical compromise was “plugin-config gated host path with explicit fallback,” while still routing through new intent infrastructure when plugin code exists.
+
+### What warrants a second pair of eyes
+
+- Review whether fallback to legacy host should remain only until Phase E migration, then be removed in Phase F.
+- Review `dispatchRuntimeIntent` dynamic domain dispatch contract to ensure domain reducers expect the generated action type format.
+
+### What should be done in the future
+
+- Start Phase D: migrate `createDSLApp`/storybook helper internals to use plugin runtime harness path and deterministic session seeding.
+
+### Code review instructions
+
+- Start in:
+  - `packages/engine/src/components/shell/windowing/PluginCardSessionHost.tsx`
+  - `packages/engine/src/components/shell/windowing/pluginIntentRouting.ts`
+  - `packages/engine/src/__tests__/plugin-intent-routing.test.ts`
+- Validate with:
+  - `npm run test -w packages/engine`
+  - `npm run typecheck -w packages/engine`
+  - `npm run build -w packages/engine`
+
+### Technical details
+
+- `PluginCardSessionHost` projects runtime `globalState` with `self/domains/nav/system`.
+- Runtime bundle loading applies `initialSessionState` / `initialCardState` via intent ingestion rather than out-of-band state mutation.

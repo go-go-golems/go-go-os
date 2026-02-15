@@ -28,6 +28,7 @@ export {
   showToast,
 } from './features/notifications/notificationsSlice';
 export * from './features/notifications/selectors';
+export * from './features/pluginCardRuntime';
 // ── Windowing ──
 export * from './features/windowing';
 export * from './parts';

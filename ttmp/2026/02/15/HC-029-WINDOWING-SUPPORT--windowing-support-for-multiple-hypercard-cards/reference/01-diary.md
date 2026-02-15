@@ -1376,3 +1376,78 @@ Built the entire Phase 1 windowing state domain as a new Redux Toolkit slice. Th
 - 11 reducers, 10 selectors, 47 tests
 - Tasks completed: 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
 - Verification: typecheck clean, biome clean, all tests pass
+
+## Step 16: Wire Redux store + rewrite stories to use real windowing slice
+
+Connected the windowing state slice to the actual Redux store infrastructure and rewrote the desktop stories from local `useState` to real `useDispatch`/`useSelector` against the windowing slice. Also fixed the fullscreen sizing issue.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+```text
+Ok, replace navigation and introduce redux store, and use that in the stories too. Also, the 100% fill doesn't seem to work, desktop is still same size I think
+```
+
+**Assistant interpretation:** Wire `windowingReducer` into the engine's `createAppStore`, rewrite desktop stories to dispatch real windowing actions, and fix the viewport fill.
+
+**Inferred user intent:** Stories should prove the actual Redux slice works end-to-end, not just test isolated presentational components with fake local state.
+
+**Commit (code):** `5de82bc` — "feat(windowing): wire Redux store + rewrite stories to use real windowing slice"
+
+### What I did
+
+1. Added `windowingReducer` to `createAppStore` in `packages/engine/src/app/createAppStore.ts` — the windowing slice now sits alongside `hypercardRuntime`, `navigation`, `notifications`, `debug` in every app store.
+2. Added `export * from './features/windowing'` to `packages/engine/src/index.ts` barrel.
+3. Completely rewrote `DesktopPrimitives.stories.tsx`:
+   - Story wrapper creates a real `configureStore({ reducer: { windowing: windowingReducer } })` and wraps in `<Provider>`
+   - Inner component uses `useDispatch()` to dispatch `openWindow`, `focusWindow`, `closeWindow`, `moveWindow`, `resizeWindow`, `setActiveMenu`, `setSelectedIcon`, `clearDesktopTransient`
+   - Uses `useSelector()` with `selectWindowsByZ`, `selectFocusedWindow`, `selectActiveMenuId`, `selectSelectedIconId`
+   - Stories preload windows via `OpenWindowPayload[]` dispatched at store creation
+   - Added a `toWindowDef()` bridge function to convert windowing slice `WindowInstance` → presentational `DesktopWindowDef`
+4. Fixed fullscreen sizing: changed from `width: 100vw; height: 100vh` to `position: absolute; inset: 0` which works reliably inside Storybook's iframe.
+5. Verified all 95 tests pass (47 windowing + 48 existing).
+
+### Why
+
+- Stories using local `useState` proved nothing about the Redux slice — they were duplicating the logic. Now the stories exercise the actual slice.
+- The store wiring is needed for Phase 3 (HyperCardShell cutover) — adding it now means less work later.
+- The sizing issue was that `100vw`/`100vh` in an iframe measures the iframe's viewport which may have margins/padding from Storybook chrome.
+
+### What worked
+
+- The Redux integration was clean — the `toWindowDef()` bridge is the only mapping needed between slice state and presentational props.
+- `position: absolute; inset: 0` fills the Storybook story area correctly.
+- Preloading windows via dispatching `openWindow` in the store factory means stories show up with windows already open, with correct z-ordering and focus state.
+
+### What didn't work
+
+- N/A — clean implementation.
+
+### What I learned
+
+- The `toWindowDef()` bridge function highlights a design question: should the presentational components eventually consume `WindowInstance` directly instead of having a separate `DesktopWindowDef` type? For now the separation is fine (presentational components don't need to know about content/sessions), but it's a simplification opportunity later.
+
+### What was tricky to build
+
+- The tile/cascade commands dispatch individual `moveWindow` + `resizeWindow` for each window. This works but fires N×2 dispatches for N windows. For now it's fine since these are story-only commands, but a real implementation would want a batch `tileWindows` reducer.
+
+### What warrants a second pair of eyes
+
+- The `windowCounter` module-level variable in the stories used for window positioning offsets — it persists across story navigations in Storybook which could give slightly different layouts on repeated visits. Not a real problem but worth noting.
+- The `toWindowDef()` bridge function duplicates field names in a slightly different shape. Worth considering unifying `DesktopWindowDef` and `WindowInstance` in the future.
+
+### What should be done in the future
+
+- Phase 3: Rewrite `HyperCardShell` to use windowing selectors/dispatch
+- Consider unifying `DesktopWindowDef` (presentational) with `WindowInstance` (state) to remove the mapping layer
+
+### Code review instructions
+
+- `packages/engine/src/app/createAppStore.ts` — windowing reducer added
+- `packages/engine/src/index.ts` — windowing exports
+- `packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx` — full rewrite
+- Run: `npx vitest run` — all 95 tests should pass
+
+### Technical details
+
+- Verification: `npm run -w packages/engine typecheck` clean, `npx biome check --write` clean, `npx vitest run` 95/95 pass, Storybook smoke clean

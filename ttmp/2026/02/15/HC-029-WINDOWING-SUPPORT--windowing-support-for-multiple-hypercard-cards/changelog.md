@@ -108,3 +108,14 @@ Desktop stories now fill 100vw×100vh. Added 3 big-desktop stories (BigDesktopId
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx — Full-viewport stories with configurable icons
 
+
+## 2026-02-15
+
+Wired windowingReducer into createAppStore, exported windowing from engine barrel, rewrote all desktop stories to use real Redux store with dispatch instead of local useState. Fixed fullscreen sizing with position:absolute inset:0. All 95 tests pass. Commit 5de82bc.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/app/createAppStore.ts — Added windowingReducer to engine store
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx — Redux-backed stories with real windowing slice
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/index.ts — Exported windowing feature from barrel
+

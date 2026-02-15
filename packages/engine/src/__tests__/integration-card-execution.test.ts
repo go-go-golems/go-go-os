@@ -3,12 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { createCardContext, createSelectorResolver, executeCommand } from '../cards/runtime';
 import { ensureCardRuntime, hypercardRuntimeReducer } from '../cards/runtimeStateSlice';
 import type {
-  ActionDescriptor,
   CardStackDefinition,
   SharedActionRegistry,
   SharedSelectorRegistry,
 } from '../cards/types';
-import { navigate, navigationReducer } from '../features/navigation/navigationSlice';
 import { notificationsReducer } from '../features/notifications/notificationsSlice';
 
 /**
@@ -65,7 +63,6 @@ describe('integration: card command execution', () => {
     return configureStore({
       reducer: {
         hypercardRuntime: hypercardRuntimeReducer,
-        navigation: navigationReducer,
         notifications: notificationsReducer,
         items: (
           state = [
@@ -79,6 +76,7 @@ describe('integration: card command execution', () => {
 
   it('executes a builtin nav.go command with event-resolved args', () => {
     const store = createTestStore();
+    const navGo = vi.fn();
     store.dispatch(
       ensureCardRuntime({
         stackId: 'inv',
@@ -100,7 +98,7 @@ describe('integration: card command execution', () => {
         getState: () => store.getState(),
         dispatch: (a: any) => store.dispatch(a),
         nav: {
-          go: (card, param) => store.dispatch(navigate({ card, paramValue: param })),
+          go: navGo,
           back: vi.fn(),
         },
       },
@@ -123,9 +121,8 @@ describe('integration: card command execution', () => {
       { showToast: vi.fn() },
     );
 
-    const nav = store.getState().navigation;
-    expect(nav.stack).toHaveLength(2);
-    expect(nav.stack[1]).toEqual({ card: 'detail', param: 'a' });
+    expect(navGo).toHaveBeenCalledTimes(1);
+    expect(navGo).toHaveBeenCalledWith('detail', 'a');
   });
 
   it('resolves shared selector via createSelectorResolver', () => {

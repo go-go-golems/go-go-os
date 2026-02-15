@@ -35,9 +35,8 @@ export function StandardDebugPane({ title = 'Debug Pane', snapshotSelector }: St
 
   const snapshot = useSelector((state: DebugStateSlice & Record<string, unknown>) => {
     if (snapshotSelector) return snapshotSelector(state);
-    // Default: show navigation + runtime state
+    // Default: show runtime state
     const snap: Record<string, unknown> = {};
-    if ('navigation' in state) snap.navigation = state.navigation;
     if ('hypercardRuntime' in state) snap.runtime = state.hypercardRuntime;
     return snap;
   });

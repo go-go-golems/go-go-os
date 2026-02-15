@@ -1,7 +1,7 @@
 // @hypercard/engine — barrel exports
 //
 // USAGE:
-//   import { HyperCardShell, DataTable, navigationReducer, ... } from '@hypercard/engine';
+//   import { DesktopShell, DataTable, windowingReducer, ... } from '@hypercard/engine';
 //   import '@hypercard/engine/src/theme/base.css';      // load base tokens
 //   import '@hypercard/engine/src/theme/modern.css';     // optional theme
 //
@@ -20,17 +20,6 @@ export * from './components/widgets';
 // ── Debug utilities ──
 export * from './debug';
 // ── State ──
-export {
-  goBack,
-  initializeNavigation,
-  type LayoutMode,
-  type NavEntry,
-  navigate,
-  navigationReducer,
-  resetNavigation,
-  setLayout,
-} from './features/navigation/navigationSlice';
-export * from './features/navigation/selectors';
 export {
   clearToast,
   notificationsReducer,

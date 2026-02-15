@@ -56,3 +56,14 @@ Extracted reusable useWindowInteractionController hook for window drag/resize wi
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/useWindowInteractionController.ts — New shared interaction controller for move/resize
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/tasks.md — Task 19 checked complete
 
+
+## 2026-02-15
+
+Expanded Storybook coverage with dedicated suites for windowing subcomponents (menu bar, icon layer, title bar, resize handle, window surface, window layer) plus shared fixtures for consistent demo data (commit 16b3955).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopMenuBar.stories.tsx — New subcomponent stories for menu states
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/WindowLayer.stories.tsx — New subcomponent stories for z-order/focus behavior
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/reference/01-diary.md — Step 11 logs subcomponent story expansion and validation
+

@@ -18,12 +18,22 @@ RelatedFiles:
       Note: Runtime action plumbing reviewed during feasibility analysis
     - Path: packages/engine/src/components/shell/HyperCardShell.tsx
       Note: Current shell architecture inspected during mapping
+    - Path: packages/engine/src/components/shell/windowing/DesktopIconLayer.stories.tsx
+      Note: Dedicated component story suite for icon layer selection/open states
+    - Path: packages/engine/src/components/shell/windowing/DesktopMenuBar.stories.tsx
+      Note: Dedicated component story suite for menu bar states
     - Path: packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx
       Note: |-
         Storybook-first desktop primitive scenarios for HC-029
         Story rewired to consume shared interaction controller
+    - Path: packages/engine/src/components/shell/windowing/WindowLayer.stories.tsx
+      Note: Window z-order and focus demos
     - Path: packages/engine/src/components/shell/windowing/WindowLayer.tsx
       Note: Deterministic z-order window rendering primitive
+    - Path: packages/engine/src/components/shell/windowing/WindowSurface.stories.tsx
+      Note: Window surface-focused stories for close/focus/resize affordances
+    - Path: packages/engine/src/components/shell/windowing/storyFixtures.ts
+      Note: Shared fixtures used by subcomponent story suites
     - Path: packages/engine/src/components/shell/windowing/useWindowInteractionController.ts
       Note: Reusable pointer drag/resize controller with cleanup-safe listener lifecycle
     - Path: packages/engine/src/theme/base.css
@@ -40,6 +50,7 @@ LastUpdated: 2026-02-15T14:30:00-05:00
 WhatFor: Preserve full implementation/research trace and design rationale for HC-029.
 WhenToUse: Use when reviewing why design decisions were made and how to validate them.
 ---
+
 
 
 
@@ -888,3 +899,86 @@ This keeps interaction behavior portable for the upcoming Phase 3 shell rewrite 
 - Commands:
   - `docmgr task check --ticket HC-029-WINDOWING-SUPPORT --id 19`
   - `git commit -m "feat(shell): extract reusable window interaction controller"`
+
+## Step 11: Add dedicated Storybook suites for windowing subcomponents
+
+I expanded Storybook coverage from a single desktop composite story to focused story suites for each windowing primitive component. This makes visual review and behavior checks much faster because each component can now be inspected in isolation across multiple states.
+
+The new stories are harness-style where needed so reviewers can click/trigger local interactions without depending on full shell orchestration.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Make many stories for the subcomponents. what components do we currently have? I see the full desktop right now."
+
+**Assistant interpretation:** Enumerate current windowing components and add substantial subcomponent Storybook coverage beyond the existing full desktop story.
+
+**Inferred user intent:** Improve component-level observability and iteration speed during HC-029 by exposing each primitive in Storybook.
+
+**Commit (code):** 16b3955 — "feat(storybook): add windowing subcomponent stories"
+
+### What I did
+
+- Added Storybook fixture module:
+  - `packages/engine/src/components/shell/windowing/storyFixtures.ts`
+- Added subcomponent story files:
+  - `packages/engine/src/components/shell/windowing/DesktopMenuBar.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/DesktopIconLayer.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/WindowTitleBar.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/WindowResizeHandle.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/WindowSurface.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/WindowLayer.stories.tsx`
+- Added multiple scenarios per subcomponent (including interactive harnesses):
+  - menu: closed/open/disabled
+  - icons: none selected/selected/dense set
+  - title bar: focused/unfocused/long title
+  - surface: focused/unfocused/tall content
+  - layer: single/overlap/unsorted z input
+- Validation:
+  - `npx biome check --write packages/engine/src/components/shell/windowing`
+  - `npm run -w packages/engine typecheck`
+  - `npm run storybook -- --smoke-test --ci`
+
+### Why
+
+- Needed granular visual checkpoints for each primitive while the shell cutover is still in progress.
+- Isolated stories reduce noise when reviewing accessibility states, pointer affordances, and stacking behavior.
+
+### What worked
+
+- Storybook now includes dedicated pages for each core windowing primitive.
+- Smoke-test startup still succeeds after story expansion.
+
+### What didn't work
+
+- N/A.
+
+### What I learned
+
+- Maintaining shared window/icon/menu fixtures keeps story files concise and avoids drift between component demos.
+
+### What was tricky to build
+
+- Keeping harnesses interactive but minimal required careful boundaries so stories demonstrate component behavior without re-implementing the whole desktop shell again.
+
+### What warrants a second pair of eyes
+
+- Confirm whether to add hook-level stories/tests for `useWindowInteractionController` or keep it covered indirectly via desktop/surface demos.
+
+### What should be done in the future
+
+- Add per-story interaction tests for core behaviors (menu command dispatch, icon open, window focus handoff).
+
+### Code review instructions
+
+- Review stories in this order:
+  - `packages/engine/src/components/shell/windowing/DesktopMenuBar.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/DesktopIconLayer.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/WindowSurface.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/WindowLayer.stories.tsx`
+- Validate with:
+  - `npm run storybook -- --smoke-test --ci`
+
+### Technical details
+
+- Commit:
+  - `git commit -m "feat(storybook): add windowing subcomponent stories"`

@@ -8,10 +8,10 @@ import { createAppStore } from './createAppStore';
 export interface DSLAppConfig<TRootState = unknown> {
   /** The card stack definition */
   stack: CardStackDefinition<TRootState>;
-  /** Shared selectors registry */
-  sharedSelectors: SharedSelectorRegistry<TRootState>;
-  /** Shared actions registry */
-  sharedActions: SharedActionRegistry<TRootState>;
+  /** Shared selectors registry (legacy DSL fallback only). */
+  sharedSelectors?: SharedSelectorRegistry<TRootState>;
+  /** Shared actions registry (legacy DSL fallback only). */
+  sharedActions?: SharedActionRegistry<TRootState>;
   /** Domain-specific reducers (engine reducers are added automatically) */
   domainReducers: Record<string, Reducer>;
   /** Optional desktop icon overrides */

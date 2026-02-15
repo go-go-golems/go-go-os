@@ -8,16 +8,31 @@ import { useStandardDebugHooks } from '../debug/useStandardDebugHooks';
 export interface CardStoriesConfig<TRootState = unknown> {
   /** The card stack definition */
   stack: CardStackDefinition<TRootState>;
-  /** Shared selectors registry */
-  sharedSelectors: SharedSelectorRegistry<TRootState>;
-  /** Shared actions registry */
-  sharedActions: SharedActionRegistry<TRootState>;
+  /** Shared selectors registry (legacy DSL fallback only). */
+  sharedSelectors?: SharedSelectorRegistry<TRootState>;
+  /** Shared actions registry (legacy DSL fallback only). */
+  sharedActions?: SharedActionRegistry<TRootState>;
   /** Factory to create a fresh store (for story isolation). Use createAppStore().createStore. */
   createStore: () => any; // eslint-disable-line -- Store type varies per app; typed at call site
   /** Optional desktop icon overrides for DesktopShell stories */
   icons?: DesktopIconDef[];
-  /** Map of card → param value for detail/param cards in stories */
-  cardParams?: Record<string, string>;
+  /** Map of card → structured params value for detail/param cards in stories */
+  cardParams?: Record<string, unknown>;
+  /** Optional store seeding hook for deterministic story runtime state. */
+  seedStore?: (store: any) => void;
+}
+
+/** Story params are stored in window nav as strings; encode structured params deterministically. */
+export function toStoryParam(value: unknown): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return JSON.stringify(value);
 }
 
 /**
@@ -46,12 +61,17 @@ export interface CardStoriesConfig<TRootState = unknown> {
  * ```
  */
 export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConfig<TRootState>) {
-  const { stack, sharedSelectors, sharedActions, createStore, icons, cardParams = {} } = config;
+  const { stack, sharedSelectors, sharedActions, createStore, icons, cardParams = {}, seedStore } = config;
 
   function StoryStoreProvider({ Story }: { Story: ComponentType }) {
     const storeRef = useRef<any>(null);
+    const seededRef = useRef(false);
     if (!storeRef.current) {
       storeRef.current = createStore();
+    }
+    if (!seededRef.current) {
+      seedStore?.(storeRef.current);
+      seededRef.current = true;
     }
 
     return (
@@ -67,7 +87,7 @@ export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConf
   }
 
   // Shell-at-card component for navigating to a specific card
-  function ShellAtCard({ card, param }: { card: string; param?: string }) {
+  function ShellAtCard({ card, params }: { card: string; params?: unknown }) {
     const debugHooks = useStandardDebugHooks();
     const stackAtCard = {
       ...stack,
@@ -81,7 +101,7 @@ export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConf
         sharedActions={sharedActions}
         debugHooks={debugHooks}
         icons={icons}
-        homeParam={param}
+        homeParam={toStoryParam(params)}
       />
     );
   }
@@ -103,12 +123,12 @@ export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConf
   /**
    * Creates a story object for a specific card.
    * @param card — card ID from the stack
-   * @param param — optional param value (for detail cards)
+   * @param params — optional structured params payload (encoded for nav storage)
    */
-  function createStory(card: string, param?: string) {
-    const resolvedParam = param ?? cardParams[card];
+  function createStory(card: string, params?: unknown) {
+    const resolvedParams = params ?? cardParams[card];
     return {
-      render: () => <ShellAtCard card={card} param={resolvedParam} />,
+      render: () => <ShellAtCard card={card} params={resolvedParams} />,
     };
   }
 

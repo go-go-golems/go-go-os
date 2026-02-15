@@ -6,17 +6,17 @@
 - [ ] [Phase 0] Capture baseline shell behavior screenshots for inventory/todo/crm/book-tracker apps.
 - [ ] [Phase 0] Capture baseline test status (npm run test, typecheck, lint) and store outputs in ticket notes.
 - [ ] [Phase 0] Finalize explicit legacy deletion inventory (files, exports, CSS parts).
-- [ ] [Phase 1] Create windowing state module skeleton in packages/engine/src/features/windowing/.
-- [ ] [Phase 1] Implement WindowInstance + desktop/session state types.
-- [ ] [Phase 1] Implement openWindow reducer with dedupe policy + deterministic window IDs.
-- [ ] [Phase 1] Implement focusWindow reducer with monotonic zCounter updates.
-- [ ] [Phase 1] Implement closeWindow reducer with deterministic fallback focus behavior.
-- [ ] [Phase 1] Implement moveWindow reducer with viewport clamp policy.
-- [ ] [Phase 1] Implement resizeWindow reducer with min width/height constraints.
-- [ ] [Phase 1] Implement desktop state reducers (activeMenuId, selectedIconId).
-- [ ] [Phase 1] Implement per-session nav reducers (sessionNavGo, sessionNavBack, sessionNavHome).
-- [ ] [Phase 1] Add selectors for ordered windows, focused window, active menu, selected icon, session nav.
-- [ ] [Phase 1] Add unit tests for all windowing reducers and selector invariants.
+- [x] [Phase 1] Create windowing state module skeleton in packages/engine/src/features/windowing/.
+- [x] [Phase 1] Implement WindowInstance + desktop/session state types.
+- [x] [Phase 1] Implement openWindow reducer with dedupe policy + deterministic window IDs.
+- [x] [Phase 1] Implement focusWindow reducer with monotonic zCounter updates.
+- [x] [Phase 1] Implement closeWindow reducer with deterministic fallback focus behavior.
+- [x] [Phase 1] Implement moveWindow reducer with viewport clamp policy.
+- [x] [Phase 1] Implement resizeWindow reducer with min width/height constraints.
+- [x] [Phase 1] Implement desktop state reducers (activeMenuId, selectedIconId).
+- [x] [Phase 1] Implement per-session nav reducers (sessionNavGo, sessionNavBack, sessionNavHome).
+- [x] [Phase 1] Add selectors for ordered windows, focused window, active menu, selected icon, session nav.
+- [x] [Phase 1] Add unit tests for all windowing reducers and selector invariants.
 - [x] [Phase 2] Build DesktopMenuBar component with typed menu sections and command IDs.
 - [x] [Phase 2] Build DesktopIconLayer component with single-select + double-open + keyboard open behavior.
 - [x] [Phase 2] Build WindowLayer component rendering windows in deterministic z order.

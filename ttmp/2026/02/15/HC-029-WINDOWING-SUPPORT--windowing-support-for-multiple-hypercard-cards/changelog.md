@@ -88,3 +88,23 @@ Implemented all 14 CSS improvement tasks (52-65): restored mac1 visual fidelity 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/types.ts — Added separator type
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/theme/base.css — All windowing CSS changes — tokens
 
+
+## 2026-02-15
+
+Phase 1 complete: implemented windowing state slice (windowingSlice.ts, selectors.ts, types.ts) with 11 reducers, 10 selectors, and 47 passing unit tests. Covers open/focus/close/move/resize windows, desktop UI state, per-session nav, dedupe, z-order, viewport clamp, and focus fallback. Commit 52b3284.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/__tests__/windowing.test.ts — 47 unit tests for windowing slice
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/selectors.ts — Windowing state selectors
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/windowingSlice.ts — Core windowing reducers
+
+
+## 2026-02-15
+
+Desktop stories now fill 100vw×100vh. Added 3 big-desktop stories (BigDesktopIdle with 11 icons, BigDesktopWorkspace with 5 windows, BigDesktopSixWindows with 6 tiled windows). Commit 8efd9e5.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx — Full-viewport stories with configurable icons
+

@@ -1229,3 +1229,150 @@ Add tasks for CSS improvements to tasks (as next to tackle), then work them off 
   - `npx biome check --write packages/engine/src/components/shell/windowing packages/engine/src/parts.ts packages/engine/src/theme/base.css` — clean after hr fix
   - `npm run storybook -- --smoke-test --ci` — clean
 - Tasks completed: 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
+
+## Step 14: CSS polish — flat menu bar, dithered desktop, drag fix, icon filters
+
+A series of quick visual polish fixes based on direct Storybook feedback. These were small targeted CSS edits shipped as individual commits.
+
+### Prompt Context
+
+**User prompt (verbatim):** Multiple feedback rounds:
+1. "the desktop still has gradients and all that, also I can't seem to be able to drag windows all the way to the top."
+2. "right border on menu bar is missing, is that normal?"
+3. "icons should be black and white / inverted, is that possible with the mojis we currently use?"
+4. Several iterations on icon selection filter.
+
+**Assistant interpretation:** Fix visual regressions and polish to match mac1 closer — remove gradients, fix drag constraint, fix menu bar border, add monochrome icon filter.
+
+**Inferred user intent:** Get the visual feel right before moving to deeper architecture work.
+
+**Commits:**
+- `4945d26` — flat menu bar, dithered desktop, drag fix
+- `086d0bf` — menu bar bottom-border only
+- `e294d02` — monochrome icons (grayscale + contrast)
+- `420c7cc` / `35d81a0` / `c78bb79` / `9254cc5` — icon selection filter iterations
+
+### What I did
+
+1. Replaced menu bar gradient with flat white `var(--hc-color-bg)`
+2. Replaced desktop grid-line pattern with classic 4×4 dithered checkerboard via inline SVG data-URI
+3. Replaced resize handle diagonal gradient with flat white
+4. Fixed window drag `minY` constraint from 30 to 0 (windows can reach top of desktop)
+5. Changed menu bar border from all-sides box to bottom-only (mac1 edge-to-edge bar)
+6. Added `filter: grayscale(1) contrast(1.2)` to icon glyphs for monochrome look
+7. Iterated on icon selection filter — settled on `grayscale(1) brightness(0) invert(1) contrast(1.2)`
+
+### What worked
+
+- Inline SVG data-URI for desktop dither pattern renders correctly at all zoom levels
+- `filter: grayscale(1)` reliably desaturates all emoji across browsers
+- Bottom-only border on menu bar gives correct mac1 edge-to-edge look
+
+### What didn't work
+
+- First icon selection attempt (`brightness(0) invert(1)`) crushed everything to white — no detail
+- `grayscale(1) invert(1) contrast(1.2)` looked bad per user feedback
+- Plain `invert(1)` was white blob — authentic mac1 but user wanted detail
+- Final: `grayscale(1) brightness(0) invert(1) contrast(1.2)` — user's explicit preference
+
+### What I learned
+
+- CSS filter order matters enormously — `brightness(0)` before vs after `invert()` gives completely different results
+- The mac1 icon inversion was designed for 1-bit graphics; emoji need different treatment
+- User feedback loops on visual tuning are fast when changes are CSS-only
+
+### What was tricky to build
+
+- Nothing complex — all single-line CSS edits. The tricky part was converging on the right icon filter chain through iteration.
+
+### What warrants a second pair of eyes
+
+- Dithered desktop pattern appearance at very high DPI (4K+ displays)
+
+### What should be done in the future
+
+- N/A — visual polish complete for now
+
+### Code review instructions
+
+- Check `packages/engine/src/theme/base.css` — windowing section
+- Check `packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx` — minY constraint
+
+### Technical details
+
+- 7 commits for CSS polish iterations
+
+## Step 15: Phase 1 — Windowing state slice, selectors, and unit tests
+
+Built the entire Phase 1 windowing state domain as a new Redux Toolkit slice. This is the backbone that everything in Phases 3–5 will depend on. The slice is completely isolated — no changes to existing code, no touching HyperCardShell yet.
+
+### Prompt Context
+
+**User prompt (verbatim):** "yes" (in response to recommendation to start Phase 1)
+
+**Assistant interpretation:** Implement the windowing state slice with all reducers, selectors, types, and unit tests.
+
+**Inferred user intent:** Build the state foundation so the shell cutover can proceed.
+
+**Commit (code):** `52b3284` — "feat(windowing): add windowing state slice with reducers, selectors, and 47 unit tests"
+
+### What I did
+
+- Created `packages/engine/src/features/windowing/` module with 4 files:
+  - `types.ts` — WindowInstance, WindowBounds, WindowContent, CardSessionRef, NavEntry, SessionNav, DesktopState, WindowingState, OpenWindowPayload
+  - `windowingSlice.ts` — 11 reducers: openWindow, focusWindow, closeWindow, moveWindow, resizeWindow, setActiveMenu, setSelectedIcon, clearDesktopTransient, sessionNavGo, sessionNavBack, sessionNavHome
+  - `selectors.ts` — 10 selectors: windowsInOrder, windowsByZ, focusedWindow, focusedWindowId, activeMenuId, selectedIconId, windowById, windowCount, sessionCurrentNav, sessionNavDepth
+  - `index.ts` — barrel exports for all actions, selectors, and types
+- Created `packages/engine/src/__tests__/windowing.test.ts` — 47 unit tests
+
+### Why
+
+- Phase 1 is the state foundation. Without deterministic reducers and selectors, Phase 3 (shell rewrite) and Phase 4 (card session hosting) can't proceed.
+- Following existing codebase patterns (RTK slice + vitest) for consistency.
+
+### What worked
+
+- All 47 tests pass on first run
+- Typecheck clean, Biome clean
+- Reducer patterns match the pseudocode from the design docs closely
+- The dedupe logic (openWindow with matching dedupeKey focuses existing window) works correctly
+- Focus fallback on close (highest-z remaining window) is deterministic
+- Session nav stacks bootstrap automatically when card windows open and clean up on close
+
+### What didn't work
+
+- Initial test file had an unused `wrap()` helper function that Biome flagged — removed it.
+
+### What I learned
+
+- RTK's Immer integration makes the reducer code very clean — direct mutation syntax with immutable semantics.
+- The viewport clamping logic for `moveWindow` (`x >= -width + 40` to keep 40px visible) is simple but effective.
+
+### What was tricky to build
+
+- The `openWindow` reducer has three responsibilities: dedupe check, window creation, and session bootstrap. Keeping these ordered correctly (check dedupe → early return → create window → bootstrap session) was important to avoid creating orphan sessions for deduped opens.
+- The `closeWindow` focus fallback needed to find the highest-z *remaining* window after deletion, using `reduce()` over the remaining values rather than relying on order.
+
+### What warrants a second pair of eyes
+
+- The viewport clamp in `moveWindow` uses a hardcoded 40px visible-width minimum. This may need to be a configurable constraint.
+- Session cleanup in `closeWindow` deletes the session immediately. If we ever need "undo close" we'd need to defer cleanup.
+
+### What should be done in the future
+
+- Phase 3: Wire the slice into HyperCardShell and connect primitives to dispatch
+- Consider adding `windowingReducer` to the store configuration in apps
+
+### Code review instructions
+
+- Start with types: `packages/engine/src/features/windowing/types.ts`
+- Then reducers: `packages/engine/src/features/windowing/windowingSlice.ts`
+- Then selectors: `packages/engine/src/features/windowing/selectors.ts`
+- Then tests: `packages/engine/src/__tests__/windowing.test.ts`
+- Run: `npx vitest run packages/engine/src/__tests__/windowing.test.ts`
+
+### Technical details
+
+- 11 reducers, 10 selectors, 47 tests
+- Tasks completed: 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+- Verification: typecheck clean, biome clean, all tests pass

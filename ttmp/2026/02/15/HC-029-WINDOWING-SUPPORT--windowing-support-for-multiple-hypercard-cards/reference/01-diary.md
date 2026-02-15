@@ -10,6 +10,10 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: apps/inventory/.storybook/main.ts
+      Note: Validated preset/addon configuration during Storybook failure triage
+    - Path: package.json
+      Note: Root Storybook script now routes through workspace-local binary
     - Path: packages/engine/src/cards/runtime.ts
       Note: Runtime action plumbing reviewed during feasibility analysis
     - Path: packages/engine/src/components/shell/HyperCardShell.tsx
@@ -26,6 +30,7 @@ LastUpdated: 2026-02-15T14:30:00-05:00
 WhatFor: Preserve full implementation/research trace and design rationale for HC-029.
 WhenToUse: Use when reviewing why design decisions were made and how to validate them.
 ---
+
 
 
 
@@ -553,3 +558,131 @@ I also replaced the placeholder task list with a full phase-ordered execution ch
   - multiple `docmgr task add --ticket HC-029-WINDOWING-SUPPORT --text "..."`
   - `docmgr doc relate --doc /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/design-doc/02-clean-cutover-implementation-plan.md --file-note ...`
   - `docmgr changelog update --ticket HC-029-WINDOWING-SUPPORT --entry "Added a detailed clean-cutover implementation plan (no backwards compatibility, no wrappers) and expanded ticket tasks into a 51-item phase-by-phase execution checklist." --file-note ...`
+
+## Step 8: Unblock Storybook preset loading in workspace command path
+
+I pivoted to a build-blocking Storybook startup failure before continuing HC-029 implementation work. The failure prevented visual tracking in Storybook, so I treated it as a prerequisite fix for the ticket workflow.
+
+The root cause was dependency resolution from an `npx`-spawned Storybook runtime while workspace dependencies were not installed, combined with a root script that preferred transient invocation over the app workspace binary.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+```text
+First fix this: ■  SB_CORE-SERVER_0002 (CriticalPresetLoadError): Storybook failed to load the
+│  following preset: @storybook/react-vite/preset.
+
+│  Please check whether your setup is correct, the Storybook dependencies (and
+│  their peer dependencies) are installed correctly and there are no package
+│  version clashes.
+
+│  If you believe this is a bug, please open an issue on Github.
+
+│  Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@storybook/react-vite'
+│  imported from
+│  /home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/_node-chunks/chunk-C6KVY6VB.js
+│  at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+│  at packageResolve (node:internal/modules/esm/resolve:767:81)
+│  at moduleResolve (node:internal/modules/esm/resolve:853:18)
+│  at defaultResolve (node:internal/modules/esm/resolve:983:11)
+│  at nextResolve (node:internal/modules/esm/hooks:748:28)
+│  at Hooks.resolve (node:internal/modules/esm/hooks:240:30)
+│  at MessagePort.handleMessage (node:internal/modules/esm/worker:199:24)
+│  at [nodejs.internal.kHybridDispatch] (node:internal/event_target:827:20)
+│  at MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+
+│  More info:
+│  
+│  at loadPreset
+│  (file:///home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/_node-chunks/chunk-WF46L34H.js:10081:13)
+│  at async Promise.all (index 0)
+│  at async loadPresets
+│  (file:///home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/_node-chunks/chunk-WF46L34H.js:10090:73)
+│  at async getPresets
+│  (file:///home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/_node-chunks/chunk-WF46L34H.js:10121:23)
+│  at async buildDevStandalone
+│  (file:///home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/core-server/index.js:7532:17)
+│  at async withTelemetry
+│  (file:///home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/_node-chunks/chunk-KIOKJLL5.js:218:12)
+│  at async dev
+│  (file:///home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/bin/core.js:2734:3)
+│  at async _Command.<anonymous>
+│  (file:///home/manuel/.npm/_npx/6fe9a9991b157df1/node_modules/storybook/dist/bin/core.js:2803:92)
+│
+▲  Broken build, fix the error above.
+│  You may need to refresh the browser.
+│
+▲  Could not resolve addon "@storybook/addon-docs", skipping. Is it installed?
+│
+▲  Could not resolve addon "@storybook/addon-docs", skipping. Is it installed?
+│
+◆  Would you like to send anonymous crash reports to improve Storybook an (run storybook in a tmux if you want). It used to work I think.
+```
+
+**Assistant interpretation:** Restore local Storybook startup reliability by fixing preset resolution and command wiring, then verify with smoke tests.
+
+**Inferred user intent:** Unblock Storybook immediately so implementation progress can be tracked visually while HC-029 work continues.
+
+**Commit (code):** ae7237f — "build: run storybook from inventory workspace"
+
+### What I did
+
+- Inspected Storybook config at `apps/inventory/.storybook/main.ts` and confirmed `framework: '@storybook/react-vite'` plus `@storybook/addon-docs` were correctly configured.
+- Verified install state:
+  - `npm ls @storybook/react-vite @storybook/addon-docs storybook --all --depth=2`
+  - Result before install: empty tree.
+- Ran `npm install` at repo root to install workspace dependencies.
+- Updated root script in `package.json`:
+  - from `npx storybook dev -p 6006 --config-dir apps/inventory/.storybook`
+  - to `npm run -w apps/inventory storybook -- --config-dir .storybook`
+- Verified startup path with:
+  - `npm run storybook -- --smoke-test --ci`
+  - `npm run -w apps/inventory storybook -- --smoke-test --ci --config-dir .storybook`
+
+### Why
+
+- `npx` was invoking a transient Storybook runtime path (`~/.npm/_npx/...`) and obscuring local workspace dependency state.
+- Using the workspace script ensures the locally installed Storybook toolchain and app config are used consistently.
+
+### What worked
+
+- Storybook preset/addon resolution errors no longer reproduced after install and script update.
+- Smoke runs exited successfully with Storybook 10.2.8.
+
+### What didn't work
+
+- Before dependency installation, `npm run -w apps/inventory storybook -- --smoke-test --ci` failed with:
+  - `sh: 1: storybook: not found`
+- Before this fix, root Storybook command path produced:
+  - `Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@storybook/react-vite'`
+  - `Could not resolve addon "@storybook/addon-docs", skipping. Is it installed?`
+
+### What I learned
+
+- In this workspace, Storybook reliability depends on local workspace installs plus running through the app workspace binary path rather than transient `npx` execution.
+
+### What was tricky to build
+
+- The misleading part was that app `package.json` already declared all required Storybook deps, so the issue looked like version clash at first glance. The true blocker was install state plus command invocation path.
+
+### What warrants a second pair of eyes
+
+- Validate whether root `storybook` should remain inventory-scoped or expand to a multi-app Storybook strategy in a future ticket.
+
+### What should be done in the future
+
+- Continue HC-029 Phase 2 by implementing new windowing primitives and adding dedicated desktop/window stories.
+
+### Code review instructions
+
+- Review script change:
+  - `package.json`
+- Reproduce verification:
+  - `npm run storybook -- --smoke-test --ci`
+
+### Technical details
+
+- Core commands:
+  - `npm ls @storybook/react-vite @storybook/addon-docs storybook --all --depth=2`
+  - `npm install`
+  - `npm run storybook -- --smoke-test --ci`

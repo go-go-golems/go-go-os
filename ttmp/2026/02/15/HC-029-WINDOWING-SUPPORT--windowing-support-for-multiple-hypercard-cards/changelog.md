@@ -25,3 +25,13 @@ Added a detailed clean-cutover implementation plan (no backwards compatibility, 
 - /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/design-doc/02-clean-cutover-implementation-plan.md — Detailed clean-cutover plan deliverable
 - /home/manuel/code/wesen/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/tasks.md — Expanded detailed execution task list
 
+
+## 2026-02-15
+
+Unblocked Storybook preset loading by installing workspace dependencies and changing root storybook script to run via apps/inventory workspace (commit ae7237f).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/package.json — Storybook invocation now uses workspace binary
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/reference/01-diary.md — Step 8 captures triage details and verification commands
+

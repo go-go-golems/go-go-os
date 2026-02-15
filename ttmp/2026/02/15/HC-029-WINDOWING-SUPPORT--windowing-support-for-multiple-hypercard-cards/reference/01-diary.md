@@ -19,9 +19,13 @@ RelatedFiles:
     - Path: packages/engine/src/components/shell/HyperCardShell.tsx
       Note: Current shell architecture inspected during mapping
     - Path: packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx
-      Note: Storybook-first desktop primitive scenarios for HC-029
+      Note: |-
+        Storybook-first desktop primitive scenarios for HC-029
+        Story rewired to consume shared interaction controller
     - Path: packages/engine/src/components/shell/windowing/WindowLayer.tsx
       Note: Deterministic z-order window rendering primitive
+    - Path: packages/engine/src/components/shell/windowing/useWindowInteractionController.ts
+      Note: Reusable pointer drag/resize controller with cleanup-safe listener lifecycle
     - Path: packages/engine/src/theme/base.css
       Note: Windowing shell tokenized styles for menu/icons/windows
     - Path: ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/design-doc/01-windowing-container-framework-study.md
@@ -36,6 +40,7 @@ LastUpdated: 2026-02-15T14:30:00-05:00
 WhatFor: Preserve full implementation/research trace and design rationale for HC-029.
 WhenToUse: Use when reviewing why design decisions were made and how to validate them.
 ---
+
 
 
 
@@ -799,3 +804,87 @@ Start working on docmgr HC-029-WINDOWING-SUPPORT and keep a frequent diary. Comm
 - Checkpoint commands:
   - `docmgr task check --ticket HC-029-WINDOWING-SUPPORT --id 15,16,17,18,21`
   - `git commit -m \"feat(shell): add desktop windowing primitives and stories\"`
+
+## Step 10: Extract pointer interaction controller into reusable windowing hook
+
+After the first primitive/story commit, drag/resize pointer logic was still embedded in the Storybook demo component. I extracted that into a reusable hook so Task 19 is covered by engine code, not only story-local scaffolding.
+
+This keeps interaction behavior portable for the upcoming Phase 3 shell rewrite and reduces repeated event-listener code.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 9)
+
+**Assistant interpretation:** Keep moving HC-029 forward with Storybook-trackable milestones and frequent, commit-linked diary updates.
+
+**Inferred user intent:** Land incremental, reusable implementation artifacts rather than temporary demo-only logic.
+
+**Commit (code):** 8dacf1e — "feat(shell): extract reusable window interaction controller"
+
+### What I did
+
+- Added reusable hook:
+  - `packages/engine/src/components/shell/windowing/useWindowInteractionController.ts`
+  - API includes:
+    - `beginMove(windowId, event)`
+    - `beginResize(windowId, event)`
+    - `stopInteraction()`
+  - supports constraints (`minX`, `minY`, `minWidth`, `minHeight`)
+  - includes cleanup-safe listener teardown on `pointerup`, `pointercancel`, and unmount.
+- Rewired Storybook demo to consume the hook instead of inline drag-state logic:
+  - `packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx`
+- Exported hook from module barrel:
+  - `packages/engine/src/components/shell/windowing/index.ts`
+- Checked task status:
+  - marked `[19]` complete in `tasks.md`.
+- Verification:
+  - `npx biome check --write packages/engine/src/components/shell/windowing`
+  - `npm run -w packages/engine typecheck`
+  - `npm run storybook -- --smoke-test --ci`
+
+### Why
+
+- Needed pointer behavior to be reusable and testable outside Storybook demos.
+- Listener lifecycle correctness is a risk area in windowing UI; centralizing interaction logic simplifies review and reuse.
+
+### What worked
+
+- Hook extraction preserved drag/resize behavior in stories.
+- Typecheck and Storybook smoke still pass after refactor.
+
+### What didn't work
+
+- Initial scripted edit left inconsistent story internals (`dragStateRef` leftover and missing `windowsRef` setup).
+- Resolution: manually patched `DesktopPrimitives.stories.tsx`, then re-ran Biome and typecheck.
+
+### What I learned
+
+- Story-level proof-of-concept interaction code transitions cleanly to a shared hook when state mutation APIs (`onMoveWindow`/`onResizeWindow`) are kept explicit.
+
+### What was tricky to build
+
+- Ensuring listener cleanup is deterministic across all exit paths (`pointerup`, `pointercancel`, reruns, unmount) without leaking handlers or stale drag state.
+
+### What warrants a second pair of eyes
+
+- Confirm the hook API is the right long-term surface for Phase 3 shell integration (especially around focus ordering and viewport clamping policy coupling).
+
+### What should be done in the future
+
+- Add dedicated unit tests for `useWindowInteractionController` behavior and cleanup guarantees.
+- Complete Task 20 accessibility keyboard flow details for window focus traversal.
+
+### Code review instructions
+
+- Start at:
+  - `packages/engine/src/components/shell/windowing/useWindowInteractionController.ts`
+  - `packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx`
+- Validate:
+  - `npm run -w packages/engine typecheck`
+  - `npm run storybook -- --smoke-test --ci`
+
+### Technical details
+
+- Commands:
+  - `docmgr task check --ticket HC-029-WINDOWING-SUPPORT --id 19`
+  - `git commit -m "feat(shell): extract reusable window interaction controller"`

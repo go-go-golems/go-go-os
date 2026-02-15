@@ -21,7 +21,7 @@
 - [x] [Phase 2] Build DesktopIconLayer component with single-select + double-open + keyboard open behavior.
 - [x] [Phase 2] Build WindowLayer component rendering windows in deterministic z order.
 - [x] [Phase 2] Build WindowSurface + WindowTitleBar + WindowResizeHandle components.
-- [ ] [Phase 2] Implement pointer interaction controller (drag/resize) with listener cleanup guarantees.
+- [x] [Phase 2] Implement pointer interaction controller (drag/resize) with listener cleanup guarantees.
 - [ ] [Phase 2] Add accessibility roles and keyboard interactions for menubar/menu/menuitem/icon/window.
 - [x] [Phase 2] Add Storybook stories for desktop primitives (idle, 2-window overlap, dense window set).
 - [ ] [Phase 3] Rewrite HyperCardShell.tsx to orchestrate DesktopMenuBar, DesktopIconLayer, WindowLayer.

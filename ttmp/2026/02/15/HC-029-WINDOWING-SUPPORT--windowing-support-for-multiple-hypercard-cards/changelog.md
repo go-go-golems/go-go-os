@@ -46,3 +46,13 @@ Implemented first Storybook-visible Phase 2 slice: added desktop windowing primi
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/index.ts — New public windowing primitive exports
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/tasks.md — Phase 2 tasks 15
 
+
+## 2026-02-15
+
+Extracted reusable useWindowInteractionController hook for window drag/resize with pointer listener cleanup guarantees, rewired Storybook demo to use it, and checked Phase 2 Task 19 complete (commit 8dacf1e).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/useWindowInteractionController.ts — New shared interaction controller for move/resize
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/tasks.md — Task 19 checked complete
+

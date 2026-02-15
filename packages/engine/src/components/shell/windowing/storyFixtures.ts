@@ -7,6 +7,7 @@ export const WINDOWING_MENU_SECTIONS: DesktopMenuSection[] = [
     items: [
       { id: 'new-window', label: 'New Window', commandId: 'file.new-window', shortcut: 'Ctrl+N' },
       { id: 'close-window', label: 'Close Window', commandId: 'file.close-window', shortcut: 'Ctrl+W' },
+      { separator: true },
       { id: 'open-recent', label: 'Open Recent', commandId: 'file.open-recent' },
     ],
   },
@@ -16,6 +17,7 @@ export const WINDOWING_MENU_SECTIONS: DesktopMenuSection[] = [
     items: [
       { id: 'tile', label: 'Tile', commandId: 'window.tile' },
       { id: 'cascade', label: 'Cascade', commandId: 'window.cascade' },
+      { separator: true },
       { id: 'bring-all', label: 'Bring All To Front', commandId: 'window.front' },
     ],
   },

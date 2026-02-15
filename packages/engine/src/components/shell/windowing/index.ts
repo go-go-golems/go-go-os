@@ -2,8 +2,10 @@ export { DesktopIconLayer, type DesktopIconLayerProps } from './DesktopIconLayer
 export { DesktopMenuBar, type DesktopMenuBarProps } from './DesktopMenuBar';
 export type {
   DesktopIconDef,
+  DesktopMenuEntry,
   DesktopMenuItem,
   DesktopMenuSection,
+  DesktopMenuSeparator,
   DesktopWindowDef,
 } from './types';
 export {

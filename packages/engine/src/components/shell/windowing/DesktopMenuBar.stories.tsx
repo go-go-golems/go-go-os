@@ -68,7 +68,9 @@ export const WithDisabledItems: Story = {
       }
       return {
         ...section,
-        items: section.items.map((item) => (item.id === 'close-window' ? { ...item, disabled: true } : item)),
+        items: section.items.map((entry) =>
+          'separator' in entry ? entry : entry.id === 'close-window' ? { ...entry, disabled: true } : entry,
+        ),
       };
     }),
     initialActiveMenuId: 'file',

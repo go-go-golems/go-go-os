@@ -6,10 +6,16 @@ export interface DesktopMenuItem {
   disabled?: boolean;
 }
 
+export interface DesktopMenuSeparator {
+  separator: true;
+}
+
+export type DesktopMenuEntry = DesktopMenuItem | DesktopMenuSeparator;
+
 export interface DesktopMenuSection {
   id: string;
   label: string;
-  items: DesktopMenuItem[];
+  items: DesktopMenuEntry[];
 }
 
 export interface DesktopIconDef {
@@ -30,4 +36,6 @@ export interface DesktopWindowDef {
   height: number;
   zIndex: number;
   focused?: boolean;
+  isDialog?: boolean;
+  isResizable?: boolean;
 }

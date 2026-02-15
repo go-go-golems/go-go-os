@@ -1,6 +1,10 @@
 import { useId } from 'react';
 import { PARTS } from '../../../parts';
-import type { DesktopMenuSection } from './types';
+import type { DesktopMenuEntry, DesktopMenuSection } from './types';
+
+function isSeparator(entry: DesktopMenuEntry): entry is { separator: true } {
+  return 'separator' in entry && entry.separator === true;
+}
 
 export interface DesktopMenuBarProps {
   sections: DesktopMenuSection[];
@@ -54,22 +58,26 @@ export function DesktopMenuBar({ sections, activeMenuId, onActiveMenuChange, onC
             </button>
             {isOpen ? (
               <div id={panelId} data-part={PARTS.windowingMenuPanel} role="menu" aria-label={section.label}>
-                {section.items.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    data-part={PARTS.windowingMenuItem}
-                    role="menuitem"
-                    disabled={item.disabled}
-                    onClick={() => {
-                      onCommand?.(item.commandId, section.id);
-                      onActiveMenuChange?.(null);
-                    }}
-                  >
-                    <span>{item.label}</span>
-                    {item.shortcut ? <span data-part={PARTS.windowingMenuShortcut}>{item.shortcut}</span> : null}
-                  </button>
-                ))}
+                {section.items.map((entry, idx) =>
+                  isSeparator(entry) ? (
+                    <hr key={`sep-${idx}`} data-part={PARTS.windowingMenuSeparator} />
+                  ) : (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      data-part={PARTS.windowingMenuItem}
+                      role="menuitem"
+                      disabled={entry.disabled}
+                      onClick={() => {
+                        onCommand?.(entry.commandId, section.id);
+                        onActiveMenuChange?.(null);
+                      }}
+                    >
+                      <span>{entry.label}</span>
+                      {entry.shortcut ? <span data-part={PARTS.windowingMenuShortcut}>{entry.shortcut}</span> : null}
+                    </button>
+                  ),
+                )}
               </div>
             ) : null}
           </div>

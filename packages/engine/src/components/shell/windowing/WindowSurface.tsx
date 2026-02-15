@@ -25,8 +25,9 @@ export function WindowSurface({
     <section
       data-part={PARTS.windowingWindow}
       data-state={window.focused ? 'focused' : undefined}
+      data-variant={window.isDialog ? 'dialog' : undefined}
       role="dialog"
-      aria-modal={false}
+      aria-modal={window.isDialog ?? false}
       aria-label={window.title}
       style={{
         left: window.x,
@@ -42,11 +43,13 @@ export function WindowSurface({
         title={window.title}
         icon={window.icon}
         focused={window.focused}
-        onClose={() => onCloseWindow?.(window.id)}
-        onPointerDown={(event) => onWindowDragStart?.(window.id, event)}
+        onClose={window.isDialog ? undefined : () => onCloseWindow?.(window.id)}
+        onPointerDown={window.isDialog ? undefined : (event) => onWindowDragStart?.(window.id, event)}
       />
       <div data-part={PARTS.windowingWindowBody}>{children}</div>
-      <WindowResizeHandle onPointerDown={(event) => onWindowResizeStart?.(window.id, event)} />
+      {window.isResizable !== false && !window.isDialog ? (
+        <WindowResizeHandle onPointerDown={(event) => onWindowResizeStart?.(window.id, event)} />
+      ) : null}
     </section>
   );
 }

@@ -55,11 +55,13 @@ export const PARTS = {
   aiPanel: 'ai-panel',
   aiPanelHeader: 'ai-panel-header',
   // Desktop windowing shell
+  windowingDesktopShell: 'windowing-desktop-shell',
   windowingMenuBar: 'windowing-menu-bar',
   windowingMenuButton: 'windowing-menu-button',
   windowingMenuPanel: 'windowing-menu-panel',
   windowingMenuItem: 'windowing-menu-item',
   windowingMenuShortcut: 'windowing-menu-shortcut',
+  windowingMenuSeparator: 'windowing-menu-separator',
   windowingIconLayer: 'windowing-icon-layer',
   windowingIcon: 'windowing-icon',
   windowingIconGlyph: 'windowing-icon-glyph',

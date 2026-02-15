@@ -1,0 +1,56 @@
+# Tasks
+
+## TODO
+
+
+- [ ] [Phase 0] Capture baseline shell behavior screenshots for inventory/todo/crm/book-tracker apps.
+- [ ] [Phase 0] Capture baseline test status (npm run test, typecheck, lint) and store outputs in ticket notes.
+- [ ] [Phase 0] Finalize explicit legacy deletion inventory (files, exports, CSS parts).
+- [ ] [Phase 1] Create windowing state module skeleton in packages/engine/src/features/windowing/.
+- [ ] [Phase 1] Implement WindowInstance + desktop/session state types.
+- [ ] [Phase 1] Implement openWindow reducer with dedupe policy + deterministic window IDs.
+- [ ] [Phase 1] Implement focusWindow reducer with monotonic zCounter updates.
+- [ ] [Phase 1] Implement closeWindow reducer with deterministic fallback focus behavior.
+- [ ] [Phase 1] Implement moveWindow reducer with viewport clamp policy.
+- [ ] [Phase 1] Implement resizeWindow reducer with min width/height constraints.
+- [ ] [Phase 1] Implement desktop state reducers (activeMenuId, selectedIconId).
+- [ ] [Phase 1] Implement per-session nav reducers (sessionNavGo, sessionNavBack, sessionNavHome).
+- [ ] [Phase 1] Add selectors for ordered windows, focused window, active menu, selected icon, session nav.
+- [ ] [Phase 1] Add unit tests for all windowing reducers and selector invariants.
+- [ ] [Phase 2] Build DesktopMenuBar component with typed menu sections and command IDs.
+- [ ] [Phase 2] Build DesktopIconLayer component with single-select + double-open + keyboard open behavior.
+- [ ] [Phase 2] Build WindowLayer component rendering windows in deterministic z order.
+- [ ] [Phase 2] Build WindowSurface + WindowTitleBar + WindowResizeHandle components.
+- [ ] [Phase 2] Implement pointer interaction controller (drag/resize) with listener cleanup guarantees.
+- [ ] [Phase 2] Add accessibility roles and keyboard interactions for menubar/menu/menuitem/icon/window.
+- [ ] [Phase 2] Add Storybook stories for desktop primitives (idle, 2-window overlap, dense window set).
+- [ ] [Phase 3] Rewrite HyperCardShell.tsx to orchestrate DesktopMenuBar, DesktopIconLayer, WindowLayer.
+- [ ] [Phase 3] Remove legacy layoutMode branching and split/drawer/cardChat shell logic.
+- [ ] [Phase 3] Replace navShortcuts/top nav model with desktop menu/icon launch model.
+- [ ] [Phase 3] Add command router for menu/icon/window command dispatch.
+- [ ] [Phase 4] Implement CardSessionHost for per-window card rendering.
+- [ ] [Phase 4] Implement WindowContentHost for card/app/dialog content resolution.
+- [ ] [Phase 4] Introduce session-aware runtime card key derivation (cardId::cardSessionId).
+- [ ] [Phase 4] Update runtime context creation to route nav.go/nav.back by target window session.
+- [ ] [Phase 4] Update runtime debug metadata to include window/session identifiers.
+- [ ] [Phase 4] Add integration tests for duplicate same-card windows with isolated local state.
+- [ ] [Phase 5] Update apps/inventory/src/App.tsx to new desktop shell configuration.
+- [ ] [Phase 5] Update apps/todo/src/App.tsx to new desktop shell configuration.
+- [ ] [Phase 5] Update apps/crm/src/App.tsx to new desktop shell configuration.
+- [ ] [Phase 5] Update apps/book-tracker-debug/src/App.tsx to new desktop shell configuration.
+- [ ] [Phase 5] Define initial desktop icon/menu configs per app stack.
+- [ ] [Phase 6] Delete obsolete shell files LayoutSplit.tsx, LayoutDrawer.tsx, LayoutCardChat.tsx.
+- [ ] [Phase 6] Delete obsolete shell file TabBar.tsx and associated Storybook references.
+- [ ] [Phase 6] Delete WindowChrome.tsx if superseded; otherwise re-scope it to desktop window primitives only.
+- [ ] [Phase 6] Remove obsolete exports from packages/engine/src/components/shell/index.ts.
+- [ ] [Phase 6] Remove obsolete part constants from packages/engine/src/parts.ts.
+- [ ] [Phase 6] Remove dead tab/split/drawer shell CSS from packages/engine/src/theme/base.css.
+- [ ] [Phase 6] Remove/replace tests that only validate removed legacy shell architecture.
+- [ ] [Phase 7] Add integration tests for multi-window focus cycling and close-focus handoff.
+- [ ] [Phase 7] Add integration tests for menu commands targeting focused window only.
+- [ ] [Phase 7] Add integration tests for icon open/focus behavior and selection clearing.
+- [ ] [Phase 7] Add narrow viewport fallback tests (desktop degradation behavior).
+- [ ] [Phase 7] Run full repo checks: npm run test, npm run typecheck, npm run lint, npm run build.
+- [ ] [Phase 7] Perform manual UX verification checklist (mouse + keyboard + accessibility).
+- [ ] [Gate] Verify no compatibility wrappers, no deprecated shell APIs, and no dead legacy files remain.
+- [ ] [Gate] Update HC-029 docs and changelog with final implementation outcomes and follow-up risks.

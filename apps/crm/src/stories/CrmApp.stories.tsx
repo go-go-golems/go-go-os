@@ -1,13 +1,10 @@
 import { createStoryHelpers } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
-import { crmSharedActions, crmSharedSelectors } from '../app/cardRuntime';
 import { createCrmStore } from '../app/store';
-import { CRM_STACK } from '../domain/stack';
+import { STACK } from '../domain/stack';
 
 const { storeDecorator, createStory, FullApp } = createStoryHelpers({
-  stack: CRM_STACK,
-  sharedSelectors: crmSharedSelectors,
-  sharedActions: crmSharedActions,
+  stack: STACK,
   createStore: createCrmStore,
   cardParams: { contactDetail: 'c1', companyDetail: 'co1', dealDetail: 'd1' },
 });

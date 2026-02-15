@@ -97,3 +97,27 @@ Implemented HC-031 Phase A runtime foundation in engine with QuickJS-backed plug
 ### Commit
 
 - `c92c26b` — `feat(engine): add plugin runtime foundation (Phase A)`
+
+
+## 2026-02-15
+
+Implemented HC-031 Phase B host-state layer: `pluginCardRuntime` Redux slice with capability-gated intent ingestion, outcome timeline, and domain/system/nav pending intent queues. Wired reducer into `createAppStore` and added reducer tests for routing and lifecycle cleanup.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/pluginCardRuntime/pluginCardRuntimeSlice.ts — New runtime host-state reducer and intent ingestion pipeline
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/pluginCardRuntime/capabilityPolicy.ts — Domain/system capability authorization logic
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/pluginCardRuntime/selectors.ts — Selectors for sessions, card/session state, timeline, and pending queues
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/app/createAppStore.ts — Added `pluginCardRuntime` reducer to default app store
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/__tests__/plugin-card-runtime.test.ts — Added reducer behavior coverage for applied/denied/ignored and nav/system routing
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked B1-B5 complete
+
+### Validation
+
+- `npm run test -w packages/engine` — pass (`9` files, `105` tests)
+- `npm run typecheck -w packages/engine` — pass
+- `npm run build -w packages/engine` — pass
+
+### Commit
+
+- `583fe38` — `feat(engine): add plugin card runtime redux slice (Phase B)`

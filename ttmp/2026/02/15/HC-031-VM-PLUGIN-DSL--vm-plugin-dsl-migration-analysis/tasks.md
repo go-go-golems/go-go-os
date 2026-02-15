@@ -29,15 +29,15 @@
 
 ### Phase B: Engine State + Intent Routing
 
-- [ ] [B1] Add new Redux slice `packages/engine/src/features/pluginCardRuntime/pluginCardRuntimeSlice.ts`:
+- [x] [B1] Add new Redux slice `packages/engine/src/features/pluginCardRuntime/pluginCardRuntimeSlice.ts`:
   - sessions map
   - card-state map
   - session-state map
   - timeline entries with outcome/reason
-- [ ] [B2] Add selectors `packages/engine/src/features/pluginCardRuntime/selectors.ts`.
-- [ ] [B3] Implement capability policy layer for domain/system intents.
-- [ ] [B4] Wire `pluginCardRuntimeReducer` into `createAppStore` and document store-shape change.
-- [ ] [B5] Add reducer tests covering:
+- [x] [B2] Add selectors `packages/engine/src/features/pluginCardRuntime/selectors.ts`.
+- [x] [B3] Implement capability policy layer for domain/system intents.
+- [x] [B4] Wire `pluginCardRuntimeReducer` into `createAppStore` and document store-shape change.
+- [x] [B5] Add reducer tests covering:
   - applied/denied/ignored outcomes
   - session lifecycle cleanup
   - nav/system intent routing behavior

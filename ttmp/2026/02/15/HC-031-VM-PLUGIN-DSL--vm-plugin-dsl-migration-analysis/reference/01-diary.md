@@ -24,7 +24,7 @@ RelatedFiles:
         Primary deliverable documented by diary steps
 ExternalSources: []
 Summary: Detailed implementation diary for HC-031 analysis and documentation workflow.
-LastUpdated: 2026-02-15T18:42:00-05:00
+LastUpdated: 2026-02-15T18:55:00-05:00
 WhatFor: Record how the migration analysis document was produced, with command evidence and constraints encountered.
 WhenToUse: Use when reviewing the provenance and reliability of HC-031 conclusions.
 ---
@@ -681,3 +681,90 @@ I validated this phase through unit/integration tests and engine typecheck/build
 - Worker request/response protocol mirrors VM reference design with typed request unions.
 - Runtime intents are host-validated (`validateRuntimeIntents`) before leaving VM boundary.
 - Runtime service timeouts use QuickJS interrupt handler and per-call deadlines.
+
+## Step 9: Implement Phase B state + intent routing slice
+
+I implemented the new `pluginCardRuntime` Redux feature to host runtime session state, per-card local state, intent outcome timeline, and queue-based routing for domain/system/nav intents. This establishes the host-side intent pipeline that the VM runtime will feed in later shell integration work.
+
+I wired the reducer into `createAppStore`, exported the feature from the engine barrel, and added reducer tests that specifically verify applied/denied/ignored outcomes, session cleanup behavior, and nav/system command routing semantics.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Continue execution task-by-task, commit meaningful increments, and keep diary evidence current.
+
+**Inferred user intent:** Build migration foundation in executable slices with traceable outcomes.
+
+**Commit (code):** 583fe38 — "feat(engine): add plugin card runtime redux slice (Phase B)"
+
+### What I did
+
+- Added capability policy layer:
+  - `packages/engine/src/features/pluginCardRuntime/capabilityPolicy.ts`
+- Added new runtime state slice:
+  - `packages/engine/src/features/pluginCardRuntime/pluginCardRuntimeSlice.ts`
+  - Includes session registration/removal, status updates, intent ingestion, timeline entries, and pending domain/system/nav queues.
+- Added selectors:
+  - `packages/engine/src/features/pluginCardRuntime/selectors.ts`
+- Added feature exports:
+  - `packages/engine/src/features/pluginCardRuntime/index.ts`
+  - `packages/engine/src/index.ts` now exports `./features/pluginCardRuntime`
+- Wired store:
+  - `packages/engine/src/app/createAppStore.ts` now includes `pluginCardRuntime` reducer.
+- Added reducer tests:
+  - `packages/engine/src/__tests__/plugin-card-runtime.test.ts`
+- Ran validation commands:
+  - `npm run test -w packages/engine`
+  - `npm run typecheck -w packages/engine`
+  - `npm run build -w packages/engine`
+- Checked off `B1..B5` in `tasks.md`.
+
+### Why
+
+- Runtime service alone is not enough; host-side deterministic intent handling and capability gating must exist before shell/runtime integration.
+- Queueing domain/system intents decouples plugin intent emission from side-effect application and keeps reducer deterministic/testable.
+
+### What worked
+
+- Tests passed with new feature integrated:
+  - `9` test files, `105` tests.
+- Typecheck and build remained green after adding reducer and exports.
+- Capability gating correctly marks denied outcomes without mutating state.
+
+### What didn't work
+
+- N/A in this step; no failing commands required fixes.
+
+### What I learned
+
+- Explicit queue separation (`pendingDomainIntents`, `pendingSystemIntents`, `pendingNavIntents`) simplifies downstream orchestration responsibilities and makes system/nav routing assertions straightforward in tests.
+
+### What was tricky to build
+
+- The main design tension was where to apply local card/session mutations. I implemented a minimal host action contract (`patch`, `set`, `reset`) to keep reducer semantics deterministic while leaving richer action mapping for later phases. This avoids embedding application-specific reducers inside runtime infrastructure.
+
+### What warrants a second pair of eyes
+
+- Review whether the minimal local action contract should stay generic (`patch/set/reset`) or be constrained further before app migration begins.
+- Review default capability policy (`domain/system = all`) and decide whether tighter defaults are desired for Storybook/dev parity.
+
+### What should be done in the future
+
+- Start Phase C: replace `CardSessionHost` integration path with `PluginCardSessionHost` that drives runtime events through `ingestRuntimeIntent`.
+
+### Code review instructions
+
+- Start in:
+  - `packages/engine/src/features/pluginCardRuntime/pluginCardRuntimeSlice.ts`
+  - `packages/engine/src/features/pluginCardRuntime/capabilityPolicy.ts`
+  - `packages/engine/src/__tests__/plugin-card-runtime.test.ts`
+- Validate with:
+  - `npm run test -w packages/engine`
+  - `npm run typecheck -w packages/engine`
+  - `npm run build -w packages/engine`
+
+### Technical details
+
+- Intent ingestion uses reducer `prepare` to stamp id/timestamp for timeline consistency.
+- Domain/system authorization reasons are persisted in timeline entries for debugging (`domain_not_allowed:*`, `system_command_not_allowed:*`).

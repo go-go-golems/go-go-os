@@ -63,46 +63,46 @@
 
 ### Phase E: App Authoring Migration (Hard Cut)
 
-- [ ] [E1] Migrate `apps/inventory` card definitions to plugin modules.
-- [ ] [E2] Migrate `apps/todo` card definitions to plugin modules.
-- [ ] [E3] Migrate `apps/crm` card definitions and chat action bridges to plugin modules.
-- [ ] [E4] Migrate `apps/book-tracker-debug` card definitions to plugin modules.
-- [ ] [E5] Migrate engine demo stories:
+- [x] [E1] Migrate `apps/inventory` card definitions to plugin modules.
+- [x] [E2] Migrate `apps/todo` card definitions to plugin modules.
+- [x] [E3] Migrate `apps/crm` card definitions and chat action bridges to plugin modules.
+- [x] [E4] Migrate `apps/book-tracker-debug` card definitions to plugin modules.
+- [x] [E5] Migrate engine demo stories:
   - `packages/engine/src/components/shell/windowing/*.stories.tsx`
   - `packages/engine/src/components/widgets/BookTracker.stories.tsx`
-- [ ] [E6] Remove function-valued config payloads crossing VM boundary (`cellState`/format callbacks etc.) by converting to declarative schema or host format registry IDs.
+- [x] [E6] Remove function-valued config payloads crossing VM boundary (`cellState`/format callbacks etc.) by converting to declarative schema or host format registry IDs.
 
 ### Phase F: Legacy DSL Hard Deletion (No Backwards Compat)
 
-- [ ] [F1] Delete `packages/engine/src/cards/helpers.ts`.
-- [ ] [F2] Delete descriptor resolver/action engine in `packages/engine/src/cards/runtime.ts` (or replace file with plugin-runtime-facing minimal API).
-- [ ] [F3] Remove `Act/Ev/Sel/Param` and descriptor types from `packages/engine/src/cards/types.ts`.
-- [ ] [F4] Remove DSL exports from:
+- [x] [F1] Delete `packages/engine/src/cards/helpers.ts`.
+- [x] [F2] Delete descriptor resolver/action engine in `packages/engine/src/cards/runtime.ts` (or replace file with plugin-runtime-facing minimal API).
+- [x] [F3] Remove `Act/Ev/Sel/Param` and descriptor types from `packages/engine/src/cards/types.ts`.
+- [x] [F4] Remove DSL exports from:
   - `packages/engine/src/cards/index.ts`
   - `packages/engine/src/index.ts`
-- [ ] [F5] Remove legacy DSL tests:
+- [x] [F5] Remove legacy DSL tests:
   - `packages/engine/src/__tests__/selector-resolution.test.ts`
   - descriptor-specific integration tests and fixtures
-- [ ] [F6] Repo-wide grep gate is clean (no `Act(`, `Sel(`, `Ev(` usage in runtime-authoritative code).
+- [x] [F6] Repo-wide grep gate is clean (no `Act(`, `Sel(`, `Ev(` usage in runtime-authoritative code).
 
 ### Phase G: End-to-End Validation and Tooling
 
-- [ ] [G1] Unit/integration tests:
-  - [ ] [G1.1] `npm run test` (engine)
-  - [ ] [G1.2] plugin-runtime integration tests in this repo
-- [ ] [G2] Static checks:
-  - [ ] [G2.1] `npm run typecheck`
-  - [ ] [G2.2] `npm run build`
-  - [ ] [G2.3] `npm run lint` (record baseline issues separately if unrelated)
+- [x] [G1] Unit/integration tests:
+- [x] [G1.1] `npm run test` (engine)
+- [x] [G1.2] plugin-runtime integration tests in this repo
+- [x] [G2] Static checks:
+- [x] [G2.1] `npm run typecheck`
+- [x] [G2.2] `npm run build`
+- [x] [G2.3] `npm run lint` (record baseline issues separately if unrelated)
 - [x] [G3] Manual runtime checks via tmux:
   - [x] [G3.1] Start app dev server in tmux (`npm run dev -w apps/inventory`)
   - [x] [G3.2] Start Storybook in tmux (`npm run storybook`)
   - [x] [G3.3] Verify both processes healthy and stable for 5+ minutes
-- [ ] [G4] Playwright smoke interaction checks:
-  - [ ] [G4.1] Open app home and navigate cards/windows
+- [x] [G4] Playwright smoke interaction checks:
+- [x] [G4.1] Open app home and navigate cards/windows
   - [x] [G4.2] Open representative Storybook story pages and trigger handlers
   - [x] [G4.3] Assert no runtime recursion/update-depth errors in browser console
-- [ ] [G5] Final HC-031 publication updates:
-  - [ ] [G5.1] Update design doc with implementation outcomes
-  - [ ] [G5.2] Update diary + changelog per phase/commit
-  - [ ] [G5.3] Run `docmgr doctor --ticket HC-031-VM-PLUGIN-DSL --stale-after 30`
+- [x] [G5] Final HC-031 publication updates:
+- [x] [G5.1] Update design doc with implementation outcomes
+- [x] [G5.2] Update diary + changelog per phase/commit
+- [x] [G5.3] Run `docmgr doctor --ticket HC-031-VM-PLUGIN-DSL --stale-after 30`

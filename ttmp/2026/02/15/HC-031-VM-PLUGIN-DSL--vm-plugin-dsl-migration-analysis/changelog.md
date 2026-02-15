@@ -200,3 +200,177 @@ Ran tmux + Playwright runtime validation and fixed the low-stock Storybook recur
 ### Commit
 
 - `0c537dd` — `fix(engine): stop low-stock story render recursion`
+
+
+## 2026-02-15
+
+Fixed plugin-runtime browser loading by switching engine QuickJS initialization to a singlefile MJS variant, eliminating Storybook/Vite `.wasm` fetch failures (`emscripten-module.wasm` 404) during plugin-card rendering.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/plugin-runtime/runtimeService.ts — Runtime module loader now uses memoized singlefile QuickJS variant
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/package.json — Added `@jitl/quickjs-singlefile-mjs-release-sync` dependency
+
+### Validation
+
+- `npm run typecheck` — pass
+- `npm run test -w packages/engine` — pass
+- Playwright low-stock story reload — no QuickJS wasm fetch errors
+
+### Commit
+
+- `0d16d37` — `fix(engine): use singlefile quickjs variant in browser runtime`
+
+
+## 2026-02-15
+
+Completed HC-031 Phase E1 inventory hard cutover to plugin runtime bundle and removed app-local legacy selector/action bridge and function-valued inventory card config surfaces.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/domain/pluginBundle.ts — New inventory plugin bundle with plugin card render/handler logic
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/domain/stack.ts — Stack migrated to plugin metadata + `bundleCode` capabilities
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/App.tsx — Removed shared selector/action runtime wiring
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/stories/CardPages.stories.tsx — Story helper config now plugin-only
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/stories/Themed.stories.tsx — Story shell now plugin-only
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/app/cardRuntime.ts — Deleted legacy shared selector/action bridge
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/domain/columnConfigs.ts — Deleted function-valued list column config
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/domain/computeFields.ts — Deleted legacy computed-field callback config
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/domain/formatters.ts — Deleted legacy formatter/cell-state callback config
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked `E1` and `G4.1` complete
+
+### Validation
+
+- `npm run typecheck` — pass
+- `npm run test` — pass
+- tmux sessions:
+  - `npm run storybook`
+  - `npm run dev -w apps/inventory`
+- Playwright:
+  - low-stock Storybook page renders and is interactive
+  - app home -> browse -> item detail -> sell action -> browse reflects updated quantity
+  - console errors limited to dev favicon 404
+
+### Commit
+
+- `6fa0e61` — `feat(inventory): hard-cutover cards to plugin runtime bundle`
+
+## 2026-02-15
+
+Completed HC-031 Phase E3 CRM hard cutover to plugin runtime bundle, removed CRM-local descriptor runtime/card files, and migrated CRM chat fake-response navigation actions away from `Act(...)` descriptors.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/crm/src/domain/pluginBundle.ts — New CRM plugin bundle with plugin card render/handler logic
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/crm/src/domain/stack.ts — Stack migrated to plugin metadata + `bundleCode` capabilities
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/crm/src/App.tsx — Removed shared selector/action runtime wiring
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/crm/src/stories/CrmApp.stories.tsx — Story helper config now plugin-only
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/crm/src/chat/crmChatResponses.ts — Replaced descriptor actions with plugin-intent-shaped nav payloads
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/crm/src/app/cardRuntime.ts — Deleted legacy shared selector/action bridge
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/crm/src/domain/cards/ — Deleted descriptor card definitions
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked `E3` complete
+
+### Validation
+
+- `npm run typecheck` — pass
+- Playwright:
+  - `http://localhost:6006/iframe.html?id=crm-full-app--default`
+  - verified home/contacts/contact-detail flow and no runtime recursion/update-depth errors
+
+### Commit
+
+- `50e5b7e` — `feat(crm): hard-cutover cards and chat bridge to plugin runtime`
+
+## 2026-02-15
+
+Completed HC-031 Phase E4 book-tracker-debug hard cutover to plugin runtime bundle and removed app-local descriptor runtime/card files.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/book-tracker-debug/src/domain/pluginBundle.ts — New book tracker plugin bundle
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/book-tracker-debug/src/domain/stack.ts — Stack migrated to plugin metadata + `bundleCode` capabilities
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/book-tracker-debug/src/App.tsx — Removed shared selector/action runtime wiring
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/book-tracker-debug/src/stories/BookTrackerDebugApp.stories.tsx — Story helper config now plugin-only
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/book-tracker-debug/src/app/cardRuntime.ts — Deleted legacy shared selector/action bridge
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/book-tracker-debug/src/domain/cards/ — Deleted descriptor card definitions
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked `E4` complete
+
+### Validation
+
+- `npm run typecheck` — pass
+- Playwright:
+  - `http://localhost:6006/iframe.html?id=booktrackerdebug-full-app--default`
+  - verified home/browse/book-detail flow and no runtime recursion/update-depth errors
+
+### Commit
+
+- `c8cfee4` — `feat(book-tracker): hard-cutover cards to plugin runtime bundle`
+
+
+## 2026-02-15
+
+Completed HC-031 Phase E5 by migrating remaining engine demo stories to plugin-runtime flows, removing descriptor-story dependencies from windowing and widget demo coverage.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx — Reworked shell story content to plugin runtime
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/CardSessionHost.stories.tsx — Migrated to plugin session-host story flow
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/BookTracker.stories.tsx — Migrated widget demo to plugin stack bundle flow
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked `E5` complete
+
+### Validation
+
+- `npm run typecheck` — pass
+- Storybook Playwright smoke for migrated story ids — pass
+
+### Commit
+
+- `04c94d8` — `refactor(stories): migrate shell and book tracker demos to plugin runtime`
+
+
+## 2026-02-15
+
+Completed HC-031 Phase F hard deletion of legacy descriptor runtime path and finished Phase G checks with explicit baseline reporting for unrelated build/lint failures.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/cards/runtime.ts — Replaced descriptor resolver/action engine with minimal debug shim
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/cards/types.ts — Removed descriptor DSL types; retained plugin metadata contracts
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/app/createAppStore.ts — Removed legacy `hypercardRuntime` reducer from app store setup
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/PluginCardSessionHost.tsx — Runtime-authoritative card execution host
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/CardRenderer.tsx — Deleted legacy descriptor renderer
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/useCardRuntimeHost.ts — Deleted legacy descriptor host bridge
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/CardSessionHost.tsx — Deleted legacy descriptor session host
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/__tests__/selector-resolution.test.ts — Deleted descriptor resolver tests
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked `F1..F6`, `G1..G4`, and `G2.2/G2.3` with baseline notes
+
+### Validation
+
+- `npm run typecheck` — pass
+- `npm run test -w packages/engine` — pass (`9` files, `89` tests)
+- `npm run build` — fail (known Vite `worker.format` baseline issue)
+- `npm run lint` — fail (known baseline Biome/style/import-order issues)
+- Playwright runtime smoke (low-stock + migrated stories/apps) — pass, no update-depth recursion
+
+### Commit
+
+- `3a898d5` — `refactor(engine): remove legacy descriptor card runtime path`
+
+
+## 2026-02-15
+
+Completed HC-031 final publication pass (`G5`): updated design-doc outcomes, synchronized diary/changelog with final execution commits, ran `docmgr doctor`, and uploaded a versioned updated PDF to reMarkable.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/design-doc/01-vm-plugin-dsl-migration-and-storybook-integration-analysis.md — Added implementation outcomes section for executed migration phases
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/reference/01-diary.md — Added Step 17/18/19 and final publication details
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/changelog.md — Added final migration and publication entries
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md — Marked `G5`, `G5.1`, `G5.2`, `G5.3` complete
+
+### Validation
+
+- `docmgr doctor --ticket HC-031-VM-PLUGIN-DSL --stale-after 30` — one known warning (`missing_numeric_prefix`) on imported source file name
+- `docmgr task check --ticket HC-031-VM-PLUGIN-DSL --id 65,66,67,68` — success; all tasks complete
+- `remarquee upload bundle ... --name "HC-031-VM-PLUGIN-DSL-Analysis-Updated" --remote-dir "/ai/2026/02/15/HC-031-VM-PLUGIN-DSL" --non-interactive` — upload success
+- `remarquee cloud ls /ai/2026/02/15/HC-031-VM-PLUGIN-DSL --long --non-interactive` — both original and updated documents present

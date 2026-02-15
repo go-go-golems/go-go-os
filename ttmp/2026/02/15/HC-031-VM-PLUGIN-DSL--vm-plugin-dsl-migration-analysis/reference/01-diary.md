@@ -14,20 +14,29 @@ RelatedFiles:
       Note: |-
         Source-of-truth VM bootstrap and execution model inspected during analysis
         Analyzed during architecture mapping
+    - Path: apps/inventory/src/domain/pluginBundle.ts
+      Note: Inventory app plugin bundle hard cutover implementation
+    - Path: apps/inventory/src/domain/stack.ts
+      Note: Inventory stack metadata converted to plugin runtime
+    - Path: packages/engine/package.json
+      Note: Added singlefile QuickJS variant dependency
     - Path: packages/engine/src/cards/runtime.ts
       Note: |-
         Legacy DSL resolver/action runtime analyzed for rip-out strategy
         Analyzed during architecture mapping
+    - Path: packages/engine/src/plugin-runtime/runtimeService.ts
+      Note: Switched to singlefile QuickJS module loading for browser-safe plugin runtime
     - Path: ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/design-doc/01-vm-plugin-dsl-migration-and-storybook-integration-analysis.md
       Note: |-
         Primary analysis deliverable authored in this ticket
         Primary deliverable documented by diary steps
 ExternalSources: []
 Summary: Detailed implementation diary for HC-031 analysis and documentation workflow.
-LastUpdated: 2026-02-15T19:30:00-05:00
+LastUpdated: 2026-02-15T22:51:00-05:00
 WhatFor: Record how the migration analysis document was produced, with command evidence and constraints encountered.
 WhenToUse: Use when reviewing the provenance and reliability of HC-031 conclusions.
 ---
+
 
 
 # Diary
@@ -1046,3 +1055,593 @@ The fix included reducing unnecessary shell subscriptions, making runtime ensure
 ### Technical details
 
 - Playwright verification was run against live Storybook in tmux and captured console diagnostics before/after the fix.
+
+## Step 13: Fix QuickJS wasm loading for Storybook/Vite plugin runtime
+
+After beginning the first app cutover, Storybook started running the plugin runtime path and surfaced a wasm loading failure from `quickjs-emscripten` (`emscripten-module.wasm` 404). This blocked all plugin-card rendering in browser environments even though Node-side tests were green.
+
+I fixed this by switching engine runtime initialization from the default wasm-file variant to a singlefile MJS QuickJS variant (embedded module data), then revalidated with engine tests and Playwright on the same failing story URL.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Continue hard-cutover implementation with real runtime validation and resolve blockers immediately as they appear.
+
+**Inferred user intent:** Keep momentum on implementation while preserving Storybook/browser operability during migration.
+
+**Commit (code):** 0d16d37 — "fix(engine): use singlefile quickjs variant in browser runtime"
+
+### What I did
+
+- Reproduced browser failure in Playwright on:
+  - `http://localhost:6006/?path=/story/pages-cards--low-stock`
+- Captured console errors:
+  - `Failed to load resource ... emscripten-module.wasm (404)`
+  - `failed to asynchronously prepare wasm`
+- Installed singlefile variant dependency in engine workspace:
+  - `npm install -w packages/engine @jitl/quickjs-singlefile-mjs-release-sync@0.31.0`
+- Updated runtime initialization:
+  - `packages/engine/src/plugin-runtime/runtimeService.ts`
+  - Replaced `getQuickJS()` with memoized `newQuickJSWASMModule(SINGLEFILE_RELEASE_SYNC)` loader.
+- Re-ran validation:
+  - `npm run typecheck`
+  - `npm run test -w packages/engine`
+  - Playwright re-open of the low-stock Storybook page (no wasm errors afterward).
+
+### Why
+
+- Browser runtime is a first-class validation path in HC-031; a wasm fetch failure in Storybook blocks migration verification.
+- Singlefile variant removes dependence on external `.wasm` asset resolution in Vite/Storybook builds.
+
+### What worked
+
+- Engine typecheck and tests stayed green.
+- Low-stock Storybook path rendered without QuickJS wasm load errors after the change.
+
+### What didn't work
+
+- `npm run build -w apps/inventory` still fails for an existing worker bundling setting (`worker.format: iife` with code-splitting). This is pre-existing infrastructure debt and not introduced by this fix.
+
+### What I learned
+
+- Node test pass does not guarantee browser runtime correctness for QuickJS module loading; explicit browser checks are required.
+
+### What was tricky to build
+
+- The failure looked like a generic Storybook asset issue at first, but the actual root was variant selection in QuickJS loader behavior. Fixing it required choosing a runtime variant that is resilient to bundler asset path differences.
+
+### What warrants a second pair of eyes
+
+- Confirm whether we should standardize on singlefile variant across all plugin-runtime call sites (worker and direct) for consistent browser behavior.
+
+### What should be done in the future
+
+- Track and resolve the unrelated Vite worker-format build issue as a separate infra task.
+
+### Code review instructions
+
+- Start in:
+  - `packages/engine/src/plugin-runtime/runtimeService.ts`
+  - `packages/engine/package.json`
+- Validate:
+  - `npm run test -w packages/engine`
+  - Open Storybook low-stock page and check browser console for absence of QuickJS wasm errors.
+
+### Technical details
+
+- Added dependency: `@jitl/quickjs-singlefile-mjs-release-sync`.
+- Runtime module initialization is memoized via `getSharedQuickJsModule()`.
+
+## Step 14: Complete Phase E1 inventory hard cutover to plugin bundle
+
+I migrated `apps/inventory` from descriptor DSL + shared selector/action bridge to a plugin-bundle stack with hard cutover semantics (no compatibility shim in app code). The app and stories now bootstrap through plugin runtime only, and legacy inventory card runtime helpers were removed.
+
+I validated this by running Storybook and the Vite app in `tmux`, then exercising navigation and mutation flows with Playwright (including quantity changes reflected in table state).
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Execute app-by-app migration tasks with commits and runtime testing as progress is made.
+
+**Inferred user intent:** Move from architecture scaffolding to concrete cutover in real applications, while preserving enough behavior to continue product iteration.
+
+**Commit (code):** 6fa0e61 — "feat(inventory): hard-cutover cards to plugin runtime bundle"
+
+### What I did
+
+- Added plugin runtime bundle source:
+  - `apps/inventory/src/domain/pluginBundle.ts`
+  - Implemented plugin cards/handlers for: `home`, `browse`, `lowStock`, `salesToday`, `itemDetail`, `newItem`, `receive`, `priceCheck`, `report`, `assistant`.
+- Replaced descriptor stack with plugin stack metadata:
+  - `apps/inventory/src/domain/stack.ts`
+  - Added `plugin.bundleCode` + capabilities and card metadata placeholders.
+- Removed legacy bridge and function-heavy config artifacts:
+  - deleted `apps/inventory/src/app/cardRuntime.ts`
+  - deleted `apps/inventory/src/domain/columnConfigs.ts`
+  - deleted `apps/inventory/src/domain/computeFields.ts`
+  - deleted `apps/inventory/src/domain/formatters.ts`
+- Updated app/stories to stop passing shared registries:
+  - `apps/inventory/src/App.tsx`
+  - `apps/inventory/src/stories/CardPages.stories.tsx`
+  - `apps/inventory/src/stories/Themed.stories.tsx`
+- Validation:
+  - `npm run typecheck`
+  - `npm run test`
+  - Started `tmux` sessions for:
+    - `npm run storybook`
+    - `npm run dev -w apps/inventory`
+  - Playwright checks:
+    - Storybook low-stock page renders and is interactive.
+    - App home -> browse -> item detail -> `Sell 1` -> back to browse reflects updated qty (`A-1002` from `2` to `1`).
+    - Console errors limited to favicon 404 on dev server.
+- Updated tasks:
+  - Checked off `E1`.
+  - Checked off `G4.1`.
+
+### Why
+
+- Inventory was the first concrete app migration target and exposed the real integration constraints for plugin bundles.
+- Removing the app-local legacy bridge clarifies true plugin runtime behavior and removes duplicated execution pathways.
+
+### What worked
+
+- Inventory app now runs through plugin runtime and handles domain/system intents correctly.
+- Storybook low-stock path remains stable without recursion and without QuickJS asset failures.
+
+### What didn't work
+
+- `npm run build -w apps/inventory` still reports the existing Vite worker-format limitation (same issue observed before this app migration).
+
+### What I learned
+
+- The plugin bundle approach is viable for app cutover without retaining `Act/Ev/Sel` authoring in app code.
+- Browser-level verification catches integration problems (asset loading, runtime dispatch) earlier than static checks.
+
+### What was tricky to build
+
+- The migration required preserving desktop-shell card metadata (titles/icons/cards map) while routing actual rendering to VM plugin code. This split between host metadata and plugin UI execution is easy to get wrong if the card map and bundle card IDs drift.
+
+### What warrants a second pair of eyes
+
+- Review the inventory plugin bundle handlers for payload normalization and edge cases (e.g., tags parsing, numeric coercion).
+- Confirm capability scope (`domain: ['inventory', 'sales']`, `system: ['nav.go', 'nav.back', 'notify']`) matches intended product policy.
+
+### What should be done in the future
+
+- Continue Phase E for `todo`, `book-tracker-debug`, and `crm` using the same hard-cutover pattern.
+
+### Code review instructions
+
+- Start in:
+  - `apps/inventory/src/domain/pluginBundle.ts`
+  - `apps/inventory/src/domain/stack.ts`
+  - `apps/inventory/src/App.tsx`
+- Validate:
+  - `npm run typecheck`
+  - `npm run test`
+  - Run app + Storybook and execute browse/detail mutation flow.
+
+### Technical details
+
+- Plugin bundle emits only data payloads across VM boundary (no function-valued callback transfer).
+- App story wiring now relies on plugin stack + store only, not shared selector/action registries.
+
+## Step 15: Complete Phase E3 CRM hard cutover to plugin runtime bundle
+
+I migrated `apps/crm` from descriptor cards + shared selector/action bridge to a plugin-bundle stack, and removed CRM-local legacy runtime files. I also converted the CRM chat fake-response action payloads away from `Act(...)` descriptors to plugin-intent-shaped `system/nav.go` payloads.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Continue phased hard-cutover execution, commit incrementally, and keep progress documented.
+
+**Inferred user intent:** Eliminate duplicated legacy runtime paths in real apps and ensure app behavior is preserved under plugin runtime.
+
+**Commit (code):** 50e5b7e — "feat(crm): hard-cutover cards and chat bridge to plugin runtime"
+
+### What I did
+
+- Added plugin runtime bundle source:
+  - `apps/crm/src/domain/pluginBundle.ts`
+  - Implemented plugin cards/handlers for: `home`, `contacts`, `contactDetail`, `addContact`, `companies`, `companyDetail`, `deals`, `openDeals`, `dealDetail`, `addDeal`, `pipeline`, `activityLog`, `addActivity`.
+- Replaced descriptor stack with plugin stack metadata:
+  - `apps/crm/src/domain/stack.ts`
+  - Added `plugin.bundleCode` + capabilities and card metadata placeholders.
+- Updated app/story wiring to plugin-only:
+  - `apps/crm/src/App.tsx`
+  - `apps/crm/src/stories/CrmApp.stories.tsx`
+- Converted CRM chat action bridge payloads off descriptor DSL:
+  - `apps/crm/src/chat/crmChatResponses.ts`
+  - Replaced `Act('nav.go', ...)` with plain `{ scope: 'system', command: 'nav.go', payload: { cardId, param? } }` objects.
+- Removed CRM-local legacy runtime/card definition files:
+  - deleted `apps/crm/src/app/cardRuntime.ts`
+  - deleted `apps/crm/src/domain/cards/*`
+- Validation:
+  - `npm run typecheck`
+  - Playwright on `http://localhost:6006/iframe.html?id=crm-full-app--default`
+  - exercised: Home -> Contacts -> ContactDetail -> promote/back flow
+  - browser console had no plugin/runtime recursion errors (favicon 404 only)
+- Updated tasks:
+  - Checked off `E3`.
+
+### Why
+
+- CRM had the largest remaining app-local duplication between descriptor cards and new plugin runtime, so cutting it over materially reduces migration risk.
+- Converting chat action payloads removes another dependency on descriptor helpers (`Act`) in app code.
+
+### What worked
+
+- Storybook CRM app renders via plugin runtime and navigates card flows correctly.
+- Domain actions route correctly through plugin intent routing (`contacts`, `companies`, `deals`, `activities`).
+
+### What didn't work
+
+- No runtime blocker; only recurring favicon 404 noise in Storybook iframe console.
+
+### What I learned
+
+- For list-heavy cards, plugin runtime currently needs explicit “quick open” buttons because row-click bindings from legacy list widgets are not part of the plugin UI schema.
+
+### What was tricky to build
+
+- Preserving detail-card edit semantics required explicit card-state patch/set handling and numeric coercion (deal `value`/`probability`) in plugin handlers because plugin `input` values arrive as strings.
+
+### What warrants a second pair of eyes
+
+- Review CRM plugin bundle for UX parity on list/detail flows versus previous descriptor widgets, especially where we replaced row-click with quick-open controls.
+
+### What should be done in the future
+
+- Complete Phase E4/E5 and then remove shared descriptor DSL/runtime from engine exports and tests in Phase F.
+
+### Code review instructions
+
+- Start in:
+  - `apps/crm/src/domain/pluginBundle.ts`
+  - `apps/crm/src/domain/stack.ts`
+  - `apps/crm/src/chat/crmChatResponses.ts`
+- Validate:
+  - `npm run typecheck`
+  - Open `crm-full-app--default` story and run basic nav/edit flows.
+
+### Technical details
+
+- Plugin bundle relies only on schema-safe data payloads crossing VM boundary.
+- Capability scope configured as:
+  - `domain: ['contacts', 'companies', 'deals', 'activities']`
+  - `system: ['nav.go', 'nav.back', 'notify']`
+
+## Step 16: Complete Phase E4 book-tracker-debug hard cutover to plugin runtime bundle
+
+I migrated `apps/book-tracker-debug` from descriptor cards + shared selector/action bridge to a plugin-bundle stack, removed app-local legacy runtime/card files, and validated the storybook app flow end-to-end under plugin runtime.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Continue app-by-app hard cutover with commits and evidence.
+
+**Inferred user intent:** Finish remaining app migrations so we can move to engine-level legacy deletion with less ambiguity.
+
+**Commit (code):** c8cfee4 — "feat(book-tracker): hard-cutover cards to plugin runtime bundle"
+
+### What I did
+
+- Added plugin runtime bundle source:
+  - `apps/book-tracker-debug/src/domain/pluginBundle.ts`
+  - Implemented plugin cards/handlers for: `home`, `browse`, `readingNow`, `bookDetail`, `addBook`, `readingReport`.
+- Replaced descriptor stack with plugin stack metadata:
+  - `apps/book-tracker-debug/src/domain/stack.ts`
+  - Added `plugin.bundleCode` + capabilities and card metadata placeholders.
+- Updated app/story wiring to plugin-only:
+  - `apps/book-tracker-debug/src/App.tsx`
+  - `apps/book-tracker-debug/src/stories/BookTrackerDebugApp.stories.tsx`
+- Removed app-local legacy runtime/card definitions:
+  - deleted `apps/book-tracker-debug/src/app/cardRuntime.ts`
+  - deleted `apps/book-tracker-debug/src/domain/cards/*`
+- Validation:
+  - `npm run typecheck`
+  - Playwright on `http://localhost:6006/iframe.html?id=booktrackerdebug-full-app--default`
+  - exercised: Home -> Browse -> BookDetail -> `Mark Read` -> Back to Browse
+  - browser console: no runtime errors, warnings only
+- Updated tasks:
+  - Checked off `E4`.
+
+### Why
+
+- Book tracker still had duplicated runtime pathways and descriptor-specific card files that would block a clean hard cutover.
+
+### What worked
+
+- Storybook app renders plugin cards correctly.
+- Domain intents (`books/*`) and system intents (`nav.*`, `notify`) route as expected.
+
+### What didn't work
+
+- No runtime blocker encountered in this phase.
+
+### What I learned
+
+- The same plugin-bundle pattern used in inventory/todo/crm ports cleanly to smaller apps, including detail-card edit semantics and report cards.
+
+### What was tricky to build
+
+- Numeric field normalization (book `rating`) needed explicit coercion before domain dispatch, because plugin input values are string-typed.
+
+### What warrants a second pair of eyes
+
+- Review the book detail/edit handlers to ensure status/rating updates exactly match previous reducer expectations.
+
+### What should be done in the future
+
+- Migrate engine demo stories (`E5`) and remove remaining function-valued payload surfaces (`E6`) before engine legacy deletion (`F*`).
+
+### Code review instructions
+
+- Start in:
+  - `apps/book-tracker-debug/src/domain/pluginBundle.ts`
+  - `apps/book-tracker-debug/src/domain/stack.ts`
+- Validate:
+  - `npm run typecheck`
+  - Open `booktrackerdebug-full-app--default` story and run browse/detail interaction.
+
+### Technical details
+
+- Capability scope configured as:
+  - `domain: ['books']`
+  - `system: ['nav.go', 'nav.back', 'notify']`
+
+## Step 17: Complete Phase E5 by migrating engine demo stories to plugin runtime flows
+
+I migrated the remaining engine demo stories so they no longer exercise descriptor-card runtime pathways. The updated stories now use plugin stacks and `PluginCardSessionHost`-aligned flows, giving Storybook parity with the hard-cutover architecture.
+
+This removed the last story-level ambiguity where both old and new card execution patterns were visible in demos.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Continue checking off hard-cutover tasks and commit each meaningful phase while validating runtime behavior.
+
+**Inferred user intent:** Ensure Storybook examples represent the real post-cutover system so regressions are caught in the same runtime model used by apps.
+
+**Commit (code):** 04c94d8 — "refactor(stories): migrate shell and book tracker demos to plugin runtime"
+
+### What I did
+
+- Migrated engine stories to plugin runtime:
+  - `packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/CardSessionHost.stories.tsx` (plugin-session-host-focused content)
+  - `packages/engine/src/components/widgets/BookTracker.stories.tsx`
+- Removed remaining `Act/Ev/Sel`-style story definitions in those demo files.
+- Validated migrated story routes with Playwright under active Storybook tmux session.
+- Checked off task `E5`.
+
+### Why
+
+- Story coverage must use the same runtime loop as production to avoid false confidence from legacy-only demo behavior.
+
+### What worked
+
+- Story routes load and interact correctly under plugin runtime host components.
+- Story migration aligned with app-level hard cutover and reduced remaining dual-path code.
+
+### What didn't work
+
+- No functional blocker in this step.
+
+### What I learned
+
+- Story migration is a strong forcing function: if a story cannot run without descriptor helpers, there is still hidden coupling to old runtime assumptions.
+
+### What was tricky to build
+
+- The main subtlety was preserving recognizable demo behavior while replacing underlying runtime mechanics; replacing data/action shape without regressing story intent required careful per-story handler rewrites.
+
+### What warrants a second pair of eyes
+
+- Validate story UX parity for navigation-heavy flows where original stories implicitly depended on legacy renderer semantics.
+
+### What should be done in the future
+
+- Complete engine-level hard deletion of descriptor runtime modules (`F*`) now that stories no longer rely on them.
+
+### Code review instructions
+
+- Start in:
+  - `packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/CardSessionHost.stories.tsx`
+  - `packages/engine/src/components/widgets/BookTracker.stories.tsx`
+- Validate:
+  - `npm run typecheck`
+  - Storybook Playwright smoke against migrated story ids.
+
+### Technical details
+
+- Story runtime now routes through plugin bundle metadata + intent routing, not descriptor expression resolution.
+
+## Step 18: Complete Phase F hard deletion of legacy descriptor runtime path
+
+I removed the descriptor DSL runtime-authoritative path from engine core (helpers, resolver host/renderer, legacy session host, and descriptor-centric tests), leaving plugin runtime as the only card execution route. This is the hard-cut objective of HC-031 and intentionally drops backward compatibility for old card DSL execution.
+
+I also reran validation and explicitly recorded baseline build/lint failures that predate this migration scope.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 8)
+
+**Assistant interpretation:** Finish the migration by removing legacy runtime code and validating the resulting system.
+
+**Inferred user intent:** Achieve a clear architectural cut with no mixed execution model left behind.
+
+**Commit (code):** 3a898d5 — "refactor(engine): remove legacy descriptor card runtime path"
+
+### What I did
+
+- Deleted legacy runtime files:
+  - `packages/engine/src/cards/helpers.ts`
+  - `packages/engine/src/cards/runtimeStateSlice.ts`
+  - `packages/engine/src/components/shell/CardRenderer.tsx`
+  - `packages/engine/src/components/shell/useCardRuntimeHost.ts`
+  - `packages/engine/src/components/shell/windowing/CardSessionHost.tsx`
+  - descriptor-centric tests (`integration-card-execution`, `runtime-actions`, `selector-resolution`)
+- Replaced `packages/engine/src/cards/runtime.ts` with minimal debug event shim (no descriptor resolver/command engine).
+- Simplified `packages/engine/src/cards/types.ts` to plugin stack/card metadata contracts.
+- Updated shell/app exports and store wiring for plugin-only runtime shape:
+  - `packages/engine/src/components/shell/index.ts`
+  - `packages/engine/src/components/shell/windowing/index.ts`
+  - `packages/engine/src/cards/index.ts`
+  - `packages/engine/src/app/createAppStore.ts`
+  - `packages/engine/src/app/createDSLApp.tsx`
+  - `packages/engine/src/app/generateCardStories.tsx`
+- Updated app stack definitions to stop depending on `defineCardStack`:
+  - `apps/inventory/src/domain/stack.ts`
+  - `apps/todo/src/domain/stack.ts`
+  - `apps/crm/src/domain/stack.ts`
+  - `apps/book-tracker-debug/src/domain/stack.ts`
+- Validation:
+  - `npm run typecheck` — pass
+  - `npm run test -w packages/engine` — pass (`9` files, `89` tests)
+  - `npm run build` — fail (existing `worker.format` Vite issue)
+  - `npm run lint` — fail (existing baseline Biome/import-order/style findings)
+  - Playwright checks on low-stock + migrated app/story pages — no recursion/update-depth runtime errors.
+- Checked off tasks:
+  - `F1..F6`
+  - `G1..G4` remaining sub-items
+  - `G2.2`/`G2.3` marked with baseline-failure notes.
+
+### Why
+
+- Keeping both descriptor and plugin runtimes would continue code duplication, cognitive overhead, and reintroduction risk for render-time resolver bugs.
+
+### What worked
+
+- Plugin runtime path now stands alone; engine test/typecheck remain green.
+- Previous recursion failure scenario remained resolved after legacy deletion.
+
+### What didn't work
+
+- Full repo build/lint remain red on known non-HC-031 baseline issues.
+
+### What I learned
+
+- Hard deletion surfaces hidden dependencies quickly and is faster to stabilize than long-lived compatibility shims for this codebase stage.
+
+### What was tricky to build
+
+- Several exports and stories implicitly referenced deleted symbols; removing them required coordinated updates across engine/public entry points and app stack metadata declarations to avoid stale-type leakage.
+
+### What warrants a second pair of eyes
+
+- Verify that no external consumer still imports removed descriptor symbols from `@hypercard/engine` public APIs.
+- Review whether minimal `cards/runtime.ts` debug shim should move under a plugin-runtime namespace in a follow-up cleanup.
+
+### What should be done in the future
+
+- Complete final publication updates (`G5`) with updated design-doc outcomes, diary/changelog sync, and fresh `docmgr doctor` run.
+
+### Code review instructions
+
+- Start in:
+  - `packages/engine/src/cards/types.ts`
+  - `packages/engine/src/cards/runtime.ts`
+  - `packages/engine/src/components/shell/windowing/PluginCardSessionHost.tsx`
+  - `packages/engine/src/app/createAppStore.ts`
+- Validate:
+  - `npm run typecheck`
+  - `npm run test -w packages/engine`
+  - Storybook Playwright smoke on low-stock and plugin app stories.
+
+### Technical details
+
+- The runtime-authoritative engine path no longer evaluates descriptor expressions (`Act/Ev/Sel`) during render/event handling.
+
+## Step 19: Final publication pass (G5) with doctor validation and updated reMarkable upload
+
+I completed the HC-031 publication tasks by updating the design doc outcomes section, synchronizing diary/changelog with the final commits, running `docmgr doctor`, and uploading an updated PDF artifact to reMarkable for review.
+
+This closes the ticket workstream from analysis through implementation execution and documentation publication.
+
+### Prompt Context
+
+**User prompt (verbatim):** "go ahead."
+
+**Assistant interpretation:** Proceed immediately with remaining migration tasks, check-offs, commits/docs updates, and publication workflow.
+
+**Inferred user intent:** Finish the cutover execution cycle end-to-end, including final documentation and review distribution artifacts.
+
+**Commit (code):** N/A (documentation/publication step)
+
+### What I did
+
+- Updated design doc with executed outcomes and residual baseline notes:
+  - `ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/design-doc/01-vm-plugin-dsl-migration-and-storybook-integration-analysis.md`
+- Updated diary/changelog with post-E4 phases and final status:
+  - added Step 17/18/19 in diary
+  - added changelog entries for commits `04c94d8` and `3a898d5`
+- Ran ticket doctor:
+  - `docmgr doctor --ticket HC-031-VM-PLUGIN-DSL --stale-after 30`
+  - result: one known warning (`missing_numeric_prefix`) on imported source file name.
+- Marked final tasks complete:
+  - `docmgr task check --ticket HC-031-VM-PLUGIN-DSL --id 65,66,67,68`
+- Uploaded updated PDF to reMarkable:
+  - dry run:
+    - `remarquee upload bundle --dry-run ... --name "HC-031-VM-PLUGIN-DSL-Analysis-Updated" --remote-dir "/ai/2026/02/15/HC-031-VM-PLUGIN-DSL"`
+  - upload:
+    - `remarquee upload bundle ... --name "HC-031-VM-PLUGIN-DSL-Analysis-Updated" --remote-dir "/ai/2026/02/15/HC-031-VM-PLUGIN-DSL" --non-interactive`
+  - verification:
+    - `remarquee cloud ls /ai/2026/02/15/HC-031-VM-PLUGIN-DSL --long --non-interactive`
+
+### Why
+
+- Publication tasks were the only remaining open items (`G5.*`) and are necessary for handoff/review completeness.
+
+### What worked
+
+- Ticket tasks now show complete.
+- Updated PDF appears on reMarkable cloud path alongside the prior artifact.
+- Doctor surfaced only the known imported-source naming warning.
+
+### What didn't work
+
+- No blocking failures in this step.
+
+### What I learned
+
+- Keeping the old PDF and uploading a versioned new filename avoids annotation loss risk from forced overwrite.
+
+### What was tricky to build
+
+- The main nuance was selecting upload mode: `upload md` does not support explicit output naming, so `upload bundle` was used (single input) to create a stable, versioned PDF name without destructive overwrite behavior.
+
+### What warrants a second pair of eyes
+
+- Confirm whether the remaining `missing_numeric_prefix` warning should be accepted permanently for imported source files or normalized by renaming and re-relating sources.
+
+### What should be done in the future
+
+- If desired, close the ticket after final reviewer acknowledgment:
+  - `docmgr ticket close --ticket HC-031-VM-PLUGIN-DSL`
+
+### Code review instructions
+
+- Review publication artifacts:
+  - `ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/design-doc/01-vm-plugin-dsl-migration-and-storybook-integration-analysis.md`
+  - `ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/reference/01-diary.md`
+  - `ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/changelog.md`
+  - `ttmp/2026/02/15/HC-031-VM-PLUGIN-DSL--vm-plugin-dsl-migration-analysis/tasks.md`
+- Verify ticket/file health:
+  - `docmgr task list --ticket HC-031-VM-PLUGIN-DSL`
+  - `docmgr doctor --ticket HC-031-VM-PLUGIN-DSL --stale-after 30`
+- Verify upload:
+  - `remarquee cloud ls /ai/2026/02/15/HC-031-VM-PLUGIN-DSL --long --non-interactive`
+
+### Technical details
+
+- Uploaded document name: `HC-031-VM-PLUGIN-DSL-Analysis-Updated.pdf`
+- Remote folder now contains:
+  - `01-vm-plugin-dsl-migration-and-storybook-integration-analysis`
+  - `HC-031-VM-PLUGIN-DSL-Analysis-Updated`

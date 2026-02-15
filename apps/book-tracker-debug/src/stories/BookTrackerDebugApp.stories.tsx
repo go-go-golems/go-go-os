@@ -1,13 +1,10 @@
 import { createStoryHelpers } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
-import { bookSharedActions, bookSharedSelectors } from '../app/cardRuntime';
 import { createBookStore } from '../app/store';
-import { BOOK_STACK } from '../domain/stack';
+import { STACK } from '../domain/stack';
 
 const { storeDecorator, createStory, FullApp } = createStoryHelpers({
-  stack: BOOK_STACK,
-  sharedSelectors: bookSharedSelectors,
-  sharedActions: bookSharedActions,
+  stack: STACK,
   createStore: createBookStore,
   cardParams: { bookDetail: 'b1' },
 });

@@ -76,3 +76,15 @@ Added CSS Mapping and Design Improvements design doc (03): comprehensive propert
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/15/HC-029-WINDOWING-SUPPORT--windowing-support-for-multiple-hypercard-cards/design-doc/03-css-mapping-and-design-improvements.md — New design doc with CSS mapping and improvements
 
+
+## 2026-02-15
+
+Implemented all 14 CSS improvement tasks (52-65): restored mac1 visual fidelity with title bar stripes, inverted menu/icon highlights, window border-radius, dialog variant, menu separators, window open animation, scrollbar styling, and focus ring. Two commits: f4fb991 (CSS+structural) and 841e1c0 (stories).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopMenuBar.tsx — Separator rendering via hr element
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/WindowSurface.tsx — Dialog variant support
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/types.ts — Added separator type
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/theme/base.css — All windowing CSS changes — tokens
+

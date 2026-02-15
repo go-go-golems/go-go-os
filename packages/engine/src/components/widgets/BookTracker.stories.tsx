@@ -1,26 +1,22 @@
-import {
-  Act,
-  type CardStackDefinition,
-  type ColumnConfig,
-  type ComputedFieldConfig,
-  defineCardStack,
-  Ev,
-  type FieldConfig,
-  type FilterConfig,
-  HyperCardShell,
-  hypercardRuntimeReducer,
-  navigate,
-  navigationReducer,
-  notificationsReducer,
-  Sel,
-  type SharedActionRegistry,
-  type SharedSelectorRegistry,
-  ui,
-} from '@hypercard/engine';
 import { configureStore, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { Provider } from 'react-redux';
+import {
+  Act,
+  type CardStackDefinition,
+  defineCardStack,
+  Ev,
+  Sel,
+  type SharedActionRegistry,
+  type SharedSelectorRegistry,
+  ui,
+} from '../../cards';
+import { hypercardRuntimeReducer } from '../../cards/runtimeStateSlice';
+import { navigate, navigationReducer } from '../../features/navigation/navigationSlice';
+import { notificationsReducer } from '../../features/notifications/notificationsSlice';
+import type { ColumnConfig, ComputedFieldConfig, FieldConfig, FilterConfig } from '../../types';
+import { HyperCardShell } from '../shell/HyperCardShell';
 import { DetailView } from './DetailView';
 import { FormView } from './FormView';
 import { ListView } from './ListView';

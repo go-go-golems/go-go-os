@@ -1535,3 +1535,62 @@ These two components are the core of the windowing system. Without them, the Red
 
 - Tasks completed: 22, 23, 24, 25, 26, 27, 28, 29, 30, 32
 - Verification: typecheck clean, biome clean, all tests pass, production build succeeds
+
+## Step 18: Full story coverage for all windowing components
+
+Audited all windowing components for missing stories and created them retroactively.
+
+### What I did
+
+Created 3 new story files bringing windowing component story coverage to 100%:
+
+1. **`DesktopShell.stories.tsx`** (3 stories):
+   - `Default` — auto-generated icons and menus from a demo card stack
+   - `WithCustomIcons` — explicit icon layout
+   - `WithCustomMenus` — explicit menu sections with separators
+   - Each story creates its own `configureStore` with `hypercardRuntimeReducer + windowingReducer + notificationsReducer`
+   - Includes a self-contained 5-card demo stack (home menu, browse list, report, chat, settings)
+
+2. **`CardSessionHost.stories.tsx`** (5 stories):
+   - `NavigableMenu` — menu card with nav buttons demonstrating per-session navigation
+   - `ChatCard` — chat UI rendered in a session host
+   - `ReportCard` — report card rendered in a session host
+   - `PreviewMode` — interactions disabled
+   - `TwoSessionsIsolated` — two separate stores side-by-side proving session isolation (navigate in one, the other stays put)
+   - Store factory bootstraps session nav stack via `openWindow` dispatch
+
+3. **`useWindowInteractionController.stories.tsx`** (5 stories):
+   - `DefaultConstraints` — two windows with default constraints
+   - `TightConstraints` — min 300×200, can't go above y=50
+   - `SingleWindow` — one window
+   - `FourWindows` — stress test focus/z-order with 4 windows
+   - `NoConstraints` — window can be dragged off-screen
+   - Each story has a live status bar showing position/size/z/focus
+   - Uses `WindowSurface` component (not raw div) so CSS styling is applied
+
+### Coverage summary
+
+| Component | Stories |
+|---|---|
+| CardSessionHost | 5 |
+| DesktopIconLayer | 3 |
+| DesktopMenuBar | 4 |
+| DesktopShell | 3 |
+| useWindowInteractionController | 5 |
+| WindowLayer | 3 |
+| WindowResizeHandle | 2 |
+| WindowSurface | 4 |
+| WindowTitleBar | 3 |
+| DesktopPrimitives (composite) | 7 |
+| **Total** | **39** |
+
+**Commit:** `30d6040` — "feat(stories): full story coverage for windowing components"
+
+### What was tricky
+
+- `WindowSurface` takes a `window: DesktopWindowDef` prop (not individual x/y/width/height props). The initial interaction controller story tried to pass individual props and failed typecheck. Fixed by passing the whole window def object.
+- Storybook 10 requires `args` on stories even when using a custom `render` function. The `TwoSessionsIsolated` story needed dummy args to satisfy the type constraint.
+
+### Technical details
+
+- Verification: typecheck clean, biome clean, 95/95 tests pass

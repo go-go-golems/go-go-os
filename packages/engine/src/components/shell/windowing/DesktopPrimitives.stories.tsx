@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DesktopIconLayer } from './DesktopIconLayer';
 import { DesktopMenuBar } from './DesktopMenuBar';
 import type { DesktopIconDef, DesktopMenuSection, DesktopWindowDef } from './types';
+import { useWindowInteractionController } from './useWindowInteractionController';
 import { WindowLayer } from './WindowLayer';
 
 interface DesktopDemoProps {
@@ -61,16 +61,11 @@ function DesktopDemo({ initialWindows }: DesktopDemoProps) {
   const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
   const [statusText, setStatusText] = useState('Ready');
   const [windows, setWindows] = useState<DesktopWindowDef[]>(() => initialWindows);
-  const dragStateRef = useRef<{
-    mode: 'move' | 'resize';
-    windowId: string;
-    startClientX: number;
-    startClientY: number;
-    startX: number;
-    startY: number;
-    startWidth: number;
-    startHeight: number;
-  } | null>(null);
+  const windowsRef = useRef<DesktopWindowDef[]>(initialWindows);
+
+  useEffect(() => {
+    windowsRef.current = windows;
+  }, [windows]);
 
   const focusWindow = useCallback((windowId: string) => {
     setWindows((prev) => {
@@ -114,70 +109,23 @@ function DesktopDemo({ initialWindows }: DesktopDemoProps) {
     });
   }, []);
 
-  const startInteraction = useCallback(
-    (mode: 'move' | 'resize', windowId: string, event: ReactPointerEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      focusWindow(windowId);
+  const moveWindow = useCallback((windowId: string, next: { x: number; y: number }) => {
+    setWindows((prev) => prev.map((window) => (window.id === windowId ? { ...window, x: next.x, y: next.y } : window)));
+  }, []);
 
-      const target = windows.find((window) => window.id === windowId);
-      if (!target) {
-        return;
-      }
+  const resizeWindow = useCallback((windowId: string, next: { width: number; height: number }) => {
+    setWindows((prev) =>
+      prev.map((window) => (window.id === windowId ? { ...window, width: next.width, height: next.height } : window)),
+    );
+  }, []);
 
-      dragStateRef.current = {
-        mode,
-        windowId,
-        startClientX: event.clientX,
-        startClientY: event.clientY,
-        startX: target.x,
-        startY: target.y,
-        startWidth: target.width,
-        startHeight: target.height,
-      };
-
-      const onMove = (moveEvent: PointerEvent) => {
-        const drag = dragStateRef.current;
-        if (!drag || drag.windowId !== windowId) {
-          return;
-        }
-
-        const dx = moveEvent.clientX - drag.startClientX;
-        const dy = moveEvent.clientY - drag.startClientY;
-        setWindows((prev) =>
-          prev.map((window) => {
-            if (window.id !== windowId) {
-              return window;
-            }
-
-            if (drag.mode === 'move') {
-              return {
-                ...window,
-                x: Math.max(0, drag.startX + dx),
-                y: Math.max(30, drag.startY + dy),
-              };
-            }
-
-            return {
-              ...window,
-              width: Math.max(220, drag.startWidth + dx),
-              height: Math.max(140, drag.startHeight + dy),
-            };
-          }),
-        );
-      };
-
-      const onUp = () => {
-        dragStateRef.current = null;
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-      };
-
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-    },
-    [focusWindow, windows],
-  );
+  const { beginMove, beginResize } = useWindowInteractionController({
+    getWindowById: (windowId) => windowsRef.current.find((window) => window.id === windowId),
+    onMoveWindow: moveWindow,
+    onResizeWindow: resizeWindow,
+    onFocusWindow: focusWindow,
+    constraints: { minX: 0, minY: 30, minWidth: 220, minHeight: 140 },
+  });
 
   const onCommand = useCallback(
     (commandId: string) => {
@@ -246,8 +194,8 @@ function DesktopDemo({ initialWindows }: DesktopDemoProps) {
         windows={windows}
         onFocusWindow={focusWindow}
         onCloseWindow={closeWindow}
-        onWindowDragStart={(windowId, event) => startInteraction('move', windowId, event)}
-        onWindowResizeStart={(windowId, event) => startInteraction('resize', windowId, event)}
+        onWindowDragStart={(windowId, event) => beginMove(windowId, event)}
+        onWindowResizeStart={(windowId, event) => beginResize(windowId, event)}
         renderWindowBody={(window) => (
           <div>
             <div style={{ marginBottom: 8, fontWeight: 'bold' }}>{window.title}</div>

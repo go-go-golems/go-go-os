@@ -7,6 +7,11 @@ export type {
   DesktopWindowDef,
 } from './types';
 export {
+  useWindowInteractionController,
+  type WindowInteractionConstraints,
+  type WindowInteractionControllerOptions,
+} from './useWindowInteractionController';
+export {
   WindowLayer,
   type WindowLayerProps,
 } from './WindowLayer';

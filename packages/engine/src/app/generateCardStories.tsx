@@ -1,4 +1,4 @@
-import { type ComponentType } from 'react';
+import { type ComponentType, useRef } from 'react';
 import { Provider } from 'react-redux';
 import type { CardStackDefinition, SharedActionRegistry, SharedSelectorRegistry } from '../cards/types';
 import type { DesktopIconDef } from '../components/shell/windowing/types';
@@ -46,22 +46,24 @@ export interface CardStoriesConfig<TRootState = unknown> {
  * ```
  */
 export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConfig<TRootState>) {
-  const {
-    stack,
-    sharedSelectors,
-    sharedActions,
-    createStore,
-    icons,
-    cardParams = {},
-  } = config;
+  const { stack, sharedSelectors, sharedActions, createStore, icons, cardParams = {} } = config;
 
-  // Store decorator for story isolation
-  function storeDecorator(Story: ComponentType) {
+  function StoryStoreProvider({ Story }: { Story: ComponentType }) {
+    const storeRef = useRef<any>(null);
+    if (!storeRef.current) {
+      storeRef.current = createStore();
+    }
+
     return (
-      <Provider store={createStore()}>
+      <Provider store={storeRef.current}>
         <Story />
       </Provider>
     );
+  }
+
+  // Store decorator for story isolation
+  function storeDecorator(Story: ComponentType) {
+    return <StoryStoreProvider Story={Story} />;
   }
 
   // Shell-at-card component for navigating to a specific card

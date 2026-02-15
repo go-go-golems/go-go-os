@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { CardStackDefinition, SharedActionRegistry, SharedSelectorRegistry } from '../../../cards';
 import type { RuntimeDebugHooks } from '../../../cards/runtime';
@@ -84,6 +84,7 @@ export function DesktopShell({
   icons: iconsProp,
 }: DesktopShellProps) {
   const dispatch = useDispatch();
+  const lastOpenedHomeKeyRef = useRef<string | null>(null);
   const windows = useSelector((s: ShellState) => selectWindowsByZ(s));
   const focusedWin = useSelector((s: ShellState) => selectFocusedWindow(s));
   const activeMenuId = useSelector((s: ShellState) => selectActiveMenuId(s));
@@ -144,20 +145,24 @@ export function DesktopShell({
   useEffect(() => {
     const homeCard = stack.cards[stack.homeCard];
     if (!homeCard) return;
+    const homeKey = `${stack.id}:${stack.homeCard}:${homeParam ?? ''}`;
+    if (lastOpenedHomeKeyRef.current === homeKey) return;
+    lastOpenedHomeKeyRef.current = homeKey;
+
     const sid = nextSessionId();
     dispatch(
       openWindow({
         id: `window:${stack.homeCard}:${sid}`,
         title: homeCard.title ?? stack.homeCard,
         icon: homeCard.icon,
-          bounds: { x: 140, y: 20, w: 420, h: 340 },
-          content: {
-            kind: 'card',
-            card: { stackId: stack.id, cardId: stack.homeCard, cardSessionId: sid, param: homeParam },
-          },
-          dedupeKey: stack.homeCard,
-        }),
-      );
+        bounds: { x: 140, y: 20, w: 420, h: 340 },
+        content: {
+          kind: 'card',
+          card: { stackId: stack.id, cardId: stack.homeCard, cardSessionId: sid, param: homeParam },
+        },
+        dedupeKey: stack.homeCard,
+      }),
+    );
   }, [dispatch, homeParam, stack.id, stack.homeCard, stack.cards]);
 
   const windowDefs = useMemo(

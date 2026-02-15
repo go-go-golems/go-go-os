@@ -1,17 +1,12 @@
 import { type ComponentType, useRef } from 'react';
 import { Provider } from 'react-redux';
-import type { CardStackDefinition, SharedActionRegistry, SharedSelectorRegistry } from '../cards/types';
+import type { CardStackDefinition } from '../cards/types';
 import type { DesktopIconDef } from '../components/shell/windowing/types';
 import { DesktopShell } from '../components/shell/windowing/DesktopShell';
-import { useStandardDebugHooks } from '../debug/useStandardDebugHooks';
 
-export interface CardStoriesConfig<TRootState = unknown> {
+export interface CardStoriesConfig {
   /** The card stack definition */
-  stack: CardStackDefinition<TRootState>;
-  /** Shared selectors registry (legacy DSL fallback only). */
-  sharedSelectors?: SharedSelectorRegistry<TRootState>;
-  /** Shared actions registry (legacy DSL fallback only). */
-  sharedActions?: SharedActionRegistry<TRootState>;
+  stack: CardStackDefinition;
   /** Factory to create a fresh store (for story isolation). Use createAppStore().createStore. */
   createStore: () => any; // eslint-disable-line -- Store type varies per app; typed at call site
   /** Optional desktop icon overrides for DesktopShell stories */
@@ -20,8 +15,6 @@ export interface CardStoriesConfig<TRootState = unknown> {
   cardParams?: Record<string, unknown>;
   /** Optional store seeding hook for deterministic story runtime state. */
   seedStore?: (store: any) => void;
-  /** Enable runtime debug event capture in stories. Defaults to false. */
-  enableDebugHooks?: boolean;
 }
 
 /** Story params are stored in window nav as strings; encode structured params deterministically. */
@@ -62,17 +55,8 @@ export function toStoryParam(value: unknown): string | undefined {
  * export const ContactDetail: StoryObj<typeof meta> = createStory('contactDetail', 'c1');
  * ```
  */
-export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConfig<TRootState>) {
-  const {
-    stack,
-    sharedSelectors,
-    sharedActions,
-    createStore,
-    icons,
-    cardParams = {},
-    seedStore,
-    enableDebugHooks = false,
-  } = config;
+export function createStoryHelpers(config: CardStoriesConfig) {
+  const { stack, createStore, icons, cardParams = {}, seedStore } = config;
 
   function StoryStoreProvider({ Story }: { Story: ComponentType }) {
     const storeRef = useRef<any>(null);
@@ -99,8 +83,6 @@ export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConf
 
   // Shell-at-card component for navigating to a specific card
   function ShellAtCard({ card, params }: { card: string; params?: unknown }) {
-    const runtimeDebugHooks = useStandardDebugHooks();
-    const debugHooks = enableDebugHooks ? runtimeDebugHooks : undefined;
     const stackAtCard = {
       ...stack,
       homeCard: card,
@@ -109,9 +91,6 @@ export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConf
     return (
       <DesktopShell
         stack={stackAtCard}
-        sharedSelectors={sharedSelectors}
-        sharedActions={sharedActions}
-        debugHooks={debugHooks}
         icons={icons}
         homeParam={toStoryParam(params)}
       />
@@ -120,17 +99,7 @@ export function createStoryHelpers<TRootState = unknown>(config: CardStoriesConf
 
   // Full app component (for default story / meta.component)
   function FullApp() {
-    const runtimeDebugHooks = useStandardDebugHooks();
-    const debugHooks = enableDebugHooks ? runtimeDebugHooks : undefined;
-    return (
-      <DesktopShell
-        stack={stack}
-        sharedSelectors={sharedSelectors}
-        sharedActions={sharedActions}
-        debugHooks={debugHooks}
-        icons={icons}
-      />
-    );
+    return <DesktopShell stack={stack} icons={icons} />;
   }
 
   /**

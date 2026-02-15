@@ -1,5 +1,4 @@
 import { configureStore, type Reducer } from '@reduxjs/toolkit';
-import { hypercardRuntimeReducer } from '../cards/runtimeStateSlice';
 import { debugReducer } from '../debug/debugSlice';
 import { pluginCardRuntimeReducer } from '../features/pluginCardRuntime/pluginCardRuntimeSlice';
 import { notificationsReducer } from '../features/notifications/notificationsSlice';
@@ -7,7 +6,7 @@ import { windowingReducer } from '../features/windowing/windowingSlice';
 
 /**
  * Creates a Redux store factory pre-wired with all HyperCard engine reducers
- * (hypercardRuntime, pluginCardRuntime, windowing, notifications, debug).
+ * (pluginCardRuntime, windowing, notifications, debug).
  *
  * Returns both a singleton store and a createStore() factory for Storybook.
  *
@@ -21,7 +20,6 @@ import { windowingReducer } from '../features/windowing/windowingSlice';
  */
 export function createAppStore<T extends Record<string, Reducer>>(domainReducers: T) {
   const reducer = {
-    hypercardRuntime: hypercardRuntimeReducer,
     pluginCardRuntime: pluginCardRuntimeReducer,
     windowing: windowingReducer,
     notifications: notificationsReducer,

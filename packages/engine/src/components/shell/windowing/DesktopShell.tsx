@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { CardStackDefinition, SharedActionRegistry, SharedSelectorRegistry } from '../../../cards';
-import type { RuntimeDebugHooks } from '../../../cards/runtime';
+import type { CardStackDefinition } from '../../../cards';
 import { clearToast } from '../../../features/notifications/notificationsSlice';
 import { type NotificationsStateSlice, selectToast } from '../../../features/notifications/selectors';
 import {
@@ -25,7 +24,6 @@ import {
 import { PARTS } from '../../../parts';
 import { HyperCardTheme } from '../../../theme/HyperCardTheme';
 import { Toast } from '../../widgets/Toast';
-import { CardSessionHost } from './CardSessionHost';
 import { DesktopIconLayer } from './DesktopIconLayer';
 import { DesktopMenuBar } from './DesktopMenuBar';
 import { PluginCardSessionHost } from './PluginCardSessionHost';
@@ -53,10 +51,7 @@ function toWindowDef(win: WindowInstance, focused: boolean): DesktopWindowDef {
 }
 
 export interface DesktopShellProps {
-  stack: CardStackDefinition<any>;
-  sharedSelectors?: SharedSelectorRegistry<any>;
-  sharedActions?: SharedActionRegistry<any>;
-  debugHooks?: RuntimeDebugHooks;
+  stack: CardStackDefinition;
   mode?: 'interactive' | 'preview';
   themeClass?: string;
   /** Optional initial param injected into the first auto-opened home-card window. */
@@ -75,9 +70,6 @@ function nextSessionId() {
 
 export function DesktopShell({
   stack,
-  sharedSelectors,
-  sharedActions,
-  debugHooks,
   mode = 'interactive',
   themeClass,
   homeParam,
@@ -261,30 +253,11 @@ export function DesktopShell({
 
       const cardRef = winInstance.content.card;
       if (winInstance.content.kind === 'card' && cardRef) {
-        const hasPluginRuntime = Boolean(stack.plugin?.bundleCode);
-
-        if (!hasPluginRuntime) {
-          return (
-            <CardSessionHost
-              windowId={winInstance.id}
-              sessionId={cardRef.cardSessionId}
-              stack={stack}
-              sharedSelectors={sharedSelectors}
-              sharedActions={sharedActions}
-              debugHooks={debugHooks}
-              mode={mode}
-            />
-          );
-        }
-
         return (
           <PluginCardSessionHost
             windowId={winInstance.id}
             sessionId={cardRef.cardSessionId}
             stack={stack}
-            sharedSelectors={sharedSelectors}
-            sharedActions={sharedActions}
-            debugHooks={debugHooks}
             mode={mode}
           />
         );
@@ -297,7 +270,7 @@ export function DesktopShell({
         </div>
       );
     },
-    [windows, stack, sharedSelectors, sharedActions, debugHooks, mode],
+    [windows, stack, mode],
   );
 
   return (

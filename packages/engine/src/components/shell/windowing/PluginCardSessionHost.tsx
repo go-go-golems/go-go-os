@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import type {
-  CardStackDefinition,
-  SharedActionRegistry,
-  SharedSelectorRegistry,
-} from '../../../cards';
-import type { RuntimeDebugHooks } from '../../../cards/runtime';
+import type { CardStackDefinition } from '../../../cards';
 import { showToast } from '../../../features/notifications/notificationsSlice';
 import {
   registerRuntimeSession,
@@ -19,13 +14,12 @@ import { selectFocusedWindowId, selectSessionCurrentNav, selectSessionNavDepth }
 import type { RuntimeIntent } from '../../../plugin-runtime/contracts';
 import { QuickJSCardRuntimeService } from '../../../plugin-runtime/runtimeService';
 import type { UINode } from '../../../plugin-runtime/uiTypes';
-import { CardSessionHost } from './CardSessionHost';
 import { dispatchRuntimeIntent } from './pluginIntentRouting';
 import { PluginCardRenderer } from './PluginCardRenderer';
 
 type StoreState = Record<string, unknown>;
 
-function getPluginConfig(stack: CardStackDefinition<any>) {
+function getPluginConfig(stack: CardStackDefinition) {
   if (stack.plugin && stack.plugin.bundleCode.length > 0) {
     return stack.plugin;
   }
@@ -43,7 +37,7 @@ function projectGlobalState(rootState: StoreState, opts: {
   focusedWindowId: string | null;
   runtimeStatus: string;
 }) {
-  const knownSlices = new Set(['hypercardRuntime', 'pluginCardRuntime', 'windowing', 'notifications', 'debug']);
+  const knownSlices = new Set(['pluginCardRuntime', 'windowing', 'notifications', 'debug']);
   const domains = Object.fromEntries(Object.entries(rootState).filter(([key]) => !knownSlices.has(key)));
 
   return {
@@ -72,10 +66,7 @@ function projectGlobalState(rootState: StoreState, opts: {
 export interface PluginCardSessionHostProps {
   windowId: string;
   sessionId: string;
-  stack: CardStackDefinition<any>;
-  sharedSelectors?: SharedSelectorRegistry<any>;
-  sharedActions?: SharedActionRegistry<any>;
-  debugHooks?: RuntimeDebugHooks;
+  stack: CardStackDefinition;
   mode?: 'interactive' | 'preview';
 }
 
@@ -83,9 +74,6 @@ export function PluginCardSessionHost({
   windowId,
   sessionId,
   stack,
-  sharedSelectors,
-  sharedActions,
-  debugHooks,
   mode = 'interactive',
 }: PluginCardSessionHostProps) {
   const dispatch = useDispatch();
@@ -102,6 +90,7 @@ export function PluginCardSessionHost({
   const cardState = useSelector((state: StoreState) => selectRuntimeCardState(state as any, sessionId, currentCardId));
 
   const runtimeServiceRef = useRef<QuickJSCardRuntimeService | null>(null);
+  const isPreview = mode === 'preview';
   if (!runtimeServiceRef.current) {
     runtimeServiceRef.current = new QuickJSCardRuntimeService();
   }
@@ -313,21 +302,11 @@ export function PluginCardSessionHost({
   );
 
   if (!pluginConfig) {
-    return (
-      <CardSessionHost
-        windowId={windowId}
-        sessionId={sessionId}
-        stack={stack}
-        sharedSelectors={sharedSelectors}
-        sharedActions={sharedActions}
-        debugHooks={debugHooks}
-        mode={mode}
-      />
-    );
+    return <div style={{ padding: 12, color: '#9f1d1d' }}>Plugin stack configuration is required for this host.</div>;
   }
 
   if (!runtimeSession || runtimeSession.status === 'loading') {
-    return <div style={{ padding: 12 }}>Loading plugin runtime…</div>;
+    return <div style={{ padding: 12 }}>{isPreview ? 'Loading plugin preview…' : 'Loading plugin runtime…'}</div>;
   }
 
   if (runtimeSession.status === 'error') {

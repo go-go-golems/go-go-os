@@ -1,4 +1,4 @@
-import { defineCardStack, type CardDefinition, type CardStackDefinition } from '@hypercard/engine';
+import type { CardDefinition, CardStackDefinition } from '@hypercard/engine';
 import { TODO_PLUGIN_BUNDLE } from './pluginBundle';
 
 interface PluginCardMeta {
@@ -29,7 +29,7 @@ function toPluginCard(card: PluginCardMeta): CardDefinition {
   };
 }
 
-export const STACK: CardStackDefinition = defineCardStack({
+export const STACK: CardStackDefinition = {
   id: 'todo',
   name: 'My Tasks',
   icon: '✅',
@@ -42,4 +42,4 @@ export const STACK: CardStackDefinition = defineCardStack({
     },
   },
   cards: Object.fromEntries(TODO_CARD_META.map((card) => [card.id, toPluginCard(card)])),
-});
+};

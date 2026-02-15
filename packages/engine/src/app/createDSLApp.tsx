@@ -1,59 +1,39 @@
 import type { Reducer } from '@reduxjs/toolkit';
-import type { CardStackDefinition, SharedActionRegistry, SharedSelectorRegistry } from '../cards/types';
+import type { CardStackDefinition } from '../cards/types';
 import type { DesktopIconDef } from '../components/shell/windowing/types';
 import { DesktopShell } from '../components/shell/windowing/DesktopShell';
-import { useStandardDebugHooks } from '../debug/useStandardDebugHooks';
 import { createAppStore } from './createAppStore';
 
-export interface DSLAppConfig<TRootState = unknown> {
+export interface DSLAppConfig {
   /** The card stack definition */
-  stack: CardStackDefinition<TRootState>;
-  /** Shared selectors registry (legacy DSL fallback only). */
-  sharedSelectors?: SharedSelectorRegistry<TRootState>;
-  /** Shared actions registry (legacy DSL fallback only). */
-  sharedActions?: SharedActionRegistry<TRootState>;
+  stack: CardStackDefinition;
   /** Domain-specific reducers (engine reducers are added automatically) */
   domainReducers: Record<string, Reducer>;
   /** Optional desktop icon overrides */
   icons?: DesktopIconDef[];
-  /** Enable runtime debug event capture into Redux debug slice. Defaults to false. */
-  enableDebugHooks?: boolean;
 }
 
 /**
- * Creates a complete DSL app from a config object.
+ * Creates a complete plugin-card app from a config object.
  * Returns an App component, a singleton store, and a createStore factory.
  *
  * @example
  * ```ts
  * const { App, store, createStore } = createDSLApp({
  *   stack: CRM_STACK,
- *   sharedSelectors: crmSharedSelectors,
- *   sharedActions: crmSharedActions,
  *   domainReducers: { contacts: contactsReducer, ... },
  *   navShortcuts: [{ card: 'home', icon: '🏠' }],
  *   snapshotSelector: (state) => ({ contacts: state.contacts }),
  * });
  * ```
  */
-export function createDSLApp<TRootState = unknown>(config: DSLAppConfig<TRootState>) {
-  const { stack, sharedSelectors, sharedActions, domainReducers, icons, enableDebugHooks = false } = config;
+export function createDSLApp(config: DSLAppConfig) {
+  const { stack, domainReducers, icons } = config;
 
   const { store, createStore } = createAppStore(domainReducers);
 
   function App() {
-    const runtimeDebugHooks = useStandardDebugHooks();
-    const debugHooks = enableDebugHooks ? runtimeDebugHooks : undefined;
-
-    return (
-      <DesktopShell
-        stack={stack}
-        sharedSelectors={sharedSelectors}
-        sharedActions={sharedActions}
-        debugHooks={debugHooks}
-        icons={icons}
-      />
-    );
+    return <DesktopShell stack={stack} icons={icons} />;
   }
 
   return { App, store, createStore };

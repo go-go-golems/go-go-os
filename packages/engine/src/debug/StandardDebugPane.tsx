@@ -35,9 +35,9 @@ export function StandardDebugPane({ title = 'Debug Pane', snapshotSelector }: St
 
   const snapshot = useSelector((state: DebugStateSlice & Record<string, unknown>) => {
     if (snapshotSelector) return snapshotSelector(state);
-    // Default: show runtime state
+    // Default: show plugin runtime state
     const snap: Record<string, unknown> = {};
-    if ('hypercardRuntime' in state) snap.runtime = state.hypercardRuntime;
+    if ('pluginCardRuntime' in state) snap.runtime = state.pluginCardRuntime;
     return snap;
   });
 

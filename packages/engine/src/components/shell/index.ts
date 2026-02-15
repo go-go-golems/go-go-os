@@ -8,3 +8,4 @@ export { NavBar, type NavBarProps } from './NavBar';
 export { RuntimeDebugPane, type RuntimeDebugPaneProps } from './RuntimeDebugPane';
 export { TabBar, type TabBarProps, type TabDef } from './TabBar';
 export { WindowChrome, type WindowChromeProps } from './WindowChrome';
+export * from './windowing';

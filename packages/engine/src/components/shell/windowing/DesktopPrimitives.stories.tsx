@@ -1,0 +1,374 @@
+import type { Meta, StoryObj } from '@storybook/react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { DesktopIconLayer } from './DesktopIconLayer';
+import { DesktopMenuBar } from './DesktopMenuBar';
+import type { DesktopIconDef, DesktopMenuSection, DesktopWindowDef } from './types';
+import { WindowLayer } from './WindowLayer';
+
+interface DesktopDemoProps {
+  initialWindows: DesktopWindowDef[];
+}
+
+const DESKTOP_ICONS: DesktopIconDef[] = [
+  { id: 'inventory', label: 'Inventory', icon: '📦', x: 18, y: 44 },
+  { id: 'sales', label: 'Sales', icon: '📈', x: 18, y: 132 },
+  { id: 'contacts', label: 'Contacts', icon: '👥', x: 18, y: 220 },
+  { id: 'ai-assistant', label: 'AI', icon: '🤖', x: 18, y: 308 },
+];
+
+const MENU_SECTIONS: DesktopMenuSection[] = [
+  {
+    id: 'file',
+    label: 'File',
+    items: [
+      { id: 'new-window', label: 'New Window', commandId: 'file.new-window', shortcut: 'Ctrl+N' },
+      { id: 'close-window', label: 'Close Focused', commandId: 'file.close-focused', shortcut: 'Ctrl+W' },
+    ],
+  },
+  {
+    id: 'window',
+    label: 'Window',
+    items: [
+      { id: 'tile', label: 'Tile Windows', commandId: 'window.tile' },
+      { id: 'cascade', label: 'Cascade Windows', commandId: 'window.cascade' },
+    ],
+  },
+  {
+    id: 'help',
+    label: 'Help',
+    items: [{ id: 'about', label: 'About Windowing', commandId: 'help.about' }],
+  },
+];
+
+function makeWindow(iconId: string, zIndex: number): DesktopWindowDef {
+  const icon = DESKTOP_ICONS.find((entry) => entry.id === iconId);
+  return {
+    id: `window:${iconId}`,
+    title: icon?.label ?? iconId,
+    icon: icon?.icon,
+    x: 120 + (zIndex % 4) * 42,
+    y: 72 + (zIndex % 3) * 34,
+    width: 320,
+    height: 220,
+    zIndex,
+    focused: true,
+  };
+}
+
+function DesktopDemo({ initialWindows }: DesktopDemoProps) {
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
+  const [statusText, setStatusText] = useState('Ready');
+  const [windows, setWindows] = useState<DesktopWindowDef[]>(() => initialWindows);
+  const dragStateRef = useRef<{
+    mode: 'move' | 'resize';
+    windowId: string;
+    startClientX: number;
+    startClientY: number;
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+  } | null>(null);
+
+  const focusWindow = useCallback((windowId: string) => {
+    setWindows((prev) => {
+      const maxZIndex = prev.length === 0 ? 1 : Math.max(...prev.map((window) => window.zIndex));
+      return prev.map((window) => {
+        if (window.id === windowId) {
+          return { ...window, focused: true, zIndex: maxZIndex + 1 };
+        }
+        return { ...window, focused: false };
+      });
+    });
+  }, []);
+
+  const openIconWindow = useCallback((iconId: string) => {
+    setSelectedIconId(iconId);
+    setWindows((prev) => {
+      const maxZIndex = prev.length === 0 ? 0 : Math.max(...prev.map((window) => window.zIndex));
+      const existing = prev.find((window) => window.id === `window:${iconId}`);
+      if (existing) {
+        return prev.map((window) => {
+          if (window.id === existing.id) {
+            return { ...window, focused: true, zIndex: maxZIndex + 1 };
+          }
+          return { ...window, focused: false };
+        });
+      }
+
+      return [...prev.map((window) => ({ ...window, focused: false })), makeWindow(iconId, maxZIndex + 1)];
+    });
+    setStatusText(`Opened ${iconId}`);
+  }, []);
+
+  const closeWindow = useCallback((windowId: string) => {
+    setWindows((prev) => {
+      const remaining = prev.filter((window) => window.id !== windowId);
+      if (remaining.length === 0) {
+        return remaining;
+      }
+      const highest = remaining.reduce((acc, window) => (window.zIndex > acc.zIndex ? window : acc));
+      return remaining.map((window) => ({ ...window, focused: window.id === highest.id }));
+    });
+  }, []);
+
+  const startInteraction = useCallback(
+    (mode: 'move' | 'resize', windowId: string, event: ReactPointerEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      focusWindow(windowId);
+
+      const target = windows.find((window) => window.id === windowId);
+      if (!target) {
+        return;
+      }
+
+      dragStateRef.current = {
+        mode,
+        windowId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startX: target.x,
+        startY: target.y,
+        startWidth: target.width,
+        startHeight: target.height,
+      };
+
+      const onMove = (moveEvent: PointerEvent) => {
+        const drag = dragStateRef.current;
+        if (!drag || drag.windowId !== windowId) {
+          return;
+        }
+
+        const dx = moveEvent.clientX - drag.startClientX;
+        const dy = moveEvent.clientY - drag.startClientY;
+        setWindows((prev) =>
+          prev.map((window) => {
+            if (window.id !== windowId) {
+              return window;
+            }
+
+            if (drag.mode === 'move') {
+              return {
+                ...window,
+                x: Math.max(0, drag.startX + dx),
+                y: Math.max(30, drag.startY + dy),
+              };
+            }
+
+            return {
+              ...window,
+              width: Math.max(220, drag.startWidth + dx),
+              height: Math.max(140, drag.startHeight + dy),
+            };
+          }),
+        );
+      };
+
+      const onUp = () => {
+        dragStateRef.current = null;
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    },
+    [focusWindow, windows],
+  );
+
+  const onCommand = useCallback(
+    (commandId: string) => {
+      if (commandId === 'file.new-window') {
+        openIconWindow(DESKTOP_ICONS[0].id);
+        return;
+      }
+
+      if (commandId === 'file.close-focused') {
+        const focused = windows.find((window) => window.focused);
+        if (focused) {
+          closeWindow(focused.id);
+          setStatusText(`Closed ${focused.title}`);
+        }
+        return;
+      }
+
+      if (commandId === 'window.tile') {
+        setWindows((prev) =>
+          prev.map((window, index) => ({
+            ...window,
+            x: 120 + (index % 3) * 250,
+            y: 52 + Math.floor(index / 3) * 200,
+            width: 240,
+            height: 180,
+          })),
+        );
+        setStatusText('Tiled windows');
+        return;
+      }
+
+      if (commandId === 'window.cascade') {
+        setWindows((prev) =>
+          prev.map((window, index) => ({
+            ...window,
+            x: 120 + index * 36,
+            y: 60 + index * 24,
+            width: 320,
+            height: 220,
+          })),
+        );
+        setStatusText('Cascaded windows');
+        return;
+      }
+
+      setStatusText('Windowing shell primitives demo');
+    },
+    [closeWindow, openIconWindow, windows],
+  );
+
+  return (
+    <div style={{ width: 980, height: 620, position: 'relative' }}>
+      <DesktopMenuBar
+        sections={MENU_SECTIONS}
+        activeMenuId={activeMenuId}
+        onActiveMenuChange={setActiveMenuId}
+        onCommand={onCommand}
+      />
+      <DesktopIconLayer
+        icons={DESKTOP_ICONS}
+        selectedIconId={selectedIconId}
+        onSelectIcon={setSelectedIconId}
+        onOpenIcon={openIconWindow}
+      />
+      <WindowLayer
+        windows={windows}
+        onFocusWindow={focusWindow}
+        onCloseWindow={closeWindow}
+        onWindowDragStart={(windowId, event) => startInteraction('move', windowId, event)}
+        onWindowResizeStart={(windowId, event) => startInteraction('resize', windowId, event)}
+        renderWindowBody={(window) => (
+          <div>
+            <div style={{ marginBottom: 8, fontWeight: 'bold' }}>{window.title}</div>
+            <p style={{ margin: 0, lineHeight: 1.4 }}>
+              This is a window primitive body. Drag the title bar, resize from the corner, and use desktop icons to
+              open/focus app windows.
+            </p>
+          </div>
+        )}
+      />
+      <div
+        data-part="footer-line"
+        style={{
+          position: 'absolute',
+          left: 10,
+          right: 10,
+          bottom: 6,
+          textAlign: 'left',
+          color: '#1f2733',
+          fontSize: 10,
+        }}
+      >
+        {statusText}
+      </div>
+    </div>
+  );
+}
+
+const meta = {
+  title: 'Shell/Windowing/Desktop Primitives',
+  component: DesktopDemo,
+  parameters: {
+    layout: 'fullscreen',
+  },
+} satisfies Meta<typeof DesktopDemo>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Idle: Story = {
+  args: {
+    initialWindows: [],
+  },
+};
+
+export const TwoWindowOverlap: Story = {
+  args: {
+    initialWindows: [
+      {
+        id: 'window:inventory',
+        title: 'Inventory',
+        icon: '📦',
+        x: 180,
+        y: 82,
+        width: 340,
+        height: 230,
+        zIndex: 1,
+        focused: false,
+      },
+      {
+        id: 'window:contacts',
+        title: 'Contacts',
+        icon: '👥',
+        x: 270,
+        y: 148,
+        width: 320,
+        height: 220,
+        zIndex: 2,
+        focused: true,
+      },
+    ],
+  },
+};
+
+export const DenseWindowSet: Story = {
+  args: {
+    initialWindows: [
+      {
+        id: 'window:inventory',
+        title: 'Inventory',
+        icon: '📦',
+        x: 120,
+        y: 60,
+        width: 300,
+        height: 210,
+        zIndex: 1,
+        focused: false,
+      },
+      {
+        id: 'window:sales',
+        title: 'Sales',
+        icon: '📈',
+        x: 250,
+        y: 90,
+        width: 290,
+        height: 220,
+        zIndex: 2,
+        focused: false,
+      },
+      {
+        id: 'window:contacts',
+        title: 'Contacts',
+        icon: '👥',
+        x: 380,
+        y: 120,
+        width: 300,
+        height: 210,
+        zIndex: 3,
+        focused: false,
+      },
+      {
+        id: 'window:ai-assistant',
+        title: 'AI',
+        icon: '🤖',
+        x: 520,
+        y: 158,
+        width: 280,
+        height: 220,
+        zIndex: 4,
+        focused: true,
+      },
+    ],
+  },
+};

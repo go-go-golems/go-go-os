@@ -6,6 +6,9 @@ import '../../../packages/engine/src/theme/base.css';
 const preview: Preview = {
   decorators: [(Story) => React.createElement(HyperCardTheme, null, React.createElement(Story))],
   parameters: {
+    docs: {
+      codePanel: true,
+    },
     controls: {
       matchers: {
         color: /(background|color)$/i,

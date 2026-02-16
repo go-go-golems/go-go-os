@@ -2,112 +2,134 @@
 
 ## TODO
 
-### 0. Planning and decisions
+### 0. Decision freeze
 
-- [ ] D0.1 Confirm default model/runtime provider for this ticket (OpenAI-compatible vs Ollama vs other).
-- [ ] D0.2 Confirm whether plugin `assistant` card remains or is removed after chat app-window cutover.
-- [ ] D0.3 Confirm timeline persistence default policy (always-on local sqlite vs opt-in flag).
-- [ ] D0.4 Confirm window opening behavior for "Create card" (dedupe per artifact vs always new window).
-- [ ] D0.5 Freeze `hypercard.widget.v1` payload schema (required keys and optional keys).
+- [ ] D0.1 Confirm runtime override policy for MVP (`disabled` vs `debug-flag-only`).
+- [ ] D0.2 Confirm assistant surface strategy at cutover (`remove plugin assistant` vs `temporary feature flag`).
+- [ ] D0.3 Confirm default card open behavior (`dedupe per artifact` vs `always new window`).
+- [ ] D0.4 Freeze `hypercard.widget.v1` schema.
+- [ ] D0.5 Freeze `hypercard.card_proposal.v1` schema.
+- [x] D0.6 Lock no-fallback policy for widget/card generation (model-authored only).
+- [x] D0.7 Lock title-gated `*.start` lifecycle event rule.
 
-### 1. Backend module scaffolding (`go-inventory-chat`)
+### 1. Glazed command and backend scaffolding (`go-inventory-chat`)
 
-- [ ] B1.1 Create Go module under `2026-02-12--hypercard-react/go-inventory-chat`.
-- [ ] B1.2 Add command entrypoint (`cmd/hypercard-inventory-server/main.go`) with structured flags.
-- [ ] B1.3 Add runtime composer package for inventory runtime key.
-- [ ] B1.4 Add strict request resolver for `/chat` and `/ws`.
-- [ ] B1.5 Wire app-owned mux routes: `/chat`, `/ws`, `/api/timeline`, `/api/*`.
-- [ ] B1.6 Add startup/shutdown lifecycle and logging.
-- [ ] B1.7 Add README run instructions for backend dev/test.
+- [x] B1.1 Create Go module under `2026-02-12--hypercard-react/go-inventory-chat`.
+- [x] B1.2 Create `cmd/hypercard-inventory-server/main.go` using Glazed command pattern.
+- [x] B1.3 Wire `clay.InitGlazed`, help system, and logger bootstrap.
+- [x] B1.4 Add command flags for addr/root and persistence (`timeline-*`, `turns-*`).
+- [x] B1.5 Add Geppetto section wiring for provider/model settings.
+- [x] B1.6 Add backend README with run examples and env requirements.
 
-### 2. SQLite inventory domain
+### 2. Pinocchio webchat composition (reuse-first)
 
-- [ ] B2.1 Create store package with `Open`, `Migrate`, and repository helpers.
-- [ ] B2.2 Implement `items` schema with stable field mapping.
-- [ ] B2.3 Implement `sales` schema with stable field mapping.
-- [ ] B2.4 Add seed loader matching frontend seed semantics.
-- [ ] B2.5 Add seed script/command for repeatable local reset.
-- [ ] B2.6 Add repository methods used by tool layer.
-- [ ] B2.7 Add unit tests for migrations, seed idempotency, and query correctness.
+- [x] B2.1 Implement runtime composer in Pinocchio style (`ComposeEngineFromSettings`).
+- [x] B2.2 Implement strict request resolver (`conv_id` policy and runtime locking).
+- [x] B2.3 Build server with `webchat.NewServer` and `WithRuntimeComposer`.
+- [x] B2.4 Mount app-owned routes (`/chat`, `/ws`, `/api/timeline`, `/api/*`).
+- [x] B2.5 Keep timeline/turn persistence via router settings only (no custom store layer).
+- [x] B2.6 Add integration tests for `/chat`, `/ws`, and `/api/timeline` baseline behavior.
 
-### 3. Geppetto tools
+### 2.5 Early frontend cutover (minimal streaming round-trip)
 
-- [ ] B3.1 Implement `inventory_search_items` tool.
-- [ ] B3.2 Implement `inventory_get_item` tool.
-- [ ] B3.3 Implement `inventory_low_stock` tool.
-- [ ] B3.4 Implement `inventory_report` tool.
-- [ ] B3.5 Implement `inventory_update_qty` tool.
-- [ ] B3.6 Implement `inventory_record_sale` tool.
-- [ ] B3.7 Register tools on server bootstrap.
-- [ ] B3.8 Restrict runtime allowed-tools list in composer.
-- [ ] B3.9 Add tool contract tests (input validation + output shape).
+- [ ] F2.5.1 Add inventory Vite proxy for `/chat`, `/ws`, `/api`.
+- [ ] F2.5.2 Add minimal transport module (`conv_id` persistence, ws attach, prompt submit).
+- [ ] F2.5.3 Replace inventory fake-stream path for primary chat surface at this checkpoint.
+- [ ] F2.5.4 Implement minimal reducer path for `llm.start/delta/final` (+ optional `tool.*` display).
+- [ ] F2.5.5 Render minimal streaming chat in app-window and verify send/receive loop.
+- [ ] F2.5.6 Add end-to-end smoke test for round-trip (`UI -> /chat -> /ws -> streamed text`).
+- [ ] F2.5.7 Keep artifact/card lifecycle rendering disabled until later phases.
 
-### 4. Structured widget extraction and SEM mapping
+### 3. SQLite inventory domain
 
-- [ ] B4.1 Create `hypercard_sem_widgets` package for widget event definitions.
-- [ ] B4.2 Register custom geppetto event factory for widget event type.
-- [ ] B4.3 Implement structuredsink extractor for `<hypercard:Widget:v1>`.
-- [ ] B4.4 Parse YAML payload and normalize required fields.
-- [ ] B4.5 Wrap event sink with `WithEventSinkWrapper` + `FilteringSink`.
-- [ ] B4.6 Register custom SEM mapping (`hypercard.widget.v1`) via sem registry.
-- [ ] B4.7 Add extractor tests for split-tag, malformed, and fenced YAML payloads.
-- [ ] B4.8 Add integration test validating websocket emission of `hypercard.widget.v1`.
+- [ ] B3.1 Implement SQLite open/migrate helpers.
+- [ ] B3.2 Create `items` schema.
+- [ ] B3.3 Create `sales` schema.
+- [ ] B3.4 Add deterministic seed data files.
+- [ ] B3.5 Add reset/seed command in ticket scripts or backend cmd.
+- [ ] B3.6 Add repository/query methods used by tools.
+- [ ] B3.7 Add tests for migration and seed idempotency.
 
-### 5. Backend endpoint/integration validation
+### 4. Inventory tools
 
-- [ ] B5.1 Add resolver tests (conv id rules, prompt parsing, override rejection).
-- [ ] B5.2 Add ws integration test (`ws.hello`, ping/pong, attach behavior).
-- [ ] B5.3 Add `/chat` integration test for `llm.start/delta/final` progression.
-- [ ] B5.4 Add `/api/timeline` hydration test for message entity snapshots.
-- [ ] B5.5 Validate local dev flow with real provider credentials.
+- [ ] B4.1 Implement `inventory_search_items`.
+- [ ] B4.2 Implement `inventory_get_item`.
+- [ ] B4.3 Implement `inventory_low_stock`.
+- [ ] B4.4 Implement `inventory_report`.
+- [ ] B4.5 Implement `inventory_update_qty`.
+- [ ] B4.6 Implement `inventory_record_sale`.
+- [ ] B4.7 Register tool factories in server bootstrap.
+- [ ] B4.8 Restrict runtime allowed-tools list.
+- [ ] B4.9 Add tool contract tests (validation + output shape).
 
-### 6. Frontend transport hard cutover
+### 5. Geppetto middleware-driven artifact/card generation
 
-- [ ] F6.1 Add Vite proxy for `/chat`, `/ws`, `/api` in inventory app.
-- [ ] F6.2 Implement `pinocchioTransport.ts` (conv id, ws attach, prompt send).
-- [ ] F6.3 Add SEM envelope parser utilities and type guards.
-- [ ] F6.4 Replace inventory chat state shape with streaming SEM model.
-- [ ] F6.5 Implement reducers for `llm.start/delta/final` and widget events.
-- [ ] F6.6 Ensure user message insertion aligns with backend chat submission flow.
-- [ ] F6.7 Add selectors for message stream + pending state + error state.
-- [ ] F6.8 Add reducer tests for streaming and widget attachment order.
+- [ ] B5.1 Add `inventory_artifact_policy` middleware package.
+- [ ] B5.2 Ensure policy middleware injects stable structured output instructions.
+- [ ] B5.3 Add `inventory_artifact_generator` middleware package.
+- [ ] B5.4 Ensure middleware does not synthesize fallback success payloads (strict no-fallback behavior).
+- [ ] B5.5 Ensure malformed/missing structured outputs are surfaced as explicit error lifecycle events.
+- [ ] B5.6 Add middleware factories and runtime middleware config wiring.
+- [ ] B5.7 Add middleware unit tests for deterministic generation and idempotence.
 
-### 7. Chat window integration in DesktopShell
+### 6. Structured extraction and SEM mapping
 
-- [ ] F7.1 Add `InventoryChatWindow.tsx` using engine `ChatWindow`.
-- [ ] F7.2 Render chat as app-window using `DesktopShell.renderAppWindow`.
-- [ ] F7.3 Auto-open inventory chat window at app start (dedupe key stable).
-- [ ] F7.4 Wire send/cancel/actions to transport and slice actions.
-- [ ] F7.5 Add smoke story/test for chat app-window rendering.
+- [ ] B6.1 Define custom event types for widget/card extractor outputs.
+- [ ] B6.2 Register Geppetto event factories/codecs for custom events.
+- [ ] B6.3 Implement `hypercard/widget/v1` extractor.
+- [ ] B6.4 Implement `hypercard/cardproposal/v1` extractor.
+- [ ] B6.5 Wire `WithEventSinkWrapper` + `structuredsink.NewFilteringSink`.
+- [ ] B6.6 Emit widget lifecycle events (`start`, `update`, `v1`, `error`) from extractor session.
+- [ ] B6.7 Emit card lifecycle events (`start`, `update`, `card_proposal.v1`, `error`) from extractor session.
+- [ ] B6.8 Enforce title-gated `start` emission in extractor logic.
+- [ ] B6.9 Register SEM mappings for all widget/card lifecycle events.
+- [ ] B6.10 Register timeline handlers for lifecycle projection (`status` + `tool_result` upserts).
+- [ ] B6.11 Add extractor tests for fragmented tags, malformed blocks, title-gated start, and success paths.
+- [ ] B6.12 Add websocket integration tests for progressive lifecycle events.
 
-### 8. Artifact-to-card flow
+### 7. Frontend artifact-aware expansion (post-round-trip cutover)
 
-- [ ] F8.1 Add `artifactsSlice` domain state keyed by artifact id.
-- [ ] F8.2 On `hypercard.widget.v1`, persist artifact + attach widget block to message.
-- [ ] F8.3 Add plugin template cards (`reportViewer`, `itemViewer`) in bundle.
-- [ ] F8.4 Register template cards in stack metadata for openability.
-- [ ] F8.5 Implement "Create card" action dispatch to `openWindow` with `param=artifactId`.
-- [ ] F8.6 Add tests for action wiring and correct card/window payload.
+- [ ] F7.1 Add SEM envelope parser/type guards for widget/card lifecycle events.
+- [ ] F7.2 Extend reducer model to handle widget/card lifecycle events.
+- [ ] F7.3 Add reducer/UI state for spinner rows driven by `*.start` and `*.update`.
+- [ ] F7.4 Add reducer tests for streaming order, title-gated starts, and event attachment.
+- [ ] F7.5 Validate regression-free behavior for minimal round-trip flow introduced in Phase 2.5.
 
-### 9. Timeline hydration (post-cutover stabilization)
+### 8. Chat window integration
 
-- [ ] F9.1 Add frontend hydration request (`/api/timeline`).
-- [ ] F9.2 Map timeline message entities back into chat message state.
-- [ ] F9.3 Define merge policy for hydrated entities vs live ws frames.
-- [ ] F9.4 Add refresh persistence test scenario.
+- [ ] F8.1 Implement inventory chat app-window component based on engine `ChatWindow`.
+- [ ] F8.2 Wire custom widget renderer for `hypercard.widget.v1` content blocks.
+- [ ] F8.3 Auto-open chat window on app start with stable dedupe key.
+- [ ] F8.4 Wire send/actions to transport and reducer actions.
+- [ ] F8.5 Add smoke test for app-window chat mount and send flow.
 
-### 10. Cleanup and hard-cut verification
+### 9. Artifact/card runtime integration
 
-- [ ] C10.1 Remove inventory reliance on fake stream code paths.
-- [ ] C10.2 Audit inventory app imports for old mock chat dependencies.
-- [ ] C10.3 Confirm no duplicate assistant surfaces unless explicitly kept.
-- [ ] C10.4 Document final runbook for backend + frontend startup.
-- [ ] C10.5 Run full validation suite and capture known limitations.
+- [ ] F9.1 Add artifacts state keyed by artifact id.
+- [ ] F9.2 Upsert artifact state on `hypercard.widget.v1` and `hypercard.card_proposal.v1`.
+- [ ] F9.3 Add template cards for report/item viewers.
+- [ ] F9.4 Wire card open action dispatch with `artifactId` parameter.
+- [ ] F9.5 Add tests for action payload and window/card opening behavior.
 
-### 11. Deferred advanced phase (not part of immediate MVP)
+### 10. Timeline hydration and persistence validation
 
-- [ ] A11.1 Design `hypercard.plugin_card.v1` structured proposal schema.
-- [ ] A11.2 Add extractor + SEM mapping for plugin card proposals.
-- [ ] A11.3 Build accept/reject/preview UI.
-- [ ] A11.4 Add runtime injection flow with safety validation.
-- [ ] A11.5 Revisit engine dynamic-card registry behavior for unknown card ids.
+- [ ] F10.1 Add timeline bootstrap call (`/api/timeline`).
+- [ ] F10.2 Map timeline entities back into chat/artifact state.
+- [ ] F10.3 Define and implement merge policy for hydrate + live frames.
+- [ ] F10.4 Add refresh/reload persistence tests.
+- [ ] F10.5 Validate turn persistence by checking turn store snapshots.
+- [ ] F10.6 Validate lifecycle projection behavior for status/tool_result entities (`start/update/ready/error`).
+
+### 11. Hard-cut cleanup and final verification
+
+- [ ] C11.1 Remove inventory fake-stream dependencies from runtime path.
+- [ ] C11.2 Remove duplicate assistant surfaces per final decision.
+- [ ] C11.3 Run backend unit/integration tests.
+- [ ] C11.4 Run frontend tests/smoke checks.
+- [ ] C11.5 Document final runbook and known limitations.
+
+### 12. Deferred (post-MVP)
+
+- [ ] A12.1 Dynamic plugin code injection from card proposals.
+- [ ] A12.2 Review/approve UX for generated plugin card definitions.
+- [ ] A12.3 Extended runtime override policies for multi-runtime environments.

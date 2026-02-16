@@ -12,16 +12,16 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/design-doc/01-validated-analysis-and-hard-cutover-implementation-plan.md
+    - Path: ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/design-doc/01-validated-analysis-and-hard-cutover-implementation-plan.md
       Note: Validated implementation plan and architecture source of truth
-    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/reference/01-diary.md
+    - Path: ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/reference/01-diary.md
       Note: Detailed planning diary and command/error trace
-    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/tasks.md
+    - Path: ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/tasks.md
       Note: Detailed checklist for implementation execution
 ExternalSources:
     - local:webchat-hyper-integration.md
-Summary: Planning ticket for hard-cutover inventory webchat integration with Pinocchio + Geppetto backend and HyperCard app-window chat frontend.
-LastUpdated: 2026-02-16T12:09:00-05:00
+Summary: Planning ticket for hard-cutover inventory webchat integration using Glazed command composition, Pinocchio webchat reuse, Geppetto middleware artifact/card generation, and HyperCard app-window frontend integration.
+LastUpdated: 2026-02-16T13:23:00-05:00
 WhatFor: Coordinate analysis, planning, task execution, and implementation diary for inventory chat integration.
 WhenToUse: Start here for ticket context and links to the validated implementation plan.
 ---
@@ -38,6 +38,8 @@ This ticket plans and tracks a hard-cutover migration from inventory app mock ch
 3. HyperCard app-window chat UI with inline widgets and artifact-to-card actions
 
 No implementation has started yet in this ticket after the explicit planning-only directive.
+
+Planning now includes an explicit early round-trip checkpoint immediately after backend Phase 2, where frontend is cut over to real streaming chat before artifact/card features are added.
 
 ## Key Links
 
@@ -58,6 +60,12 @@ Pending decisions before implementation starts:
 2. keep/remove plugin `assistant` card after cutover
 3. timeline persistence default policy
 4. create-card dedupe policy
+
+## Locked Decisions
+
+1. No fallback synthesis for artifact/card success events (model-authored structured blocks only).
+2. Progressive lifecycle events are required for widget/card parsing.
+3. `widget.start`/`card.start` are emitted only once a non-empty title is parsed.
 
 ## Tasks
 

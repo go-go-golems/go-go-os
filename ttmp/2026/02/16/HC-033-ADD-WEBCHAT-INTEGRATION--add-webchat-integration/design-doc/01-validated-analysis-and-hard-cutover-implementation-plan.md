@@ -12,119 +12,215 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: pinocchio/cmd/web-chat/main.go
+      Note: Glazed + Pinocchio reference command to mirror for backend composition
+    - Path: glazed/pkg/doc/tutorials/05-build-first-command.md
+      Note: Required Glazed command-authoring pattern reference
+    - Path: pinocchio/pkg/webchat/router.go
+      Note: Core server/router wiring including runtime composer and sink wrapper hooks
+    - Path: pinocchio/pkg/webchat/http/api.go
+      Note: App-owned chat/ws/timeline HTTP handlers and request resolver contract
+    - Path: pinocchio/cmd/web-chat/profile_policy.go
+      Note: Conv-id/runtime/override policy reference for app-owned resolver behavior
+    - Path: geppetto/pkg/inference/middleware/middleware.go
+      Note: Middleware chain model used for artifact/card generation logic
+    - Path: geppetto/pkg/events/structuredsink/filtering_sink.go
+      Note: Structured extractor and filtering behavior for widget/card event emission
+    - Path: pinocchio/pkg/sem/registry/registry.go
+      Note: Registry used to map custom events into SEM frames for frontend
     - Path: 2026-02-12--hypercard-react/apps/inventory/src/App.tsx
       Note: Current inventory shell entrypoint and upcoming chat app-window integration point
     - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.ts
       Note: Current minimal chat state that must be replaced for SEM streaming
-    - Path: 2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopShell.tsx
-      Note: Confirms app-window rendering support via renderAppWindow
-    - Path: 2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatWindow.tsx
-      Note: Inline widget rendering contract used by planned frontend integration
-    - Path: 2026-02-12--hypercard-react/packages/engine/src/plugin-runtime/runtimeService.ts
-      Note: Defines dynamic card APIs and runtime behavior constraints
-    - Path: geppetto/pkg/events/structuredsink/filtering_sink.go
-      Note: Structured extractor and filtering behavior for widget event emission
-    - Path: pinocchio/pkg/webchat/http/api.go
-      Note: Canonical app-owned chat/ws/timeline HTTP handlers
 ExternalSources:
     - local:webchat-hyper-integration.md
-Summary: Validated implementation plan for hard-cutover webchat integration in the inventory app, with minimal intermediate mocking and explicit decision points.
-LastUpdated: 2026-02-16T12:05:00-05:00
-WhatFor: Align implementation sequencing with current code reality before coding starts.
+Summary: Validated and updated implementation plan using Glazed command composition, Pinocchio webchat reuse, and middleware-driven artifact/card generation under hard-cutover constraints.
+LastUpdated: 2026-02-16T13:22:00-05:00
+WhatFor: Align implementation sequencing with latest architectural constraints before coding starts.
 WhenToUse: Use this as the source-of-truth plan before implementing backend/frontend integration work.
 ---
-
 
 # Validated Analysis and Hard-Cutover Implementation Plan
 
 ## Executive Summary
 
-This ticket will implement a real inventory chat integration by adding a Go backend under `2026-02-12--hypercard-react/go-inventory-chat`, then hard-cutting the inventory frontend from mock/fake chat behavior to backend-driven SEM streaming.
+Core design is unchanged at the architecture level, but changed at the composition level.
 
-The imported document is directionally strong (Pinocchio WebChat transport + Geppetto tools + structured sink extraction + HyperCard chat window + artifact-to-card flow), but it requires updates to match this repository state and the requested hard-cutover constraint.
+1. Architecture stays the same:
+- Pinocchio webchat transport (`/chat`, `/ws`, `/api/timeline`) drives the backend.
+- Inventory frontend consumes SEM websocket frames and renders chat/widgets/cards.
 
-Most important validated decisions:
+2. Composition changes now locked:
+- Backend command is built with Glazed in the same style as `pinocchio/cmd/web-chat/main.go`.
+- Artifact and card generation logic is implemented as Geppetto middleware behavior.
+- Timeline and turn persistence are owned by Pinocchio stores (`timeline-*` and `turns-*` settings), not custom persistence code.
 
-1. Keep one runtime path for inventory chat (real backend). Do not keep a parallel fake streaming path in inventory once cutover begins.
-2. Use existing engine capabilities already present in the repo (`DesktopShell.renderAppWindow`, app windows, `ChatWindow` inline widgets, plugin runtime card navigation/param support).
-3. Delay dynamic VM card code injection until after inventory chat + tools + widget + artifact-to-card flow is stable.
+3. Hard-cutover remains strict:
+- Inventory app cuts to one real backend flow.
+- Keep temporary mocks/intermediate constructs minimal and short-lived.
 
 ## Problem Statement
 
 We need an end-to-end inventory assistant that:
 
-1. Streams assistant output into the inventory app chat window over WebSocket.
-2. Uses tools backed by SQLite inventory/sales data (seeded with mock content at first).
-3. Emits structured widget artifacts from model output and renders them inline in chat.
-4. Supports “Create card” from widget artifacts so chat outputs can become persistent/inspectable card windows.
+1. Streams assistant output into inventory chat over websocket.
+2. Calls SQLite-backed inventory tools.
+3. Produces structured artifacts and card proposals from assistant/tool outcomes.
+4. Renders widgets in chat and opens card windows from those artifacts.
+5. Persists timeline and turn history through Pinocchio persistence primitives.
 
-The current inventory app has no real backend chat integration yet.
+## Non-Negotiable Constraints
 
-## Current State Validation (Against Repository)
+1. Use Glazed for server configuration and command wiring.
+2. Reuse `pinocchio/pkg/webchat` as much as possible.
+3. Do artifact/card generation through Geppetto middlewares.
+4. Use Pinocchio timeline/turn persistence paths.
+5. Hard cutover with minimum mock/intermediate code.
 
-### Verified accurate from imported document
+## Locked Decisions (2026-02-16)
 
-1. Engine supports app-owned windows and card windows split.
-2. Engine supports inline chat widgets (`ChatWindow` content blocks with custom widget renderer).
-3. Plugin runtime already supports dynamic card mutation APIs (`defineCard`, `defineCardRender`, `defineCardHandler`).
-4. Pinocchio webchat server composition pattern (`webchat.NewServer`, app-owned route mounting, `WithEventSinkWrapper`) is available and suitable.
-5. Geppetto structured sink (`structuredsink.NewFilteringSink`) is available with extractor model and malformed policies.
+1. No fallback artifact/card synthesis.
+- If model-authored structured blocks are missing or invalid, backend emits explicit error lifecycle events.
+- Backend does not fabricate `ready` widget/card events from tool outputs.
 
-### Corrections required for this workspace
+2. Progressive lifecycle events are required.
+- Widget and card proposal extractors emit progressive events during YAML growth.
 
-1. Backend location:
-- Imported doc proposes `pinocchio/cmd/hypercard-inventory-server`.
-- Requested target is `2026-02-12--hypercard-react/`.
-- Plan adjustment: build backend as a dedicated module under `2026-02-12--hypercard-react/go-inventory-chat`.
+3. `*.start` emission is title-gated.
+- `hypercard.widget.start` and `hypercard.card.start` are emitted only after the extractor can parse a non-empty `title`.
 
-2. Existing inventory chat implementation is minimal and local-only:
-- `apps/inventory/src/features/chat/chatSlice.ts` currently stores plain `ChatMessage[]` and has no streaming/event model.
-- Inventory app does not yet mount a dedicated chat app window.
+## Current State Validation (Code-Backed)
 
-3. Existing engine fake streaming path exists but should not drive inventory after cutover:
-- `packages/engine/src/chat/useChatStream.ts` is fake-stream based.
-- Plan adjustment: inventory app must bypass/remove fake path from its flow once transport is integrated.
+### Confirmed available and reusable
 
-4. `go-inventory-chat` directory currently has data files and empty/internal scaffolding only; no backend runtime implementation is present.
+1. Glazed command pattern exists and is production-ready (`pinocchio/cmd/web-chat/main.go`).
+2. Pinocchio app-owned handler model exists:
+- `webchat.NewServer(...)`
+- `webhttp.NewChatHandler(...)`
+- `webhttp.NewWSHandler(...)`
+- `webhttp.NewTimelineHandler(...)`
+3. Runtime composition hooks exist:
+- `webchat.WithRuntimeComposer(...)`
+- `webchat.WithEventSinkWrapper(...)`
+4. Persistence hooks already integrated in router settings (`timeline-dsn`, `timeline-db`, `turns-dsn`, `turns-db`) in `pinocchio/pkg/webchat/router.go`.
+5. Geppetto middleware chain supports pre/post turn mutation and generation logic.
+6. Structured sink can emit typed events while stripping structured blocks from visible chat text.
 
-## Hard-Cutover Constraints (Applied)
+### Gaps to implement in this ticket
 
-1. No dual long-lived chat stacks for inventory (fake + real).
-2. Keep temporary compatibility shims to the minimum needed for migration safety.
-3. Frontend reducers/contracts should move directly to SEM-based shape rather than adding another temporary intermediate model.
-4. Prefer explicit event contracts and deterministic tests over fallback heuristics.
+1. Inventory backend executable under `2026-02-12--hypercard-react/go-inventory-chat`.
+2. Inventory-specific runtime composer and strict resolver policy.
+3. Inventory tools and SQLite repository/seed pipeline.
+4. Artifact/card middleware package(s) and custom extractors/events.
+5. Inventory frontend transport + SEM reducer + widget/card actions.
 
-## Proposed Architecture
+## Target Backend Design (`go-inventory-chat`)
 
-## Backend (Go) in `go-inventory-chat`
+### 1) Command/bootstrap (Glazed-first)
 
-### Core
+Implement `cmd/hypercard-inventory-server/main.go` with the same pattern as Pinocchio web-chat:
 
-1. Build a small HTTP app with Pinocchio webchat core.
-2. Mount app-owned routes:
-- `POST /chat`
-- `GET /ws`
-- `GET /api/timeline`
-- `GET /api/*` passthrough to `srv.APIHandler()` for debug parity
-3. Use strict request resolver:
-- `conv_id` required for websocket
-- `conv_id` optional for chat (generate when missing)
-- runtime key fixed to `inventory`
-- ignore/deny runtime overrides in MVP
+1. `cobra.Command` root + logging init.
+2. `clay.InitGlazed(...)`.
+3. Glazed command description with strongly typed flags.
+4. Geppetto section wiring for model/provider settings.
+5. `RunIntoWriter(ctx, parsed, w)` composition entrypoint.
 
-### Runtime composer
+### 2) Server construction (Pinocchio reuse-first)
 
-1. Compose engine from geppetto step settings.
-2. System prompt inventory-specific and tool-first.
-3. Allowed tools limited to inventory tool set (plus optional calculator).
+Use `webchat.NewServer(...)` and mount app-owned routes only:
 
-### Data
+1. `POST /chat` -> `webhttp.NewChatHandler(...)`
+2. `GET /ws` -> `webhttp.NewWSHandler(...)`
+3. `GET /api/timeline` -> `webhttp.NewTimelineHandler(...)`
+4. `GET /api/*` -> `srv.APIHandler()`
+5. `GET /` optional UI/static depending on run mode
 
-1. SQLite DB with `items` and `sales` tables.
-2. Seed command/script that mirrors frontend seed baseline fields.
-3. Store package exposes migration + seed + query/update methods.
+No custom websocket broker, no custom timeline subsystem, no custom router fork.
 
-### Tools (initial set)
+### 3) Request resolver policy (strict)
+
+Resolver behavior:
+
+1. Websocket requires `conv_id`.
+2. Chat accepts missing `conv_id` and generates UUID.
+3. Runtime key fixed to `inventory` for MVP.
+4. Request overrides are denied by default for hard-cutover consistency.
+5. Optional override mode can be added later behind explicit flag.
+
+### 4) Runtime composer
+
+Runtime composer implementation mirrors Pinocchio reference style:
+
+1. Build engine from Geppetto step settings parsed from Glazed values.
+2. Register middleware factories map.
+3. Register tool factories map.
+4. Restrict allowed tools to inventory tool set.
+5. Seed inventory-specific system prompt.
+
+### 5) Middleware-driven artifact/card generation
+
+Artifact/card workflow is owned by middleware + structured sink extraction.
+
+Planned middleware chain:
+
+1. `inventory_artifact_policy` middleware.
+- Ensures model instructions for structured output contract are always present.
+- Injects stable tag schemas and action semantics.
+
+2. `inventory_artifact_generator` middleware.
+- Handles artifact/card orchestration metadata only.
+- Does not synthesize missing structured blocks (no fallback policy).
+- Validation and progressive event emission come from extractors attached to event sink.
+
+3. Existing standard middleware from runtime composer remains:
+- tool result reorder
+- system prompt middleware
+- optional logging middleware
+
+### 6) Structured extraction + SEM mapping
+
+1. Wrap sink via `webchat.WithEventSinkWrapper(...)`.
+2. Use `structuredsink.NewFilteringSink(...)` with custom extractors for:
+- `hypercard/widget/v1`
+- `hypercard/cardproposal/v1`
+3. Extractors emit progressive custom Geppetto events (`start`, `update`, `ready`, `error`).
+4. `start` events are emitted only once title is available from parsed YAML snapshots.
+5. Register SEM translation handlers in Pinocchio SEM registry for:
+- Widget lifecycle:
+  - `hypercard.widget.start`
+  - `hypercard.widget.update`
+  - `hypercard.widget.v1` (ready/final)
+  - `hypercard.widget.error`
+- Card lifecycle:
+  - `hypercard.card.start`
+  - `hypercard.card.update`
+  - `hypercard.card_proposal.v1` (ready/final)
+  - `hypercard.card.error`
+
+### 7) Persistence through Pinocchio
+
+No custom timeline/turn persistence implementation in this ticket.
+
+Use router-native persistence settings:
+
+1. `timeline-dsn` / `timeline-db`
+2. `turns-dsn` / `turns-db`
+
+This enables:
+
+1. durable timeline snapshots (`/api/timeline`)
+2. durable turn snapshots in turn store
+
+## Target Data/Tools Design
+
+### SQLite domain
+
+1. Tables: `items`, `sales`.
+2. Seed scripts provide deterministic mock inventory data.
+3. Seed/reset script is repeatable and idempotent for local dev/testing.
+
+### Inventory tools (MVP)
 
 1. `inventory_search_items`
 2. `inventory_get_item`
@@ -133,41 +229,26 @@ The current inventory app has no real backend chat integration yet.
 5. `inventory_update_qty`
 6. `inventory_record_sale`
 
-### Structured widget extraction
+## Target Frontend Design (Inventory App)
 
-1. Tag format: `<hypercard:Widget:v1> ... </hypercard:Widget:v1>`.
-2. YAML payload parsed via extractor session.
-3. Emit custom event type `hypercard.widget.v1`.
-4. Register SEM mapping handler for websocket broadcast.
-5. FilteringSink strips structured block from user-visible text automatically.
+### Transport/state
 
-## Frontend (Inventory app)
-
-### Transport + state
-
-1. Add `pinocchioTransport.ts` for:
-- conversation id persistence
-- websocket connect/parse
-- `/chat` post
-- optional `/api/timeline` hydration
-2. Replace inventory chat slice with SEM-driven reducer model:
-- messages with streaming status
-- content blocks (text + widget)
-- action payload support
-- conv/session metadata
+1. Replace local-only mock path with Pinocchio transport module.
+2. Manage `conv_id` persistence in app state/local storage.
+3. Consume SEM envelopes from websocket.
+4. Update chat reducer to streaming SEM model (`llm.start/delta/final`, widget/card lifecycle events, timeline upserts).
 
 ### UI integration
 
-1. Render chat as app-window via `DesktopShell.renderAppWindow`.
-2. Auto-open one chat app-window on app start (deduped).
-3. Use engine `ChatWindow` and custom `renderWidget`.
+1. Render inventory chat via app-window (`DesktopShell.renderAppWindow`).
+2. Use `ChatWindow` with custom widget renderer.
+3. Auto-open one chat window at startup with dedupe key.
 
-### Artifact-to-card flow
+### Artifact/card flow
 
-1. Add artifacts slice keyed by artifact id.
-2. On `hypercard.widget.v1`, upsert artifact and attach widget block to latest assistant message.
-3. On “Create card” action, open card window with template card id + `param=artifactId`.
-4. Add template cards (`reportViewer`, `itemViewer`) to plugin bundle + stack card metadata.
+1. On `hypercard.widget.v1`, upsert artifact and attach widget content block.
+2. On `hypercard.card_proposal.v1`, expose card creation actions.
+3. Card open action dispatches `openWindow` with card template and `artifactId` param.
 
 ## Event Contract (MVP)
 
@@ -176,155 +257,172 @@ The current inventory app has no real backend chat integration yet.
 1. `llm.start`
 2. `llm.delta`
 3. `llm.final`
-4. `tool.start` / `tool.result` / `tool.done` (optional UI use in MVP)
-5. `hypercard.widget.v1`
-6. `timeline.upsert` (optional live reconciliation)
+4. `tool.start`
+5. `tool.result`
+6. `tool.done`
+7. `hypercard.widget.start` (title-gated)
+8. `hypercard.widget.update`
+9. `hypercard.widget.v1` (ready/final)
+10. `hypercard.widget.error`
+11. `hypercard.card.start` (title-gated)
+12. `hypercard.card.update`
+13. `hypercard.card_proposal.v1` (ready/final)
+14. `hypercard.card.error`
+15. `timeline.upsert`
 
-### Custom widget event payload shape (recommended)
+### Progressive event semantics
+
+1. `*.start`
+- Emitted once the extractor can parse a valid non-empty title.
+- Used by UI to show spinner/progress row with stable item id.
+
+2. `*.update`
+- Emitted on debounced successful YAML snapshots during stream.
+- Used to update title/preview/progress details.
+
+3. `*.v1` / `*.card_proposal.v1`
+- Final success event with canonical payload consumed by widget/card renderer/actions.
+
+4. `*.error`
+- Emitted on malformed or failed final parse (`success=false`).
+- No fallback conversion to a success payload.
+
+### Structured payloads (recommended)
 
 ```yaml
-kind: report | item | table
+# Widget
+type: report | item | table
 title: string
 artifact:
-  id: optional-string
+  id: string
   data: map
-ui: optional-map
 actions:
-  - label: "Create card"
+  - label: string
     action:
-      kind: "create_card"
-      template: "reportViewer"
+      kind: create_card
+      template: string
 ```
 
-## Delivery Phases (Planning-Only)
+```yaml
+# Card Proposal
+template: reportViewer | itemViewer
+title: string
+artifact:
+  id: string
+  data: map
+window:
+  dedupe_key: optional-string
+```
 
-### Phase 0: Decisions and contracts
+## Timeline Projection Plan (HC-033 additions)
 
-1. Finalize model provider/runtime flags for local dev.
-2. Freeze widget payload schema.
-3. Freeze frontend reducer message schema.
+Projection mechanism remains Pinocchio-native (`TimelineProjector.ApplySemFrame` + `RegisterTimelineHandler`).
 
-### Phase 1: Backend skeleton + transport
+Custom timeline handlers to add:
 
-1. Create module and server bootstrap.
-2. Implement resolver + mux + run lifecycle.
-3. Validate ws/chat/timeline endpoints with integration tests.
+1. `hypercard.widget.start`
+- Upsert `status` entity (info) keyed by extractor item id for spinner state.
 
-### Phase 2: SQLite store + tools
+2. `hypercard.widget.update`
+- Upsert same `status` entity with latest title/progress text.
 
-1. Migrations + seed.
-2. Tool handlers + registration.
-3. Runtime composer prompt with tool-use policy.
+3. `hypercard.widget.v1`
+- Upsert `tool_result` entity with `custom_kind = "hypercard.widget.v1"` and structured payload.
 
-### Phase 3: Structured widgets
+4. `hypercard.widget.error`
+- Upsert `status` entity with `type = error`.
 
-1. Extractor package and event types.
-2. Sink wrapping via `WithEventSinkWrapper`.
-3. SEM mapping registration for widget events.
+5. `hypercard.card.start`
+- Upsert `status` entity (info) keyed by extractor item id.
 
-### Phase 4: Frontend hard cutover
+6. `hypercard.card.update`
+- Upsert status progression entity.
 
-1. Add Vite proxy.
-2. Add transport module.
-3. Replace inventory chat slice + selectors.
-4. App-window chat UI integration.
+7. `hypercard.card_proposal.v1`
+- Upsert `tool_result` entity with `custom_kind = "hypercard.card_proposal.v1"`.
 
-### Phase 5: Artifact-to-card
+8. `hypercard.card.error`
+- Upsert `status` entity with `type = error`.
 
-1. Artifacts domain state.
-2. Plugin bundle template cards.
-3. Chat action wiring to `openWindow` card instances.
+## Updated Delivery Phases (Planning-Only)
 
-### Phase 6: Hydration
+### Phase 0: Freeze contracts
 
-1. Backend durable timeline DSN config.
-2. Frontend timeline bootstrap + merge policy.
+1. Freeze middleware responsibilities and ordering.
+2. Freeze structured tag/payload schemas.
+3. Freeze frontend SEM reducer shape.
 
-### Phase 7: Advanced dynamic card proposal (deferred)
+### Phase 1: Glazed command + Pinocchio server
 
-1. `hypercard.plugin_card.v1` extractor and SEM mapping.
-2. Review/accept/reject UI.
-3. Dynamic card registry + runtime injection path.
+1. Scaffold backend module and command.
+2. Add resolver/runtime composer.
+3. Mount app-owned handlers and verify transport tests.
 
-## Test and Validation Plan
+### Phase 2: SQLite + inventory tools
 
-### Backend
+1. Migrations and seed pipeline.
+2. Tool registration and contract tests.
+3. Runtime allowed-tools restrictions.
 
-1. Unit:
-- request resolver behavior
-- store migrations/queries
-- tool input/output contracts
-- widget extractor parse success/failure
-2. Integration:
-- websocket hello/ping
-- chat prompt streaming (`llm.*`)
-- widget block emits `hypercard.widget.v1`
+### Phase 2.5: Early frontend cutover for round-trip validation
 
-### Frontend
+1. Cut inventory frontend to real backend transport for minimal chat only (no artifacts yet).
+2. Support streaming `llm.start` / `llm.delta` / `llm.final` and basic `tool.*` visibility.
+3. Remove active inventory reliance on fake stream path at this checkpoint.
+4. Validate round-trip flow end-to-end (`UI -> /chat -> /ws -> streamed assistant text`).
+5. Keep artifact/card UI disabled until later phases.
 
-1. Reducer tests for SEM event sequencing and widget attachment.
-2. Transport parsing tests for SEM envelope.
-3. App-window smoke test for chat mount + send + streamed render.
-4. Artifact-to-card action test opens card with correct `param`.
+### Phase 3: Middleware artifact/card generation
+
+1. Implement artifact policy middleware.
+2. Implement artifact/card generator middleware.
+3. Add middleware unit tests for generation and determinism.
+
+### Phase 4: Structured extraction + SEM mappings
+
+1. Add custom extractors and event types.
+2. Add sink wrapper integration.
+3. Register custom SEM handlers and websocket integration tests.
+
+### Phase 5: Frontend artifact-aware expansion
+
+1. Extend already-cut-over frontend reducer/UI to widget/card lifecycle events.
+2. Add spinner/progressive UI driven by title-gated `*.start` and `*.update`.
+3. Wire final artifact/card actions and renderer integration.
+
+### Phase 6: Artifact-to-card UX and hydration
+
+1. Add artifact/card slices and actions.
+2. Add card template wiring.
+3. Add timeline hydration merge policy and tests.
 
 ## Risks and Mitigations
 
-1. Tool contract drift between prompt and function signatures.
-- Mitigation: keep tool names/types frozen and add tests on marshaling and model prompt examples.
+1. Middleware-generated artifacts diverge from UI schema.
+- Mitigation: single canonical schema package + contract tests.
 
-2. Widget parsing brittleness in streaming partials.
-- Mitigation: use structuredsink malformed policy + extractor-level parse controller and tests with fragmented tags.
+2. Model/provider drift affects structured output quality.
+- Mitigation: strict schema instructions + extractor parse validation + explicit `*.error` events (no fallback synthesis).
 
-3. Hard-cut regressions in inventory app UX.
-- Mitigation: phase cutover with explicit acceptance checks before removing old flow references.
+3. Event ordering issues between live stream and timeline hydration.
+- Mitigation: version/id based merge policy and replay tests.
 
-4. Timeline hydration race with live websocket events.
-- Mitigation: deterministic merge policy (hydrate first, then apply buffered/live frames with id/version guards).
+4. Hard cutover introduces UX regressions.
+- Mitigation: explicit acceptance checklist before removing fake path.
 
-## Imported Document Validation Matrix
+## Open Decisions Requiring User Input
 
-### Keep as-is
-
-1. Webchat route model and app-owned handler pattern.
-2. Structured sink + extractor approach.
-3. Widget-first artifact flow before dynamic plugin injection.
-4. Timeline hydration as a separate phase.
-
-### Adjusted
-
-1. Backend path moved to target worktree module.
-2. Inventory frontend state shape updated based on current minimal chat slice.
-3. Hard-cutover requirement emphasized (remove reliance on fake stream path for inventory).
-
-### Deferred intentionally
-
-1. Dynamic plugin card code injection proposal flow.
-2. Engine change for unknown card id fallback bypass.
-
-## Open Questions Requiring User Decisions
-
-1. Preferred default model/runtime for dev in this ticket:
-- OpenAI-compatible endpoint
-- Ollama local
-- another provider
-
-2. Should the existing plugin `assistant` card remain visible after chat app-window cutover, or should it be removed to prevent duplicate assistant surfaces?
-
-3. Timeline persistence default for MVP:
-- enabled by default with local sqlite path
-- opt-in via flag only
-
-4. For “Create card”, should card windows be deduped per artifact id, or always open a new window instance?
+1. Should runtime overrides remain fully disabled in MVP, or permit a debug-only flag?
+2. For card open behavior, default to dedupe per artifact or always new window?
+3. Should existing plugin assistant surface be removed immediately at cutover or kept behind a temporary feature flag?
 
 ## References
 
 1. Imported source: `sources/local/webchat-hyper-integration.md`
-2. Inventory app root: `apps/inventory/src/App.tsx`
-3. Inventory chat slice (current): `apps/inventory/src/features/chat/chatSlice.ts`
-4. Engine app-window support: `packages/engine/src/components/shell/windowing/DesktopShell.tsx`
-5. Engine chat widget support: `packages/engine/src/components/widgets/ChatWindow.tsx`
-6. Plugin runtime dynamic APIs: `packages/engine/src/plugin-runtime/runtimeService.ts`
-7. Webchat composition options: `pinocchio/pkg/webchat/router_options.go`
-8. Webchat HTTP handlers: `pinocchio/pkg/webchat/http/api.go`
-9. SEM registry: `pinocchio/pkg/sem/registry/registry.go`
-10. Structured sink implementation: `geppetto/pkg/events/structuredsink/filtering_sink.go`
+2. Glazed tutorial reference: `glazed/pkg/doc/tutorials/05-build-first-command.md`
+3. Pinocchio command reference: `pinocchio/cmd/web-chat/main.go`
+4. Pinocchio router/runtime/persistence: `pinocchio/pkg/webchat/router.go`
+5. Pinocchio app-owned HTTP handlers: `pinocchio/pkg/webchat/http/api.go`
+6. Geppetto middleware contract: `geppetto/pkg/inference/middleware/middleware.go`
+7. Structured sink: `geppetto/pkg/events/structuredsink/filtering_sink.go`
+8. SEM handler registry: `pinocchio/pkg/sem/registry/registry.go`

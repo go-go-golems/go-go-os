@@ -21,7 +21,7 @@ RelatedFiles:
 ExternalSources:
     - local:webchat-hyper-integration.md
 Summary: Detailed planning diary for the webchat integration ticket before implementation starts.
-LastUpdated: 2026-02-16T12:08:00-05:00
+LastUpdated: 2026-02-16T13:25:00-05:00
 WhatFor: Preserve detailed planning trace and decision rationale before coding.
 WhenToUse: Use when reviewing why the implementation plan was shaped this way.
 ---
@@ -294,3 +294,319 @@ This locked in the planning deliverable without starting implementation work.
   - `tasks.md`
   - `reference/01-diary.md`
   - `changelog.md`
+
+## Step 4: Plan Revision for Glazed + Pinocchio Reuse + Middleware Artifact/Card Generation
+
+After upload, the user added explicit design constraints: use Glazed command composition like `pinocchio/cmd/web-chat/main.go`, maximize reuse of `pinocchio/pkg/webchat`, perform artifact/card generation through Geppetto middlewares, and keep timeline/turn persistence in Pinocchio.
+
+I treated this as a plan-level architecture update only (no implementation code changes), then rewrote the design and task docs accordingly.
+
+### Prompt Context
+
+**User prompt (verbatim):** "no that's fine. A few changes:
+
+  Then, I want to use the glazed framework to configure the server, like in pinocchio/cmd/web-chat/main.go
+  (see glazed/pkg/doc/tutorials/05-build-first-command.md ).
+ 
+  I also want to use as much of pinocchio/pkg/webchat as possible, and do the artifact and card generation
+  using geppetto middlewares.
+ 
+  Update your plan accordingly.
+ 
+  timeline persistence and turn persistence is done through pinocchio/.
+
+Does this impact your core design? 
+
+Walk me through your target design quickly."
+
+**Assistant interpretation:** Keep the overall architecture but revise plan details so composition and implementation strategy strictly follow these framework/reuse constraints.
+
+**Inferred user intent:** Avoid unnecessary custom infrastructure and push behavior into existing framework extension points for a cleaner hard cutover.
+
+**Commit (code):** N/A (planning/docs only)
+
+### What I did
+
+- Reviewed and cross-checked:
+  - `pinocchio/cmd/web-chat/main.go`
+  - `glazed/pkg/doc/tutorials/05-build-first-command.md`
+  - `pinocchio/pkg/webchat/router.go`
+  - `pinocchio/pkg/webchat/http/api.go`
+  - `pinocchio/pkg/webchat/router_options.go`
+  - `geppetto/pkg/inference/middleware/middleware.go`
+  - `pinocchio/pkg/middlewares/agentmode/middleware.go`
+- Rewrote design doc to lock:
+  - Glazed-first command bootstrap pattern
+  - Pinocchio reuse-first backend composition
+  - middleware-driven artifact/card generation
+  - Pinocchio-native timeline/turn persistence
+- Rewrote tasks to match updated phases and responsibilities.
+- Updated changelog with this plan revision.
+- Uploaded refreshed reMarkable bundle:
+  - name: `HC-033 Planning Package v2`
+  - remote dir: `/ai/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION`
+
+### Why
+
+- The previous plan was directionally correct, but not explicit enough on Glazed command wiring and middleware ownership for artifact/card generation.
+- The user requested precise framework alignment before implementation starts.
+
+### What worked
+
+- Existing Pinocchio and Geppetto extension points already support requested design without framework forks.
+- Router settings already cover timeline/turn persistence through Pinocchio stores.
+
+### What didn't work
+
+- Some file guesses were wrong while validating:
+  - `pinocchio/cmd/web-chat/profile_resolver.go` does not exist; relevant resolver code is in `profile_policy.go`.
+  - `pinocchio/pkg/webchat/config.go` and `parameters.go` do not exist in this repo snapshot.
+- Corrected by locating actual files via `rg` and reading the concrete implementations.
+
+### What I learned
+
+- This is a composition refinement, not an architecture rewrite.
+- Artifact/card behavior can be made deterministic with middleware + structured sink extraction while still keeping clean Pinocchio transport and persistence ownership.
+
+### What warrants a second pair of eyes
+
+- The exact middleware strategy for card generation fallback:
+  - strict model-authored structured blocks only
+  - or middleware-generated canonical blocks when model output is incomplete
+
+### What should be done in the future
+
+- Before coding, lock this one decision so middleware behavior is unambiguous and test cases are stable.
+
+### Code review instructions
+
+- Read revised design:
+  - `design-doc/01-validated-analysis-and-hard-cutover-implementation-plan.md`
+- Confirm tasks now track Glazed/Pinocchio/middleware split:
+  - `tasks.md`
+
+### Technical details
+
+- Persistence path now explicitly references Pinocchio router settings:
+  - `timeline-dsn` / `timeline-db`
+  - `turns-dsn` / `turns-db`
+- Middleware responsibilities now explicit in plan:
+  - artifact policy middleware
+  - artifact/card generation middleware
+
+## Step 5: Lock No-Fallback Policy and Progressive Lifecycle Events
+
+After plan revision, the user locked two concrete behavior rules: no fallback success synthesis, and progressive widget/card lifecycle events with title-gated start emission.
+
+I updated design and task artifacts so implementation will enforce these behaviors directly in extractor/SEM/timeline wiring.
+
+### Prompt Context
+
+**User prompt (verbatim):** "no fallback. 
+
+for the events: can we generate more events based on the progressive parsing of the YAML? for example \"widget.start\" with a title, so we can show a spinner, etc... ? I don't remember how the structured event sinks work."
+
+**Assistant interpretation:** Confirm structured sink progressive behavior and lock event lifecycle design with concrete start/update/ready/error semantics.
+
+**Inferred user intent:** Make frontend UX responsive during streaming parse while keeping backend behavior strict and deterministic under hard cutover.
+
+**Commit (code):** N/A (planning/docs only)
+
+### What I did
+
+- Verified structured sink session lifecycle behavior:
+  - `OnStart`, `OnRaw`, `OnCompleted`
+  - malformed completion semantics
+- Verified Pinocchio timeline projection extension points:
+  - `TimelineProjector.ApplySemFrame`
+  - `RegisterTimelineHandler`
+- Updated design plan with locked decisions:
+  - no fallback synthesis
+  - progressive lifecycle events
+  - title-gated start event rule
+- Updated tasks to include:
+  - lifecycle event emission tasks
+  - title-gated start tests
+  - timeline projection handler tasks
+- Updated index decision gates/locked decisions.
+- Updated changelog for this decision lock.
+
+### Why
+
+- The event model had to be explicit before implementation to avoid reducer and timeline contract churn.
+- Title-gated start avoids noisy spinner events with unusable labels.
+
+### What worked
+
+- Existing extractor session APIs directly support progressive events.
+- Existing timeline custom handler registry supports mapping these lifecycle events into projection entities.
+
+### What didn't work
+
+- None functionally in this step.
+
+### What I learned
+
+- We can provide progressive UX without fallback synthesis by emitting lifecycle updates during `OnRaw` YAML snapshots and explicit error completion when parse fails.
+
+### What warrants a second pair of eyes
+
+- Naming consistency for lifecycle events (`hypercard.widget.v1` as final-success event vs introducing `hypercard.widget.ready`) before coding starts.
+
+### What should be done in the future
+
+- Freeze final event names in one place in code constants before implementing extractor + frontend parser.
+
+### Code review instructions
+
+- Review new locked decisions and event contract:
+  - `design-doc/01-validated-analysis-and-hard-cutover-implementation-plan.md`
+- Review task updates for lifecycle and timeline projection:
+  - `tasks.md`
+- Review index decision status:
+  - `index.md`
+
+### Technical details
+
+- Structured sink hooks used for progressive events:
+  - `geppetto/pkg/events/structuredsink/filtering_sink.go`
+- Incremental YAML snapshot helper:
+  - `geppetto/pkg/events/structuredsink/parsehelpers/helpers.go`
+- Timeline extension points:
+  - `pinocchio/pkg/webchat/timeline_projector.go`
+  - `pinocchio/pkg/webchat/timeline_registry.go`
+
+## Step 6: Apply Final Decision Lock to Planning Artifacts
+
+The user then explicitly requested that these decisions be written into the design/implementation plan. I treated this as a documentation deliverable update and patched the ticket docs only.
+
+I synchronized design, tasks, and index so the implementation phases now assume strict model-authored final events and progressive lifecycle emissions with title-gated start.
+
+### Prompt Context
+
+**User prompt (verbatim):** "only emit start when the title is there. 
+
+Ok, update your deseign document / implementation plan with these decisions."
+
+**Assistant interpretation:** Persist the just-agreed event policy directly into ticket planning artifacts.
+
+**Inferred user intent:** Freeze behavior contracts before coding begins to avoid implementation ambiguity.
+
+**Commit (code):** N/A (planning/docs only)
+
+### What I did
+
+- Updated design doc event contract and timeline projection sections.
+- Updated tasks with lifecycle-specific implementation/testing tasks and checked decision-lock items.
+- Updated index pending/locked decision sections.
+- Updated changelog and this diary.
+- Re-ran frontmatter validation and doctor checks.
+
+### Why
+
+- The planning docs are the execution contract for implementation; the agreed policy must be explicit there.
+
+### What worked
+
+- Frontmatter validation passed for updated planning docs.
+- Decision lock is now reflected consistently across core ticket docs.
+
+### What didn't work
+
+- `docmgr doctor` still reports the pre-existing stale sibling ticket directory and numeric-prefix warning for imported source filename.
+
+### What I learned
+
+- Explicitly locking event semantics early avoids rework in backend extractors, frontend reducers, and timeline projection handlers.
+
+### What warrants a second pair of eyes
+
+- None beyond previously tracked stale doc workspace hygiene warning.
+
+### What should be done in the future
+
+- If desired, clean stale duplicate ticket directory to make `docmgr doctor` fully clean.
+
+### Code review instructions
+
+- Review finalized behavior contract:
+  - `design-doc/01-validated-analysis-and-hard-cutover-implementation-plan.md`
+- Review task-level execution implications:
+  - `tasks.md`
+- Review decision summary:
+  - `index.md`
+
+### Technical details
+
+- Validation commands:
+  - `docmgr validate frontmatter --doc ...`
+  - `docmgr doctor --ticket HC-033-ADD-WEBCHAT-INTEGRATION --stale-after 30`
+
+## Step 7: Insert Early Frontend Round-Trip Cutover Phase
+
+The user requested an explicit frontend cutover checkpoint immediately after backend Phase 2 so the team can validate the real chat round-trip before artifact/card work.
+
+I updated the implementation phases and tasks to include this milestone as Phase 2.5, and re-scoped later frontend work as artifact-aware expansion rather than first-time cutover.
+
+### Prompt Context
+
+**User prompt (verbatim):** "After phase 2, add a cutover on the frontend so we can already test a minimal chat experience (without artifacts, but with streaming events). That way we can already test the round trip."
+
+**Assistant interpretation:** Re-sequence the execution plan to include an earlier frontend milestone for minimal streaming chat E2E validation.
+
+**Inferred user intent:** De-risk integration earlier by validating transport and streaming UX before adding artifact complexity.
+
+**Commit (code):** N/A (planning/docs only)
+
+### What I did
+
+- Updated delivery phases in design doc:
+  - inserted `Phase 2.5` early frontend cutover
+  - clarified acceptance criteria for minimal round-trip validation
+  - reworded later frontend phase to artifact-aware expansion
+- Updated tasks:
+  - added `2.5 Early frontend cutover` task block (`F2.5.*`)
+  - split old frontend tasks so post-2.5 work focuses on lifecycle/artifact expansion
+- Updated index summary to mention early round-trip checkpoint.
+- Updated changelog and diary.
+
+### Why
+
+- Early end-to-end validation catches transport/protocol/reducer issues before artifact lifecycle complexity is introduced.
+
+### What worked
+
+- Existing phased plan structure made insertion of a new checkpoint straightforward.
+- Task split keeps ownership clear between minimal transport cutover and later feature expansion.
+
+### What didn't work
+
+- None functionally in this step.
+
+### What I learned
+
+- The most pragmatic cutover path here is: backend transport stable -> minimal frontend round-trip -> artifact lifecycle/features.
+
+### What warrants a second pair of eyes
+
+- Ensure phase labels in team tracking (if mirrored outside docmgr) match new `Phase 2.5` numbering.
+
+### What should be done in the future
+
+- At implementation start, mark a hard acceptance gate for Phase 2.5:
+  - successful streamed `llm.start/delta/final` round-trip in UI
+  - fake stream path inactive for primary inventory chat surface
+
+### Code review instructions
+
+- Verify phase resequencing:
+  - `design-doc/01-validated-analysis-and-hard-cutover-implementation-plan.md`
+- Verify inserted task block and renumbered frontend scope:
+  - `tasks.md`
+- Verify index overview note:
+  - `index.md`
+
+### Technical details
+
+- New early cutover block in tasks:
+  - `F2.5.1` to `F2.5.7`

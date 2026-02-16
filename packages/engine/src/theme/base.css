@@ -787,6 +787,10 @@
   font-size: 10px;
   color: var(--hc-color-muted);
 }
+/* User messages right-aligned inside ChatWindow */
+[data-part="chat-window"] [data-part="chat-message"][data-role="user"] {
+  text-align: right;
+}
 /* Inline widget blocks inside chat messages */
 [data-part="chat-window-widget-block"] {
   margin: 8px 0;

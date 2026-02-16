@@ -1,27 +1,23 @@
 ---
-title: Diary
-doc_type: reference
-ticket: HC-032-CHAT-WINDOW
-status: active
-intent: long-term
-topics:
-  - chat
-  - widgets
-  - storybook
-related_files:
-  - path: /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatWindow.tsx
-    note: "Full-window chat component with inline widget support"
-  - path: /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatWindow.stories.tsx
-    note: "17 comprehensive Storybook stories"
-  - path: /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopIconLayer.tsx
-    note: "Responsive grid-flow icon layout"
-  - path: /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/types.ts
-    note: "DesktopIconDef.x/y now optional"
-  - path: /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/theme/base.css
-    note: "Responsive breakpoints + chat-window CSS"
-  - path: /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/index.ts
-    note: "Barrel export for ChatWindow"
+Title: ""
+Ticket: ""
+Status: ""
+Topics: []
+DocType: ""
+Intent: ""
+Owners: []
+RelatedFiles:
+    - Path: packages/engine/src/components/shell/windowing/ChatWindowDesktop.stories.tsx
+      Note: Chat Desktop story — ChatWindow as desktop window
+    - Path: packages/engine/src/components/shell/windowing/DesktopShell.tsx
+      Note: renderAppWindow prop for custom window bodies
+ExternalSources: []
+Summary: ""
+LastUpdated: 0001-01-01T00:00:00Z
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 # Diary
 
@@ -311,3 +307,106 @@ Refactored ChatWindow to render messages using the same data-parts and visual st
 - Compare `ChatWindow.tsx` message rendering with `ChatView.tsx` — they should now be visually identical for plain text messages
 - Check `base.css` — the Chat Window section should be much shorter, with only header/widget/welcome/footer parts remaining
 - Validate: `npx tsc --noEmit -p packages/engine/tsconfig.json`
+
+## Step 4: Right-Align User Messages
+
+Added scoped CSS rule so user messages ("You:") appear right-aligned in ChatWindow, while AI/System stay left.
+
+### Prompt Context
+
+**User prompt (verbatim):** "put \"You:\" on the right though, AI on the left."
+
+**Assistant interpretation:** Right-align user messages within ChatWindow, keep AI/system left-aligned.
+
+**Inferred user intent:** Distinguish sender visually by alignment — standard chat UX convention.
+
+**Commit (code):** 1b43fc1 — "style(HC-032): right-align user messages in ChatWindow"
+
+### What I did
+
+- Added `[data-part="chat-window"] [data-part="chat-message"][data-role="user"] { text-align: right; }` to `base.css`
+- Scoped to `chat-window` so ChatView/ChatSidebar are unaffected
+
+### Why
+
+Standard chat UX: user messages on the right, AI/system on the left.
+
+### What worked
+
+- One CSS rule, scoped by ancestor selector — clean and non-breaking.
+
+### What didn't work / What was tricky / What warrants review / Future
+
+- N/A
+
+### Code review instructions
+
+- `base.css` — search for `chat-window.*user` to find the one rule
+
+## Step 5: Chat Desktop Story — ChatWindow Opens Windows + Injects Cards
+
+Created a full composition story: DesktopShell with a ChatWindow side panel that can open card windows on the desktop and inject entirely new plugin cards via the runtime.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Now create a desktop with a chatwindow and when clicking on some of the actions in the chat, it will open a window and send an action to navigate to a certain thing. Also adda button \"Create a card...\" that creates a new card by injecting code."
+
+**Assistant interpretation:** Create a Storybook story that composes DesktopShell (with plugin cards) and a ChatWindow side-by-side. Chat action chips should dispatch Redux actions to open card windows. A "Create a card…" flow should inject new plugin card code into the stack and open the resulting window.
+
+**Inferred user intent:** Demonstrate the full vision — an AI chat that's a peer to the windowed desktop, able to surface data inline (widgets), open/navigate card windows, and create entirely new cards on the fly.
+
+**Commit (code):** 5f1af86 — "feat(HC-032): Chat Desktop story — ChatWindow opens card windows + injects cards"
+
+### What I did
+
+- Created `ChatWindowDesktop.stories.tsx` in `shell/windowing/`
+- **DesktopChatWindow component** wired ChatWindow to the desktop:
+  - `openCardWindow()` dispatches `openWindow` to create a new desktop window for any card
+  - `handleAction()` routes actions: `open-browse`, `open-report`, `create-card:notes`, etc.
+  - `handleSend()` returns keyword-based smart responses with inline widgets
+- **Action → Window flow:**
+  - `"open-browse"` → opens Browse Items card window
+  - `"open-report"` → opens Reports card window  
+  - `"open-settings"` → opens Settings card window
+  - `"open-created:notes"` → opens a dynamically-created card window
+- **Create a card… flow:**
+  - 3 templates: Notes (📝), Calculator (🧮), Todo List (✅)
+  - Each is a full plugin card definition with render + handlers
+  - On create: adds CardDefinition to mutable stack, shows system message, offers "Open" action
+- **Layout:** `display: flex` with DesktopShell at 60% and ChatWindow at 440px fixed width
+
+### Why
+
+Full vision demo: ChatWindow as command center that opens windows, displays data, and extends the desktop at runtime.
+
+### What worked
+
+- `openWindow` Redux action handles card windows perfectly — deduplication, z-ordering, session management all work
+- Mutating the stack's cards record + adding CardDefinition is sufficient for PluginCardSessionHost
+- The 3 card templates demonstrate different plugin patterns: state, handlers, navigation
+
+### What didn't work
+
+- Initially tried rendering ChatWindow inside a DesktopShell window via `content.kind === 'app'`, but `renderWindowBody` only handles `kind === 'card'`. Side-panel approach was simpler and better UX.
+
+### What was tricky to build
+
+- Card template JS code written in ES5 style for QuickJS compatibility
+- State management for "Create a card" flow: `createdCards` tracking, mutable stack ref, system message feedback
+
+### What warrants a second pair of eyes
+
+- Stack mutated via ref — fine for story, production would need proper Redux/runtime call
+- Templates add CardDefinition but don't call `runtimeService.defineCard()` — story demonstrates UX pattern
+
+### What should be done in the future
+
+- Wire "Create a card" to actual `runtimeService.defineCard()` calls
+- Support ChatWindow as a first-class windowed app (extend DesktopShell renderWindowBody)
+
+### Code review instructions
+
+- `ChatWindowDesktop.stories.tsx` — read `DesktopChatWindow` component
+- Key functions: `openCardWindow()`, `handleAction()`, `handleSend()`
+- Card templates: `NOTES_CARD_CODE`, `CALC_CARD_CODE`, `TODO_CARD_CODE`
+- Validate: all type-checks pass

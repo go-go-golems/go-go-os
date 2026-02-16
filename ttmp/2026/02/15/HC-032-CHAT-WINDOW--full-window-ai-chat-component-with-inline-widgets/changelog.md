@@ -33,3 +33,13 @@ Step 3: ChatWindow reuses ChatView message look, removed ~120 lines dead CSS (co
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatWindow.tsx — Now uses shared chat-message/chat-role parts
 
+
+## 2026-02-15
+
+Step 5 (revised): ChatWindow renders inside a desktop window via renderAppWindow prop (commit d9281f8)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/ChatWindowDesktop.stories.tsx — Chat Desktop story using renderAppWindow
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopShell.tsx — Added renderAppWindow prop
+

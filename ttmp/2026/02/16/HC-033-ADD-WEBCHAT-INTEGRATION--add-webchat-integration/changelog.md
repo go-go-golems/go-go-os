@@ -155,3 +155,12 @@ Added separate in-chat artifact panels for generated cards and generated widgets
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryArtifactPanelWidgets.tsx — New card/widget panel renderer components
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/stories/InventoryArtifactPanelWidgets.stories.tsx — Storybook stories for card/widget panel widgets
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.test.ts — Added reducer test validating dedicated card/widget panel messages
+
+## 2026-02-16
+
+Removed runtime enforcement that emitted \"missing structured widget/card block\" errors on assistant turns without structured tags. The runtime now allows non-structured replies without forcing error events, while keeping normal structured lifecycle parsing when tags are present.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/internal/pinoweb/runtime_composer.go — Removed `inventory_artifact_generator` middleware from active runtime chain
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/tasks.md — Recorded decision lock for no mandatory structured-block enforcement

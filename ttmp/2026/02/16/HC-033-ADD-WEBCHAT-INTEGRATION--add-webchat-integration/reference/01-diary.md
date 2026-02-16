@@ -1123,3 +1123,33 @@ This step implemented dedicated chat widgets for artifact outcomes so card propo
 - Live Playwright run confirmed new system widgets render in chat:
   - `Generated Cards`
   - `Generated Widgets`
+
+## Step 16: Remove Missing Structured-Block Error Enforcement
+
+This step implemented a policy change: assistant turns are no longer required to include structured widget/card blocks, and missing-block error events are no longer emitted by default.
+
+### Prompt Context
+
+**User prompt (verbatim):** \"no errors, remove that part. we'll just let the model do what it wants\"
+
+### What changed
+
+- Removed `inventory_artifact_generator` middleware from active runtime composition.
+- Kept `inventory_artifact_policy` middleware active so the model still receives formatting guidance, but the runtime no longer enforces missing-tag errors on each turn.
+
+File changed:
+
+- `go-inventory-chat/internal/pinoweb/runtime_composer.go`
+
+### Why this resolves the observed issue
+
+- Previously, any assistant turn missing `<hypercard:widget:v1>` or `<hypercard:cardproposal:v1>` triggered explicit error lifecycle events.
+- Multi-turn/tool-loop flows can have intermediate assistant content without structured tags, so these errors appeared even when later turns produced valid card/widget artifacts.
+- With enforcement removed, those missing-tag errors disappear; only actual emitted lifecycle/projection events remain.
+
+### Validation
+
+- `cd go-inventory-chat && go test ./...` passed.
+- Restarted backend tmux session and verified with Playwright:
+  - normal conversational prompt produced no missing-block errors,
+  - structured widget output still rendered in timeline/panels when present.

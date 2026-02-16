@@ -11,6 +11,7 @@
 - [ ] D0.5 Freeze `hypercard.card_proposal.v1` schema.
 - [x] D0.6 Lock no-fallback policy for widget/card generation (model-authored only).
 - [x] D0.7 Lock title-gated `*.start` lifecycle event rule.
+- [x] D0.8 Remove mandatory structured-block enforcement for every assistant turn (no missing-block errors by default).
 
 ### 1. Glazed command and backend scaffolding (`go-inventory-chat`)
 

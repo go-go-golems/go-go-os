@@ -11,3 +11,5 @@ storybook-static/
 *.tsbuildinfo
 .idea/
 pnpm-lock.yaml
+go-inventory-chat/data/*.db-wal
+go-inventory-chat/data/*.db-shm

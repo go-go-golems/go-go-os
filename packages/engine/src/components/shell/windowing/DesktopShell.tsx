@@ -66,6 +66,8 @@ export interface DesktopShellProps {
    * Return null to fall back to the default placeholder.
    */
   renderAppWindow?: (appKey: string, windowId: string) => ReactNode;
+  /** Called for menu/icon commands not handled by the built-in command set. */
+  onCommand?: (commandId: string) => void;
 }
 
 let sessionCounter = 0;
@@ -82,6 +84,7 @@ export function DesktopShell({
   menus: menusProp,
   icons: iconsProp,
   renderAppWindow,
+  onCommand: onCommandProp,
 }: DesktopShellProps) {
   const dispatch = useDispatch();
   const lastOpenedHomeKeyRef = useRef<string | null>(null);
@@ -213,9 +216,13 @@ export function DesktopShell({
   const handleOpenIcon = useCallback(
     (iconId: string) => {
       dispatch(setSelectedIcon(iconId));
-      openCardWindow(iconId);
+      if (stack.cards[iconId]) {
+        openCardWindow(iconId);
+      } else {
+        onCommandProp?.(`icon.open.${iconId}`);
+      }
     },
-    [dispatch, openCardWindow],
+    [dispatch, onCommandProp, openCardWindow, stack.cards],
   );
 
   const handleCommand = useCallback(
@@ -247,8 +254,9 @@ export function DesktopShell({
         });
         return;
       }
+      onCommandProp?.(commandId);
     },
-    [dispatch, focusedWin, openCardWindow, stack.homeCard, windows],
+    [dispatch, focusedWin, onCommandProp, openCardWindow, stack.homeCard, windows],
   );
 
   const renderWindowBody = useCallback(

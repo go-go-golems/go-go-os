@@ -1,30 +1,45 @@
 import type { ChatWindowMessage } from '@hypercard/engine';
-import type { ChatConnectionStatus, TurnStats } from './chatSlice';
-
-interface ChatStateShape {
-  conversationId: string | null;
-  connectionStatus: ChatConnectionStatus;
-  isStreaming: boolean;
-  messages: ChatWindowMessage[];
-  suggestions: string[];
-  lastError: string | null;
-  modelName: string | null;
-  currentTurnStats: TurnStats | null;
-  streamStartTime: number | null;
-  streamOutputTokens: number;
-}
+import type { ChatConnectionStatus, ConversationState, TurnStats, DEFAULT_CHAT_SUGGESTIONS } from './chatSlice';
 
 export interface ChatStateSlice {
-  chat: ChatStateShape;
+  chat: {
+    conversations: Record<string, ConversationState>;
+  };
 }
 
-export const selectConversationId = (state: ChatStateSlice) => state.chat.conversationId;
-export const selectConnectionStatus = (state: ChatStateSlice) => state.chat.connectionStatus;
-export const selectIsStreaming = (state: ChatStateSlice) => state.chat.isStreaming;
-export const selectMessages = (state: ChatStateSlice) => state.chat.messages;
-export const selectSuggestions = (state: ChatStateSlice) => state.chat.suggestions;
-export const selectLastError = (state: ChatStateSlice) => state.chat.lastError;
-export const selectModelName = (state: ChatStateSlice) => state.chat.modelName;
-export const selectCurrentTurnStats = (state: ChatStateSlice) => state.chat.currentTurnStats;
-export const selectStreamStartTime = (state: ChatStateSlice) => state.chat.streamStartTime;
-export const selectStreamOutputTokens = (state: ChatStateSlice) => state.chat.streamOutputTokens;
+const EMPTY_MESSAGES: ChatWindowMessage[] = [];
+const EMPTY_SUGGESTIONS: string[] = [];
+
+function getConv(state: ChatStateSlice, convId: string): ConversationState | undefined {
+  return state.chat.conversations[convId];
+}
+
+export const selectConnectionStatus = (state: ChatStateSlice, convId: string): ChatConnectionStatus =>
+  getConv(state, convId)?.connectionStatus ?? 'idle';
+
+export const selectIsStreaming = (state: ChatStateSlice, convId: string): boolean =>
+  getConv(state, convId)?.isStreaming ?? false;
+
+export const selectMessages = (state: ChatStateSlice, convId: string): ChatWindowMessage[] =>
+  getConv(state, convId)?.messages ?? EMPTY_MESSAGES;
+
+export const selectSuggestions = (state: ChatStateSlice, convId: string): string[] =>
+  getConv(state, convId)?.suggestions ?? EMPTY_SUGGESTIONS;
+
+export const selectLastError = (state: ChatStateSlice, convId: string): string | null =>
+  getConv(state, convId)?.lastError ?? null;
+
+export const selectModelName = (state: ChatStateSlice, convId: string): string | null =>
+  getConv(state, convId)?.modelName ?? null;
+
+export const selectCurrentTurnStats = (state: ChatStateSlice, convId: string): TurnStats | null =>
+  getConv(state, convId)?.currentTurnStats ?? null;
+
+export const selectStreamStartTime = (state: ChatStateSlice, convId: string): number | null =>
+  getConv(state, convId)?.streamStartTime ?? null;
+
+export const selectStreamOutputTokens = (state: ChatStateSlice, convId: string): number =>
+  getConv(state, convId)?.streamOutputTokens ?? 0;
+
+export const selectConversationIds = (state: ChatStateSlice): string[] =>
+  Object.keys(state.chat.conversations);

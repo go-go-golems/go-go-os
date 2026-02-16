@@ -17,37 +17,6 @@ export interface TimelineWidgetItem {
   rawData?: Record<string, unknown>;
 }
 
-function timelineWidgetMessageId(roundId: number): string {
-  return roundId === 0 ? 'timeline-widget-message-r0' : `timeline-widget-message-r${roundId}`;
-}
-function timelineWidgetId(roundId: number): string {
-  return roundId === 0 ? 'inventory-timeline-widget-r0' : `inventory-timeline-widget-r${roundId}`;
-}
-function cardPanelMessageId(roundId: number): string {
-  return roundId === 0 ? 'card-panel-widget-message-r0' : `card-panel-widget-message-r${roundId}`;
-}
-function cardPanelWidgetId(roundId: number): string {
-  return roundId === 0 ? 'inventory-card-panel-widget-r0' : `inventory-card-panel-widget-r${roundId}`;
-}
-function widgetPanelMessageId(roundId: number): string {
-  return roundId === 0 ? 'widget-panel-widget-message-r0' : `widget-panel-widget-message-r${roundId}`;
-}
-function widgetPanelWidgetId(roundId: number): string {
-  return roundId === 0 ? 'inventory-widget-panel-widget-r0' : `inventory-widget-panel-widget-r${roundId}`;
-}
-function roundLabel(roundId: number): string {
-  return roundId === 0 ? 'Previous Session' : `round ${roundId}`;
-}
-const MAX_TIMELINE_ITEMS = 24;
-const MAX_PANEL_ITEMS = 16;
-const MAX_SUGGESTIONS = 8;
-
-export const DEFAULT_CHAT_SUGGESTIONS = [
-  'Show current inventory status',
-  'What items are low stock?',
-  'Summarize today sales',
-];
-
 export interface TurnStats {
   inputTokens?: number;
   outputTokens?: number;
@@ -58,8 +27,57 @@ export interface TurnStats {
   tps?: number;
 }
 
-interface ChatState {
-  conversationId: string | null;
+export interface TimelineItemUpsertPayload {
+  id: string;
+  title: string;
+  status: TimelineItemStatus;
+  detail?: string;
+  kind?: 'tool' | 'widget' | 'card' | 'timeline';
+  template?: string;
+  artifactId?: string;
+  updatedAt?: number;
+  rawData?: Record<string, unknown>;
+}
+
+/* ── Per-round widget ID helpers ─────────────────────────────────────── */
+
+function timelineWidgetMessageId(roundId: number): string {
+  return `timeline-widget-message-r${roundId}`;
+}
+function timelineWidgetId(roundId: number): string {
+  return `inventory-timeline-widget-r${roundId}`;
+}
+function cardPanelMessageId(roundId: number): string {
+  return `card-panel-widget-message-r${roundId}`;
+}
+function cardPanelWidgetId(roundId: number): string {
+  return `inventory-card-panel-widget-r${roundId}`;
+}
+function widgetPanelMessageId(roundId: number): string {
+  return `widget-panel-widget-message-r${roundId}`;
+}
+function widgetPanelWidgetId(roundId: number): string {
+  return `inventory-widget-panel-widget-r${roundId}`;
+}
+function roundLabel(roundId: number): string {
+  return roundId === 0 ? 'Previous Session' : `round ${roundId}`;
+}
+
+/* ── Constants ───────────────────────────────────────────────────────── */
+
+const MAX_TIMELINE_ITEMS = 24;
+const MAX_PANEL_ITEMS = 16;
+const MAX_SUGGESTIONS = 8;
+
+export const DEFAULT_CHAT_SUGGESTIONS = [
+  'Show current inventory status',
+  'What items are low stock?',
+  'Summarize today sales',
+];
+
+/* ── Per-conversation state ──────────────────────────────────────────── */
+
+export interface ConversationState {
   connectionStatus: ChatConnectionStatus;
   isStreaming: boolean;
   messages: ChatWindowMessage[];
@@ -69,23 +87,35 @@ interface ChatState {
   currentTurnStats: TurnStats | null;
   streamStartTime: number | null;
   streamOutputTokens: number;
-  /** Round counter — incremented on each user prompt. Round 0 is used for hydrated items. */
   currentRoundId: number;
 }
 
+function createInitialConversationState(): ConversationState {
+  return {
+    connectionStatus: 'idle',
+    isStreaming: false,
+    messages: [],
+    suggestions: [...DEFAULT_CHAT_SUGGESTIONS],
+    lastError: null,
+    modelName: null,
+    currentTurnStats: null,
+    streamStartTime: null,
+    streamOutputTokens: 0,
+    currentRoundId: 0,
+  };
+}
+
+/* ── Top-level chat state (keyed by conversationId) ──────────────────── */
+
+interface ChatState {
+  conversations: Record<string, ConversationState>;
+}
+
 const initialState: ChatState = {
-  conversationId: null,
-  connectionStatus: 'idle',
-  isStreaming: false,
-  messages: [],
-  suggestions: [...DEFAULT_CHAT_SUGGESTIONS],
-  lastError: null,
-  modelName: null,
-  currentTurnStats: null,
-  streamStartTime: null,
-  streamOutputTokens: 0,
-  currentRoundId: 0,
+  conversations: {},
 };
+
+/* ── Helpers ─────────────────────────────────────────────────────────── */
 
 let messageCounter = 0;
 
@@ -94,13 +124,20 @@ function nextMessageId(prefix: string): string {
   return `${prefix}-${messageCounter}`;
 }
 
-function findMessage(state: ChatState, id: string): ChatWindowMessage | undefined {
-  return state.messages.find((message) => message.id === id);
+function getConv(state: ChatState, convId: string): ConversationState {
+  if (!state.conversations[convId]) {
+    state.conversations[convId] = createInitialConversationState();
+  }
+  return state.conversations[convId];
 }
 
-function findLatestStreamingMessage(state: ChatState): ChatWindowMessage | undefined {
-  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
-    const message = state.messages[index];
+function findMessage(conv: ConversationState, id: string): ChatWindowMessage | undefined {
+  return conv.messages.find((message) => message.id === id);
+}
+
+function findLatestStreamingMessage(conv: ConversationState): ChatWindowMessage | undefined {
+  for (let index = conv.messages.length - 1; index >= 0; index -= 1) {
+    const message = conv.messages[index];
     if (message.role === 'ai' && message.status === 'streaming') {
       return message;
     }
@@ -189,13 +226,13 @@ function setWidgetItems(message: ChatWindowMessage, items: TimelineWidgetItem[])
 }
 
 function ensureWidgetMessage(
-  state: ChatState,
+  conv: ConversationState,
   messageID: string,
   widgetID: string,
   widgetType: string,
   label: string,
 ): ChatWindowMessage {
-  let message = findMessage(state, messageID);
+  let message = findMessage(conv, messageID);
   if (message) {
     return message;
   }
@@ -219,14 +256,14 @@ function ensureWidgetMessage(
       },
     ],
   };
-  state.messages.push(message);
+  conv.messages.push(message);
   return message;
 }
 
-function ensureTimelineWidgetMessage(state: ChatState): ChatWindowMessage {
-  const r = state.currentRoundId;
+function ensureTimelineWidgetMessage(conv: ConversationState): ChatWindowMessage {
+  const r = conv.currentRoundId;
   return ensureWidgetMessage(
-    state,
+    conv,
     timelineWidgetMessageId(r),
     timelineWidgetId(r),
     'inventory.timeline',
@@ -234,10 +271,10 @@ function ensureTimelineWidgetMessage(state: ChatState): ChatWindowMessage {
   );
 }
 
-function ensureCardPanelMessage(state: ChatState): ChatWindowMessage {
-  const r = state.currentRoundId;
+function ensureCardPanelMessage(conv: ConversationState): ChatWindowMessage {
+  const r = conv.currentRoundId;
   return ensureWidgetMessage(
-    state,
+    conv,
     cardPanelMessageId(r),
     cardPanelWidgetId(r),
     'inventory.cards',
@@ -245,27 +282,15 @@ function ensureCardPanelMessage(state: ChatState): ChatWindowMessage {
   );
 }
 
-function ensureWidgetPanelMessage(state: ChatState): ChatWindowMessage {
-  const r = state.currentRoundId;
+function ensureWidgetPanelMessage(conv: ConversationState): ChatWindowMessage {
+  const r = conv.currentRoundId;
   return ensureWidgetMessage(
-    state,
+    conv,
     widgetPanelMessageId(r),
     widgetPanelWidgetId(r),
     'inventory.widgets',
     `Generated Widgets (${roundLabel(r)})`,
   );
-}
-
-export interface TimelineItemUpsertPayload {
-  id: string;
-  title: string;
-  status: TimelineItemStatus;
-  detail?: string;
-  kind?: 'tool' | 'widget' | 'card' | 'timeline';
-  template?: string;
-  artifactId?: string;
-  updatedAt?: number;
-  rawData?: Record<string, unknown>;
 }
 
 function applyTimelineItemUpsert(
@@ -311,25 +336,32 @@ function applyTimelineItemUpsert(
   setWidgetItems(message, items.slice(0, maxItems));
 }
 
+/* ── Payload type helper — every action includes conversationId ──────── */
+
+type WithConv<T> = T & { conversationId: string };
+
+/* ── Slice ───────────────────────────────────────────────────────────── */
+
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
-    setConversationId(state, action: PayloadAction<string>) {
-      state.conversationId = action.payload;
-    },
-    setConnectionStatus(state, action: PayloadAction<ChatConnectionStatus>) {
-      state.connectionStatus = action.payload;
+    setConnectionStatus(state, action: PayloadAction<WithConv<{ status: ChatConnectionStatus }>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.connectionStatus = action.payload.status;
     },
     upsertHydratedMessage(
       state,
-      action: PayloadAction<{
-        id: string;
-        role: string;
-        text?: string;
-        status?: 'complete' | 'streaming' | 'error';
-      }>,
+      action: PayloadAction<
+        WithConv<{
+          id: string;
+          role: string;
+          text?: string;
+          status?: 'complete' | 'streaming' | 'error';
+        }>
+      >,
     ) {
+      const conv = getConv(state, action.payload.conversationId);
       const id = action.payload.id.trim();
       if (id.length === 0) {
         return;
@@ -340,7 +372,7 @@ const chatSlice = createSlice({
       }
       const status = action.payload.status ?? 'complete';
       const nextText = typeof action.payload.text === 'string' ? stripTrailingWhitespace(action.payload.text) : '';
-      const existing = findMessage(state, id);
+      const existing = findMessage(conv, id);
       if (existing) {
         existing.role = role;
         existing.status = status;
@@ -349,47 +381,49 @@ const chatSlice = createSlice({
         }
         return;
       }
-      state.messages.push({
+      conv.messages.push({
         id,
         role,
         text: nextText,
         status,
       });
     },
-    queueUserPrompt(state, action: PayloadAction<{ text: string }>) {
+    queueUserPrompt(state, action: PayloadAction<WithConv<{ text: string }>>) {
+      const conv = getConv(state, action.payload.conversationId);
       const text = action.payload.text.trim();
       if (text.length === 0) {
         return;
       }
 
-      state.currentRoundId += 1;
-      state.lastError = null;
-      state.messages.push({
+      conv.currentRoundId += 1;
+      conv.lastError = null;
+      conv.messages.push({
         id: nextMessageId('user'),
         role: 'user',
         text,
         status: 'complete',
       });
-      state.messages.push({
+      conv.messages.push({
         id: nextMessageId('pending-ai'),
         role: 'ai',
         text: '',
         status: 'streaming',
       });
-      state.suggestions = [];
-      state.isStreaming = true;
+      conv.suggestions = [];
+      conv.isStreaming = true;
     },
-    applyLLMStart(state, action: PayloadAction<{ messageId: string }>) {
+    applyLLMStart(state, action: PayloadAction<WithConv<{ messageId: string }>>) {
+      const conv = getConv(state, action.payload.conversationId);
       const { messageId } = action.payload;
-      const existing = findMessage(state, messageId);
+      const existing = findMessage(conv, messageId);
       if (existing) {
         existing.status = 'streaming';
       } else {
-        const pending = findLatestStreamingMessage(state);
+        const pending = findLatestStreamingMessage(conv);
         if (pending?.id?.startsWith('pending-ai-')) {
           pending.id = messageId;
         } else {
-          state.messages.push({
+          conv.messages.push({
             id: messageId,
             role: 'ai',
             text: '',
@@ -397,13 +431,17 @@ const chatSlice = createSlice({
           });
         }
       }
-      state.isStreaming = true;
+      conv.isStreaming = true;
     },
-    applyLLMDelta(state, action: PayloadAction<{ messageId: string; cumulative?: string; delta?: string }>) {
+    applyLLMDelta(
+      state,
+      action: PayloadAction<WithConv<{ messageId: string; cumulative?: string; delta?: string }>>,
+    ) {
+      const conv = getConv(state, action.payload.conversationId);
       const { messageId, cumulative, delta } = action.payload;
-      let message = findMessage(state, messageId);
+      let message = findMessage(conv, messageId);
       if (!message) {
-        message = findLatestStreamingMessage(state);
+        message = findLatestStreamingMessage(conv);
       }
       if (!message) {
         message = {
@@ -412,7 +450,7 @@ const chatSlice = createSlice({
           text: '',
           status: 'streaming',
         };
-        state.messages.push(message);
+        conv.messages.push(message);
       }
 
       if (typeof cumulative === 'string') {
@@ -421,16 +459,17 @@ const chatSlice = createSlice({
         message.text += delta;
       }
       message.status = 'streaming';
-      state.isStreaming = true;
+      conv.isStreaming = true;
     },
-    applyLLMFinal(state, action: PayloadAction<{ messageId: string; text?: string }>) {
+    applyLLMFinal(state, action: PayloadAction<WithConv<{ messageId: string; text?: string }>>) {
+      const conv = getConv(state, action.payload.conversationId);
       const { messageId, text } = action.payload;
-      let message = findMessage(state, messageId);
+      let message = findMessage(conv, messageId);
       if (!message) {
-        message = findLatestStreamingMessage(state);
+        message = findLatestStreamingMessage(conv);
       }
       if (!message) {
-        state.messages.push({
+        conv.messages.push({
           id: messageId,
           role: 'ai',
           text: typeof text === 'string' ? stripTrailingWhitespace(text) : '',
@@ -442,92 +481,61 @@ const chatSlice = createSlice({
         }
         message.status = 'complete';
       }
-      state.isStreaming = false;
+      conv.isStreaming = false;
     },
-    appendToolEvent(state, action: PayloadAction<{ text: string }>) {
-      state.messages.push({
+    appendToolEvent(state, action: PayloadAction<WithConv<{ text: string }>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.messages.push({
         id: nextMessageId('tool'),
         role: 'system',
         text: stripTrailingWhitespace(action.payload.text),
         status: 'complete',
       });
     },
-    upsertTimelineItem(
-      state,
-      action: PayloadAction<TimelineItemUpsertPayload>,
-    ) {
+    upsertTimelineItem(state, action: PayloadAction<WithConv<TimelineItemUpsertPayload>>) {
+      const conv = getConv(state, action.payload.conversationId);
       const id = action.payload.id.trim();
       const title = action.payload.title.trim();
       if (id.length === 0 || title.length === 0) {
         return;
       }
-
-      const message = ensureTimelineWidgetMessage(state);
-      applyTimelineItemUpsert(
-        message,
-        {
-          ...action.payload,
-          id,
-          title,
-        },
-        MAX_TIMELINE_ITEMS,
-      );
+      const message = ensureTimelineWidgetMessage(conv);
+      applyTimelineItemUpsert(message, { ...action.payload, id, title }, MAX_TIMELINE_ITEMS);
     },
-    upsertCardPanelItem(
-      state,
-      action: PayloadAction<TimelineItemUpsertPayload>,
-    ) {
+    upsertCardPanelItem(state, action: PayloadAction<WithConv<TimelineItemUpsertPayload>>) {
+      const conv = getConv(state, action.payload.conversationId);
       const id = action.payload.id.trim();
       const title = action.payload.title.trim();
       if (id.length === 0 || title.length === 0) {
         return;
       }
-      const message = ensureCardPanelMessage(state);
-      applyTimelineItemUpsert(
-        message,
-        {
-          ...action.payload,
-          id,
-          title,
-        },
-        MAX_PANEL_ITEMS,
-        'card',
-      );
+      const message = ensureCardPanelMessage(conv);
+      applyTimelineItemUpsert(message, { ...action.payload, id, title }, MAX_PANEL_ITEMS, 'card');
     },
-    upsertWidgetPanelItem(
-      state,
-      action: PayloadAction<TimelineItemUpsertPayload>,
-    ) {
+    upsertWidgetPanelItem(state, action: PayloadAction<WithConv<TimelineItemUpsertPayload>>) {
+      const conv = getConv(state, action.payload.conversationId);
       const id = action.payload.id.trim();
       const title = action.payload.title.trim();
       if (id.length === 0 || title.length === 0) {
         return;
       }
-      const message = ensureWidgetPanelMessage(state);
-      applyTimelineItemUpsert(
-        message,
-        {
-          ...action.payload,
-          id,
-          title,
-        },
-        MAX_PANEL_ITEMS,
-        'widget',
-      );
+      const message = ensureWidgetPanelMessage(conv);
+      applyTimelineItemUpsert(message, { ...action.payload, id, title }, MAX_PANEL_ITEMS, 'widget');
     },
-    setStreamError(state, action: PayloadAction<{ message: string }>) {
+    setStreamError(state, action: PayloadAction<WithConv<{ message: string }>>) {
+      const conv = getConv(state, action.payload.conversationId);
       const message = action.payload.message.trim() || 'Request failed';
-      state.lastError = message;
-      state.isStreaming = false;
+      conv.lastError = message;
+      conv.isStreaming = false;
 
-      const streaming = findLatestStreamingMessage(state);
+      const streaming = findLatestStreamingMessage(conv);
       if (streaming) {
         streaming.status = 'error';
         if (!streaming.text) {
           streaming.text = message;
         }
       } else {
-        state.messages.push({
+        conv.messages.push({
           id: nextMessageId('error'),
           role: 'system',
           text: message,
@@ -535,43 +543,54 @@ const chatSlice = createSlice({
         });
       }
     },
-    resetConversation(state) {
-      state.messages = [];
-      state.suggestions = [...DEFAULT_CHAT_SUGGESTIONS];
-      state.isStreaming = false;
-      state.lastError = null;
+    resetConversation(state, action: PayloadAction<{ conversationId: string }>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.messages = [];
+      conv.suggestions = [...DEFAULT_CHAT_SUGGESTIONS];
+      conv.isStreaming = false;
+      conv.lastError = null;
+      conv.currentRoundId = 0;
     },
-    replaceSuggestions(state, action: PayloadAction<{ suggestions: string[] }>) {
-      state.suggestions = normalizeSuggestionList(action.payload.suggestions);
+    removeConversation(state, action: PayloadAction<{ conversationId: string }>) {
+      delete state.conversations[action.payload.conversationId];
     },
-    mergeSuggestions(state, action: PayloadAction<{ suggestions: string[] }>) {
-      state.suggestions = normalizeSuggestionList([...state.suggestions, ...action.payload.suggestions]);
+    replaceSuggestions(state, action: PayloadAction<WithConv<{ suggestions: string[] }>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.suggestions = normalizeSuggestionList(action.payload.suggestions);
     },
-    setModelName(state, action: PayloadAction<string>) {
-      state.modelName = action.payload;
+    mergeSuggestions(state, action: PayloadAction<WithConv<{ suggestions: string[] }>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.suggestions = normalizeSuggestionList([...conv.suggestions, ...action.payload.suggestions]);
     },
-    markStreamStart(state, action: PayloadAction<{ time: number }>) {
-      state.streamStartTime = action.payload.time;
-      state.streamOutputTokens = 0;
-      state.currentTurnStats = null;
+    setModelName(state, action: PayloadAction<WithConv<{ model: string }>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.modelName = action.payload.model;
     },
-    updateStreamTokens(state, action: PayloadAction<{ outputTokens: number }>) {
-      state.streamOutputTokens = action.payload.outputTokens;
+    markStreamStart(state, action: PayloadAction<WithConv<{ time: number }>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.streamStartTime = action.payload.time;
+      conv.streamOutputTokens = 0;
+      conv.currentTurnStats = null;
     },
-    setTurnStats(state, action: PayloadAction<TurnStats>) {
-      const stats = { ...action.payload };
+    updateStreamTokens(state, action: PayloadAction<WithConv<{ outputTokens: number }>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      conv.streamOutputTokens = action.payload.outputTokens;
+    },
+    setTurnStats(state, action: PayloadAction<WithConv<TurnStats>>) {
+      const conv = getConv(state, action.payload.conversationId);
+      const { conversationId: _, ...rest } = action.payload;
+      const stats = { ...rest };
       if (stats.outputTokens && stats.durationMs && stats.durationMs > 0) {
         stats.tps = Math.round((stats.outputTokens / (stats.durationMs / 1000)) * 10) / 10;
       }
-      state.currentTurnStats = stats;
-      state.streamStartTime = null;
-      state.streamOutputTokens = 0;
+      conv.currentTurnStats = stats;
+      conv.streamStartTime = null;
+      conv.streamOutputTokens = 0;
     },
   },
 });
 
 export const {
-  setConversationId,
   setConnectionStatus,
   upsertHydratedMessage,
   queueUserPrompt,
@@ -584,6 +603,7 @@ export const {
   upsertWidgetPanelItem,
   setStreamError,
   resetConversation,
+  removeConversation,
   replaceSuggestions,
   mergeSuggestions,
   setModelName,

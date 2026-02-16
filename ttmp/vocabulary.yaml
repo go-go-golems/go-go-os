@@ -19,6 +19,12 @@ topics:
       description: Inventory domain and operations
     - slug: sqlite
       description: SQLite schema, persistence, and query work
+    - slug: debugging
+      description: Developer debugging tools and observability features
+    - slug: ux
+      description: User experience improvements and polish
+    - slug: storybook
+      description: Storybook stories and component previews
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

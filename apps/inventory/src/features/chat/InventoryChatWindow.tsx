@@ -12,7 +12,6 @@ import {
   queueUserPrompt,
   replaceSuggestions,
   setConnectionStatus,
-  setConversationId,
   setModelName,
   setStreamError,
   setTurnStats,
@@ -25,8 +24,8 @@ import {
   upsertWidgetPanelItem,
 } from './chatSlice';
 import {
+  type ChatStateSlice,
   selectConnectionStatus,
-  selectConversationId,
   selectCurrentTurnStats,
   selectIsStreaming,
   selectMessages,
@@ -37,7 +36,6 @@ import {
 } from './selectors';
 import {
   fetchTimelineSnapshot,
-  getOrCreateConversationId,
   InventoryWebChatClient,
   type InventoryWebChatClientHandlers,
   type SemEventEnvelope,
@@ -152,12 +150,12 @@ function readyDetail(template: string | undefined, artifactId: string | undefine
   return parts.length > 0 ? parts.join(' · ') : 'ready';
 }
 
-function fanOutArtifactPanelUpdate(update: TimelineItemUpdate, dispatch: ReturnType<typeof useDispatch>) {
+function fanOutArtifactPanelUpdate(update: TimelineItemUpdate, dispatch: ReturnType<typeof useDispatch>, conversationId: string) {
   if (update.kind === 'card') {
-    dispatch(upsertCardPanelItem(update));
+    dispatch(upsertCardPanelItem({ ...update, conversationId }));
   }
   if (update.kind === 'widget') {
-    dispatch(upsertWidgetPanelItem(update));
+    dispatch(upsertWidgetPanelItem({ ...update, conversationId }));
   }
 }
 
@@ -266,7 +264,7 @@ function parseTimelineMs(value: string | undefined): number {
   return parsed;
 }
 
-function hydrateEntity(entity: TimelineEntityRecord, dispatch: ReturnType<typeof useDispatch>): void {
+function hydrateEntity(entity: TimelineEntityRecord, dispatch: ReturnType<typeof useDispatch>, conversationId: string): void {
   const kind = typeof entity.kind === 'string' ? entity.kind : '';
   const id = typeof entity.id === 'string' ? entity.id : '';
 
@@ -283,6 +281,7 @@ function hydrateEntity(entity: TimelineEntityRecord, dispatch: ReturnType<typeof
     const streaming = booleanField(message, 'streaming') ?? false;
     dispatch(
       upsertHydratedMessage({
+        conversationId,
         id,
         role,
         text: content,
@@ -299,12 +298,12 @@ function hydrateEntity(entity: TimelineEntityRecord, dispatch: ReturnType<typeof
   }
   const timelineUpdate = formatTimelineUpsert(eventData);
   if (timelineUpdate) {
-    dispatch(upsertTimelineItem(timelineUpdate));
-    fanOutArtifactPanelUpdate(timelineUpdate, dispatch);
+    dispatch(upsertTimelineItem({ ...timelineUpdate, conversationId }));
+    fanOutArtifactPanelUpdate(timelineUpdate, dispatch, conversationId);
   }
 }
 
-function hydrateFromTimelineSnapshot(snapshot: TimelineSnapshot, dispatch: ReturnType<typeof useDispatch>): void {
+function hydrateFromTimelineSnapshot(snapshot: TimelineSnapshot, dispatch: ReturnType<typeof useDispatch>, conversationId: string): void {
   const sorted = [...snapshot.entities].sort((a, b) => {
     const aCreated = parseTimelineMs(a.createdAtMs);
     const bCreated = parseTimelineMs(b.createdAtMs);
@@ -314,11 +313,11 @@ function hydrateFromTimelineSnapshot(snapshot: TimelineSnapshot, dispatch: Retur
     return parseTimelineMs(a.updatedAtMs) - parseTimelineMs(b.updatedAtMs);
   });
   for (const entity of sorted) {
-    hydrateEntity(entity, dispatch);
+    hydrateEntity(entity, dispatch, conversationId);
   }
 }
 
-function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof useDispatch>): void {
+function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof useDispatch>, conversationId: string): void {
   const type = envelope.event?.type;
   const data = envelope.event?.data ?? {};
   const messageId = eventIdFromEnvelope(envelope);
@@ -333,11 +332,11 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     if (metadata) {
       const model = stringField(metadata, 'model');
       if (model) {
-        dispatch(setModelName(model));
+        dispatch(setModelName({ conversationId, model }));
       }
     }
-    dispatch(markStreamStart({ time: Date.now() }));
-    dispatch(applyLLMStart({ messageId }));
+    dispatch(markStreamStart({ conversationId, time: Date.now() }));
+    dispatch(applyLLMStart({ conversationId, messageId }));
     return;
   }
 
@@ -348,12 +347,13 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
       if (usage) {
         const outputTokens = numberField(usage, 'outputTokens');
         if (outputTokens !== undefined) {
-          dispatch(updateStreamTokens({ outputTokens }));
+          dispatch(updateStreamTokens({ conversationId, outputTokens }));
         }
       }
     }
     dispatch(
       applyLLMDelta({
+        conversationId,
         messageId,
         cumulative: stringField(data, 'cumulative'),
         delta: stringField(data, 'delta'),
@@ -367,7 +367,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     if (metadata) {
       const model = stringField(metadata, 'model');
       if (model) {
-        dispatch(setModelName(model));
+        dispatch(setModelName({ conversationId, model }));
       }
       const usage = extractUsage(metadata);
       const stats: TurnStats = {};
@@ -380,11 +380,12 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
       }
       stats.durationMs = numberField(metadata, 'durationMs');
       if (stats.inputTokens !== undefined || stats.outputTokens !== undefined || stats.durationMs !== undefined) {
-        dispatch(setTurnStats(stats));
+        dispatch(setTurnStats({ conversationId, ...stats }));
       }
     }
     dispatch(
       applyLLMFinal({
+        conversationId,
         messageId,
         text: stringField(data, 'text'),
       }),
@@ -403,6 +404,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     }
     dispatch(
       upsertTimelineItem({
+        conversationId,
         id: `tool:${toolId}`,
         title: `Tool ${name}`,
         status: 'running',
@@ -420,6 +422,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     const patchText = typeof patch === 'undefined' ? 'delta' : `patch=${compactJSON(patch)}`;
     dispatch(
       upsertTimelineItem({
+        conversationId,
         id: `tool:${toolId}`,
         title: `Tool ${toolId}`,
         status: 'running',
@@ -436,6 +439,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     const result = typeof data.result === 'undefined' ? 'ok' : compactJSON(data.result);
     dispatch(
       upsertTimelineItem({
+        conversationId,
         id: `tool:${toolId}`,
         title: `Tool ${toolId}`,
         status: 'running',
@@ -451,6 +455,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     const toolId = eventOrDataId(envelope, data);
     dispatch(
       upsertTimelineItem({
+        conversationId,
         id: `tool:${toolId}`,
         title: `Tool ${toolId}`,
         status: 'success',
@@ -464,7 +469,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
   if (type === 'hypercard.suggestions.start' || type === 'hypercard.suggestions.update') {
     const suggestions = stringArray(data.suggestions);
     if (suggestions.length > 0) {
-      dispatch(mergeSuggestions({ suggestions }));
+      dispatch(mergeSuggestions({ conversationId, suggestions }));
     }
     return;
   }
@@ -472,29 +477,29 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
   if (type === 'hypercard.suggestions.v1') {
     const suggestions = stringArray(data.suggestions);
     if (suggestions.length > 0) {
-      dispatch(replaceSuggestions({ suggestions }));
+      dispatch(replaceSuggestions({ conversationId, suggestions }));
     }
     return;
   }
 
   const lifecycleText = type ? formatHypercardLifecycle(type, data) : undefined;
   if (lifecycleText) {
-    dispatch(upsertTimelineItem(lifecycleText));
-    fanOutArtifactPanelUpdate(lifecycleText, dispatch);
+    dispatch(upsertTimelineItem({ ...lifecycleText, conversationId }));
+    fanOutArtifactPanelUpdate(lifecycleText, dispatch, conversationId);
     return;
   }
 
   if (type === 'timeline.upsert') {
     const timelineUpdate = formatTimelineUpsert(data);
     if (timelineUpdate) {
-      dispatch(upsertTimelineItem(timelineUpdate));
-      fanOutArtifactPanelUpdate(timelineUpdate, dispatch);
+      dispatch(upsertTimelineItem({ ...timelineUpdate, conversationId }));
+      fanOutArtifactPanelUpdate(timelineUpdate, dispatch, conversationId);
     }
     return;
   }
 
   if (type === 'ws.error') {
-    dispatch(setStreamError({ message: stringField(data, 'message') ?? 'websocket stream error' }));
+    dispatch(setStreamError({ conversationId, message: stringField(data, 'message') ?? 'websocket stream error' }));
   }
 }
 
@@ -564,38 +569,29 @@ function StatsFooter({
   return <span>{parts.join(' · ')}</span>;
 }
 
-export function InventoryChatWindow() {
+export interface InventoryChatWindowProps {
+  conversationId: string;
+}
+
+export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps) {
   const dispatch = useDispatch();
-  const conversationId = useSelector(selectConversationId);
-  const connectionStatus = useSelector(selectConnectionStatus);
-  const messages = useSelector(selectMessages);
-  const suggestions = useSelector(selectSuggestions);
-  const isStreaming = useSelector(selectIsStreaming);
-  const modelName = useSelector(selectModelName);
-  const currentTurnStats = useSelector(selectCurrentTurnStats);
-  const streamStartTime = useSelector(selectStreamStartTime);
-  const streamOutputTokens = useSelector(selectStreamOutputTokens);
+  const connectionStatus = useSelector((s: ChatStateSlice) => selectConnectionStatus(s, conversationId));
+  const messages = useSelector((s: ChatStateSlice) => selectMessages(s, conversationId));
+  const suggestions = useSelector((s: ChatStateSlice) => selectSuggestions(s, conversationId));
+  const isStreaming = useSelector((s: ChatStateSlice) => selectIsStreaming(s, conversationId));
+  const modelName = useSelector((s: ChatStateSlice) => selectModelName(s, conversationId));
+  const currentTurnStats = useSelector((s: ChatStateSlice) => selectCurrentTurnStats(s, conversationId));
+  const streamStartTime = useSelector((s: ChatStateSlice) => selectStreamStartTime(s, conversationId));
+  const streamOutputTokens = useSelector((s: ChatStateSlice) => selectStreamOutputTokens(s, conversationId));
 
   const [debugMode, setDebugMode] = useState(false);
   const clientRef = useRef<InventoryWebChatClient | null>(null);
 
   useEffect(() => {
-    if (conversationId) {
-      return;
-    }
-
-    dispatch(setConversationId(getOrCreateConversationId()));
-  }, [dispatch, conversationId]);
-
-  useEffect(() => {
-    if (!conversationId) {
-      return;
-    }
-
     const handlers: InventoryWebChatClientHandlers = {
-      onEnvelope: (envelope) => onSemEnvelope(envelope, dispatch),
-      onStatus: (status) => dispatch(setConnectionStatus(status)),
-      onError: (error) => dispatch(setStreamError({ message: error })),
+      onEnvelope: (envelope) => onSemEnvelope(envelope, dispatch, conversationId),
+      onStatus: (status) => dispatch(setConnectionStatus({ conversationId, status })),
+      onError: (error) => dispatch(setStreamError({ conversationId, message: error })),
     };
 
     let cancelled = false;
@@ -605,12 +601,13 @@ export function InventoryChatWindow() {
       try {
         const snapshot = await fetchTimelineSnapshot(conversationId);
         if (!cancelled) {
-          hydrateFromTimelineSnapshot(snapshot, dispatch);
+          hydrateFromTimelineSnapshot(snapshot, dispatch, conversationId);
         }
       } catch (error) {
         if (!cancelled) {
           dispatch(
             upsertTimelineItem({
+              conversationId,
               id: `timeline:bootstrap:${conversationId}`,
               title: 'Timeline bootstrap',
               status: 'error',
@@ -640,10 +637,7 @@ export function InventoryChatWindow() {
   }, [conversationId, dispatch]);
 
   const subtitle = useMemo(() => {
-    if (!conversationId) {
-      return 'bootstrapping...';
-    }
-    return `${connectionStatus} · ${conversationId}`;
+    return `${connectionStatus} · ${conversationId.slice(0, 8)}…`;
   }, [connectionStatus, conversationId]);
 
   const displayMessages = useMemo<ChatWindowMessage[]>(
@@ -712,18 +706,13 @@ export function InventoryChatWindow() {
         return;
       }
 
-      const convId = conversationId ?? getOrCreateConversationId();
-      if (!conversationId) {
-        dispatch(setConversationId(convId));
-      }
-
-      dispatch(queueUserPrompt({ text: prompt }));
+      dispatch(queueUserPrompt({ conversationId, text: prompt }));
 
       try {
-        await submitPrompt(prompt, convId);
+        await submitPrompt(prompt, conversationId);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'chat request failed';
-        dispatch(setStreamError({ message }));
+        dispatch(setStreamError({ conversationId, message }));
       }
     },
     [conversationId, dispatch, isStreaming],

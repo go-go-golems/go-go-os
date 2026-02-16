@@ -36,6 +36,14 @@ function stringField(record: Record<string, unknown>, key: string): string | und
   return undefined;
 }
 
+function compactJSON(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '"<unserializable>"';
+  }
+}
+
 function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof useDispatch>): void {
   const type = envelope.event?.type;
   const data = envelope.event?.data ?? {};
@@ -69,13 +77,27 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
 
   if (type === 'tool.start') {
     const name = stringField(data, 'name') ?? 'tool';
-    dispatch(appendToolEvent({ text: `tool start: ${name}` }));
+    const input = data.input;
+    const argsText = typeof input === 'undefined' ? '' : ` args=${compactJSON(input)}`;
+    dispatch(appendToolEvent({ text: `tool start: ${name}${argsText}` }));
+    return;
+  }
+
+  if (type === 'tool.delta') {
+    const patch = data.patch;
+    const patchText = typeof patch === 'undefined' ? '' : ` patch=${compactJSON(patch)}`;
+    dispatch(appendToolEvent({ text: `tool delta:${patchText}` }));
     return;
   }
 
   if (type === 'tool.result') {
     const result = stringField(data, 'result') ?? 'ok';
     dispatch(appendToolEvent({ text: `tool result: ${result}` }));
+    return;
+  }
+
+  if (type === 'tool.done') {
+    dispatch(appendToolEvent({ text: 'tool done' }));
     return;
   }
 

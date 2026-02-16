@@ -307,7 +307,6 @@
   min-width: 180px;
   min-height: 120px;
   pointer-events: auto;
-  animation: hc-window-open 0.12s ease-out;
 }
 [data-part="windowing-window"][data-state="focused"] {
   box-shadow: 4px 4px 0 var(--hc-color-border);
@@ -409,11 +408,7 @@
 [data-part="windowing-window"][data-variant="dialog"] [data-part="windowing-resize-handle"] {
   display: none;
 }
-/* Window open animation */
-@keyframes hc-window-open {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
+
 
 /* ─── Tab bar ── */
 [data-part="tab-bar"] {
@@ -519,7 +514,6 @@
   font-size: 12px;
   z-index: 999;
   box-shadow: var(--hc-toast-shadow);
-  animation: hc-fade-in 0.2s;
 }
 
 /* ─── Fields ── */

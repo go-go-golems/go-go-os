@@ -63,5 +63,5 @@ Ticket: HC-036-JS-CARD-MW
 - [ ] P3.6 Add storybook stories for runtime card injection flow (deferred)
 
 ## Phase 4: Cleanup
-- [ ] P4.1 Delete dead code paths and unused types
-- [ ] P4.2 Run full test suite and verify storybook
+- [x] P4.1 Delete dead code paths: inventoryCardProposalPayload struct, tombstone comments
+- [x] P4.2 Run full test suite — 153 TS tests pass, 9 Go tests pass

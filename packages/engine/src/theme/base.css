@@ -689,6 +689,14 @@
   flex: 1;
   overflow: auto;
   padding: 8px 10px;
+  user-select: text;
+}
+/* Keep non-content chat chrome non-selectable */
+[data-part="chat-window-header"],
+[data-part="chat-composer"],
+[data-part="chat-suggestions"],
+[data-part="chat-window-footer"] {
+  user-select: none;
 }
 [data-part="chat-message"] {
   margin-bottom: 8px;

@@ -223,25 +223,28 @@ function formatHypercardLifecycle(
 
   if (type === 'hypercard.card.start') {
     const id = itemId ?? 'unknown';
-    return { id: `card:${id}`, title: title ?? 'Card', status: 'running', detail: 'started', kind: 'card', rawData: data };
+    const name = stringField(data, 'name') ?? title ?? 'Card';
+    return { id: `card:${id}`, title: name, status: 'running', detail: 'started', kind: 'card', rawData: data };
   }
   if (type === 'hypercard.card.update') {
     const id = itemId ?? 'unknown';
-    return { id: `card:${id}`, title: title ?? 'Card', status: 'running', detail: 'updating', kind: 'card', rawData: data };
+    const name = stringField(data, 'name') ?? title ?? 'Card';
+    return { id: `card:${id}`, title: name, status: 'running', detail: 'updating', kind: 'card', rawData: data };
   }
-  if (type === 'hypercard.card_proposal.v1') {
-    const template = stringField(data, 'template');
+  if (type === 'hypercard.card.v2') {
+    const name = stringField(data, 'name');
     const payload = recordField(data, 'data');
     const artifact = payload ? recordField(payload, 'artifact') : undefined;
     const artifactId = artifact ? stringField(artifact, 'id') : undefined;
+    const cardData = payload ? recordField(payload, 'card') : undefined;
+    const cardId = cardData ? stringField(cardData, 'id') : undefined;
     const id = itemId ?? 'unknown';
     return {
       id: `card:${id}`,
-      title: title ?? 'Card',
+      title: name ?? title ?? 'Card',
       status: 'success',
-      detail: shortText(readyDetail(template, artifactId)),
+      detail: shortText(readyDetail(cardId, artifactId)),
       kind: 'card',
-      template,
       artifactId,
       rawData: data,
     };

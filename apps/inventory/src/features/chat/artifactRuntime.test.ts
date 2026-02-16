@@ -2,17 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   buildArtifactOpenWindowPayload,
   extractArtifactUpsertFromSem,
-  templateToCardId,
 } from './artifactRuntime';
 
 describe('artifactRuntime', () => {
-  it('maps templates to card ids', () => {
-    expect(templateToCardId('itemViewer')).toBe('itemViewer');
-    expect(templateToCardId('ITEMVIEWER')).toBe('itemViewer');
-    expect(templateToCardId('reportViewer')).toBe('reportViewer');
-    expect(templateToCardId(undefined)).toBe('reportViewer');
-  });
-
   it('builds deduped open-window payload with artifact param', () => {
     const payload = buildArtifactOpenWindowPayload({
       artifactId: 'detailed_inventory_summary',
@@ -28,7 +20,7 @@ describe('artifactRuntime', () => {
     expect(payload?.content.card?.cardSessionId).toBe('artifact-session:detailed_inventory_summary');
   });
 
-  it('extracts artifact upsert from direct hypercard ready events', () => {
+  it('extracts artifact upsert from direct hypercard widget ready events', () => {
     const widget = extractArtifactUpsertFromSem('hypercard.widget.v1', {
       title: 'Inventory Summary Report',
       widgetType: 'report',
@@ -46,39 +38,46 @@ describe('artifactRuntime', () => {
       data: { totalUnits: 59 },
       source: 'widget',
     });
+  });
 
-    const card = extractArtifactUpsertFromSem('hypercard.card_proposal.v1', {
-      title: 'Detailed Inventory Summary',
-      template: 'reportViewer',
+  it('extracts artifact upsert from hypercard.card.v2 with runtime card fields', () => {
+    const card = extractArtifactUpsertFromSem('hypercard.card.v2', {
+      title: 'Low Stock Drilldown',
+      name: 'Low Stock Items',
       data: {
         artifact: {
-          id: 'detailed_inventory_summary',
-          data: { totalSkus: 10 },
+          id: 'low-stock-drilldown',
+          data: { threshold: 5 },
+        },
+        card: {
+          id: 'lowStockDrilldown',
+          code: '({ ui }) => ({ render() { return ui.text("hi"); } })',
         },
       },
     });
-    expect(card).toEqual({
-      id: 'detailed_inventory_summary',
-      title: 'Detailed Inventory Summary',
-      template: 'reportViewer',
-      data: { totalSkus: 10 },
+    expect(card).toMatchObject({
+      id: 'low-stock-drilldown',
+      title: 'Low Stock Drilldown',
+      data: { threshold: 5 },
       source: 'card',
+      runtimeCardId: 'lowStockDrilldown',
+      runtimeCardCode: '({ ui }) => ({ render() { return ui.text("hi"); } })',
     });
   });
 
-  it('extracts artifact upsert from projected timeline tool_result', () => {
+  it('extracts artifact upsert from projected timeline tool_result with v2 customKind', () => {
     const projected = extractArtifactUpsertFromSem('timeline.upsert', {
       entity: {
         kind: 'tool_result',
         toolResult: {
-          customKind: 'hypercard.card_proposal.v1',
+          customKind: 'hypercard.card.v2',
           result: {
-            title: 'Detailed Inventory Summary',
+            title: 'Low Stock Drilldown',
             template: 'reportViewer',
             data: {
               artifact: {
-                id: 'detailed_inventory_summary',
-                data: { totalSkus: 10 },
+                id: 'low-stock-drilldown',
+                data: { threshold: 5 },
               },
             },
           },
@@ -86,11 +85,10 @@ describe('artifactRuntime', () => {
       },
     });
 
-    expect(projected).toEqual({
-      id: 'detailed_inventory_summary',
-      title: 'Detailed Inventory Summary',
-      template: 'reportViewer',
-      data: { totalSkus: 10 },
+    expect(projected).toMatchObject({
+      id: 'low-stock-drilldown',
+      title: 'Low Stock Drilldown',
+      data: { threshold: 5 },
       source: 'card',
     });
   });

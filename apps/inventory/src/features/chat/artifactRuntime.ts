@@ -7,6 +7,8 @@ export interface ArtifactUpsert {
   template?: string;
   data?: Record<string, unknown>;
   source: ArtifactSource;
+  runtimeCardId?: string;
+  runtimeCardCode?: string;
 }
 
 function stringField(record: Record<string, unknown>, key: string): string | undefined {
@@ -76,8 +78,18 @@ export function extractArtifactUpsertFromSem(
     return artifactFromStructured(data, 'widget', template);
   }
 
-  if (type === 'hypercard.card_proposal.v1') {
-    return artifactFromStructured(data, 'card', stringField(data, 'template'));
+  if (type === 'hypercard.card.v2') {
+    const upsert = artifactFromStructured(data, 'card');
+    if (upsert) {
+      // Extract runtime card fields from the payload
+      const payload = recordField(data, 'data');
+      const cardData = payload ? recordField(payload, 'card') : undefined;
+      if (cardData) {
+        upsert.runtimeCardId = stringField(cardData, 'id');
+        upsert.runtimeCardCode = stringField(cardData, 'code');
+      }
+    }
+    return upsert;
   }
 
   if (type !== 'timeline.upsert') {
@@ -105,8 +117,16 @@ export function extractArtifactUpsertFromSem(
       stringField(resultRecord, 'template');
     return artifactFromStructured(resultRecord, 'widget', template);
   }
-  if (customKind === 'hypercard.card_proposal.v1') {
-    return artifactFromStructured(resultRecord, 'card', stringField(resultRecord, 'template'));
+  if (customKind === 'hypercard.card_proposal.v1' || customKind === 'hypercard.card.v2') {
+    const upsert = artifactFromStructured(resultRecord, 'card', stringField(resultRecord, 'template'));
+    if (upsert && customKind === 'hypercard.card.v2') {
+      const cardData = recordField(resultRecord, 'card') ?? (resultRecord.data ? recordField(resultRecord.data as Record<string, unknown>, 'card') : undefined);
+      if (cardData) {
+        upsert.runtimeCardId = stringField(cardData, 'id');
+        upsert.runtimeCardCode = stringField(cardData, 'code');
+      }
+    }
+    return upsert;
   }
   return undefined;
 }

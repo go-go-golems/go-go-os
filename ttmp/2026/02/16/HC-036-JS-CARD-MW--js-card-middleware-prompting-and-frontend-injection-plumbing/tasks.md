@@ -36,22 +36,22 @@ Ticket: HC-036-JS-CARD-MW
 ## Phase 2: Frontend parser switch
 
 ### P2.1 Replace artifact runtime (artifactRuntime.ts)
-- [ ] P2.1a Add `hypercard.card.v2` parser branch extracting card.id, card.code, name
-- [ ] P2.1b Remove `hypercard.card_proposal.v1` parser branch
-- [ ] P2.1c Remove `templateToCardId()` and template-based routing
-- [ ] P2.1d Add `buildRuntimeCardOpenWindowPayload()` using card.id directly
+- [x] P2.1a Add `hypercard.card.v2` parser branch extracting card.id, card.code, name
+- [ ] P2.1b Remove `hypercard.card_proposal.v1` parser branch (keeping for backward compat in timeline)
+- [ ] P2.1c Remove `templateToCardId()` and template-based routing (deferred to Phase 4)
+- [ ] P2.1d Add `buildRuntimeCardOpenWindowPayload()` using card.id directly (deferred to Phase 3)
 
 ### P2.2 Replace timeline projection (timelineProjection.ts)
-- [ ] P2.2a Update `customKind` match from `hypercard.card_proposal.v1` → `hypercard.card.v2`
-- [ ] P2.2b Update lifecycle formatters for card start/update to show Name
+- [x] P2.2a Update `customKind` match to accept both `hypercard.card_proposal.v1` and `hypercard.card.v2`
+- [x] P2.2b Update lifecycle formatters for card start/update to show Name
 
 ### P2.3 Update artifact state (artifactsSlice.ts)
-- [ ] P2.3a Add `runtimeCardId`, `runtimeCardCode`, `injectionStatus` fields
+- [x] P2.3a Add `runtimeCardId`, `runtimeCardCode`, `injectionStatus`, `injectionError` fields
 
 ### P2.4 Frontend tests
-- [ ] P2.4a Remove `templateToCardId` tests from artifactRuntime.test.ts
-- [ ] P2.4b Add v2 card payload parsing tests
-- [ ] P2.4c Update timeline projection tests for v2 customKind
+- [x] P2.4a Remove `templateToCardId` tests from artifactRuntime.test.ts
+- [x] P2.4b Add v2 card payload parsing tests (direct + timeline projected)
+- [x] P2.4c Update timeline projection tests for v2 customKind
 
 ## Phase 3: Injection plumbing
 

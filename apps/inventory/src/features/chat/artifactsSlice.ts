@@ -9,6 +9,10 @@ export interface ArtifactRecord {
   data: Record<string, unknown>;
   source: ArtifactSource;
   updatedAt: number;
+  runtimeCardId?: string;
+  runtimeCardCode?: string;
+  injectionStatus?: 'pending' | 'injected' | 'failed';
+  injectionError?: string;
 }
 
 interface ArtifactsState {
@@ -47,6 +51,8 @@ const artifactsSlice = createSlice({
         data?: Record<string, unknown>;
         source: ArtifactSource;
         updatedAt?: number;
+        runtimeCardId?: string;
+        runtimeCardCode?: string;
       }>,
     ) {
       const id = cleanString(action.payload.id);
@@ -62,6 +68,8 @@ const artifactsSlice = createSlice({
           : existing?.data ?? {};
       const source = action.payload.source ?? existing?.source ?? 'widget';
       const updatedAt = action.payload.updatedAt ?? Date.now();
+      const runtimeCardId = cleanString(action.payload.runtimeCardId) ?? existing?.runtimeCardId;
+      const runtimeCardCode = cleanString(action.payload.runtimeCardCode) ?? existing?.runtimeCardCode;
       state.byId[id] = {
         id,
         title,
@@ -69,6 +77,10 @@ const artifactsSlice = createSlice({
         data,
         source,
         updatedAt,
+        runtimeCardId,
+        runtimeCardCode,
+        injectionStatus: runtimeCardCode ? (existing?.injectionStatus ?? 'pending') : existing?.injectionStatus,
+        injectionError: existing?.injectionError,
       };
     },
     clearArtifacts(state) {

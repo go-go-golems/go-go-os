@@ -110,3 +110,27 @@ Updated `defaultArtifactPolicyInstructions()` to compose widget prompt + runtime
   - `TestRuntimeCardExtractor_StreamingName` — name available before code completes
 - Updated `TestArtifactGeneratorMiddleware_NoMissingErrorsWhenTagsPresent` for new tag
 - All 9 Go tests pass
+
+### Phase 2: Frontend parser switch (~18:15–18:20)
+
+#### InventoryChatWindow.tsx lifecycle formatters
+- `hypercard.card.start` and `hypercard.card.update`: now extract `data.name` as display title (falls back to `title`)
+- Replaced `hypercard.card_proposal.v1` handler with `hypercard.card.v2`: extracts `data.data.card.id` and `data.data.artifact.id`, uses `name` for display title
+
+#### artifactRuntime.ts
+- Added `hypercard.card.v2` branch in `extractArtifactUpsertFromSem`: parses `card.id` and `card.code` from payload, stores as `runtimeCardId`/`runtimeCardCode` on the ArtifactUpsert
+- Also updated timeline.upsert projected path to accept `customKind === 'hypercard.card.v2'`
+- Added `runtimeCardId`/`runtimeCardCode` to `ArtifactUpsert` interface
+
+#### artifactsSlice.ts
+- Added `runtimeCardId`, `runtimeCardCode`, `injectionStatus`, `injectionError` to `ArtifactRecord`
+- `upsertArtifact` merges runtime card fields, sets `injectionStatus: 'pending'` when code is first received
+
+#### timelineProjection.ts
+- Updated `customKind` match to accept both `hypercard.card_proposal.v1` and `hypercard.card.v2` (backward compat during transition)
+
+#### Tests
+- Removed `templateToCardId` test (function still exists but will be removed in Phase 4)
+- Added `hypercard.card.v2` direct extraction test with runtimeCardId/runtimeCardCode assertions
+- Updated timeline projected test to use v2 customKind
+- 141 tests pass, TypeScript clean

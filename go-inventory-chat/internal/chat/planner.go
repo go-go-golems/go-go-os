@@ -92,12 +92,18 @@ func (p *Planner) planLowStock(ctx context.Context, prompt string) (PlannedRespo
 			},
 		},
 		{
-			Kind:   "card-proposal",
-			ID:     proposalID,
-			CardID: cardID,
-			Title:  cardTitle,
-			Icon:   "RPT",
-			Code:   buildLowStockCardCode(cardTitle, threshold),
+			Kind:      "card-proposal",
+			ID:        proposalID,
+			CardID:    cardID,
+			Title:     cardTitle,
+			Icon:      "RPT",
+			Code:      buildLowStockCardCode(cardTitle, threshold),
+			DedupeKey: fmt.Sprintf("card:%s:v1", cardID),
+			Version:   1,
+			Policy: map[string]any{
+				"mode":          "read-only",
+				"allowedSystem": []string{"nav.go", "nav.back"},
+			},
 		},
 	}
 
@@ -168,6 +174,20 @@ func (p *Planner) planSalesSummary(ctx context.Context, prompt string) (PlannedR
 				},
 			},
 		},
+		{
+			Kind:      "card-proposal",
+			ID:        fmt.Sprintf("proposal-sales-summary-%d", days),
+			CardID:    fmt.Sprintf("saved_sales_summary_%d", days),
+			Title:     fmt.Sprintf("Saved Sales Summary %d Days", days),
+			Icon:      "SAL",
+			Code:      buildSalesSummaryCardCode(days),
+			DedupeKey: fmt.Sprintf("card:saved_sales_summary_%d:v1", days),
+			Version:   1,
+			Policy: map[string]any{
+				"mode":          "read-only",
+				"allowedSystem": []string{"nav.go", "nav.back"},
+			},
+		},
 	}
 
 	text := fmt.Sprintf("Sales in the last %d days: %s across %d orders and %d units.", days, toMoney(summary.TotalRevenue), summary.OrderCount, summary.UnitsSold)
@@ -178,6 +198,7 @@ func (p *Planner) planSalesSummary(ctx context.Context, prompt string) (PlannedR
 		Actions: []Action{
 			{Label: "Open Sales Log", Action: map[string]any{"type": "open-card", "cardId": "salesToday"}},
 			{Label: "Open Report", Action: map[string]any{"type": "open-card", "cardId": "report"}},
+			{Label: "Create Saved Card", Action: map[string]any{"type": "create-card", "proposalId": fmt.Sprintf("proposal-sales-summary-%d", days)}},
 		},
 	}, nil
 }
@@ -196,6 +217,9 @@ func (p *Planner) planInventoryValue(ctx context.Context) (PlannedResponse, erro
 		{"label": "Gross margin", "value": toMoney(summary.GrossMargin)},
 	}
 
+	proposalID := "proposal-inventory-valuation"
+	cardID := "saved_inventory_valuation"
+
 	return PlannedResponse{
 		Text: "Computed current inventory valuation from the SQLite tool data source.",
 		Artifacts: []Artifact{
@@ -208,10 +232,25 @@ func (p *Planner) planInventoryValue(ctx context.Context) (PlannedResponse, erro
 					"sections": sections,
 				},
 			},
+			{
+				Kind:      "card-proposal",
+				ID:        proposalID,
+				CardID:    cardID,
+				Title:     "Saved Inventory Valuation",
+				Icon:      "VAL",
+				Code:      buildInventoryValueCardCode(),
+				DedupeKey: "card:saved_inventory_valuation:v1",
+				Version:   1,
+				Policy: map[string]any{
+					"mode":          "read-only",
+					"allowedSystem": []string{"nav.go", "nav.back"},
+				},
+			},
 		},
 		Actions: []Action{
 			{Label: "Open Report", Action: map[string]any{"type": "open-card", "cardId": "report"}},
 			{Label: "Open Browse", Action: map[string]any{"type": "open-card", "cardId": "browse"}},
+			{Label: "Create Saved Card", Action: map[string]any{"type": "create-card", "proposalId": proposalID}},
 		},
 	}, nil
 }
@@ -405,6 +444,86 @@ func buildLowStockCardCode(title string, threshold int) string {
     }
   }
 })`, threshold, title)
+}
+
+func buildSalesSummaryCardCode(days int) string {
+	return fmt.Sprintf(`({ ui }) => ({
+  render({ globalState }) {
+    var domains = (globalState && globalState.domains) || {};
+    var sales = (domains && domains.sales) || {};
+    var entries = Array.isArray(sales.entries) ? sales.entries : [];
+    var rows = [];
+    var max = Math.min(entries.length, 20);
+    for (var i = 0; i < max; i++) {
+      var e = entries[i] || {};
+      rows.push([
+        String(e.date || ''),
+        String(e.sku || ''),
+        String(e.qty || ''),
+        '$' + Number(e.total || 0).toFixed(2)
+      ]);
+    }
+    return ui.panel([
+      ui.text('Saved Sales Summary - last %d days'),
+      ui.table(rows, { headers: ['Date', 'SKU', 'Qty', 'Total'] }),
+      ui.row([
+        ui.button('Back', { onClick: { handler: 'back' } }),
+        ui.button('Open Report', { onClick: { handler: 'goReport' } })
+      ])
+    ]);
+  },
+  handlers: {
+    back: function(ctx) {
+      ctx.dispatchSystemCommand('nav.back');
+    },
+    goReport: function(ctx) {
+      ctx.dispatchSystemCommand('nav.go', { cardId: 'report' });
+    }
+  }
+})`, days)
+}
+
+func buildInventoryValueCardCode() string {
+	return `({ ui }) => ({
+  render({ globalState }) {
+    var domains = (globalState && globalState.domains) || {};
+    var inventory = (domains && domains.inventory) || {};
+    var items = Array.isArray(inventory.items) ? inventory.items : [];
+    var unitCount = 0;
+    var retail = 0;
+    var cost = 0;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var qty = Number(it.qty || 0);
+      var price = Number(it.price || 0);
+      var itemCost = Number(it.cost || 0);
+      unitCount += qty;
+      retail += qty * price;
+      cost += qty * itemCost;
+    }
+    var margin = retail - cost;
+    return ui.panel([
+      ui.text('Saved Inventory Valuation'),
+      ui.row([
+        ui.badge('Units: ' + String(unitCount)),
+        ui.badge('Retail: $' + retail.toFixed(2)),
+        ui.badge('Margin: $' + margin.toFixed(2))
+      ]),
+      ui.row([
+        ui.button('Back', { onClick: { handler: 'back' } }),
+        ui.button('Open Report', { onClick: { handler: 'goReport' } })
+      ])
+    ]);
+  },
+  handlers: {
+    back: function(ctx) {
+      ctx.dispatchSystemCommand('nav.back');
+    },
+    goReport: function(ctx) {
+      ctx.dispatchSystemCommand('nav.go', { cardId: 'report' });
+    }
+  }
+})`
 }
 
 func sortCategoryRows(rows []map[string]any) {

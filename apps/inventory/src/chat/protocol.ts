@@ -30,6 +30,9 @@ export interface BackendArtifact {
   title?: string;
   icon?: string;
   code?: string;
+  dedupeKey?: string;
+  version?: number;
+  policy?: Record<string, unknown>;
 }
 
 export interface BackendTimelineMessage {
@@ -285,6 +288,9 @@ function toArtifact(raw: unknown): BackendArtifact | null {
     title: typeof raw.title === 'string' ? raw.title : undefined,
     icon: typeof raw.icon === 'string' ? raw.icon : undefined,
     code: typeof raw.code === 'string' ? raw.code : undefined,
+    dedupeKey: typeof raw.dedupeKey === 'string' ? raw.dedupeKey : undefined,
+    version: typeof raw.version === 'number' ? raw.version : undefined,
+    policy: isRecord(raw.policy) ? raw.policy : undefined,
   };
 }
 

@@ -243,6 +243,9 @@ export function InventoryChatAssistantWindow({
         title: String(artifact.title ?? 'Generated Card'),
         icon: String(artifact.icon ?? 'GEN'),
         code: String(artifact.code ?? ''),
+        dedupeKey: typeof artifact.dedupeKey === 'string' ? artifact.dedupeKey : undefined,
+        version: typeof artifact.version === 'number' ? artifact.version : undefined,
+        policy: artifact.policy,
       };
       cardProposalsRef.current.set(proposal.id, proposal);
       return {

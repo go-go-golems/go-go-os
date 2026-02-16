@@ -30,6 +30,20 @@ RelatedFiles:
       Note: Frontend webchat transport implementation
     - Path: apps/inventory/vite.config.ts
       Note: Proxy configuration for backend endpoints
+    - Path: go-inventory-chat/cmd/hypercard-inventory-seed/main.go
+      Note: Standalone seed command
+    - Path: go-inventory-chat/cmd/hypercard-inventory-server/main.go
+      Note: Server runtime/tool wiring
+    - Path: go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory.go
+      Note: Tool definitions and registration factories
+    - Path: go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory_test.go
+      Note: Tool output-shape and validation tests
+    - Path: go-inventory-chat/internal/inventorydb/store.go
+      Note: Inventory DB implementation and repository methods
+    - Path: go-inventory-chat/internal/inventorydb/store_test.go
+      Note: Inventory DB behavior validation
+    - Path: ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/scripts/reset-seed-inventory-db.sh
+      Note: Scripted seed/reset flow
     - Path: ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/scripts/smoke-roundtrip-playwright.mjs
       Note: Playwright smoke script for round-trip gate
 ExternalSources:
@@ -39,6 +53,7 @@ LastUpdated: 2026-02-16T13:25:00-05:00
 WhatFor: Preserve detailed planning trace and decision rationale before coding.
 WhenToUse: Use when reviewing why the implementation plan was shaped this way.
 ---
+
 
 
 
@@ -739,3 +754,162 @@ I treated this as a hard-cut implementation slice (no backward-compat behavior r
 - Smoke acceptance evidence:
   - backend log shows `stream coordinator: started` and `starting inference loop`
   - Playwright script returns non-empty AI output from the chat window
+
+## Step 9: Implement SQLite Inventory Domain and Register Inventory Tools
+
+This step executed backend Phases 3 and 4 from the HC-033 plan in one slice: SQLite domain storage, deterministic seeding, query/update repository methods, inventory tool registration, and runtime allowed-tools restrictions.
+
+I also added a dedicated seed command and ticket script for repeatable DB reset/seed runs, then validated with `go test ./...` and a fresh frontend/backend Playwright smoke pass.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 8)
+
+**Assistant interpretation:** Continue implementation task-by-task after Phase 2.5, moving into backend data/tools phases while keeping testability and diary/task hygiene.
+
+**Inferred user intent:** Reach a practical, working inventory chat backend that uses real SQLite-backed tool calls rather than mock data paths.
+
+**Commit (code):** 5c489c5 — "HC-033: add sqlite inventory domain and inventory tools"
+
+### What I did
+
+- Added SQLite inventory domain package:
+  - `go-inventory-chat/internal/inventorydb/models.go`
+  - `go-inventory-chat/internal/inventorydb/seed.go`
+  - `go-inventory-chat/internal/inventorydb/store.go`
+  - `go-inventory-chat/internal/inventorydb/store_test.go`
+- Implemented DB bootstrap:
+  - `Open`, `Migrate`, `Seed`, `ResetAndSeed`
+  - schema for `items` and `sales`
+  - deterministic seed set copied from inventory frontend seed data
+- Implemented repository/query/update methods used by tools:
+  - `SearchItems`, `GetItem`, `LowStock`, `Report`, `UpdateQty`, `RecordSale`
+  - helpers for counts and sales listing
+- Added inventory tool definitions and factories in server cmd:
+  - `go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory.go`
+  - `go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory_test.go`
+- Wired tools and DB startup into server command:
+  - `go-inventory-chat/cmd/hypercard-inventory-server/main.go`
+  - added flags:
+    - `--inventory-db`
+    - `--inventory-seed-on-start`
+    - `--inventory-reset-on-start`
+  - registered tool factories via `srv.RegisterTool(...)`
+  - constrained runtime `AllowedTools` to inventory tool names
+- Added standalone DB seed command:
+  - `go-inventory-chat/cmd/hypercard-inventory-seed/main.go`
+- Added ticket script for reset/seed convenience:
+  - `ttmp/.../scripts/reset-seed-inventory-db.sh`
+- Updated gitignore for sqlite wal/shm sidecars:
+  - `go-inventory-chat/.gitignore`
+
+### Why
+
+- Tool-backed inventory answers require a durable domain source of truth.
+- Seeding/migration must be deterministic so local testing and CI are stable.
+- Restricting `AllowedTools` prevents accidental tool exposure and keeps runtime behavior predictable.
+
+### What worked
+
+- `go test ./...` under `go-inventory-chat` passed after implementation.
+- Tool contract tests validated registration + output shapes + basic validation errors.
+- Seed command worked:
+  - `seeded inventory db at ./data/inventory.db (items=10 sales=7 reset=true)`
+- Backend restart + existing Playwright smoke succeeded with updated stack:
+  - `OK: received AI stream output: ### Inventory`
+
+### What didn't work
+
+- First test run failed because tools were defined as `(context.Context, Input)` and tests used `ToolFunc.Execute(...)` (no context), which does not support 2-arg signatures in that path:
+  - error: `unsupported tool function signature: numIn=2, inTypes=[context.Context main.searchItemsInput]`
+- Fix applied:
+  - changed tool function signatures to single-input functions and used `context.Background()` internally.
+
+### What I learned
+
+- In this tool stack, using single-input tool function signatures is the safest default for compatibility across both `Execute` and `ExecuteWithContext` call paths.
+- Seeding at startup with idempotent upserts simplifies local development while preserving deterministic fixture state.
+
+### What was tricky to build
+
+- The trickiest part was reconciling tool function signatures with geppetto tool execution internals without adding compatibility adapters.
+- The practical solution was to move context handling inside closures rather than in function signatures.
+
+### What warrants a second pair of eyes
+
+- Review report summary semantics (`lowStockCount` includes qty <= threshold, including zero-stock items) and confirm this matches intended product behavior.
+- Confirm whether default startup should seed always (`inventory-seed-on-start=true`) for all environments.
+
+### What should be done in the future
+
+- Proceed to Phase 5/6 middleware + structured extraction (`hypercard.widget.v1`, `card_proposal`) and timeline projection handlers.
+
+### Code review instructions
+
+- Start with DB domain package:
+  - `go-inventory-chat/internal/inventorydb/store.go`
+  - `go-inventory-chat/internal/inventorydb/store_test.go`
+- Review tool layer:
+  - `go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory.go`
+  - `go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory_test.go`
+- Review server wiring + runtime restrictions:
+  - `go-inventory-chat/cmd/hypercard-inventory-server/main.go`
+- Review seed tooling:
+  - `go-inventory-chat/cmd/hypercard-inventory-seed/main.go`
+  - `ttmp/.../scripts/reset-seed-inventory-db.sh`
+- Validate:
+  - `cd go-inventory-chat && go test ./...`
+  - `cd go-inventory-chat && go run ./cmd/hypercard-inventory-seed --db ./data/inventory.db --reset`
+
+### Technical details
+
+- Registered tool names:
+  - `inventory_search_items`
+  - `inventory_get_item`
+  - `inventory_low_stock`
+  - `inventory_report`
+  - `inventory_update_qty`
+  - `inventory_record_sale`
+- DB schema:
+  - `items(sku PK, name, category, tags, qty, price, cost)`
+  - `sales(id PK, date, sku FK, qty, total)`
+
+## Step 10: Restore Context-Aware Tool Signatures and Patch `Execute` Compatibility
+
+This step reverted inventory tools back to `(context.Context, Input)` signatures and patched geppetto tool execution so `ToolFunc.Execute(...)` also supports two-argument tool functions by injecting `context.Background()`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1. and for 2. patch createExecutor"
+
+**Assistant interpretation:** Implement both requested actions: restore `ctx` in tool funcs and patch `createExecutor` rather than migrating tests to `ExecuteWithContext`.
+
+### What I changed
+
+- In `go-inventory-chat`:
+  - Restored tool callback signatures to include context:
+    - `go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory.go`
+  - Commit:
+    - `51c5fb2` — `HC-033: restore context-aware inventory tool funcs`
+- In `geppetto`:
+  - Patched `createExecutor` to handle `(context.Context, Input)` by:
+    - validating arg0 is `context.Context`
+    - unmarshalling JSON into `Input`
+    - calling the function with `context.Background()` + input
+  - Added regression tests:
+    - `geppetto/pkg/inference/tools/definition_test.go`
+      - `Execute(...)` works for `(context.Context, Input)`
+      - `ExecuteWithContext(...)` passes the provided context
+  - Commit:
+    - `1ab6ba7` — `tools: support ctx+input signatures in Execute()`
+
+### Validation
+
+- `cd geppetto && go test ./pkg/inference/tools` passed.
+- `cd 2026-02-12--hypercard-react/go-inventory-chat && go test ./cmd/hypercard-inventory-server` passed.
+- Geppetto pre-commit hooks passed (full `go test ./...` + lint/vet).
+
+### Issue encountered and fix
+
+- First commit attempt in `geppetto` failed lint (`SA1029`) due using anonymous struct as context key in test.
+- Fixed by introducing a dedicated key type (`type testContextKey string`) and recommitted successfully.

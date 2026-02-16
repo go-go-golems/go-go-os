@@ -75,3 +75,18 @@ Implemented Phase 2.5 frontend hard cutover to real /chat + /ws streaming, added
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/vite.config.ts — Proxy /chat /ws /api to backend
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/scripts/smoke-roundtrip-playwright.mjs — Round-trip smoke automation
 
+
+## 2026-02-16
+
+Implemented Phase 3/4 backend slice: SQLite inventory domain + deterministic seed/reset path + inventory tool suite registration with allowed-tools lock; validated with go tests and refreshed tmux+Playwright smoke flow (commit 5c489c5).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/cmd/hypercard-inventory-seed/main.go — Reset/seed utility command
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/cmd/hypercard-inventory-server/main.go — Server bootstrap wiring for DB + tools + allowed-tools
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory.go — Inventory tool definitions and factories
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/cmd/hypercard-inventory-server/tools_inventory_test.go — Tool contract and validation tests
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/internal/inventorydb/store.go — SQLite domain store
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/internal/inventorydb/store_test.go — Migration/seed idempotency and mutation tests
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/scripts/reset-seed-inventory-db.sh — Operator reset/seed script
+

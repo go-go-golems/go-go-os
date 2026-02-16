@@ -42,25 +42,25 @@
 
 ### 3. SQLite inventory domain
 
-- [ ] B3.1 Implement SQLite open/migrate helpers.
-- [ ] B3.2 Create `items` schema.
-- [ ] B3.3 Create `sales` schema.
-- [ ] B3.4 Add deterministic seed data files.
-- [ ] B3.5 Add reset/seed command in ticket scripts or backend cmd.
-- [ ] B3.6 Add repository/query methods used by tools.
-- [ ] B3.7 Add tests for migration and seed idempotency.
+- [x] B3.1 Implement SQLite open/migrate helpers.
+- [x] B3.2 Create `items` schema.
+- [x] B3.3 Create `sales` schema.
+- [x] B3.4 Add deterministic seed data files.
+- [x] B3.5 Add reset/seed command in ticket scripts or backend cmd.
+- [x] B3.6 Add repository/query methods used by tools.
+- [x] B3.7 Add tests for migration and seed idempotency.
 
 ### 4. Inventory tools
 
-- [ ] B4.1 Implement `inventory_search_items`.
-- [ ] B4.2 Implement `inventory_get_item`.
-- [ ] B4.3 Implement `inventory_low_stock`.
-- [ ] B4.4 Implement `inventory_report`.
-- [ ] B4.5 Implement `inventory_update_qty`.
-- [ ] B4.6 Implement `inventory_record_sale`.
-- [ ] B4.7 Register tool factories in server bootstrap.
-- [ ] B4.8 Restrict runtime allowed-tools list.
-- [ ] B4.9 Add tool contract tests (validation + output shape).
+- [x] B4.1 Implement `inventory_search_items`.
+- [x] B4.2 Implement `inventory_get_item`.
+- [x] B4.3 Implement `inventory_low_stock`.
+- [x] B4.4 Implement `inventory_report`.
+- [x] B4.5 Implement `inventory_update_qty`.
+- [x] B4.6 Implement `inventory_record_sale`.
+- [x] B4.7 Register tool factories in server bootstrap.
+- [x] B4.8 Restrict runtime allowed-tools list.
+- [x] B4.9 Add tool contract tests (validation + output shape).
 
 ### 5. Geppetto middleware-driven artifact/card generation
 

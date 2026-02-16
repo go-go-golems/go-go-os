@@ -23,12 +23,20 @@ const WIDGET_PANEL_MESSAGE_ID = 'widget-panel-widget-message';
 const WIDGET_PANEL_WIDGET_ID = 'inventory-widget-panel-widget';
 const MAX_TIMELINE_ITEMS = 24;
 const MAX_PANEL_ITEMS = 16;
+const MAX_SUGGESTIONS = 8;
+
+export const DEFAULT_CHAT_SUGGESTIONS = [
+  'Show current inventory status',
+  'What items are low stock?',
+  'Summarize today sales',
+];
 
 interface ChatState {
   conversationId: string | null;
   connectionStatus: ChatConnectionStatus;
   isStreaming: boolean;
   messages: ChatWindowMessage[];
+  suggestions: string[];
   lastError: string | null;
 }
 
@@ -37,6 +45,7 @@ const initialState: ChatState = {
   connectionStatus: 'idle',
   isStreaming: false,
   messages: [],
+  suggestions: [...DEFAULT_CHAT_SUGGESTIONS],
   lastError: null,
 };
 
@@ -67,6 +76,27 @@ function isWidget(value: unknown): value is InlineWidget {
 
 function stripTrailingWhitespace(value: string): string {
   return value.replace(/[ \t]+$/gm, '').trimEnd();
+}
+
+function normalizeSuggestionList(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    const next = stripTrailingWhitespace(value).trim();
+    if (next.length === 0) {
+      continue;
+    }
+    const key = next.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    out.push(next);
+    if (out.length >= MAX_SUGGESTIONS) {
+      break;
+    }
+  }
+  return out;
 }
 
 function widgetItemsFromMessage(message: ChatWindowMessage): TimelineWidgetItem[] {
@@ -249,6 +279,7 @@ const chatSlice = createSlice({
         text: '',
         status: 'streaming',
       });
+      state.suggestions = [];
       state.isStreaming = true;
     },
     applyLLMStart(state, action: PayloadAction<{ messageId: string }>) {
@@ -436,8 +467,15 @@ const chatSlice = createSlice({
     },
     resetConversation(state) {
       state.messages = [];
+      state.suggestions = [...DEFAULT_CHAT_SUGGESTIONS];
       state.isStreaming = false;
       state.lastError = null;
+    },
+    replaceSuggestions(state, action: PayloadAction<{ suggestions: string[] }>) {
+      state.suggestions = normalizeSuggestionList(action.payload.suggestions);
+    },
+    mergeSuggestions(state, action: PayloadAction<{ suggestions: string[] }>) {
+      state.suggestions = normalizeSuggestionList([...state.suggestions, ...action.payload.suggestions]);
     },
   },
 });
@@ -455,5 +493,7 @@ export const {
   upsertWidgetPanelItem,
   setStreamError,
   resetConversation,
+  replaceSuggestions,
+  mergeSuggestions,
 } = chatSlice.actions;
 export const chatReducer = chatSlice.reducer;

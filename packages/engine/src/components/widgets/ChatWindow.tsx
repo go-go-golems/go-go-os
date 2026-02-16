@@ -50,6 +50,7 @@ export interface ChatWindowProps {
   onCancel?: () => void;
   onAction?: (action: unknown) => void;
   suggestions?: string[];
+  showSuggestionsAlways?: boolean;
   title?: string;
   subtitle?: string;
   placeholder?: string;
@@ -113,6 +114,7 @@ export function ChatWindow({
   onCancel,
   onAction,
   suggestions,
+  showSuggestionsAlways = false,
   title = 'Chat',
   subtitle,
   placeholder,
@@ -254,7 +256,7 @@ export function ChatWindow({
       </div>
 
       {/* ── Suggestions ── */}
-      {(isEmpty || messages.length <= 1) && suggestions && !isStreaming && (
+      {suggestions && suggestions.length > 0 && (showSuggestionsAlways || ((isEmpty || messages.length <= 1) && !isStreaming)) && (
         <div data-part="chat-suggestions">
           {suggestions.map((s) => (
             <Chip key={s} onClick={() => send(s)}>

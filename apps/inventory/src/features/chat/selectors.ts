@@ -6,6 +6,7 @@ interface ChatStateShape {
   connectionStatus: ChatConnectionStatus;
   isStreaming: boolean;
   messages: ChatWindowMessage[];
+  suggestions: string[];
   lastError: string | null;
 }
 
@@ -17,4 +18,5 @@ export const selectConversationId = (state: ChatStateSlice) => state.chat.conver
 export const selectConnectionStatus = (state: ChatStateSlice) => state.chat.connectionStatus;
 export const selectIsStreaming = (state: ChatStateSlice) => state.chat.isStreaming;
 export const selectMessages = (state: ChatStateSlice) => state.chat.messages;
+export const selectSuggestions = (state: ChatStateSlice) => state.chat.suggestions;
 export const selectLastError = (state: ChatStateSlice) => state.chat.lastError;

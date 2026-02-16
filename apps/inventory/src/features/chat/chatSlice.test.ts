@@ -4,7 +4,9 @@ import {
   applyLLMFinal,
   applyLLMStart,
   chatReducer,
+  mergeSuggestions,
   queueUserPrompt,
+  replaceSuggestions,
   setStreamError,
   upsertCardPanelItem,
   upsertTimelineItem,
@@ -172,5 +174,16 @@ describe('chatSlice', () => {
     expect(cardItems[0]?.template).toBe('reportViewer');
     expect(widgetItems[0]?.title).toBe('Inventory Summary Report');
     expect(widgetItems[0]?.template).toBe('report');
+  });
+
+  it('fills suggestions incrementally while de-duplicating', () => {
+    const state = reduce([
+      queueUserPrompt({ text: 'help me decide' }),
+      mergeSuggestions({ suggestions: ['Show current inventory status'] }),
+      mergeSuggestions({ suggestions: ['What items are low stock?', 'show current inventory status'] }),
+      replaceSuggestions({ suggestions: ['Summarize today sales', 'Show current inventory status'] }),
+    ]);
+
+    expect(state.suggestions).toEqual(['Summarize today sales', 'Show current inventory status']);
   });
 });

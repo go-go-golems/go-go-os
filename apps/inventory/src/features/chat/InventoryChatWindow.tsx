@@ -5,7 +5,9 @@ import {
   applyLLMDelta,
   applyLLMFinal,
   applyLLMStart,
+  mergeSuggestions,
   queueUserPrompt,
+  replaceSuggestions,
   setConnectionStatus,
   setConversationId,
   setStreamError,
@@ -14,7 +16,13 @@ import {
   upsertTimelineItem,
   upsertWidgetPanelItem,
 } from './chatSlice';
-import { selectConnectionStatus, selectConversationId, selectIsStreaming, selectMessages } from './selectors';
+import {
+  selectConnectionStatus,
+  selectConversationId,
+  selectIsStreaming,
+  selectMessages,
+  selectSuggestions,
+} from './selectors';
 import {
   getOrCreateConversationId,
   InventoryWebChatClient,
@@ -63,6 +71,13 @@ function compactJSON(value: unknown): string {
   } catch {
     return '"<unserializable>"';
   }
+}
+
+function stringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((entry): entry is string => typeof entry === 'string');
 }
 
 function stripTrailingWhitespace(value: string): string {
@@ -406,6 +421,22 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     return;
   }
 
+  if (type === 'hypercard.suggestions.start' || type === 'hypercard.suggestions.update') {
+    const suggestions = stringArray(data.suggestions);
+    if (suggestions.length > 0) {
+      dispatch(mergeSuggestions({ suggestions }));
+    }
+    return;
+  }
+
+  if (type === 'hypercard.suggestions.v1') {
+    const suggestions = stringArray(data.suggestions);
+    if (suggestions.length > 0) {
+      dispatch(replaceSuggestions({ suggestions }));
+    }
+    return;
+  }
+
   const lifecycleText = type ? formatHypercardLifecycle(type, data) : undefined;
   if (lifecycleText) {
     dispatch(upsertTimelineItem(lifecycleText));
@@ -432,6 +463,7 @@ export function InventoryChatWindow() {
   const conversationId = useSelector(selectConversationId);
   const connectionStatus = useSelector(selectConnectionStatus);
   const messages = useSelector(selectMessages);
+  const suggestions = useSelector(selectSuggestions);
   const isStreaming = useSelector(selectIsStreaming);
 
   const clientRef = useRef<InventoryWebChatClient | null>(null);
@@ -540,7 +572,8 @@ export function InventoryChatWindow() {
       title="Inventory Chat"
       subtitle={subtitle}
       placeholder="Ask about inventory..."
-      suggestions={['Show current inventory status', 'What items are low stock?', 'Summarize today sales']}
+      suggestions={suggestions}
+      showSuggestionsAlways
       footer={<span>Streaming via /chat + /ws</span>}
     />
   );

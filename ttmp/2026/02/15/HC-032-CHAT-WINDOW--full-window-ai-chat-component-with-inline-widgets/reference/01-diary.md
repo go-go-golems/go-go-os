@@ -247,3 +247,67 @@ CSS grid for icon layer:
   gap: 4px;
 }
 ```
+
+## Step 3: ChatWindow Reuses ChatView Message Look
+
+Refactored ChatWindow to render messages using the same data-parts and visual style as ChatView, instead of the heavier avatar-based layout.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Use the look for messages from ChatView, in the ChatWindow."
+
+**Assistant interpretation:** Replace ChatWindow's custom message rendering (avatars, background bubbles, meta row, uppercase role labels) with the simpler ChatView message style (role labels like "You:" / "AI:", border-left on AI messages, inline text).
+
+**Inferred user intent:** Visual consistency — messages in the full-window chat should look the same as in the existing ChatView/StreamingChatView widgets, not introduce a different visual language.
+
+**Commit (code):** b556f7e — "refactor(HC-032): ChatWindow reuses ChatView message look"
+
+### What I did
+
+- Rewrote `renderMessage()` in ChatWindow to emit `data-part="chat-message"` + `data-role` + `data-part="chat-role"` (matching ChatView)
+- Replaced avatars + meta row with simple "You:" / "AI:" / "System:" role labels
+- Text renders with `style={{ fontSize: 11, whiteSpace: 'pre-wrap' }}` (same inline style as ChatView)
+- Actions use `style={{ marginTop: 3, display: 'flex', gap: 3 }}` (same as ChatView)
+- Timeline uses `data-part="chat-timeline"` instead of `chat-window-timeline`
+- Composer uses `data-part="chat-composer"` instead of `chat-window-composer`
+- Suggestions use `data-part="chat-suggestions"` instead of `chat-window-suggestions`
+- Send button uses default variant (no `variant="primary"`) matching ChatView
+- Removed ~120 lines of dead CSS: `chat-window-message`, `chat-window-avatar`, `chat-window-meta`, `chat-window-role-label`, `chat-window-timestamp`, `chat-window-body`, `chat-window-text`, `chat-window-actions`, `chat-window-message-content`, `chat-window-timeline`, `chat-window-composer`, `chat-window-suggestions`
+- Kept ChatWindow-only CSS: `chat-window` wrapper, header, widget-block, widget-label, widget-content, welcome, thinking, error, footer
+
+### Why
+
+- Maintaining two different message rendering styles creates visual inconsistency and double CSS
+- ChatView's look is established and used across ChatView, StreamingChatView, and ChatSidebar — ChatWindow should join that family
+- The inline widget blocks (`chat-window-widget-block`) are still ChatWindow-specific, which is correct since ChatView doesn't support them
+
+### What worked
+
+- Straightforward replacement — all 17 stories render correctly with the shared parts
+- Net deletion of ~120 lines of CSS, component got simpler (removed ~50 lines of JSX)
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- The shared `chat-message` / `chat-role` CSS parts are well-designed for reuse — they don't assume anything about the container, so they work inside both `chat-view` and `chat-window`
+
+### What was tricky to build
+
+- Nothing tricky — the ChatView pattern is simple and the ChatWindow just needed to adopt it
+
+### What warrants a second pair of eyes
+
+- The widget blocks still use `chat-window-widget-*` parts which have their own styling. Verify these look good nested inside `chat-message` containers.
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Compare `ChatWindow.tsx` message rendering with `ChatView.tsx` — they should now be visually identical for plain text messages
+- Check `base.css` — the Chat Window section should be much shorter, with only header/widget/welcome/footer parts remaining
+- Validate: `npx tsc --noEmit -p packages/engine/tsconfig.json`

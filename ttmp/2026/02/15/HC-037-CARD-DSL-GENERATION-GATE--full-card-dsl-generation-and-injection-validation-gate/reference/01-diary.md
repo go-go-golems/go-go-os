@@ -33,3 +33,27 @@ WhenToUse: Read before continuing HC-037 work or reviewing generation decisions.
 Next coding step:
 
 1. Implement deterministic report/table schema helpers and full card proposal templates in backend planner logic.
+
+## Step 2: Reports/Tables and Full Card DSL Generation Implemented
+
+1. Expanded backend planner to emit full card proposal artifacts for:
+   - low-stock reports,
+   - sales summary reports,
+   - inventory valuation reports.
+2. Added proposal metadata fields (`dedupeKey`, `version`, `policy`) to backend artifact schema.
+3. Added deterministic card DSL templates for sales and valuation in planner code.
+4. Integrated validation gate in frontend `cardInjector.ts`:
+   - card id format checks,
+   - DSL shape checks (`render`, `ui.`),
+   - forbidden token checks (`fetch`, `window`, etc.),
+   - duplicate proposal signature marker enforcement.
+
+Validation:
+
+1. CLI stream smoke confirms card proposal artifacts in SEM stream.
+2. Browser E2E confirms `Create Saved Card` opens generated card window.
+3. Duplicate apply path returns deterministic system feedback.
+
+Commit:
+
+1. `1bc60d3` - full card DSL generation + injection gate updates.

@@ -31,3 +31,24 @@ WhenToUse: Read before continuing HC-035 work or reviewing design decisions.
 Next coding step:
 
 1. Start SEM event struct + codec registration implementation once HC-034 sink hooks are in place.
+
+## Step 2: Structured Extraction and Validation Middleware Implemented
+
+1. Added planner middleware chain in backend runtime flow.
+2. Implemented `StructuredExtractionMiddleware`:
+   - parses `<hypercard:widget:1>{...}</hypercard:widget:1>` and `<hypercard:card:1>{...}</hypercard:card:1>` blocks,
+   - converts structured blocks into deterministic artifact payloads.
+3. Implemented `ArtifactValidationMiddleware`:
+   - validates widget payload contract (`report-view`, `data-table`),
+   - validates card proposal contract (`cardId`, DSL presence, forbidden token checks),
+   - filters invalid artifacts and records rejection details in assistant text.
+4. Kept SEM event envelope output stable (`chat.message.token`, `chat.message.artifact`, `chat.message.done`, `chat.message.error`).
+
+Validation:
+
+1. `GOWORK=off go test ./...` passed.
+2. CLI smokes confirmed artifact event classes and payloads.
+
+Commit:
+
+1. `2780008` - backend middleware/extraction implementation.

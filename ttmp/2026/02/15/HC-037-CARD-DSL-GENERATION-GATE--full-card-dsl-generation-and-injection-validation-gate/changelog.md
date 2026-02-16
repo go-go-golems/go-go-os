@@ -9,3 +9,7 @@
 - Replaced template implementation document with a detailed reports/tables and full card DSL generation plan.
 - Replaced placeholder tasks with phased execution checklist including validation gate and injector integration.
 - Added initial diary entry to track implementation progression.
+- Implemented deterministic report/table + card proposal generation for low-stock, sales, and valuation flows.
+- Added proposal metadata (`dedupeKey`, `version`, `policy`) to artifact stream.
+- Implemented frontend injection validation gate and signature dedupe marker.
+- Commit `1bc60d3`.

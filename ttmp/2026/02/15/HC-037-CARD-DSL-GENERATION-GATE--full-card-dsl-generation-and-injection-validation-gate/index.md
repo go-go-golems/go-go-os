@@ -18,7 +18,7 @@ RelatedFiles:
       Note: Validation gate and apply flow target.
 ExternalSources: []
 Summary: Implements reports/tables artifact generation and full card DSL generation with validation before runtime injection.
-LastUpdated: 2026-02-16T13:34:00-05:00
+LastUpdated: 2026-02-16T15:00:00-05:00
 WhatFor: Landing page for HC-037 implementation scope and status.
 WhenToUse: Start here before working on DSL generation and validation gate.
 ---
@@ -42,4 +42,4 @@ HC-037 covers:
 
 ## Status
 
-Current status: **active** (documentation complete, implementation pending)
+Current status: **active** (implementation complete, validated)

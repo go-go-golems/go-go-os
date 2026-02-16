@@ -17,7 +17,7 @@ RelatedFiles:
       Note: Hydration endpoint integration point.
 ExternalSources: []
 Summary: Adds durable SQLite-backed timeline persistence, replay, and hydration/reconnect semantics.
-LastUpdated: 2026-02-16T13:33:00-05:00
+LastUpdated: 2026-02-16T15:00:00-05:00
 WhatFor: Landing page for HC-036 implementation scope and status.
 WhenToUse: Start here before implementing durable timeline work.
 ---
@@ -41,4 +41,4 @@ HC-036 makes chat timeline state durable:
 
 ## Status
 
-Current status: **active** (documentation complete, implementation pending)
+Current status: **active** (implementation complete, validated)

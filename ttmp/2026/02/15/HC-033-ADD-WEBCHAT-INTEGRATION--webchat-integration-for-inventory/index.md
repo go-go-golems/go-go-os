@@ -26,7 +26,7 @@ RelatedFiles:
 ExternalSources:
     - local:webchat-hyper-integration.md
 Summary: Epic orchestration ticket for inventory webchat integration; implementation is split across HC-034..HC-038 with Pinocchio/Geppetto reuse and no duplicated framework code.
-LastUpdated: 2026-02-16T13:32:00-05:00
+LastUpdated: 2026-02-16T15:00:00-05:00
 WhatFor: Ticket landing page for HC-033 implementation and documentation.
 WhenToUse: Start here to navigate design docs, task state, diary, and changelog.
 ---
@@ -56,7 +56,7 @@ Deliver a working inventory chat in `2026-02-12--hypercard-react` with:
 
 ## Status
 
-Current status: **active** (documentation re-baselined; implementation execution delegated to HC-034..HC-038)
+Current status: **active** (HC-034..HC-038 implemented and validated; ready for closure)
 
 ## Topics
 

@@ -122,3 +122,15 @@ Replaced event-spam system lines with a persistent in-chat timeline widget (`inv
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Routed SEM events into timeline upserts and added `renderWidget` for timeline display
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/selectors.ts — Updated selector typing for `ChatWindowMessage`
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.test.ts — Added reducer test ensuring single timeline widget message with in-place item updates
+
+## 2026-02-16
+
+Improved timeline widget richness and display hygiene: AI/system messages now strip trailing whitespace before render, and timeline card/widget projections now include structured metadata (kind/template/artifact) instead of generic `projected` labels. Added standalone Storybook stories for the new timeline widget component.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Richer SEM->timeline mapping and display-message whitespace normalization
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.ts — Timeline item metadata fields and trailing-whitespace sanitization for finalized/system text
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryTimelineWidget.tsx — Reusable rich timeline widget renderer
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/stories/InventoryTimelineWidget.stories.tsx — New timeline widget stories
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.test.ts — Added trimming and metadata-preservation reducer tests

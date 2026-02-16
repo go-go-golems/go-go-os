@@ -989,3 +989,54 @@ After commit `43751e6`, I restarted backend/frontend tmux sessions and ran a liv
 ### Follow-up task status update
 
 - Marked `F7.5` complete (round-trip regression validation after timeline widget cutover).
+
+## Step 13: Trim Trailing Message Whitespace and Enrich Timeline Card/Widget Rendering
+
+This step addressed two frontend quality gaps called out in review:
+
+1. trailing whitespace in AI/system message text,
+2. generic `projected` details for timeline card/widget rows.
+
+I also extracted the timeline renderer into its own component and added Storybook stories for direct visual review.
+
+### Prompt Context
+
+**User prompt (verbatim):** "strip trailing whitespace from AI system / messages. Also, make a richer widget for rendering the card/widget, because right now I just see \"projected\"? Did you create storybook stories for the new widgets?"
+
+**Assistant interpretation:** Implement text-hygiene normalization and richer timeline visualization now, and add stories for the new widget component.
+
+### What I changed
+
+- Added trailing-whitespace sanitization:
+  - reducer-level final/system text sanitization in `chatSlice.ts`
+  - display-level sanitization for non-user messages in `InventoryChatWindow.tsx`
+- Extended timeline item model with metadata fields:
+  - `kind`
+  - `template`
+  - `artifactId`
+- Enriched SEM timeline mapping:
+  - `hypercard.*` lifecycle mapping now sets widget/card kind + structured ready detail.
+  - `timeline.upsert` tool_result mapping parses structured result payloads and surfaces title/template/artifact when available.
+  - generic non-hypercard tool_result rows now show compact raw result snippets instead of `projected`.
+- Extracted timeline renderer to reusable component:
+  - `apps/inventory/src/features/chat/InventoryTimelineWidget.tsx`
+- Added Storybook stories:
+  - `apps/inventory/src/stories/InventoryTimelineWidget.stories.tsx`
+  - stories include default mixed timeline, empty state, and tool-only state.
+
+### Validation
+
+- `pnpm -C apps/inventory exec tsc --noEmit` passed.
+- `npm exec vitest run apps/inventory/src/features/chat/chatSlice.test.ts` passed (`6` tests).
+- Live Playwright chat validation:
+  - timeline rows for widget/card now show richer detail (`artifact=...`, `template=...`, kind chips),
+  - no generic `projected` text for those card/widget rows.
+- Storybook build attempt still fails on the pre-existing workspace Vite worker-format issue:
+  - `Invalid value "iife" for option "worker.format" ... sandboxClient.ts`
+  - this is the same blocking issue affecting normal Vite production build in this repo.
+
+### Additional tests added
+
+- `chatSlice.test.ts`:
+  - strips trailing whitespace from AI final text,
+  - preserves timeline metadata across later upserts that do not resend metadata.

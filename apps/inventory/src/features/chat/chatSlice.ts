@@ -9,6 +9,9 @@ export interface TimelineWidgetItem {
   title: string;
   status: TimelineItemStatus;
   detail?: string;
+  kind?: 'tool' | 'widget' | 'card' | 'timeline';
+  template?: string;
+  artifactId?: string;
   updatedAt: number;
 }
 
@@ -57,6 +60,10 @@ function isWidget(value: unknown): value is InlineWidget {
   return typeof value === 'object' && value !== null;
 }
 
+function stripTrailingWhitespace(value: string): string {
+  return value.replace(/[ \t]+$/gm, '').trimEnd();
+}
+
 function timelineItemsFromMessage(message: ChatWindowMessage): TimelineWidgetItem[] {
   const block = message.content?.find((entry) => entry.kind === 'widget');
   if (!block || !isWidget(block.widget) || !block.widget.props) {
@@ -75,6 +82,9 @@ function timelineItemsFromMessage(message: ChatWindowMessage): TimelineWidgetIte
       typeof candidate.id === 'string' &&
       typeof candidate.title === 'string' &&
       typeof candidate.status === 'string' &&
+      (typeof candidate.kind === 'undefined' || typeof candidate.kind === 'string') &&
+      (typeof candidate.template === 'undefined' || typeof candidate.template === 'string') &&
+      (typeof candidate.artifactId === 'undefined' || typeof candidate.artifactId === 'string') &&
       typeof candidate.updatedAt === 'number'
     );
   });
@@ -205,12 +215,12 @@ const chatSlice = createSlice({
         state.messages.push({
           id: messageId,
           role: 'ai',
-          text: text ?? '',
+          text: typeof text === 'string' ? stripTrailingWhitespace(text) : '',
           status: 'complete',
         });
       } else {
         if (typeof text === 'string') {
-          message.text = text;
+          message.text = stripTrailingWhitespace(text);
         }
         message.status = 'complete';
       }
@@ -220,7 +230,7 @@ const chatSlice = createSlice({
       state.messages.push({
         id: nextMessageId('tool'),
         role: 'system',
-        text: action.payload.text,
+        text: stripTrailingWhitespace(action.payload.text),
         status: 'complete',
       });
     },
@@ -231,6 +241,9 @@ const chatSlice = createSlice({
         title: string;
         status: TimelineItemStatus;
         detail?: string;
+        kind?: 'tool' | 'widget' | 'card' | 'timeline';
+        template?: string;
+        artifactId?: string;
         updatedAt?: number;
       }>,
     ) {
@@ -248,9 +261,18 @@ const chatSlice = createSlice({
         id,
         title,
         status: action.payload.status,
-        detail: action.payload.detail?.trim() || undefined,
+        detail: action.payload.detail ? stripTrailingWhitespace(action.payload.detail).trim() : undefined,
         updatedAt,
       };
+      if (action.payload.kind) {
+        nextItem.kind = action.payload.kind;
+      }
+      if (action.payload.template) {
+        nextItem.template = action.payload.template.trim();
+      }
+      if (action.payload.artifactId) {
+        nextItem.artifactId = action.payload.artifactId.trim();
+      }
 
       if (existingIndex >= 0) {
         items[existingIndex] = {

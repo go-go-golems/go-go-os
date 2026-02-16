@@ -61,6 +61,17 @@ describe('chatSlice', () => {
     expect(state.isStreaming).toBe(false);
   });
 
+  it('strips trailing whitespace from ai final messages', () => {
+    const state = reduce([
+      queueUserPrompt({ text: 'trim?' }),
+      applyLLMStart({ messageId: 'm-4' }),
+      applyLLMFinal({ messageId: 'm-4', text: 'Line one   \nLine two\t\t\n\n' }),
+    ]);
+
+    const ai = state.messages.find((message) => message.id === 'm-4');
+    expect(ai?.text).toBe('Line one\nLine two');
+  });
+
   it('creates a single timeline widget message and upserts items in place', () => {
     const state = reduce([
       upsertTimelineItem({
@@ -91,5 +102,36 @@ describe('chatSlice', () => {
     expect(items[0]?.status).toBe('success');
     expect(items[0]?.detail).toBe('done');
     expect(items[0]?.updatedAt).toBe(20);
+  });
+
+  it('preserves timeline metadata when later updates do not re-send it', () => {
+    const state = reduce([
+      upsertTimelineItem({
+        id: 'card:c1',
+        title: 'Detailed Inventory Summary',
+        status: 'running',
+        kind: 'card',
+        template: 'reportViewer',
+        artifactId: 'detailed_inventory_summary',
+        updatedAt: 10,
+      }),
+      upsertTimelineItem({
+        id: 'card:c1',
+        title: 'Detailed Inventory Summary',
+        status: 'success',
+        detail: 'done',
+        updatedAt: 20,
+      }),
+    ]);
+
+    const timeline = state.messages.find((message) => message.id === 'timeline-widget-message');
+    const widgetBlock = timeline?.content?.find((entry) => entry.kind === 'widget');
+    const items = (widgetBlock?.kind === 'widget'
+      ? ((widgetBlock.widget.props as Record<string, unknown>).items as Array<Record<string, unknown>> | undefined)
+      : undefined) ?? [];
+    expect(items).toHaveLength(1);
+    expect(items[0]?.kind).toBe('card');
+    expect(items[0]?.template).toBe('reportViewer');
+    expect(items[0]?.artifactId).toBe('detailed_inventory_summary');
   });
 });

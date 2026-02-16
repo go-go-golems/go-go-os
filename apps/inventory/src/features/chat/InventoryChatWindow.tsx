@@ -1,4 +1,4 @@
-import { ChatWindow, type InlineWidget } from '@hypercard/engine';
+import { ChatWindow, type ChatWindowMessage, type InlineWidget } from '@hypercard/engine';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -20,6 +20,7 @@ import {
   type SemEventEnvelope,
   submitPrompt,
 } from './webchatClient';
+import { InventoryTimelineWidget, timelineItemsFromInlineWidget } from './InventoryTimelineWidget';
 
 function eventIdFromEnvelope(envelope: SemEventEnvelope): string {
   const eventId = envelope.event?.id;
@@ -61,6 +62,10 @@ function compactJSON(value: unknown): string {
   }
 }
 
+function stripTrailingWhitespace(value: string): string {
+  return value.replace(/[ \t]+$/gm, '').trimEnd();
+}
+
 function shortText(value: string | undefined, max = 180): string | undefined {
   if (!value) {
     return value;
@@ -69,6 +74,51 @@ function shortText(value: string | undefined, max = 180): string | undefined {
     return value;
   }
   return `${value.slice(0, max)}...`;
+}
+
+function structuredRecordFromUnknown(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function artifactIdFromStructuredResult(result: Record<string, unknown> | undefined): string | undefined {
+  const data = result ? recordField(result, 'data') : undefined;
+  const artifact = data ? recordField(data, 'artifact') : undefined;
+  return artifact ? stringField(artifact, 'id') : undefined;
+}
+
+function readyDetail(template: string | undefined, artifactId: string | undefined): string {
+  const parts: string[] = [];
+  if (template) {
+    parts.push(`template=${template}`);
+  }
+  if (artifactId) {
+    parts.push(`artifact=${artifactId}`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : 'ready';
+}
+
+interface TimelineItemUpdate {
+  id: string;
+  title: string;
+  status: TimelineItemStatus;
+  detail?: string;
+  kind?: 'tool' | 'widget' | 'card' | 'timeline';
+  template?: string;
+  artifactId?: string;
 }
 
 function statusFromTimelineType(value: string | undefined): TimelineItemStatus {
@@ -84,19 +134,20 @@ function statusFromTimelineType(value: string | undefined): TimelineItemStatus {
 function formatHypercardLifecycle(
   type: string,
   data: Record<string, unknown>,
-): { id: string; title: string; status: TimelineItemStatus; detail?: string } | undefined {
+): TimelineItemUpdate | undefined {
   const title = stringField(data, 'title');
   const itemId = stringField(data, 'itemId');
 
   if (type === 'hypercard.widget.start') {
     const id = itemId ?? 'unknown';
-    return { id: `widget:${id}`, title: title ?? 'Widget', status: 'running', detail: 'started' };
+    return { id: `widget:${id}`, title: title ?? 'Widget', status: 'running', detail: 'started', kind: 'widget' };
   }
   if (type === 'hypercard.widget.update') {
     const id = itemId ?? 'unknown';
-    return { id: `widget:${id}`, title: title ?? 'Widget', status: 'running', detail: 'updating' };
+    return { id: `widget:${id}`, title: title ?? 'Widget', status: 'running', detail: 'updating', kind: 'widget' };
   }
   if (type === 'hypercard.widget.v1') {
+    const template = stringField(data, 'template');
     const payload = recordField(data, 'data');
     const artifact = payload ? recordField(payload, 'artifact') : undefined;
     const artifactId = artifact ? stringField(artifact, 'id') : undefined;
@@ -105,7 +156,10 @@ function formatHypercardLifecycle(
       id: `widget:${id}`,
       title: title ?? 'Widget',
       status: 'success',
-      detail: artifactId ? `ready (artifact=${artifactId})` : 'ready',
+      detail: shortText(readyDetail(template, artifactId)),
+      kind: 'widget',
+      template,
+      artifactId,
     };
   }
   if (type === 'hypercard.widget.error') {
@@ -115,16 +169,17 @@ function formatHypercardLifecycle(
       title: title ?? 'Widget',
       status: 'error',
       detail: shortText(stringField(data, 'error') ?? 'unknown error'),
+      kind: 'widget',
     };
   }
 
   if (type === 'hypercard.card.start') {
     const id = itemId ?? 'unknown';
-    return { id: `card:${id}`, title: title ?? 'Card', status: 'running', detail: 'started' };
+    return { id: `card:${id}`, title: title ?? 'Card', status: 'running', detail: 'started', kind: 'card' };
   }
   if (type === 'hypercard.card.update') {
     const id = itemId ?? 'unknown';
-    return { id: `card:${id}`, title: title ?? 'Card', status: 'running', detail: 'updating' };
+    return { id: `card:${id}`, title: title ?? 'Card', status: 'running', detail: 'updating', kind: 'card' };
   }
   if (type === 'hypercard.card_proposal.v1') {
     const template = stringField(data, 'template');
@@ -136,9 +191,10 @@ function formatHypercardLifecycle(
       id: `card:${id}`,
       title: title ?? 'Card',
       status: 'success',
-      detail: shortText(
-        `ready${template ? ` (template=${template})` : ''}${artifactId ? ` artifact=${artifactId}` : ''}`,
-      ),
+      detail: shortText(readyDetail(template, artifactId)),
+      kind: 'card',
+      template,
+      artifactId,
     };
   }
   if (type === 'hypercard.card.error') {
@@ -148,6 +204,7 @@ function formatHypercardLifecycle(
       title: title ?? 'Card',
       status: 'error',
       detail: shortText(stringField(data, 'error') ?? 'unknown error'),
+      kind: 'card',
     };
   }
 
@@ -156,7 +213,7 @@ function formatHypercardLifecycle(
 
 function formatTimelineUpsert(
   data: Record<string, unknown>,
-): { id: string; title: string; status: TimelineItemStatus; detail?: string } | undefined {
+): TimelineItemUpdate | undefined {
   const entity = recordField(data, 'entity');
   if (!entity) {
     return undefined;
@@ -175,11 +232,13 @@ function formatTimelineUpsert(
     } else if (lowered.includes('card')) {
       prefix = 'card';
     }
+    const timelineKind = prefix === 'widget' ? 'widget' : prefix === 'card' ? 'card' : 'timeline';
     return {
       id: `${prefix}:${baseId}`,
       title: text ?? id,
       status: statusFromTimelineType(statusType),
-      detail: shortText(`${statusType ?? 'info'} projection`),
+      detail: shortText(statusType ? `timeline status=${statusType}` : undefined),
+      kind: timelineKind,
     };
   }
 
@@ -187,57 +246,43 @@ function formatTimelineUpsert(
   if (toolResult && kind === 'tool_result') {
     const customKind = stringField(toolResult, 'customKind');
     const toolCallId = stringField(toolResult, 'toolCallId') ?? id;
+    const resultRecord =
+      structuredRecordFromUnknown(toolResult.result) ?? structuredRecordFromUnknown(toolResult.resultRaw);
+    const resultTitle = resultRecord ? stringField(resultRecord, 'title') : undefined;
+    const resultTemplate = resultRecord ? stringField(resultRecord, 'template') : undefined;
+    const resultArtifactId = artifactIdFromStructuredResult(resultRecord);
     if (customKind === 'hypercard.widget.v1') {
       return {
         id: `widget:${toolCallId}`,
-        title: 'Widget',
+        title: resultTitle ?? 'Widget',
         status: 'success',
-        detail: 'projected',
+        detail: shortText(readyDetail(resultTemplate, resultArtifactId)),
+        kind: 'widget',
+        template: resultTemplate,
+        artifactId: resultArtifactId,
       };
     }
     if (customKind === 'hypercard.card_proposal.v1') {
       return {
         id: `card:${toolCallId}`,
-        title: 'Card',
+        title: resultTitle ?? 'Card',
         status: 'success',
-        detail: 'projected',
+        detail: shortText(readyDetail(resultTemplate, resultArtifactId)),
+        kind: 'card',
+        template: resultTemplate,
+        artifactId: resultArtifactId,
       };
     }
+    const resultText = stringField(toolResult, 'resultRaw') ?? compactJSON(toolResult.result);
     return {
       id: `timeline:${id}`,
       title: customKind ?? 'Tool result',
       status: 'info',
-      detail: shortText('projected'),
+      detail: shortText(resultText),
+      kind: 'timeline',
     };
   }
   return undefined;
-}
-
-function statusGlyph(status: TimelineItemStatus): string {
-  if (status === 'running') {
-    return '...';
-  }
-  if (status === 'success') {
-    return 'OK';
-  }
-  if (status === 'error') {
-    return 'ERR';
-  }
-  return 'i';
-}
-
-function timelineItemsFromWidget(widget: InlineWidget) {
-  const raw = (widget.props as Record<string, unknown>).items;
-  if (!Array.isArray(raw)) {
-    return [] as Array<{ id: string; title: string; status: TimelineItemStatus; detail?: string; updatedAt: number }>;
-  }
-  return raw.filter((item) => typeof item === 'object' && item !== null) as Array<{
-    id: string;
-    title: string;
-    status: TimelineItemStatus;
-    detail?: string;
-    updatedAt: number;
-  }>;
 }
 
 function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof useDispatch>): void {
@@ -282,6 +327,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
         title: `Tool ${name}`,
         status: 'running',
         detail: shortText(argsText.trim()),
+        kind: 'tool',
       }),
     );
     return;
@@ -297,6 +343,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
         title: `Tool ${toolId}`,
         status: 'running',
         detail: shortText(patchText),
+        kind: 'tool',
       }),
     );
     return;
@@ -311,6 +358,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
         title: `Tool ${toolId}`,
         status: 'running',
         detail: shortText(`result=${result}`),
+        kind: 'tool',
       }),
     );
     return;
@@ -324,6 +372,7 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
         title: `Tool ${toolId}`,
         status: 'success',
         detail: 'done',
+        kind: 'tool',
       }),
     );
     return;
@@ -395,69 +444,26 @@ export function InventoryChatWindow() {
     return `${connectionStatus} · ${conversationId}`;
   }, [connectionStatus, conversationId]);
 
+  const displayMessages = useMemo<ChatWindowMessage[]>(
+    () =>
+      messages.map((message) => {
+        if (message.role === 'user' || !message.text) {
+          return message;
+        }
+        const text = stripTrailingWhitespace(message.text);
+        if (text === message.text) {
+          return message;
+        }
+        return { ...message, text };
+      }),
+    [messages],
+  );
+
   const renderWidget = useCallback((widget: InlineWidget) => {
     if (widget.type !== 'inventory.timeline') {
       return null;
     }
-    const items = timelineItemsFromWidget(widget);
-    if (items.length === 0) {
-      return (
-        <div data-part="inventory-timeline-widget-empty" style={{ fontSize: 11, opacity: 0.75 }}>
-          Waiting for events...
-        </div>
-      );
-    }
-    return (
-      <div
-        data-part="inventory-timeline-widget"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-          fontSize: 11,
-          border: '1px solid var(--hc-color-border-subtle, #d9d9df)',
-          borderRadius: 6,
-          padding: 8,
-          background: 'var(--hc-color-bg-panel, #f8f8fb)',
-        }}
-      >
-        {items.map((item) => (
-          <div
-            key={item.id}
-            data-part="inventory-timeline-item"
-            data-status={item.status}
-            style={{ display: 'grid', gridTemplateColumns: '34px 1fr', gap: 6, alignItems: 'start' }}
-          >
-            <span
-              data-part="inventory-timeline-status"
-              style={{
-                fontWeight: 700,
-                color:
-                  item.status === 'error'
-                    ? '#c0352b'
-                    : item.status === 'success'
-                      ? '#1b6e3a'
-                      : item.status === 'running'
-                        ? '#5a5f00'
-                        : '#4c5671',
-              }}
-            >
-              {statusGlyph(item.status)}
-            </span>
-            <div>
-              <div data-part="inventory-timeline-title" style={{ fontWeight: 600 }}>
-                {item.title}
-              </div>
-              {item.detail ? (
-                <div data-part="inventory-timeline-detail" style={{ opacity: 0.82 }}>
-                  {item.detail}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <InventoryTimelineWidget items={timelineItemsFromInlineWidget(widget)} />;
   }, []);
 
   const handleSend = useCallback(
@@ -490,7 +496,7 @@ export function InventoryChatWindow() {
 
   return (
     <ChatWindow
-      messages={messages}
+      messages={displayMessages}
       isStreaming={isStreaming}
       onSend={handleSend}
       renderWidget={renderWidget}

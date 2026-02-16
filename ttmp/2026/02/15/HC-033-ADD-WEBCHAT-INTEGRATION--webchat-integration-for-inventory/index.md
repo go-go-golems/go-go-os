@@ -25,8 +25,8 @@ RelatedFiles:
       Note: Detailed interleaved phase 2-6 execution checklist and completion gate.
 ExternalSources:
     - local:webchat-hyper-integration.md
-Summary: Implement inventory webchat integration in hypercard-react using a new Go+SQLite backend, SEM-only streaming, timeline hydration, inline widgets, and runtime card injection.
-LastUpdated: 2026-02-16T10:23:00-05:00
+Summary: Epic orchestration ticket for inventory webchat integration; implementation is split across HC-034..HC-038 with Pinocchio/Geppetto reuse and no duplicated framework code.
+LastUpdated: 2026-02-16T13:32:00-05:00
 WhatFor: Ticket landing page for HC-033 implementation and documentation.
 WhenToUse: Start here to navigate design docs, task state, diary, and changelog.
 ---
@@ -56,7 +56,7 @@ Deliver a working inventory chat in `2026-02-12--hypercard-react` with:
 
 ## Status
 
-Current status: **active** (Phase 2-6 implementation and validation complete; docs refreshed and uploaded)
+Current status: **active** (documentation re-baselined; implementation execution delegated to HC-034..HC-038)
 
 ## Topics
 

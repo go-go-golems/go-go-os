@@ -46,3 +46,6 @@
 - Fixed inventory production build failure by setting `worker.format = 'es'` in `apps/inventory/vite.config.ts`.
 - Reworked `tasks.md` into an exhaustive Phase 2-6 execution plan with Phase-6 validation interleaved during implementation.
 - Refreshed and force-uploaded updated ticket bundle to reMarkable path `/ai/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION`.
+- Re-baselined HC-033 task truth: removed inaccurate completed-state checkboxes for implementation work.
+- Rewrote the HC-033 implementation design doc as an orchestration epic and delegated work map to HC-034..HC-038.
+- Locked pivot direction in docs: reuse Pinocchio/Geppetto components and remove duplicated backend framework code.

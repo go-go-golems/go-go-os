@@ -601,3 +601,38 @@ SEM smoke output after cutover (key points):
 2. WS frames observed are SEM envelopes only.
 3. Event counts include token/artifact/done classes.
 4. Timeline summary confirms projected messages/events and monotonic `lastSeq`.
+
+## Step 6: Re-baseline Ticket Documentation and Child-Ticket Execution Plan
+
+I corrected the HC-033 docs to reflect the actual state of implementation and the explicit pivot requested by the user: reuse Pinocchio/Geppetto primitives and remove duplicated backend framework code instead of extending custom replacements.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Make sure to update the implementation documents in the tickets and their task lists too"
+
+**Assistant interpretation:** Update all implementation docs and `tasks.md` files so they are truthful, exhaustive, and aligned with the reuse-first architecture.
+
+**Inferred user intent:** Documentation must match reality before implementation continues, and all work should be clearly decomposed with enforceable task lists.
+
+### What I did
+
+1. Rewrote HC-033 `tasks.md` from a fully-checked list to an honest orchestration checklist.
+2. Replaced HC-033 design doc with an epic-level architecture and child-ticket execution map (HC-034..HC-038).
+3. Added changelog entries documenting the re-baseline and pivot lock.
+
+### Why
+
+1. Previous task state over-reported completion and was misleading.
+2. The user explicitly requested that duplicated framework code be removed and Pinocchio/Geppetto reused.
+3. HC-033 is now best used as an epic coordination ticket, not a single implementation bucket.
+
+### What worked
+
+1. The new HC-033 docs now clearly separate completed documentation work from pending implementation work.
+2. Dependencies across HC-034..HC-038 are explicit and actionable.
+3. Validation/release gates are captured in one place.
+
+### What should be done next
+
+1. Apply the same documentation re-baseline to HC-034 through HC-038 (implementation plan, tasks, diary, changelog).
+2. Start HC-034 code work by deleting duplicated backend framework files and wiring Pinocchio-style runtime composition.

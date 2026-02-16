@@ -553,17 +553,40 @@ function ChatDesktopFull() {
 
   return (
     <Provider store={storeRef.current}>
-      <div style={{ display: 'flex', width: '100%', height: '100vh' }}>
-        <div style={{ flex: '1 1 60%', minWidth: 0 }}>
+      {/*
+        Override the theme wrapper sizing so the desktop fills its flex cell
+        and the chat panel sits inside the same viewport.
+      */}
+      <style>{`
+        .chat-desktop-layout [data-widget="hypercard"] {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+        }
+      `}</style>
+      <div
+        className="chat-desktop-layout"
+        style={{
+          display: 'flex',
+          width: '100vw',
+          height: '100vh',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0, height: '100%' }}>
           <DesktopShell stack={stackRef.current} icons={ICONS} />
         </div>
         <div
           style={{
-            flex: '0 0 440px',
+            width: 380,
+            flexShrink: 0,
             borderLeft: '2px solid #000',
             display: 'flex',
             flexDirection: 'column',
             background: '#fff',
+            height: '100%',
+            overflow: 'hidden',
           }}
         >
           <DesktopChatWindow stack={stackRef.current} />

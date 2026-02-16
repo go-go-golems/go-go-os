@@ -36,12 +36,81 @@ function stringField(record: Record<string, unknown>, key: string): string | und
   return undefined;
 }
 
+function recordField(record: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+  const value = record[key];
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+}
+
 function compactJSON(value: unknown): string {
   try {
     return JSON.stringify(value);
   } catch {
     return '"<unserializable>"';
   }
+}
+
+function formatHypercardLifecycle(type: string, data: Record<string, unknown>): string | undefined {
+  const title = stringField(data, 'title');
+  const itemId = stringField(data, 'itemId');
+
+  if (type === 'hypercard.widget.start') {
+    return `widget start: ${title ?? itemId ?? 'unknown'}`;
+  }
+  if (type === 'hypercard.widget.update') {
+    return `widget update: ${title ?? itemId ?? 'unknown'}`;
+  }
+  if (type === 'hypercard.widget.v1') {
+    const payload = recordField(data, 'data');
+    const artifact = payload ? recordField(payload, 'artifact') : undefined;
+    const artifactId = artifact ? stringField(artifact, 'id') : undefined;
+    return `widget ready: ${title ?? itemId ?? 'unknown'}${artifactId ? ` artifact=${artifactId}` : ''}`;
+  }
+  if (type === 'hypercard.widget.error') {
+    return `widget error: ${stringField(data, 'error') ?? 'unknown error'}`;
+  }
+
+  if (type === 'hypercard.card.start') {
+    return `card start: ${title ?? itemId ?? 'unknown'}`;
+  }
+  if (type === 'hypercard.card.update') {
+    return `card update: ${title ?? itemId ?? 'unknown'}`;
+  }
+  if (type === 'hypercard.card_proposal.v1') {
+    const template = stringField(data, 'template');
+    const payload = recordField(data, 'data');
+    const artifact = payload ? recordField(payload, 'artifact') : undefined;
+    const artifactId = artifact ? stringField(artifact, 'id') : undefined;
+    return `card ready: ${title ?? itemId ?? 'unknown'}${template ? ` template=${template}` : ''}${artifactId ? ` artifact=${artifactId}` : ''}`;
+  }
+  if (type === 'hypercard.card.error') {
+    return `card error: ${stringField(data, 'error') ?? 'unknown error'}`;
+  }
+
+  return undefined;
+}
+
+function formatTimelineUpsert(data: Record<string, unknown>): string {
+  const entity = recordField(data, 'entity');
+  if (!entity) {
+    return 'timeline upsert';
+  }
+  const kind = stringField(entity, 'kind') ?? 'entity';
+  const id = stringField(entity, 'id') ?? 'unknown';
+  const status = recordField(entity, 'status');
+  if (status) {
+    const text = stringField(status, 'text');
+    const statusType = stringField(status, 'type');
+    return `timeline ${kind}: ${statusType ?? 'info'} ${text ?? id}`;
+  }
+  const toolResult = recordField(entity, 'toolResult');
+  if (toolResult) {
+    const customKind = stringField(toolResult, 'customKind');
+    return `timeline ${kind}: ${customKind ?? id}`;
+  }
+  return `timeline ${kind}: ${id}`;
 }
 
 function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof useDispatch>): void {
@@ -98,6 +167,17 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
 
   if (type === 'tool.done') {
     dispatch(appendToolEvent({ text: 'tool done' }));
+    return;
+  }
+
+  const lifecycleText = type ? formatHypercardLifecycle(type, data) : undefined;
+  if (lifecycleText) {
+    dispatch(appendToolEvent({ text: lifecycleText }));
+    return;
+  }
+
+  if (type === 'timeline.upsert') {
+    dispatch(appendToolEvent({ text: formatTimelineUpsert(data) }));
     return;
   }
 

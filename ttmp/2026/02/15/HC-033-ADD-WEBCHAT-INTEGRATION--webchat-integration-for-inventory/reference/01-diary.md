@@ -144,6 +144,27 @@ The tricky part in this step was not coding but boundary-setting: keeping the im
 Key commands executed:
 
 ```bash
+
+## Step 3: End-to-End Pinocchio/Geppetto Cutover Completed
+
+1. Backend transport now follows Pinocchio app-owned web-chat directly:
+   - `POST /chat`,
+   - `GET /ws?conv_id=...`,
+   - `GET /api/timeline?conv_id=...`.
+2. Runtime now composes Geppetto engines with provider/model/API-key flags and supports deterministic fallback mode for local development.
+3. Inventory logic is exposed via registered tool (`inventory_query`) instead of parallel custom stream wrappers.
+4. Frontend was cut over to Pinocchio timeline entity hydration and `timeline.upsert` projection while preserving report/table/card proposal UX.
+5. Duplicated local timeline store implementation was removed; persistence uses Pinocchio `chatstore` SQLite stores.
+
+Validation evidence:
+
+1. `GOWORK=off go test ./...` passed.
+2. `npm exec -w apps/inventory tsc -b` passed.
+3. Playwright E2E validated:
+   - low-stock query,
+   - report/table rendering,
+   - create-card action,
+   - saved card window open + render.
 docmgr status --summary-only
 docmgr ticket create-ticket --ticket HC-033-ADD-WEBCHAT-INTEGRATION --title "Webchat Integration for Inventory" --topics chat,backend,sqlite,go
 docmgr import file --file /tmp/webchat-hyper-integration.md --ticket HC-033-ADD-WEBCHAT-INTEGRATION
@@ -636,3 +657,39 @@ I corrected the HC-033 docs to reflect the actual state of implementation and th
 
 1. Apply the same documentation re-baseline to HC-034 through HC-038 (implementation plan, tasks, diary, changelog).
 2. Start HC-034 code work by deleting duplicated backend framework files and wiring Pinocchio-style runtime composition.
+
+## Step 7: Full Ticket Execution Across HC-034..HC-038
+
+I implemented the full execution set after the documentation split:
+
+1. Deleted duplicated backend framework files under `go-inventory-chat/internal/app` (`runtime.go`, `stream_bus.go`, `sem.go`, `connection_pool.go`, `timeline_memory.go`, `helpers.go`, `conversation.go`).
+2. Rebuilt backend transport around a single coherent server path with middleware chain support, planner middleware hooks, and durable timeline persistence.
+3. Added durable timeline tables and APIs in SQLite (`timeline_conversations`, `timeline_messages`, `timeline_events`) and wired all event/message updates through that store.
+4. Added planner middlewares for structured `<hypercard:...>` extraction and strict artifact validation.
+5. Expanded planner to generate report/table artifacts plus full card DSL proposals for:
+   - low stock,
+   - sales summary,
+   - inventory valuation.
+6. Added frontend proposal metadata support (`dedupeKey`, `version`, `policy`) and a stronger injection validation gate in `cardInjector.ts`.
+7. Verified backend, frontend type/build, CLI smoke scripts, and browser E2E flow:
+   - stream tokens/artifacts/done,
+   - timeline hydration,
+   - create-card action opens generated saved card.
+
+### Commits
+
+1. `2780008` - `feat(hc-034..036): rebuild backend runtime with middleware and durable timeline`
+2. `1bc60d3` - `feat(hc-037..038): add full card DSL proposals and frontend injection gate`
+
+### Validation trail
+
+1. `GOWORK=off go test ./...` in `go-inventory-chat` passed.
+2. `npm exec -w apps/inventory tsc -b` passed.
+3. `npm run -w apps/inventory build` passed.
+4. `scripts/smoke-sem-timeline.sh` passed against live backend.
+5. `scripts/smoke-chat-backend.sh` passed against live backend.
+6. Browser E2E (Playwright MCP) validated:
+   - sales prompt response,
+   - widget rendering,
+   - create-card action,
+   - generated card window opened.

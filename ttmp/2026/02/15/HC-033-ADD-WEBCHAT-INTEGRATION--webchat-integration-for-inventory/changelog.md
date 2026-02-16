@@ -49,3 +49,28 @@
 - Re-baselined HC-033 task truth: removed inaccurate completed-state checkboxes for implementation work.
 - Rewrote the HC-033 implementation design doc as an orchestration epic and delegated work map to HC-034..HC-038.
 - Locked pivot direction in docs: reuse Pinocchio/Geppetto components and remove duplicated backend framework code.
+- Completed code execution across HC-034..HC-038:
+  - deleted duplicated backend framework files under `go-inventory-chat/internal/app`,
+  - rebuilt backend on middleware + durable timeline path,
+  - added planner extraction/validation middleware,
+  - added full card DSL proposal generation for low-stock/sales/valuation,
+  - added frontend injection validation gate enhancements.
+- Commit `2780008`: backend runtime foundation + durable timeline implementation.
+- Commit `1bc60d3`: full card DSL generation and frontend injection gate implementation.
+- Final validation run completed:
+  - `GOWORK=off go test ./...`
+  - `npm exec -w apps/inventory tsc -b`
+  - `npm run -w apps/inventory build`
+  - `scripts/smoke-sem-timeline.sh`
+  - `scripts/smoke-chat-backend.sh`
+  - browser E2E (chat stream + widgets + create-card window open).
+- Hard-cut backend/frontend contract to Pinocchio app-owned transport:
+  - removed `/api/chat/completions` and stream URL queue wrappers,
+  - switched to `/chat`, `/ws?conv_id=...`, `/api/timeline?conv_id=...`.
+- Replaced duplicated local timeline persistence with Pinocchio SQLite timeline/turn stores.
+- Added Geppetto runtime composition flags and deterministic fallback mode for local development.
+- Revalidated browser end-to-end after cutover:
+  - low stock prompt,
+  - report/table rendering,
+  - create-card action,
+  - saved card window opened.

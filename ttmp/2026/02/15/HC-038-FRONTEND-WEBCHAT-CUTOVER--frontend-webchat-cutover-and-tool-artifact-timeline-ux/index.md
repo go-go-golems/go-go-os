@@ -42,4 +42,4 @@ HC-038 finalizes frontend chat behavior:
 
 ## Status
 
-Current status: **active** (documentation complete, implementation pending)
+Current status: **active** (implementation complete, validation rerun)

@@ -33,3 +33,47 @@ WhenToUse: Read before continuing frontend cutover work or reviewing behavior ch
 Next coding step:
 
 1. Finalize SEM-only protocol and hydration flow in `apps/inventory/src/chat/protocol.ts` after backend refactors land.
+
+## Step 2: Frontend Cutover Completed
+
+1. Extended frontend protocol types to consume proposal metadata (`dedupeKey`, `version`, `policy`).
+2. Updated chat window proposal cache mapping to carry enriched proposal metadata through create-card path.
+3. Hardened create-card flow through updated `cardInjector.ts` validation logic and signature dedupe markers.
+4. Verified end-to-end UI flow in browser:
+   - prompt submission,
+   - SEM stream projection,
+   - report/table rendering,
+   - create-card action opens generated card window.
+
+Validation:
+
+1. `npm exec -w apps/inventory tsc -b` passed.
+2. `npm run -w apps/inventory build` passed.
+3. Playwright MCP browser smoke passed against live tmux backend + Vite.
+
+Commit:
+
+1. `1bc60d3` - frontend cutover and action-path hardening.
+
+## Step 3: Pinocchio Contract Frontend Cutover Landed
+
+1. Replaced frontend transport contract in `apps/inventory/src/chat/protocol.ts`:
+   - removed `POST /api/chat/completions` + `streamUrl`,
+   - added `POST /chat`,
+   - added websocket attach for `GET /ws?conv_id=...`,
+   - added timeline hydration/entity parsing for `GET /api/timeline?conv_id=...`.
+2. Rewrote `InventoryChatAssistantWindow.tsx` state flow:
+   - hydration + live upsert entity model,
+   - message projection from timeline entities,
+   - tool result payload projection into report/table/card blocks,
+   - structured-tag extraction fallback path (`<hypercard:widget|card|actions:1>`).
+3. Restored actionable UI controls from fallback runtime by parsing and rendering `hypercard:actions` payloads.
+
+Validation:
+
+1. `npm exec -w apps/inventory tsc -b` passed.
+2. Browser E2E (Playwright MCP) passed:
+   - query submission,
+   - report/table rendering,
+   - `Create Saved Card` action execution,
+   - generated saved card window verification.

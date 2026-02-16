@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { STACK } from './domain/stack';
 import { EventViewerWindow } from './features/chat/EventViewerWindow';
 import { InventoryChatWindow } from './features/chat/InventoryChatWindow';
+import { RuntimeCardDebugWindow } from './features/chat/RuntimeCardDebugWindow';
 
 const CHAT_APP_KEY = 'inventory-chat';
 
@@ -51,6 +52,16 @@ export function App() {
       if (commandId === 'chat.new' || commandId === 'icon.open.new-chat') {
         openNewChatWindow(dispatch);
       }
+      if (commandId === 'debug.stacks' || commandId === 'icon.open.runtime-debug') {
+        dispatch(openWindow({
+          id: 'window:runtime-debug',
+          title: '🔧 Stacks & Cards',
+          icon: '🔧',
+          bounds: { x: 80, y: 30, w: 560, h: 480 },
+          content: { kind: 'app', appKey: 'runtime-card-debug' },
+          dedupeKey: 'runtime-card-debug',
+        }));
+      }
     },
     [dispatch],
   );
@@ -64,6 +75,9 @@ export function App() {
       const convId = appKey.slice('event-viewer:'.length);
       return <EventViewerWindow conversationId={convId} />;
     }
+    if (appKey === 'runtime-card-debug') {
+      return <RuntimeCardDebugWindow />;
+    }
     return null;
   }, []);
 
@@ -76,6 +90,7 @@ export function App() {
     }));
     return [
       { id: 'new-chat', label: 'New Chat', icon: '💬' },
+      { id: 'runtime-debug', label: 'Stacks & Cards', icon: '🔧' },
       ...cardIcons,
     ];
   }, []);

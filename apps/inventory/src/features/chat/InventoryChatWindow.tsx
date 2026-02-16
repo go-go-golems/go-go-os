@@ -336,7 +336,15 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     dispatch(upsertArtifact(artifactUpdate));
     // Register runtime card code into the global registry for injection into plugin sessions
     if (artifactUpdate.runtimeCardId && artifactUpdate.runtimeCardCode) {
+      console.log('[HC-036] registerRuntimeCard', artifactUpdate.runtimeCardId, 'code length:', artifactUpdate.runtimeCardCode.length);
       registerRuntimeCard(artifactUpdate.runtimeCardId, artifactUpdate.runtimeCardCode);
+    } else if (type === 'hypercard.card.v2') {
+      console.warn('[HC-036] card.v2 artifact missing runtime card fields:', {
+        id: artifactUpdate.id,
+        hasRuntimeCardId: !!artifactUpdate.runtimeCardId,
+        hasRuntimeCardCode: !!artifactUpdate.runtimeCardCode,
+        dataKeys: Object.keys(data),
+      });
     }
   }
 
@@ -693,6 +701,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
       // Look up artifact record for runtime card info
       const storeState = store.getState() as { artifacts?: { byId: Record<string, { runtimeCardId?: string }> } };
       const artifactRecord = storeState.artifacts?.byId?.[artifactId];
+      console.log('[HC-036] openArtifact', { artifactId, runtimeCardId: artifactRecord?.runtimeCardId, hasRecord: !!artifactRecord, allArtifactIds: Object.keys(storeState.artifacts?.byId ?? {}) });
       const payload = buildArtifactOpenWindowPayload({
         artifactId,
         template: item.template,
@@ -702,6 +711,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
       if (!payload) {
         return;
       }
+      console.log('[HC-036] openWindow cardId:', payload.content?.card?.cardId);
       dispatch(openWindow(payload));
     };
     if (widget.type !== 'inventory.timeline') {

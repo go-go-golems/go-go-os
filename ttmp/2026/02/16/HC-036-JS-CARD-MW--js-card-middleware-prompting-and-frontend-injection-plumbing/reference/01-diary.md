@@ -178,3 +178,36 @@ This covers both scenarios:
 - register/retrieve, overwrite, unregister, listener notification + unsub, inject into mock service, error recovery (one fails, others still inject)
 
 153 tests pass total
+
+### Phase 5: Debug window + fix runtime card display (~18:30–18:38)
+
+#### Root cause of "shows home screen instead of runtime card"
+
+`PluginCardSessionHost` line:
+```ts
+const currentCardId = currentNav?.card && stack.cards[currentNav.card]
+  ? currentNav.card : stack.homeCard;
+```
+
+The window opens with `cardId: 'lowStockInventory'` (the runtime card ID), and the windowing system stores this in the session nav. But `PluginCardSessionHost` validates the card ID against `stack.cards` — the static stack definition. Since `lowStockInventory` isn't in the predefined stack, it falls back to `stack.homeCard` = `'home'`.
+
+**Fix**: Also check `hasRuntimeCard(currentNav.card)` from the registry:
+```ts
+const currentCardId = currentNav?.card &&
+  (stack.cards[currentNav.card] || hasRuntimeCard(currentNav.card))
+  ? currentNav.card : stack.homeCard;
+```
+
+#### RuntimeCardDebugWindow.tsx (new file)
+
+4-section diagnostic window:
+1. **Stack definition** — table of all predefined cards (id, icon, title, type), homeCard
+2. **Runtime Card Registry** — live-updating list from `onRegistryChange()`, shows cardId, registration time, code preview with expand/collapse, line count
+3. **Artifacts with Runtime Cards** — table filtered to artifacts with `runtimeCardId`, shows injection status badges (pending/injected/failed)
+4. **Plugin Sessions** — all active runtime sessions with status and card states
+
+Opened via 🔧 desktop icon or `debug.stacks` command. Deduped window.
+
+#### Diagnostic logging added
+- `onSemEnvelope`: logs `registerRuntimeCard` call with cardId + code length, warns if card.v2 artifact missing runtime fields
+- `openArtifact`: logs artifact lookup with runtimeCardId, all artifact IDs, and final window cardId

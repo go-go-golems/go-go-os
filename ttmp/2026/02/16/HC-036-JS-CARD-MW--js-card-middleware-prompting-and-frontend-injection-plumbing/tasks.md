@@ -65,3 +65,19 @@ Ticket: HC-036-JS-CARD-MW
 ## Phase 4: Cleanup
 - [x] P4.1 Delete dead code paths: inventoryCardProposalPayload struct, tombstone comments
 - [x] P4.2 Run full test suite — 153 TS tests pass, 9 Go tests pass
+
+## Phase 5: Runtime card debug window + fix injection
+
+### P5.1 Debug window for stacks/cards
+- [x] P5.1a Create `RuntimeCardDebugWindow.tsx` — shows all stacks, registered cards, injection status
+- [x] P5.1b Add 🔧 icon to DesktopShell + App.tsx to open the debug window
+- [x] P5.1c Show: stack definitions (cards list), runtime card registry entries, artifact records with injection status, plugin sessions
+- [x] P5.1d Live-updating via registry subscription + Redux selectors
+
+### P5.2 Debug runtime card injection flow
+- [x] P5.2a Add console.log breadcrumbs to trace: extractArtifactUpsert → registerRuntimeCard → openArtifact lookup → buildPayload cardId → PluginCardSessionHost injection
+- [ ] P5.2b Verify runtime card code is correctly extracted from SEM envelope (not truncated, no YAML parsing issues)
+- [ ] P5.2c Verify runtimeCardId is stored on artifact record and read back in openArtifact
+- [ ] P5.2d Verify PluginCardSessionHost.defineCard succeeds (check QuickJS eval errors)
+- [x] P5.2e **ROOT CAUSE FOUND**: `PluginCardSessionHost` checked `stack.cards[currentNav.card]` for runtime cards → fallback to homeCard. Fixed: now also checks `hasRuntimeCard(currentNav.card)` from the registry.
+- [x] P5.2f Fix applied — runtime card IDs accepted even when not in static stack definition

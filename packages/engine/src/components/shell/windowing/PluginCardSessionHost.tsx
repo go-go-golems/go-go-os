@@ -12,7 +12,7 @@ import {
 } from '../../../features/pluginCardRuntime';
 import { selectFocusedWindowId, selectSessionCurrentNav, selectSessionNavDepth } from '../../../features/windowing';
 import type { RuntimeIntent } from '../../../plugin-runtime/contracts';
-import { injectPendingCards, onRegistryChange } from '../../../plugin-runtime/runtimeCardRegistry';
+import { hasRuntimeCard, injectPendingCards, onRegistryChange } from '../../../plugin-runtime/runtimeCardRegistry';
 import { QuickJSCardRuntimeService } from '../../../plugin-runtime/runtimeService';
 import type { UINode } from '../../../plugin-runtime/uiTypes';
 import { dispatchRuntimeIntent } from './pluginIntentRouting';
@@ -85,7 +85,10 @@ export function PluginCardSessionHost({
   const navDepth = useSelector((state: StoreState) => selectSessionNavDepth(state as any, sessionId));
   const focusedWindowId = useSelector((state: StoreState) => selectFocusedWindowId(state as any));
 
-  const currentCardId = currentNav?.card && stack.cards[currentNav.card] ? currentNav.card : stack.homeCard;
+  // Accept cards from the static stack definition OR runtime-injected cards (not in stack.cards)
+  const currentCardId = currentNav?.card && (stack.cards[currentNav.card] || hasRuntimeCard(currentNav.card))
+    ? currentNav.card
+    : stack.homeCard;
   const runtimeSession = useSelector((state: StoreState) => selectRuntimeSession(state as any, sessionId));
   const sessionState = useSelector((state: StoreState) => selectRuntimeSessionState(state as any, sessionId));
   const cardState = useSelector((state: StoreState) => selectRuntimeCardState(state as any, sessionId, currentCardId));

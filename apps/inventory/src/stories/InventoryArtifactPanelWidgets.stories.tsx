@@ -87,3 +87,17 @@ export const WidgetsPanel: Story = {
     </div>
   ),
 };
+
+/** Card panel with debug mode enabled showing metadata for each item */
+export const CardsDebugMode: Story = {
+  args: { items: cardItems, debug: true },
+};
+
+/** Widget panel with debug mode enabled */
+export const WidgetsDebugMode: Story = {
+  render: () => (
+    <div style={{ width: 560, maxWidth: '95vw' }}>
+      <InventoryGeneratedWidgetPanel items={widgetItems} debug />
+    </div>
+  ),
+};

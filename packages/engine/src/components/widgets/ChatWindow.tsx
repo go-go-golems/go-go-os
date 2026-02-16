@@ -60,6 +60,8 @@ export interface ChatWindowProps {
   welcomeContent?: ReactNode;
   /** Sticky footer below the composer */
   footer?: ReactNode;
+  /** Custom actions rendered in the header right section */
+  headerActions?: ReactNode;
 }
 
 /* ── Sub-components ──────────────────────────────────────────────────── */
@@ -121,6 +123,7 @@ export function ChatWindow({
   renderWidget,
   welcomeContent,
   footer,
+  headerActions,
 }: ChatWindowProps) {
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
@@ -239,6 +242,7 @@ export function ChatWindow({
           )}
         </div>
         <div data-part="chat-window-header-right">
+          {headerActions}
           <span data-part="chat-window-msg-count">
             {messages.length} message{messages.length !== 1 ? 's' : ''}
           </span>

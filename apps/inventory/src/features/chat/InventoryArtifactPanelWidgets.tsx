@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { TimelineWidgetItem } from './chatSlice';
 import { statusColor, statusGlyph } from './InventoryTimelineWidget';
+import { toYaml } from './utils/yamlFormat';
 
 const panelStyle: CSSProperties = {
   display: 'flex',
@@ -34,9 +35,10 @@ interface ArtifactPanelProps {
   emptyText: string;
   panelPart: string;
   onOpenArtifact?: (item: TimelineWidgetItem) => void;
+  debug?: boolean;
 }
 
-function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact }: ArtifactPanelProps) {
+function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact, debug }: ArtifactPanelProps) {
   if (items.length === 0) {
     return (
       <div data-part={`${panelPart}-empty`} style={{ fontSize: 11, opacity: 0.75 }}>
@@ -76,6 +78,25 @@ function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact }: Artifact
             </div>
             {item.artifactId ? <div style={{ opacity: 0.82 }}>artifact: {item.artifactId}</div> : null}
             {item.detail ? <div style={{ opacity: 0.78 }}>{item.detail}</div> : null}
+            {debug ? (
+              <pre
+                data-part={`${panelPart}-debug`}
+                style={{
+                  margin: '4px 0 0',
+                  padding: 4,
+                  background: 'rgba(100, 80, 200, 0.06)',
+                  borderRadius: 3,
+                  fontSize: 9,
+                  lineHeight: 1.4,
+                  opacity: 0.7,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {`id: ${item.id}\nkind: ${item.kind ?? '—'}\ntemplate: ${item.template ?? '—'}\nartifactId: ${item.artifactId ?? '—'}\nupdatedAt: ${new Date(item.updatedAt).toISOString()}`}
+                {item.rawData ? `\ndata:\n${toYaml(item.rawData, 1)}` : ''}
+              </pre>
+            ) : null}
           </div>
         </div>
       ))}
@@ -86,15 +107,17 @@ function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact }: Artifact
 export interface InventoryCardPanelWidgetProps {
   items: TimelineWidgetItem[];
   onOpenArtifact?: (item: TimelineWidgetItem) => void;
+  debug?: boolean;
 }
 
-export function InventoryCardPanelWidget({ items, onOpenArtifact }: InventoryCardPanelWidgetProps) {
+export function InventoryCardPanelWidget({ items, onOpenArtifact, debug }: InventoryCardPanelWidgetProps) {
   return (
     <ArtifactPanel
       items={items}
       emptyText="No card proposals yet."
       panelPart="inventory-card-panel-widget"
       onOpenArtifact={onOpenArtifact}
+      debug={debug}
     />
   );
 }
@@ -102,15 +125,17 @@ export function InventoryCardPanelWidget({ items, onOpenArtifact }: InventoryCar
 export interface InventoryGeneratedWidgetPanelProps {
   items: TimelineWidgetItem[];
   onOpenArtifact?: (item: TimelineWidgetItem) => void;
+  debug?: boolean;
 }
 
-export function InventoryGeneratedWidgetPanel({ items, onOpenArtifact }: InventoryGeneratedWidgetPanelProps) {
+export function InventoryGeneratedWidgetPanel({ items, onOpenArtifact, debug }: InventoryGeneratedWidgetPanelProps) {
   return (
     <ArtifactPanel
       items={items}
       emptyText="No generated widgets yet."
       panelPart="inventory-generated-widget-panel"
       onOpenArtifact={onOpenArtifact}
+      debug={debug}
     />
   );
 }

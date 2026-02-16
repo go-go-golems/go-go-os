@@ -1,5 +1,5 @@
 import { ChatWindow, openWindow, type ChatWindowMessage, type InlineWidget } from '@hypercard/engine';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { buildArtifactOpenWindowPayload, extractArtifactUpsertFromSem } from './artifactRuntime';
 import { upsertArtifact } from './artifactsSlice';
@@ -576,6 +576,7 @@ export function InventoryChatWindow() {
   const streamStartTime = useSelector(selectStreamStartTime);
   const streamOutputTokens = useSelector(selectStreamOutputTokens);
 
+  const [debugMode, setDebugMode] = useState(false);
   const clientRef = useRef<InventoryWebChatClient | null>(null);
 
   useEffect(() => {
@@ -648,16 +649,27 @@ export function InventoryChatWindow() {
   const displayMessages = useMemo<ChatWindowMessage[]>(
     () =>
       messages.map((message) => {
-        if (message.role === 'user' || !message.text) {
-          return message;
+        let msg = message;
+        if (msg.role !== 'user' && msg.text) {
+          const text = stripTrailingWhitespace(msg.text);
+          if (text !== msg.text) {
+            msg = { ...msg, text };
+          }
         }
-        const text = stripTrailingWhitespace(message.text);
-        if (text === message.text) {
-          return message;
+        if (debugMode && msg.id) {
+          const badge = `[${msg.id} | ${msg.status ?? '—'} | ${msg.role}]`;
+          const existingContent = msg.content ?? (msg.text ? [{ kind: 'text' as const, text: msg.text }] : []);
+          return {
+            ...msg,
+            content: [
+              { kind: 'text' as const, text: badge },
+              ...existingContent,
+            ],
+          };
         }
-        return { ...message, text };
+        return msg;
       }),
-    [messages],
+    [messages, debugMode],
   );
 
   const renderWidget = useCallback((widget: InlineWidget) => {
@@ -679,15 +691,15 @@ export function InventoryChatWindow() {
     };
     if (widget.type !== 'inventory.timeline') {
       if (widget.type === 'inventory.cards') {
-        return <InventoryCardPanelWidget items={items} onOpenArtifact={openArtifact} />;
+        return <InventoryCardPanelWidget items={items} onOpenArtifact={openArtifact} debug={debugMode} />;
       }
       if (widget.type === 'inventory.widgets') {
-        return <InventoryGeneratedWidgetPanel items={items} onOpenArtifact={openArtifact} />;
+        return <InventoryGeneratedWidgetPanel items={items} onOpenArtifact={openArtifact} debug={debugMode} />;
       }
       return null;
     }
-    return <InventoryTimelineWidget items={items} />;
-  }, [dispatch]);
+    return <InventoryTimelineWidget items={items} debug={debugMode} />;
+  }, [dispatch, debugMode]);
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -728,6 +740,17 @@ export function InventoryChatWindow() {
       placeholder="Ask about inventory..."
       suggestions={suggestions}
       showSuggestionsAlways
+      headerActions={
+        <button
+          type="button"
+          data-part="btn"
+          data-state={debugMode ? 'active' : undefined}
+          onClick={() => setDebugMode((d) => !d)}
+          style={{ fontSize: 10, padding: '1px 6px' }}
+        >
+          {debugMode ? '🔍 Debug ON' : '🔍 Debug'}
+        </button>
+      }
       footer={
         <StatsFooter
           modelName={modelName}

@@ -94,6 +94,59 @@ function shortText(value: string | undefined, max = 180): string | undefined {
   return `${value.slice(0, max)}...`;
 }
 
+type ProjectedLifecycleKind = 'widget' | 'card';
+
+interface ProjectedLifecycleStatus {
+  kind: ProjectedLifecycleKind;
+  title?: string;
+  detail: string;
+}
+
+function parseProjectedLifecycleStatus(text: string | undefined): ProjectedLifecycleStatus | undefined {
+  if (!text) {
+    return undefined;
+  }
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+
+  const parseWithPrefix = (
+    prefix: string,
+    kind: ProjectedLifecycleKind,
+    detail: string,
+  ): ProjectedLifecycleStatus | undefined => {
+    if (!trimmed.toLowerCase().startsWith(prefix.toLowerCase())) {
+      return undefined;
+    }
+    const rawTitle = trimmed.slice(prefix.length).trim();
+    return {
+      kind,
+      title: rawTitle.length > 0 ? rawTitle : undefined,
+      detail,
+    };
+  };
+
+  return (
+    parseWithPrefix('Building widget: ', 'widget', 'started') ??
+    parseWithPrefix('Updating widget: ', 'widget', 'updating') ??
+    parseWithPrefix('Building card proposal: ', 'card', 'started') ??
+    parseWithPrefix('Updating card proposal: ', 'card', 'updating') ??
+    (trimmed.toLowerCase() === 'building widget...'
+      ? { kind: 'widget', detail: 'started' }
+      : undefined) ??
+    (trimmed.toLowerCase() === 'updating widget...'
+      ? { kind: 'widget', detail: 'updating' }
+      : undefined) ??
+    (trimmed.toLowerCase() === 'building card proposal...'
+      ? { kind: 'card', detail: 'started' }
+      : undefined) ??
+    (trimmed.toLowerCase() === 'updating card proposal...'
+      ? { kind: 'card', detail: 'updating' }
+      : undefined)
+  );
+}
+
 function structuredRecordFromUnknown(value: unknown): Record<string, unknown> | undefined {
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -267,19 +320,21 @@ function formatTimelineUpsert(
     const text = stringField(status, 'text');
     const statusType = stringField(status, 'type');
     const baseId = id.endsWith(':status') ? id.slice(0, -7) : id;
+    const projected = parseProjectedLifecycleStatus(text);
     const lowered = (text ?? '').toLowerCase();
     let prefix = 'timeline';
-    if (lowered.includes('widget')) {
+    if (projected?.kind === 'widget' || lowered.includes('widget')) {
       prefix = 'widget';
-    } else if (lowered.includes('card')) {
+    } else if (projected?.kind === 'card' || lowered.includes('card')) {
       prefix = 'card';
     }
     const timelineKind = prefix === 'widget' ? 'widget' : prefix === 'card' ? 'card' : 'timeline';
+    const timelineStatus = projected ? 'running' : statusFromTimelineType(statusType);
     return {
       id: `${prefix}:${baseId}`,
-      title: text ?? id,
-      status: statusFromTimelineType(statusType),
-      detail: shortText(statusType ? `timeline status=${statusType}` : undefined),
+      title: projected?.title ?? text ?? id,
+      status: timelineStatus,
+      detail: shortText(projected?.detail ?? (statusType ? `timeline status=${statusType}` : undefined)),
       kind: timelineKind,
     };
   }

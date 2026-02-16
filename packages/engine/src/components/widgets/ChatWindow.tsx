@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatMessage } from '../../types';
 import { Btn } from './Btn';
 import { Chip } from './Chip';
@@ -129,10 +129,18 @@ export function ChatWindow({
   const endRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll on new messages / streaming updates
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Stable fingerprint: only scroll when message count or the last message
+  // actually changes — not on every reference-identity change from selectors.
+  const scrollKey = useMemo(() => {
+    if (messages.length === 0) return '0';
+    const last = messages[messages.length - 1];
+    return `${messages.length}:${last.id ?? ''}:${(last.text ?? '').length}:${last.status ?? ''}`;
   }, [messages]);
+
+  // Auto-scroll on genuine content changes
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'instant' });
+  }, [scrollKey]);
 
   function send(text: string) {
     if (!text.trim() || isStreaming) return;

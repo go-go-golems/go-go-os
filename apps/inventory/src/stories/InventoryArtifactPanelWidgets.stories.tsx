@@ -50,6 +50,12 @@ const widgetItems: TimelineWidgetItem[] = [
     detail: 'malformed structured block',
     kind: 'widget',
     updatedAt: at(11000),
+    rawData: {
+      error: 'malformed structured block',
+      rawContent: '{"widgetType":"table","data":{"artifact":{"id":"restock-priority","data":{broken',
+      source: 'tool_result',
+      toolId: 'generate_widget_abc123',
+    },
   },
 ];
 
@@ -98,6 +104,15 @@ export const WidgetsDebugMode: Story = {
   render: () => (
     <div style={{ width: 560, maxWidth: '95vw' }}>
       <InventoryGeneratedWidgetPanel items={widgetItems} debug />
+    </div>
+  ),
+};
+
+/** Error items auto-show metadata table even without debug mode */
+export const ErrorAutoShowsMeta: Story = {
+  render: () => (
+    <div style={{ width: 560, maxWidth: '95vw' }}>
+      <InventoryGeneratedWidgetPanel items={widgetItems} />
     </div>
   ),
 };

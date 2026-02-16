@@ -11,32 +11,411 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: go-inventory-chat/internal/pinoweb/hypercard_extractors.go
+      Note: Backend structured extraction analysis captured in diary
+    - Path: packages/engine/src/components/shell/windowing/ChatWindowDesktop.stories.tsx
+      Note: Runtime injection demo path analyzed in diary
+    - Path: ttmp/2026/02/16/HC-035-PERSIST-CARDS-STACKS--persistence-of-stacks-and-cards-including-runtime-js-injection/changelog.md
+      Note: Step completion log for documentation work
+    - Path: ttmp/2026/02/16/HC-035-PERSIST-CARDS-STACKS--persistence-of-stacks-and-cards-including-runtime-js-injection/design-doc/01-stacks-and-cards-persistence-architecture-analysis.md
+      Note: Primary output authored during diary steps
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-02-16T17:11:24.356829767-05:00
-WhatFor: ""
-WhenToUse: ""
+Summary: Detailed working diary for HC-035 covering ticket setup, architecture deep-dive, persistence/hydration/versioning analysis, and deliverable preparation.
+LastUpdated: 2026-02-16T22:38:00-05:00
+WhatFor: Preserve an implementation-grade trace of analysis decisions, command output, and design tradeoffs.
+WhenToUse: Use when reviewing how conclusions were reached and what follow-up implementation steps are implied.
 ---
+
 
 # Diary
 
 ## Goal
 
-<!-- What is the purpose of this reference document? -->
+Capture a detailed, chronological record of the HC-035 analysis work: ticket setup, deep frontend/backend inspection, persistence gap mapping, and final architecture authoring for stack/card persistence with runtime JS injection.
 
-## Context
+## Step 1: Ticket and Documentation Scaffolding
 
-<!-- Provide background context needed to use this reference -->
+I started by establishing the ticket workspace and documentation skeleton so analysis output would land in the correct docmgr structure from the beginning. This prevented fragmented notes and made it possible to keep references, diary, and design content synchronized as findings accumulated.
 
-## Quick Reference
+I also loaded the `docmgr` and `diary` skill instructions before proceeding, because this request required explicit ticket workflow and a structured diary format.
 
-<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
+### Prompt Context
 
-## Usage Examples
+**User prompt (verbatim):** "Create a new docmgr ticket HC-035-PERSIST-CARDS-STACKS and analyze the 2026-02-12--hypercard-react codebase to figure out how to do persistence of stacks and cards, including the inject JS at runtime. Be thorough and deep, cover frontend and backend, and go into hydration/loading and how to deal with versioning of cards, both their code and their data. 5+ pages with prose paragraphs, bullet points, pseudocode, diagrams, refering to files and symbols. In a very nice textbook style explaining all the necessary context as well.
 
-<!-- Show how to use this reference in practice -->
+Keep a detailed diary as you work on the analysis."
+
+**Assistant interpretation:** Create the HC-035 ticket, perform a deep architectural analysis of frontend + backend stack/card persistence and runtime injection, and write a long-form textbook-style design with explicit file/symbol references plus a detailed diary.
+
+**Inferred user intent:** Produce an implementation-ready architecture artifact before coding changes, with enough depth to reduce unknowns around persistence, hydration, and version compatibility.
+
+**Commit (code):** N/A (documentation-only)
+
+### What I did
+
+- Ran `docmgr status --summary-only` to confirm workspace and vocabulary roots.
+- Created ticket `HC-035-PERSIST-CARDS-STACKS` with architecture/frontend/backend/dsl/sqlite topics.
+- Added two docs:
+  - design doc: `01-stacks-and-cards-persistence-architecture-analysis.md`
+  - reference doc: `01-diary.md`
+- Verified generated paths with `docmgr doc list --ticket HC-035-PERSIST-CARDS-STACKS`.
+
+### Why
+
+- Ticket creation and doc creation are prerequisites for traceable output.
+- Early setup avoids rewriting notes into docmgr artifacts later.
+
+### What worked
+
+- `docmgr ticket create-ticket` and `docmgr doc add` succeeded without remediation.
+- Vocabulary already contained required topics (`architecture`, `frontend`, `backend`, `dsl`, `sqlite`).
+
+### What didn't work
+
+- No setup failures in this step.
+
+### What I learned
+
+- The repo is already configured with a docmgr root under `2026-02-12--hypercard-react/ttmp`, so HC-035 docs are colocated with prior ticket history.
+
+### What was tricky to build
+
+- The main subtlety was selecting the right minimal document set up-front (design + diary) while keeping room for later references/scripts if needed.
+- Symptom: potential over-creation of docs can dilute focus.
+- Approach: created only core docs first, deferred additional document types until findings required them.
+
+### What warrants a second pair of eyes
+
+- Topic tagging could be revisited if implementation later emphasizes security/compliance concerns.
+
+### What should be done in the future
+
+- Add playbook and task breakdown docs once implementation begins.
+
+### Code review instructions
+
+- Verify ticket/doc scaffolding:
+  - `docmgr ticket list --ticket HC-035-PERSIST-CARDS-STACKS`
+  - `docmgr doc list --ticket HC-035-PERSIST-CARDS-STACKS`
+
+### Technical details
+
+- Ticket path:
+  - `ttmp/2026/02/16/HC-035-PERSIST-CARDS-STACKS--persistence-of-stacks-and-cards-including-runtime-js-injection`
+
+## Step 2: Frontend Runtime, Session, and Injection Deep Dive
+
+I mapped the full frontend stack runtime path from window creation through QuickJS render/event execution to identify exactly where persistence can be introduced without breaking runtime invariants. I focused on code that controls stack bundle loading, session state initialization, intent routing, and card/session/window lifecycle.
+
+I also inspected the runtime JS injection mechanisms in both runtime service and Storybook usage to distinguish what is production-capable API versus demo-only behavior.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Build a precise frontend architecture map that can support durable stack/card persistence and runtime injection.
+
+**Inferred user intent:** Avoid generic persistence recommendations; ground decisions in real code paths and symbols.
+
+**Commit (code):** N/A (documentation-only)
+
+### What I did
+
+- Inspected core runtime and host wiring:
+  - `packages/engine/src/components/shell/windowing/DesktopShell.tsx`
+  - `packages/engine/src/components/shell/windowing/PluginCardSessionHost.tsx`
+  - `packages/engine/src/components/shell/windowing/pluginIntentRouting.ts`
+  - `packages/engine/src/features/pluginCardRuntime/pluginCardRuntimeSlice.ts`
+  - `packages/engine/src/features/windowing/windowingSlice.ts`
+  - `packages/engine/src/plugin-runtime/runtimeService.ts`
+  - `packages/engine/src/plugin-runtime/stack-bootstrap.vm.js`
+- Validated runtime mutation APIs (`defineCard`, `defineCardRender`, `defineCardHandler`) and integration tests in `runtimeService.integration.test.ts`.
+- Inspected Storybook injection example in `ChatWindowDesktop.stories.tsx` showing in-memory metadata + `bundleCode` append strategy.
+- Inspected app stacks (`apps/inventory/src/domain/stack.ts`, `apps/crm/src/domain/stack.ts`, `apps/todo/src/domain/stack.ts`) and bundle code contracts.
+
+### Why
+
+- Persistence insertion points depend on lifecycle ownership (windowing slice vs runtime slice vs VM service).
+- Runtime injection strategy must account for current production vs demo boundaries.
+
+### What worked
+
+- Runtime/session boundaries were clear and consistent across files.
+- Integration tests explicitly proved dynamic mutation behavior in QuickJS runtime.
+
+### What didn't work
+
+- Attempted to open a non-existent host file while surveying windowing code:
+  - Command: `sed -n '1,320p' packages/engine/src/components/shell/windowing/CardSessionHost.tsx`
+  - Error: `sed: can't read packages/engine/src/components/shell/windowing/CardSessionHost.tsx: No such file or directory`
+- Resolved by using `PluginCardSessionHost.tsx` as the actual runtime host path.
+
+### What I learned
+
+- Runtime mutation APIs are robust at service level, but app runtime currently does not expose a production control plane for them.
+- Window/session IDs are generated in-memory counters (`DesktopShell.tsx`), which implies restore/persistence work must replace or augment this with stable IDs.
+
+### What was tricky to build
+
+- The non-obvious part was separating "capability exists" from "capability is wired in production".
+- Symptom: `runtimeService.ts` supports injection while app flow never calls those methods.
+- Approach: cross-checked service APIs, host component usage, and story/demo code side by side to avoid false assumptions.
+
+### What warrants a second pair of eyes
+
+- Whether pending intent queues in `pluginCardRuntimeSlice` should remain debug-only or become first-class persistence hooks.
+
+### What should be done in the future
+
+- Introduce a runtime session registry abstraction so code patches can be applied to active sessions consistently.
+
+### Code review instructions
+
+- Start from host lifecycle:
+  - `packages/engine/src/components/shell/windowing/PluginCardSessionHost.tsx`
+- Then verify runtime capabilities:
+  - `packages/engine/src/plugin-runtime/runtimeService.ts`
+  - `packages/engine/src/plugin-runtime/runtimeService.integration.test.ts`
+
+### Technical details
+
+- Key symbols traced:
+  - `registerRuntimeSession`, `setRuntimeSessionStatus`, `ingestRuntimeIntent`
+  - `loadStackBundle`, `renderCard`, `eventCard`, `defineCard*`
+
+## Step 3: Backend Persistence, Timeline Hydration, and Version Signals
+
+After frontend mapping, I analyzed the Go backend in `go-inventory-chat` and the linked Pinocchio persistence internals to anchor the persistence design in existing durable infrastructure. This was essential for a realistic backend plan because many hydration/version features already exist there.
+
+I validated HTTP routes, request resolution policy, runtime composer behavior, structured extractor flow, and SQLite-backed timeline/turn stores, then traced how timeline snapshots are consumed by frontend hydration.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Include backend persistence/hydration details at implementation depth, not just frontend state persistence ideas.
+
+**Inferred user intent:** Design a full-stack persistence architecture that aligns with existing webchat/timeline storage patterns.
+
+**Commit (code):** N/A (documentation-only)
+
+### What I did
+
+- Inspected backend server wiring:
+  - `go-inventory-chat/cmd/hypercard-inventory-server/main.go`
+  - routes: `/chat`, `/ws`, `/api/timeline`
+  - flags: `timeline-*`, `turns-*`, inventory DB options
+- Inspected policy/composition layer:
+  - `go-inventory-chat/internal/pinoweb/request_resolver.go`
+  - `go-inventory-chat/internal/pinoweb/runtime_composer.go`
+  - `go-inventory-chat/internal/pinoweb/hypercard_middleware.go`
+  - `go-inventory-chat/internal/pinoweb/hypercard_extractors.go`
+  - `go-inventory-chat/internal/pinoweb/hypercard_events.go`
+- Inspected inventory domain store:
+  - `go-inventory-chat/internal/inventorydb/store.go`
+- Inspected integration coverage:
+  - `go-inventory-chat/cmd/hypercard-inventory-server/main_integration_test.go`
+- Inspected Pinocchio internals used by backend:
+  - `pinocchio/pkg/webchat/router.go`
+  - `pinocchio/pkg/webchat/http/api.go`
+  - `pinocchio/pkg/persistence/chatstore/timeline_store_sqlite.go`
+  - `pinocchio/pkg/persistence/chatstore/turn_store_sqlite.go`
+  - `pinocchio/pkg/webchat/timeline_projector.go`
+
+### Why
+
+- Existing backend stores already solve ordering, migration, and versioning in adjacent areas.
+- Reusing these patterns is lower risk than inventing a parallel persistence subsystem.
+
+### What worked
+
+- Found concrete monotonic version semantics (`TimelineSnapshotV1.version`) and hydration API (`since_version`) support in Pinocchio.
+- Confirmed turn-store migration/backfill logic already exists and can inform stack/card persistence migration design.
+
+### What didn't work
+
+- Attempted to inspect non-existent proto source file path:
+  - Command: `sed -n '1,260p' pkg/sem/pb/proto/sem/timeline/timeline.proto`
+  - Error: `sed: can't read pkg/sem/pb/proto/sem/timeline/timeline.proto: No such file or directory`
+- Resolved by using generated file `pkg/sem/pb/proto/sem/timeline/transport.pb.go` to verify snapshot/entity fields.
+
+### What I learned
+
+- Backend already has mature timeline and turn persistence abstractions with explicit schema/version handling.
+- Current hypercard structured extractor payloads include widget/card proposal artifacts but not direct JS code patches, meaning runtime code injection is not yet represented in backend contracts.
+
+### What was tricky to build
+
+- The hardest part was determining where stack/card persistence should live relative to existing timeline/turn stores.
+- Symptom: timeline store is close but not semantically a full workspace/stack code store.
+- Approach: treated timeline as projection/history channel and proposed dedicated stack persistence records while preserving timeline ownership for chat hydration.
+
+### What warrants a second pair of eyes
+
+- Whether stack persistence should be implemented in `go-inventory-chat` app layer first or generalized upstream in Pinocchio packages.
+
+### What should be done in the future
+
+- Decide code ownership boundary early to avoid rework (app-local store vs shared library).
+
+### Code review instructions
+
+- Verify current persistence primitives:
+  - `pinocchio/pkg/persistence/chatstore/timeline_store_sqlite.go`
+  - `pinocchio/pkg/persistence/chatstore/turn_store_sqlite.go`
+- Verify backend route composition:
+  - `go-inventory-chat/cmd/hypercard-inventory-server/main.go`
+
+### Technical details
+
+- Version/hydration anchors confirmed:
+  - timeline snapshot fields: `convId`, `version`, `serverTimeMs`
+  - incremental query: `since_version`
+
+## Step 4: Synthesis and Authoring of the HC-035 Design Document
+
+With frontend and backend mapping complete, I synthesized a single architecture blueprint spanning persistence model, runtime injection flow, hydration lifecycle, versioning policy, and phased implementation plan. The resulting design document is intentionally implementation-grade, with diagrams and pseudocode aligned to concrete symbols and files.
+
+I explicitly separated the code and data version tracks, because that distinction is essential to avoid brittle restore behavior as card code evolves while user/session data remains in older schemas.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Produce a deep textbook-style architecture document (5+ pages) with enough precision to guide implementation.
+
+**Inferred user intent:** Enable coding to begin with minimal ambiguity around persistence boundaries and migration strategy.
+
+**Commit (code):** N/A (documentation-only)
+
+### What I did
+
+- Authored full design doc:
+  - `ttmp/2026/02/16/HC-035-PERSIST-CARDS-STACKS--persistence-of-stacks-and-cards-including-runtime-js-injection/design-doc/01-stacks-and-cards-persistence-architecture-analysis.md`
+- Covered:
+  - existing architecture and gaps
+  - proposed storage and API model
+  - runtime JS injection persistence flow
+  - hydration/loading sequence
+  - code/data versioning and migrations
+  - phased implementation + tests
+
+### Why
+
+- The ticket asks for deep analysis before implementation, including frontend/backend/hydration/versioning and runtime injection.
+
+### What worked
+
+- Existing code offered enough concrete integration points to make the plan precise without speculative abstractions.
+
+### What didn't work
+
+- Initial attempt to inspect one previous HC-033 design path failed due wrong filename:
+  - Command: `sed -n '1,340p' ttmp/2026/02/16/HC-033-ADD-WEBCHAT-INTEGRATION--add-webchat-integration/design-doc/01-inventory-chat-window-using-webchat-sdk.md`
+  - Error: `sed: can't read .../01-inventory-chat-window-using-webchat-sdk.md: No such file or directory`
+- Resolved by using available HC-033 files (`sources/local/...`, diary/changelog, and live code) instead.
+
+### What I learned
+
+- The repo already demonstrates a repeatable persistence pattern (router options -> store -> service -> API) that should be mirrored for stack/card persistence.
+
+### What was tricky to build
+
+- The most subtle design challenge was defining a durable injection model that supports both live sessions and future sessions deterministically.
+- Symptom: story pattern mutates `bundleCode` in memory, which does not provide history, replay guarantees, or conflict control.
+- Approach: introduced immutable patch log + revision chain with deterministic replay and runtime hot-apply hooks.
+
+### What warrants a second pair of eyes
+
+- Revision conflict policy and rollback UX (operator-only vs user-facing).
+
+### What should be done in the future
+
+- Convert this design into executable tasks (`tasks.md`) before implementation starts.
+
+### Code review instructions
+
+- Read the design doc top-to-bottom and validate each proposed integration point against current files.
+- Verify that every proposed change references an existing ownership location (frontend engine/app or go backend/pinocchio composition).
+
+### Technical details
+
+- Primary output document:
+  - `ttmp/2026/02/16/HC-035-PERSIST-CARDS-STACKS--persistence-of-stacks-and-cards-including-runtime-js-injection/design-doc/01-stacks-and-cards-persistence-architecture-analysis.md`
 
 ## Related
 
-<!-- Link to related documents or resources -->
+- Design doc: `ttmp/2026/02/16/HC-035-PERSIST-CARDS-STACKS--persistence-of-stacks-and-cards-including-runtime-js-injection/design-doc/01-stacks-and-cards-persistence-architecture-analysis.md`
+
+## Step 5: reMarkable Upload of Final Analysis
+
+After finalizing the analysis content, I executed the `remarkable-upload` workflow to produce and upload a PDF to the requested reMarkable folder. I used dry-run first, then real upload, then remote verification.
+
+This step closed the delivery loop so the document exists both in ticket docs and on-device/cloud for offline review.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload the document to remarkable when you are done."
+
+**Assistant interpretation:** Upload the completed analysis deliverable to reMarkable after documentation work is finished.
+
+**Inferred user intent:** Receive the final architecture document in reMarkable-ready format without extra manual export steps.
+
+**Commit (code):** N/A (documentation/upload only)
+
+### What I did
+
+- Loaded and followed `remarkable-upload` skill workflow.
+- Ran precheck: `remarquee status`.
+- Ran dry-run bundle upload for the design doc.
+- Executed real upload to:
+  - `/ai/2026/02/16/HC-035-PERSIST-CARDS-STACKS`
+- Verified uploaded artifact listing via `remarquee cloud ls`.
+
+### Why
+
+- User explicitly requested reMarkable upload.
+- Dry-run reduces risk of naming/path mistakes before real upload.
+
+### What worked
+
+- Upload succeeded:
+  - `OK: uploaded HC-035 Persistence Analysis.pdf -> /ai/2026/02/16/HC-035-PERSIST-CARDS-STACKS`
+- Remote listing confirms file presence:
+  - `[f] HC-035 Persistence Analysis`
+
+### What didn't work
+
+- Immediate verification call briefly failed:
+  - Command: `remarquee cloud ls /ai/2026/02/16/HC-035-PERSIST-CARDS-STACKS --long --non-interactive`
+  - Error: `Error: no matches for 'HC-035-PERSIST-CARDS-STACKS'`
+- Resolved by listing parent directory first (`/ai/2026/02/16`), then re-running folder listing successfully.
+
+### What I learned
+
+- Shortly after upload, cloud listing can transiently fail on a direct folder lookup; parent listing then retry is a reliable verification sequence.
+
+### What was tricky to build
+
+- The subtle issue was distinguishing transient path-index delay from real upload failure.
+- Symptom: upload command reported success while immediate direct `cloud ls` returned no matches.
+- Approach: checked parent path first to validate folder existence, then retried direct listing.
+
+### What warrants a second pair of eyes
+
+- None; final file is present and verifiable in remote directory.
+
+### What should be done in the future
+
+- If more HC-035 docs need upload, bundle index/design/diary together as one review packet.
+
+### Code review instructions
+
+- Verify remote artifact:
+  - `remarquee cloud ls /ai/2026/02/16/HC-035-PERSIST-CARDS-STACKS --long --non-interactive`
+
+### Technical details
+
+- Uploaded name: `HC-035 Persistence Analysis`
+- Remote path: `/ai/2026/02/16/HC-035-PERSIST-CARDS-STACKS`

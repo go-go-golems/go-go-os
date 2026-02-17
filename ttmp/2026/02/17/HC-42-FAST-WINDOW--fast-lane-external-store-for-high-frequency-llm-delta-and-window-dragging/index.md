@@ -15,7 +15,7 @@ RelatedFiles:
     - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx
       Note: Chat event ingestion entrypoint for llm delta fast-lane integration
     - Path: 2026-02-12--hypercard-react/packages/engine/src/__tests__/windowing.test.ts
-      Note: W-E reducer/selector lifecycle test coverage
+      Note: W-C windowing reducer/selector behavior coverage
     - Path: 2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopShell.tsx
       Note: |-
         Window composition layer where transient drag drafts are projected
@@ -29,7 +29,7 @@ RelatedFiles:
     - Path: 2026-02-12--hypercard-react/packages/engine/src/features/windowing/windowingSlice.ts
       Note: |-
         Durable window state reducer kept canonical after fast-lane changes
-        Added W-E redux interaction channel groundwork
+        W-E interaction scaffolding removed; W-C is the active runtime model
     - Path: 2026-02-12--hypercard-react/ttmp/2026/02/17/HC-42-FAST-WINDOW--fast-lane-external-store-for-high-frequency-llm-delta-and-window-dragging/design-doc/01-implementation-blueprint-external-fast-store-for-llm-delta-and-window-dragging.md
       Note: Primary implementation blueprint for onboarding and execution
     - Path: 2026-02-12--hypercard-react/ttmp/2026/02/17/HC-42-FAST-WINDOW--fast-lane-external-store-for-high-frequency-llm-delta-and-window-dragging/reference/01-diary.md

@@ -72,3 +72,16 @@ Switched runtime back to W-C only after confirming W-C+W-E dual writing adds red
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopShell.tsx — Runtime cutover to W-C-only pointer interaction lane
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/17/HC-42-FAST-WINDOW--fast-lane-external-store-for-high-frequency-llm-delta-and-window-dragging/tasks.md — Decision wording updated to reflect W-C runtime selection
+
+
+## 2026-02-17
+
+Removed W-E entirely from the windowing codebase to enforce a single runtime model. Deleted interaction-channel state/reducers/selectors/exports and corresponding tests, keeping W-C drag overlay + W-D memoization/isolation as the active performance path.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/types.ts — Removed `WindowInteraction*` types and `WindowingState.interaction`
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/windowingSlice.ts — Removed W-E reducers and interaction state handling
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/selectors.ts — Removed W-E selectors
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/index.ts — Removed W-E exports
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/__tests__/windowing.test.ts — Removed W-E test coverage blocks

@@ -29,7 +29,7 @@ RelatedFiles:
 ExternalSources: []
 Summary: |
     Running implementation diary for HC-42. Captures incremental decisions, commits, validation commands, and observed tradeoffs while implementing fast-lane window interaction changes.
-LastUpdated: 2026-02-17T15:10:00-05:00
+LastUpdated: 2026-02-17T15:28:00-05:00
 WhatFor: |
     Provide high-fidelity execution history so another developer can reconstruct what was changed, why, and how it was validated.
 WhenToUse: Use while actively implementing and reviewing HC-42 changes.
@@ -174,3 +174,16 @@ WhenToUse: Use while actively implementing and reviewing HC-42 changes.
 - Validation:
   - `npm run typecheck -w packages/engine` passed.
   - `npm run test -w packages/engine` passed.
+
+### Entry 13 - Remove W-E from codebase
+
+- User direction: remove W-E entirely; treat it as a mistaken branch.
+- Code cleanup completed:
+  - Removed W-E interaction state/types from `windowing/types.ts`.
+  - Removed W-E reducers/actions from `windowing/windowingSlice.ts`.
+  - Removed W-E selectors from `windowing/selectors.ts`.
+  - Removed W-E exports from `windowing/index.ts`.
+  - Removed W-E test blocks/imports from `src/__tests__/windowing.test.ts`.
+- Validation:
+  - `npm run typecheck -w packages/engine` passed.
+  - `npm run test -w packages/engine` passed (windowing suite now 48 tests, total 140).

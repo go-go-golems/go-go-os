@@ -29,7 +29,7 @@ RelatedFiles:
 ExternalSources: []
 Summary: |
     Running implementation diary for HC-42. Captures incremental decisions, commits, validation commands, and observed tradeoffs while implementing fast-lane window interaction changes.
-LastUpdated: 2026-02-17T14:45:00-05:00
+LastUpdated: 2026-02-17T15:10:00-05:00
 WhatFor: |
     Provide high-fidelity execution history so another developer can reconstruct what was changed, why, and how it was validated.
 WhenToUse: Use while actively implementing and reviewing HC-42 changes.
@@ -158,6 +158,19 @@ WhenToUse: Use while actively implementing and reviewing HC-42 changes.
     - W-E Redux interaction lane (`beginWindowInteraction/updateWindowInteractionDraft/commitWindowInteraction/cancelWindowInteraction`)
   - Effective bounds now resolve as `overlayDraft ?? interactionDraft ?? durableBounds`.
   - Added cleanup alignment: overlay is cleared on close, tile/cascade actions, window pruning, and unmount alongside `clearWindowInteraction`.
+- Validation:
+  - `npm run typecheck -w packages/engine` passed.
+  - `npm run test -w packages/engine` passed.
+
+### Entry 12 - Final runtime selection: W-C only
+
+- Follow-up review confirmed W-C+W-E dual-write is not the desired operating model:
+  - it duplicates high-frequency draft updates,
+  - and introduces overlapping draft lanes in render composition.
+- Runtime adjusted in `DesktopShell.tsx`:
+  - removed W-E interaction dispatches from pointer begin/move/commit/cancel flow,
+  - retained W-C overlay lane for interaction previews,
+  - retained commit-on-end durable updates (`moveWindow`/`resizeWindow`) and cleanup hooks.
 - Validation:
   - `npm run typecheck -w packages/engine` passed.
   - `npm run test -w packages/engine` passed.

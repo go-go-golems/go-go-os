@@ -51,7 +51,7 @@
 - [x] W-C.11 Verify engine `typecheck` and `test` pass with W-C enabled
 - [x] W-C.12 Record metrics/observations and decisions in diary
 
-## W-E Track (Active Redux Interaction Lane)
+## W-E Track (Optional Redux Interaction Lane)
 
 - [x] W-E.0 Add `windowing.interaction` state branch in Redux slice (active id, mode, drafts map)
 - [x] W-E.1 Add reducers/actions (`beginInteraction`, `updateInteractionDraft`, `commitInteraction`, `cancelInteraction`, `clearInteraction`)
@@ -61,4 +61,4 @@
 - [x] W-E.5 Add reducer/selectors tests for interaction channel lifecycle and parity
 - [x] W-E.6 Validate render fan-out reduction with per-window selector subscriptions
 - [x] W-E.7 Evaluate compatibility with W-A throttling and existing W-D memoization
-- [x] W-E.8 Decision recorded: W-C and W-E run together in runtime (overlay-first render, mirrored Redux interaction channel)
+- [x] W-E.8 Decision recorded: runtime uses W-C; W-E remains optional/scaffolded and not active on pointermove path

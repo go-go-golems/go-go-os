@@ -62,3 +62,13 @@ Adjusted runtime direction to use both channels concurrently: W-C drag overlay w
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/dragOverlayStore.ts — Restored W-C external overlay store
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/dragOverlayStore.test.ts — Overlay store behavior tests
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/17/HC-42-FAST-WINDOW--fast-lane-external-store-for-high-frequency-llm-delta-and-window-dragging/tasks.md — W-C/W-E task wording updated to reflect coexistence
+
+
+## 2026-02-17
+
+Switched runtime back to W-C only after confirming W-C+W-E dual writing adds redundant high-frequency update work and overlapping draft sources. DesktopShell now uses overlay draft geometry as the sole active interaction lane and commits durable bounds once on interaction end.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/DesktopShell.tsx — Runtime cutover to W-C-only pointer interaction lane
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/17/HC-42-FAST-WINDOW--fast-lane-external-store-for-high-frequency-llm-delta-and-window-dragging/tasks.md — Decision wording updated to reflect W-C runtime selection

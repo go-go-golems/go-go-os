@@ -31,6 +31,7 @@ import { HyperCardTheme } from '../../../theme/HyperCardTheme';
 import { Toast } from '../../widgets/Toast';
 import { DesktopIconLayer } from './DesktopIconLayer';
 import { DesktopMenuBar } from './DesktopMenuBar';
+import { dragOverlayStore, useDragOverlaySnapshot } from './dragOverlayStore';
 import { PluginCardSessionHost } from './PluginCardSessionHost';
 import type { DesktopIconDef, DesktopMenuSection, DesktopWindowDef } from './types';
 import { useWindowInteractionController } from './useWindowInteractionController';
@@ -112,6 +113,7 @@ export function DesktopShell({
   const activeMenuId = useSelector((s: ShellState) => selectActiveMenuId(s));
   const selectedIconId = useSelector((s: ShellState) => selectSelectedIconId(s));
   const toast = useSelector((s: ShellState) => selectToast(s));
+  const dragOverlay = useDragOverlaySnapshot();
   const interactionDraftsById = useSelector((s: ShellState) => s.windowing.interaction.draftsById);
   const focusedWindowId = focusedWin?.id ?? null;
 
@@ -189,17 +191,27 @@ export function DesktopShell({
 
   const windowDefs = useMemo(() => {
     return windows.map((w) => {
-      const draft = interactionDraftsById[w.id];
-      if (!draft) return toWindowDef(w, w.id === focusedWin?.id);
+      const overlayDraft = dragOverlay.draftsById[w.id];
+      if (overlayDraft) {
+        return {
+          ...toWindowDef(w, w.id === focusedWin?.id),
+          x: overlayDraft.x,
+          y: overlayDraft.y,
+          width: overlayDraft.width,
+          height: overlayDraft.height,
+        };
+      }
+      const interactionDraft = interactionDraftsById[w.id];
+      if (!interactionDraft) return toWindowDef(w, w.id === focusedWin?.id);
       return {
         ...toWindowDef(w, w.id === focusedWin?.id),
-        x: draft.x,
-        y: draft.y,
-        width: draft.w,
-        height: draft.h,
+        x: interactionDraft.x,
+        y: interactionDraft.y,
+        width: interactionDraft.w,
+        height: interactionDraft.h,
       };
     });
-  }, [focusedWin?.id, interactionDraftsById, windows]);
+  }, [dragOverlay.draftsById, focusedWin?.id, interactionDraftsById, windows]);
 
   const windowDefsById = useMemo(() => {
     const byId: Record<string, DesktopWindowDef> = {};
@@ -226,6 +238,7 @@ export function DesktopShell({
   );
   const handleClose = useCallback(
     (id: string) => {
+      dragOverlayStore.clear(id);
       dispatch(closeWindow(id));
     },
     [dispatch],
@@ -233,6 +246,7 @@ export function DesktopShell({
   const handlePreviewMove = useCallback((id: string, next: { x: number; y: number }) => {
     const win = windowDefsByIdRef.current[id];
     if (!win) return;
+    dragOverlayStore.update(id, { x: next.x, y: next.y, width: win.width, height: win.height });
     dispatch(
       updateWindowInteractionDraft({
         id,
@@ -244,6 +258,12 @@ export function DesktopShell({
     (id: string, next: { width: number; height: number }) => {
       const win = windowDefsByIdRef.current[id];
       if (!win) return;
+      dragOverlayStore.update(id, {
+        x: win.x,
+        y: win.y,
+        width: next.width,
+        height: next.height,
+      });
       dispatch(
         updateWindowInteractionDraft({
           id,
@@ -261,21 +281,25 @@ export function DesktopShell({
   const handleCommitMove = useCallback(
     (id: string) => {
       dispatch(commitWindowInteraction({ id }));
+      dragOverlayStore.clear(id);
     },
     [dispatch],
   );
   const handleCommitResize = useCallback(
     (id: string) => {
       dispatch(commitWindowInteraction({ id }));
+      dragOverlayStore.clear(id);
     },
     [dispatch],
   );
   const handleCancelInteraction = useCallback((id: string) => {
     dispatch(cancelWindowInteraction({ id }));
+    dragOverlayStore.clear(id);
   }, [dispatch]);
   const handleBeginInteraction = useCallback(
     (id: string, mode: 'move' | 'resize', initial: { x: number; y: number; width: number; height: number }) => {
       dispatch(beginWindowInteraction({ id, mode, bounds: { x: initial.x, y: initial.y, w: initial.width, h: initial.height } }));
+      dragOverlayStore.begin(id, mode, initial);
     },
     [dispatch],
   );
@@ -296,8 +320,13 @@ export function DesktopShell({
   useEffect(() => {
     return () => {
       dispatch(clearWindowInteraction());
+      dragOverlayStore.clearAll();
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    dragOverlayStore.pruneMissing(windows.map((w) => w.id));
+  }, [windows]);
 
   const openCardWindow = useCallback(
     (cardId: string) => {
@@ -350,6 +379,7 @@ export function DesktopShell({
       }
       if (commandId === 'window.tile') {
         dispatch(clearWindowInteraction());
+        dragOverlayStore.clearAll();
         windows.forEach((w, i) => {
           dispatch(moveWindow({ id: w.id, x: 140 + (i % 3) * 300, y: 10 + Math.floor(i / 3) * 260 }));
           dispatch(resizeWindow({ id: w.id, w: 280, h: 240 }));
@@ -358,6 +388,7 @@ export function DesktopShell({
       }
       if (commandId === 'window.cascade') {
         dispatch(clearWindowInteraction());
+        dragOverlayStore.clearAll();
         windows.forEach((w, i) => {
           dispatch(moveWindow({ id: w.id, x: 140 + i * 36, y: 20 + i * 28 }));
           dispatch(resizeWindow({ id: w.id, w: 420, h: 340 }));

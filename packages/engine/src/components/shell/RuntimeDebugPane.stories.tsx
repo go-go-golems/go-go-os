@@ -107,7 +107,7 @@ function DemoPane() {
 }
 
 const meta = {
-  title: 'Engine/Components/Shell/RuntimeDebugPane',
+  title: 'Engine/Shell/RuntimeDebugPane',
   component: RuntimeDebugPane,
   render: () => <DemoPane />,
   args: {

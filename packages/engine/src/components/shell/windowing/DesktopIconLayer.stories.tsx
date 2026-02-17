@@ -52,7 +52,7 @@ function IconLayerHarness({ icons, initialSelectedIconId }: IconLayerHarnessProp
 }
 
 const meta = {
-  title: 'Engine/Components/Shell/Windowing/DesktopIconLayer',
+  title: 'Engine/Shell/Windowing/DesktopIconLayer',
   component: IconLayerHarness,
   parameters: {
     layout: 'fullscreen',

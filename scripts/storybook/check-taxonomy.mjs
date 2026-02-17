@@ -43,6 +43,15 @@ function walk(dir, out) {
 }
 
 function inferExpectedPrefix(relPath) {
+  if (relPath.startsWith('packages/engine/src/components/shell/')) {
+    return 'Engine/Shell/';
+  }
+  if (relPath.startsWith('packages/engine/src/components/widgets/')) {
+    return 'Engine/Widgets/';
+  }
+  if (relPath.startsWith('packages/engine/src/plugin-runtime/')) {
+    return 'Engine/PluginRuntime/';
+  }
   if (relPath.startsWith('packages/engine/')) {
     return 'Engine/';
   }
@@ -104,6 +113,9 @@ for (const file of storyFiles) {
   const topLevel = title.split('/')[0];
   if (FORBIDDEN_TOP_LEVEL.has(topLevel)) {
     errors.push(`${relPath}: forbidden legacy top-level title segment (${topLevel})`);
+  }
+  if (title.startsWith('Engine/Components/')) {
+    errors.push(`${relPath}: legacy engine taxonomy segment Engine/Components/* is not allowed`);
   }
 
   const placementError = checkPlacement(relPath);

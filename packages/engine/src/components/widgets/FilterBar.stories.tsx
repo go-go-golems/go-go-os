@@ -19,7 +19,7 @@ function FilterBarDemo() {
 }
 
 const meta = {
-  title: 'Engine/Components/Widgets/FilterBar',
+  title: 'Engine/Widgets/FilterBar',
   component: FilterBarDemo,
 } satisfies Meta<typeof FilterBarDemo>;
 

@@ -67,7 +67,7 @@ function DesktopShellStory(props: DesktopShellProps) {
 }
 
 const meta = {
-  title: 'Engine/Components/Shell/Windowing/DesktopShell',
+  title: 'Engine/Shell/Windowing/DesktopShell',
   component: DesktopShellStory,
   parameters: {
     layout: 'fullscreen',

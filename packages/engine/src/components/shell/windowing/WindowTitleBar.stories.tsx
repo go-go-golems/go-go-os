@@ -30,7 +30,7 @@ function TitleBarHarness({ title, icon, focused }: TitleBarHarnessProps) {
 }
 
 const meta = {
-  title: 'Engine/Components/Shell/Windowing/WindowTitleBar',
+  title: 'Engine/Shell/Windowing/WindowTitleBar',
   component: TitleBarHarness,
   parameters: {
     layout: 'centered',

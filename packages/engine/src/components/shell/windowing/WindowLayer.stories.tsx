@@ -81,7 +81,7 @@ function WindowLayerHarness({ initialWindows }: WindowLayerHarnessProps) {
 }
 
 const meta = {
-  title: 'Engine/Components/Shell/Windowing/WindowLayer',
+  title: 'Engine/Shell/Windowing/WindowLayer',
   component: WindowLayerHarness,
   parameters: {
     layout: 'fullscreen',

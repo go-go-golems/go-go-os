@@ -29,7 +29,7 @@ function MenuBarHarness({ sections, initialActiveMenuId }: MenuBarHarnessProps) 
 }
 
 const meta = {
-  title: 'Engine/Components/Shell/Windowing/DesktopMenuBar',
+  title: 'Engine/Shell/Windowing/DesktopMenuBar',
   component: MenuBarHarness,
   parameters: {
     layout: 'centered',

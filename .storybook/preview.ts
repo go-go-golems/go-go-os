@@ -17,7 +17,12 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ['Apps', ['Inventory', 'Todo', 'Crm', 'BookTrackerDebug'], 'Engine'],
+        order: [
+          'Apps',
+          ['Inventory', 'Todo', 'Crm', 'BookTrackerDebug'],
+          'Engine',
+          ['Shell', 'Widgets', 'PluginRuntime'],
+        ],
       },
     },
     layout: 'centered',

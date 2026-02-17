@@ -488,7 +488,7 @@ function ChatDesktopDemo() {
    ═══════════════════════════════════════════════════════════════════════ */
 
 const meta = {
-  title: 'Engine/Components/Shell/Windowing/ChatWindowDesktop',
+  title: 'Engine/Shell/Windowing/ChatWindowDesktop',
   parameters: { layout: 'fullscreen' },
 } satisfies Meta;
 

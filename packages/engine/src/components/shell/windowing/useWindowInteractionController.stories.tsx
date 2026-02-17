@@ -16,6 +16,24 @@ const DEFAULT_WINDOWS: DesktopWindowDef[] = [
   { id: 'b', title: 'Window B', icon: '📊', x: 200, y: 120, width: 280, height: 200, zIndex: 2, focused: false },
 ];
 
+function buildDenseWindows(count: number): DesktopWindowDef[] {
+  return Array.from({ length: count }, (_, idx) => {
+    const col = idx % 5;
+    const row = Math.floor(idx / 5);
+    return {
+      id: `dense-${idx + 1}`,
+      title: `Dense ${idx + 1}`,
+      icon: '🪟',
+      x: 20 + col * 180 + (row % 2) * 16,
+      y: 20 + row * 130,
+      width: 260,
+      height: 180,
+      zIndex: idx + 1,
+      focused: idx === count - 1,
+    };
+  });
+}
+
 function InteractionDemo({ constraints, initialWindows }: InteractionDemoProps) {
   const [windows, setWindows] = useState<DesktopWindowDef[]>(initialWindows ?? DEFAULT_WINDOWS);
 
@@ -101,7 +119,7 @@ function InteractionDemo({ constraints, initialWindows }: InteractionDemoProps) 
 // ── Meta ──
 
 const meta = {
-  title: 'Engine/Components/Shell/Windowing/UseWindowInteractionController',
+  title: 'Engine/Shell/Windowing/UseWindowInteractionController',
   component: InteractionDemo,
   parameters: {
     layout: 'fullscreen',
@@ -173,5 +191,13 @@ export const NoConstraints: Story = {
         focused: true,
       },
     ],
+  },
+};
+
+/** 20-window density harness for drag profiling and interaction stress checks. */
+export const TwentyWindowDensityHarness: Story = {
+  args: {
+    constraints: { minX: 0, minY: 0, minWidth: 220, minHeight: 140 },
+    initialWindows: buildDenseWindows(20),
   },
 };

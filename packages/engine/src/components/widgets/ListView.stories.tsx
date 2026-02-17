@@ -25,7 +25,7 @@ const filters: FilterConfig[] = [
 ];
 
 const meta = {
-  title: 'Widgets/ListView',
+  title: 'Packages/Engine/Components/Widgets/ListView',
   component: ListView<Item>,
   args: {
     items: data,

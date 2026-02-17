@@ -1,7 +1,7 @@
 import { createStoryHelpers } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
-import { createInventoryStore } from '../app/store';
-import { STACK } from '../domain/stack';
+import { createInventoryStore } from '../store';
+import { STACK } from '../../domain/stack';
 
 const { storeDecorator, createStory, FullApp } = createStoryHelpers({
   stack: STACK,
@@ -10,7 +10,7 @@ const { storeDecorator, createStory, FullApp } = createStoryHelpers({
 });
 
 const meta = {
-  title: 'Pages/Cards',
+  title: 'Apps/Inventory/App/CardPages',
   component: FullApp,
   decorators: [storeDecorator],
   parameters: { layout: 'fullscreen' },

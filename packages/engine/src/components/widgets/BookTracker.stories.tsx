@@ -61,7 +61,7 @@ const FORM_FIELDS: FieldConfig[] = [
 ];
 
 const menuMeta = {
-  title: 'BookTracker/Home',
+  title: 'Packages/Engine/Components/Widgets/BookTracker',
   component: MenuGrid,
   args: {
     icon: '📚',

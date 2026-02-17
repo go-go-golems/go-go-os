@@ -1,16 +1,16 @@
 import { createStoryHelpers } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
-import { createBookStore } from '../app/store';
-import { STACK } from '../domain/stack';
+import { createTodoStore } from '../store';
+import { STACK } from '../../domain/stack';
 
 const { storeDecorator, createStory, FullApp } = createStoryHelpers({
   stack: STACK,
-  createStore: createBookStore,
-  cardParams: { bookDetail: 'b1' },
+  createStore: createTodoStore,
+  cardParams: { taskDetail: 't1' },
 });
 
 const meta = {
-  title: 'BookTrackerDebug/Full App',
+  title: 'Apps/Todo/App/FullApp',
   component: FullApp,
   decorators: [storeDecorator],
   parameters: { layout: 'fullscreen' },
@@ -21,8 +21,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 export const Home: Story = createStory('home');
-export const Browse: Story = createStory('browse');
-export const ReadingNow: Story = createStory('readingNow');
-export const BookDetail: Story = createStory('bookDetail');
-export const AddBook: Story = createStory('addBook');
-export const ReadingReport: Story = createStory('readingReport');
+export const AllTasks: Story = createStory('browse');
+export const InProgress: Story = createStory('inProgress');
+export const Completed: Story = createStory('completed');
+export const TaskDetail: Story = createStory('taskDetail');
+export const NewTask: Story = createStory('newTask');

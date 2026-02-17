@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { InventoryTimelineWidget } from '../features/chat/InventoryTimelineWidget';
-import type { TimelineWidgetItem } from '../features/chat/chatSlice';
+import { InventoryTimelineWidget } from '../InventoryTimelineWidget';
+import type { TimelineWidgetItem } from '../chatSlice';
 
 /**
  * These stories demonstrate the per-round timeline widget behavior introduced in F1.
@@ -120,7 +120,7 @@ function MultiRoundDemo({
 }
 
 const meta = {
-  title: 'Widgets/Per-Round Timeline',
+  title: 'Apps/Inventory/Features/Chat/PerRoundTimeline',
   component: MultiRoundDemo,
   parameters: {
     layout: 'centered',

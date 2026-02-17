@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { EventViewerWindow } from '../features/chat/EventViewerWindow';
-import type { EventLogEntry } from '../features/chat/eventBus';
+import { EventViewerWindow } from '../EventViewerWindow';
+import type { EventLogEntry } from '../eventBus';
 
 const meta: Meta<typeof EventViewerWindow> = {
-  title: 'Chat/EventViewer',
+  title: 'Apps/Inventory/Features/Chat/EventViewer',
   component: EventViewerWindow,
   parameters: { layout: 'fullscreen' },
   decorators: [

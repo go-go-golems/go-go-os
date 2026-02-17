@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { InventoryTimelineWidget } from '../features/chat/InventoryTimelineWidget';
-import type { TimelineWidgetItem } from '../features/chat/chatSlice';
+import { InventoryTimelineWidget } from '../InventoryTimelineWidget';
+import type { TimelineWidgetItem } from '../chatSlice';
 
 function at(msAgo: number): number {
   return Date.now() - msAgo;
@@ -130,7 +130,7 @@ const allItems: TimelineWidgetItem[] = [
 ];
 
 const meta = {
-  title: 'Widgets/Inventory Timeline',
+  title: 'Apps/Inventory/Features/Chat/InventoryTimelineWidget',
   component: InventoryTimelineWidget,
   args: {
     items: allItems,

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { SyntaxHighlight } from '../features/chat/utils/SyntaxHighlight';
+import { SyntaxHighlight } from '../utils/SyntaxHighlight';
 
 const meta = {
-  title: 'Chat/SyntaxHighlight',
+  title: 'Apps/Inventory/Features/Chat/SyntaxHighlight',
   component: SyntaxHighlight,
   parameters: { layout: 'padded' },
 } satisfies Meta<typeof SyntaxHighlight>;

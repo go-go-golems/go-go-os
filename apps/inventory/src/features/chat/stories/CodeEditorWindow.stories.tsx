@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { CodeEditorWindow } from '../features/chat/CodeEditorWindow';
+import { CodeEditorWindow } from '../CodeEditorWindow';
 import { registerRuntimeCard, clearRuntimeCardRegistry } from '@hypercard/engine';
 
 // Minimal store for useDispatch (CodeEditorWindow doesn't use Redux, but its imports may)
@@ -18,7 +18,7 @@ function Wrapper(props: React.ComponentProps<typeof CodeEditorWindow>) {
 }
 
 const meta = {
-  title: 'Chat/CodeEditorWindow',
+  title: 'Apps/Inventory/Features/Chat/CodeEditorWindow',
   component: Wrapper,
   parameters: { layout: 'centered' },
   decorators: [

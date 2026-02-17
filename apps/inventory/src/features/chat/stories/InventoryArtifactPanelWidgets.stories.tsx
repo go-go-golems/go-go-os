@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react';
 import {
   InventoryCardPanelWidget,
   InventoryGeneratedWidgetPanel,
-} from '../features/chat/InventoryArtifactPanelWidgets';
-import type { TimelineWidgetItem } from '../features/chat/chatSlice';
+} from '../InventoryArtifactPanelWidgets';
+import type { TimelineWidgetItem } from '../chatSlice';
 
 function at(msAgo: number): number {
   return Date.now() - msAgo;
@@ -60,7 +60,7 @@ const widgetItems: TimelineWidgetItem[] = [
 ];
 
 const cardMeta = {
-  title: 'Widgets/Inventory Card Panel',
+  title: 'Apps/Inventory/Features/Chat/InventoryArtifactPanelWidgets',
   component: InventoryCardPanelWidget,
   args: {
     items: cardItems,

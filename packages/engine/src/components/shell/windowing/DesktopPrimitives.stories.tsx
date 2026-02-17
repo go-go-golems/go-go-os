@@ -265,7 +265,7 @@ function DesktopDemo({ icons, preloadWindows }: DesktopDemoProps) {
 // ── Meta ──
 
 const meta = {
-  title: 'Shell/Windowing/Desktop Primitives',
+  title: 'Packages/Engine/Components/Shell/Windowing/DesktopPrimitives',
   component: DesktopDemo,
   parameters: {
     layout: 'fullscreen',

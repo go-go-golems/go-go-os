@@ -28,7 +28,7 @@ function SelectDemo() {
 }
 
 const meta = {
-  title: 'Widgets/FieldRow',
+  title: 'Packages/Engine/Components/Widgets/FieldRow',
   component: TextFieldDemo,
 } satisfies Meta<typeof TextFieldDemo>;
 

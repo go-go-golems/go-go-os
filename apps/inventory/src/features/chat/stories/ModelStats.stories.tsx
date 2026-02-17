@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { TurnStats } from '../features/chat/chatSlice';
+import type { TurnStats } from '../chatSlice';
 
 /**
  * Standalone StatsFooter story component — mirrors the logic from
@@ -74,7 +74,7 @@ function StatsFooter({
 }
 
 const meta = {
-  title: 'Widgets/Model Stats Footer',
+  title: 'Apps/Inventory/Features/Chat/ModelStats',
   component: StatsFooter,
   parameters: {
     layout: 'centered',

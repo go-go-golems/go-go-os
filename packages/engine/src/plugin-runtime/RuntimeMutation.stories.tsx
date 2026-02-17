@@ -232,7 +232,7 @@ function RuntimeMutationDemo() {
 }
 
 const meta = {
-  title: 'Plugin Runtime/Define Card API',
+  title: 'Packages/Engine/PluginRuntime/RuntimeMutation',
   component: RuntimeMutationDemo,
   parameters: {
     layout: 'centered',

@@ -1,8 +1,8 @@
 import { DesktopShell } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
-import { createInventoryStore } from '../app/store';
-import { STACK } from '../domain/stack';
+import { createInventoryStore } from '../store';
+import { STACK } from '../../domain/stack';
 import '../../../../packages/engine/src/theme/classic.css';
 import '../../../../packages/engine/src/theme/modern.css';
 
@@ -19,7 +19,7 @@ function ThemedStoreDecorator(Story: React.ComponentType) {
 }
 
 const meta = {
-  title: 'Pages/Themed',
+  title: 'Apps/Inventory/App/Themed',
   component: ThemedShell,
   decorators: [ThemedStoreDecorator],
   parameters: { layout: 'fullscreen' },

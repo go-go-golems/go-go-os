@@ -1,7 +1,7 @@
 import { createStoryHelpers } from '@hypercard/engine';
 import type { Meta, StoryObj } from '@storybook/react';
-import { createCrmStore } from '../app/store';
-import { STACK } from '../domain/stack';
+import { createCrmStore } from '../store';
+import { STACK } from '../../domain/stack';
 
 const { storeDecorator, createStory, FullApp } = createStoryHelpers({
   stack: STACK,
@@ -10,7 +10,7 @@ const { storeDecorator, createStory, FullApp } = createStoryHelpers({
 });
 
 const meta = {
-  title: 'CRM/Full App',
+  title: 'Apps/Crm/App/FullApp',
   component: FullApp,
   decorators: [storeDecorator],
   parameters: { layout: 'fullscreen' },

@@ -21,6 +21,8 @@ export * from './components/shell';
 export * from './components/widgets';
 // ── Debug utilities ──
 export * from './debug';
+// ── Diagnostics (Redux perf / FPS) ──
+export * from './diagnostics';
 // ── State ──
 export {
   clearToast,

@@ -11,13 +11,20 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx
+      Note: Most investigation effort centered on this file
+    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/17/HC-50-CHAT-COMPONENT--extract-inventory-chat-stack-into-reusable-hypercard-component/design-doc/01-inventory-chat-architecture-and-reusable-component-extraction-analysis.md
+      Note: Diary traces how this analysis document was produced
+    - Path: pinocchio/cmd/web-chat/web/src/webchat/ChatWidget.tsx
+      Note: Comparison baseline used during investigation
 ExternalSources: []
 Summary: Step-by-step investigation diary for Inventory chat extraction analysis and Pinocchio comparison.
 LastUpdated: 2026-02-17T23:39:00Z
 WhatFor: Preserve implementation and analysis trail for HC-50.
 WhenToUse: Use when reviewing how the HC-50 design conclusions were formed.
 ---
+
 
 # Diary
 

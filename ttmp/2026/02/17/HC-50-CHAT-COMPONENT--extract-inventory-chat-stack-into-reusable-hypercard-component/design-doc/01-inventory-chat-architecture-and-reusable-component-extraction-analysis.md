@@ -11,13 +11,28 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx
+      Note: Primary runtime orchestration and envelope dispatch path
+    - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.ts
+      Note: Conversation-keyed chat state and timeline/widget projection model
+    - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/eventBus.ts
+      Note: Current raw event viewer side-channel design
+    - Path: pinocchio/cmd/web-chat/web/src/debug-ui/ws/debugTimelineWsManager.ts
+      Note: Reference debug follow path with cache patching
+    - Path: pinocchio/cmd/web-chat/web/src/sem/registry.ts
+      Note: Reference SEM event handler registry pattern
+    - Path: pinocchio/cmd/web-chat/web/src/webchat/ChatWidget.tsx
+      Note: Reference modular chat component architecture
+    - Path: pinocchio/cmd/web-chat/web/src/ws/wsManager.ts
+      Note: Reference websocket bootstrap and hydration buffering flow
 ExternalSources: []
 Summary: Detailed architecture analysis of the Inventory chat stack, comparison with Pinocchio web-chat, and reusable extraction designs for HyperCard/macOS-style apps.
 LastUpdated: 2026-02-17T23:35:00Z
 WhatFor: Provide implementation-ready direction to extract chat/event-viewer functionality from Inventory into reusable components/packages.
 WhenToUse: Use when planning or implementing reusable chat/timeline/event-debug features across HyperCard applications.
 ---
+
 
 # Inventory Chat Architecture and Reusable Component Extraction Analysis
 

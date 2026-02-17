@@ -11,28 +11,40 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/17/HC-50-CHAT-COMPONENT--extract-inventory-chat-stack-into-reusable-hypercard-component/design-doc/01-inventory-chat-architecture-and-reusable-component-extraction-analysis.md
+      Note: Primary deliverable analysis document
+    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/17/HC-50-CHAT-COMPONENT--extract-inventory-chat-stack-into-reusable-hypercard-component/reference/01-diary.md
+      Note: Investigation diary and command trail
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-02-17T17:24:49.639230512-05:00
-WhatFor: ""
-WhenToUse: ""
+Summary: Deep analysis of current Inventory chat implementation, Pinocchio comparison, and recommended reusable extraction architecture for HyperCard apps.
+LastUpdated: 2026-02-17T23:42:00Z
+WhatFor: Organize and track the HC-50 analysis work and its deliverables.
+WhenToUse: Use this ticket as the starting point for chat/event-viewer extraction planning and implementation.
 ---
 
 # Extract inventory chat stack into reusable hypercard component
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+HC-50 captures the architecture assessment for extracting Inventory chat functionality into reusable HyperCard components. The core deliverable is a 4+ page design analysis covering:
 
-## Key Links
+- Current Inventory chat architecture and coupling map.
+- Side-by-side comparison with Pinocchio web-chat and debug-ui implementations.
+- Extraction options and a recommended architecture with migration phases.
 
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
+## Deliverables
+
+- Design analysis:
+  - `design-doc/01-inventory-chat-architecture-and-reusable-component-extraction-analysis.md`
+- Investigation diary:
+  - `reference/01-diary.md`
 
 ## Status
 
 Current status: **active**
+
+All requested analysis deliverables are complete, including reMarkable upload.
 
 ## Topics
 
@@ -44,17 +56,8 @@ Current status: **active**
 
 ## Tasks
 
-See [tasks.md](./tasks.md) for the current task list.
+See [tasks.md](./tasks.md) for task state.
 
 ## Changelog
 
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+See [changelog.md](./changelog.md) for dated updates.

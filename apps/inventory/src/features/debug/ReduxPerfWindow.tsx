@@ -124,7 +124,7 @@ export function ReduxPerfWindow() {
             <tr>
               <th style={styles.th}>Action Type</th>
               <th style={styles.thRight}>Rate/s</th>
-              <th style={styles.thCenter}>Trend</th>
+              <th style={styles.thCenter}>⌁</th>
               <th style={styles.thRight}>Peak</th>
             </tr>
           </thead>
@@ -147,7 +147,7 @@ export function ReduxPerfWindow() {
       <div style={styles.legend}>
         <strong>Legend:</strong> Actions/sec = dispatches per second • State Δ/sec = dispatches
         that changed state • Avg/p95 reducer = reducer execution time • FPS = render frame rate
-        • Long frames = frames &gt;33ms • Trend = rate over last ~15s • Peak = highest rate seen
+        • Long frames = frames &gt;33ms • ⌁ = rate/s each sample • Peak = highest rate seen
       </div>
     </div>
   );

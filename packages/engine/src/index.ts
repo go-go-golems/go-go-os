@@ -1,9 +1,11 @@
 // @hypercard/engine — barrel exports
 //
 // USAGE:
-//   import { DesktopShell, DataTable, windowingReducer, ... } from '@hypercard/engine';
-//   import '@hypercard/engine/src/theme';               // load default desktop/widget css packs
-//   import '@hypercard/engine/src/theme/modern.css';     // optional theme
+//   import { DataTable, createAppStore, ... } from '@hypercard/engine';
+//   import { DesktopShell } from '@hypercard/engine/desktop-react';
+//   import { openWindow } from '@hypercard/engine/desktop-core';
+//   import '@hypercard/engine/theme';                    // load default desktop/widget css packs
+//   import '@hypercard/engine/theme/modern.css';         // optional theme layer
 //
 
 // ── App utilities ──
@@ -14,8 +16,6 @@ export * from './cards';
 export * from './plugin-runtime';
 // ── Chat ──
 export * from './chat';
-// ── Shell ──
-export * from './components/shell';
 
 // ── Widgets ──
 export * from './components/widgets';
@@ -31,8 +31,6 @@ export {
 } from './features/notifications/notificationsSlice';
 export * from './features/notifications/selectors';
 export * from './features/pluginCardRuntime';
-// ── Windowing ──
-export * from './desktop/core/state';
 export * from './parts';
 // ── Theme ──
 export { HyperCardTheme, type HyperCardThemeProps } from './theme/HyperCardTheme';

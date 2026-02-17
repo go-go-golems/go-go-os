@@ -1,5 +1,5 @@
-import { DesktopShell, openWindow } from '@hypercard/engine';
-import type { DesktopContribution, OpenWindowPayload } from '@hypercard/engine';
+import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { DesktopShell, type DesktopContribution } from '@hypercard/engine/desktop-react';
 import { type ReactNode, useCallback, useMemo } from 'react';
 import { STACK } from './domain/stack';
 import { EventViewerWindow } from './features/chat/EventViewerWindow';

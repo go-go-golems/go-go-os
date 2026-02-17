@@ -1,4 +1,4 @@
-import { DesktopShell } from '@hypercard/engine';
+import { DesktopShell } from '@hypercard/engine/desktop-react';
 import { STACK } from './domain/stack';
 
 export function App() {

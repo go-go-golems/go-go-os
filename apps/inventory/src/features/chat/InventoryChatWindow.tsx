@@ -1,4 +1,5 @@
-import { ChatWindow, openWindow, registerRuntimeCard, type ChatWindowMessage, type InlineWidget } from '@hypercard/engine';
+import { ChatWindow, registerRuntimeCard, type ChatWindowMessage, type InlineWidget } from '@hypercard/engine';
+import { openWindow } from '@hypercard/engine/desktop-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { buildArtifactOpenWindowPayload, extractArtifactUpsertFromSem } from './artifactRuntime';

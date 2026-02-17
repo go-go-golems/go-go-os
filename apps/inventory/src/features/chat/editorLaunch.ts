@@ -5,7 +5,7 @@
  * code here before dispatching openWindow, and the editor reads it on mount.
  */
 
-import { openWindow } from '@hypercard/engine';
+import { openWindow } from '@hypercard/engine/desktop-core';
 import type { Dispatch } from 'redux';
 import { getPendingRuntimeCards } from '@hypercard/engine';
 

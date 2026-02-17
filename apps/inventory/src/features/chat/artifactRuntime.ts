@@ -1,4 +1,4 @@
-import type { OpenWindowPayload } from '@hypercard/engine';
+import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import type { ArtifactSource } from './artifactsSlice';
 import { recordField, stringField, structuredRecordFromUnknown } from './semHelpers';
 

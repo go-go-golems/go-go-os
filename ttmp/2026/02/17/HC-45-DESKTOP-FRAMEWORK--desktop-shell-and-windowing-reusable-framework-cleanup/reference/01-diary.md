@@ -39,13 +39,17 @@ RelatedFiles:
       Note: Default app/card/fallback adapter implementations
     - Path: apps/inventory/src/App.tsx
       Note: Inventory desktop migration to contribution-based config
-    - Path: packages/engine/src/theme/base.css
-      Note: CSS modularization recommendations source
+    - Path: packages/engine/src/theme/index.ts
+      Note: Modular theme entrypoint after Workstream E hard cutover
+    - Path: packages/engine/src/theme/desktop/tokens.css
+      Note: Split token pack extracted from legacy base stylesheet
+    - Path: packages/engine/src/theme/desktop/shell.css
+      Note: Split desktop windowing shell pack extracted from legacy base stylesheet
     - Path: ttmp/2026/02/17/HC-45-DESKTOP-FRAMEWORK--desktop-shell-and-windowing-reusable-framework-cleanup/design-doc/01-desktop-shell-and-windowing-reusability-analysis-for-in-browser-os-framework.md
       Note: Diary linkage to authored analysis output
 ExternalSources: []
 Summary: Step-by-step record of HC-45 preparation and hard-cutover implementation slices for desktop framework extraction.
-LastUpdated: 2026-02-17T16:37:00-05:00
+LastUpdated: 2026-02-17T16:48:00-05:00
 WhatFor: Preserve implementation history, decisions, and validation commands for handoff and review.
 WhenToUse: Use when reviewing how HC-45 analysis/planning artifacts were produced and validated.
 ---
@@ -535,3 +539,116 @@ Result:
 Workstream C and D implementation tasks are now complete in-ticket for this pass.
 
 Remaining broader HC-45 roadmap work still includes CSS/theme modularization and any further package/API surface polishing beyond current code cutover.
+
+## Step 6: Backfill and Correctness Pass After C/D Implementation
+
+I backfilled missing implementation context after C/D and verified the final code health status across both engine tests and full workspace typecheck.
+
+### What was missing
+
+The earlier Workstream C/D diary captured the architectural and feature changes but did not fully include the follow-up correctness sweep that occurred after integrating contribution contracts into inventory.
+
+### Backfilled details
+
+1. During full `npm run typecheck`, additional issues appeared that were not surfaced by package-local tests:
+   - `process` usage in contribution collision logic/tests caused typing errors in this workspace configuration.
+   - `dispatch` type in contribution command context was too narrow.
+   - `windowContentAdapter.test.ts` used an incomplete `CardStackDefinition` fixture.
+2. I resolved these by:
+   - removing `process` dependence from runtime logic and introducing an explicit `onIconCollision` option in composer.
+   - making command context dispatch compatible with Redux dispatch shape used by shell controller.
+   - completing adapter test fixtures to satisfy type contract.
+3. Revalidated with:
+   - `npm run typecheck` (workspace)
+   - `npm run -w packages/engine test`
+
+### Commits associated with C/D delivery
+
+- `e1778aa` — `feat(engine): add desktop contributions and window content adapters`
+- `40e8621` — `docs(hc-45): add and complete workstream c/d tasks`
+
+### Current status before Workstream E
+
+- A-D implementation slices are complete for the current pass.
+- Next focus is Workstream E CSS modularization and hard cutover from legacy theme import path.
+
+## Step 7: Implement Workstream E (CSS Modularization Hard Cutover)
+
+I executed the CSS workstream as a hard cutover by splitting the legacy monolithic stylesheet and removing the old import path from runtime entrypoints.
+
+### Prompt Context
+
+**User prompts (verbatim):**
+- "Ok, let's do the CSS one"
+- "Add tasks to the ticket. then do them. Continue committing and keeping a diary"
+- "backfill your diary btw, iut seems you've been neglecting it. then continue"
+
+**Assistant interpretation:** Backfill diary, add explicit Workstream E tasks, implement them end-to-end, validate, and commit in clean slices.
+
+### Task additions and completion
+
+Added Workstream E tasks in `tasks.md` and completed all:
+
+1. `E1` split `theme/base.css` into modular desktop packs.
+2. `E2` migrate app + Storybook imports away from `base.css`.
+3. `E3` remove `base.css` and update comments/docs.
+4. `E4` run validation and update ticket diary/changelog.
+
+### CSS split details
+
+Legacy source:
+
+- `packages/engine/src/theme/base.css` (removed)
+
+New modular packs created:
+
+- `packages/engine/src/theme/desktop/tokens.css`
+- `packages/engine/src/theme/desktop/shell.css`
+- `packages/engine/src/theme/desktop/primitives.css`
+- `packages/engine/src/theme/desktop/chat.css`
+- `packages/engine/src/theme/desktop/syntax.css`
+- `packages/engine/src/theme/desktop/animations.css`
+- `packages/engine/src/theme/desktop/theme/macos1.css`
+
+### Import cutover
+
+Updated to modular entrypoint import (`packages/engine/src/theme/index.ts`) in:
+
+- `.storybook/preview.ts`
+- `apps/inventory/src/main.tsx`
+- `apps/todo/src/main.tsx`
+- `apps/crm/src/main.tsx`
+- `apps/book-tracker-debug/src/main.tsx`
+
+Updated theme contract docs/comments:
+
+- `packages/engine/src/index.ts` (usage comments)
+- `packages/engine/src/theme/classic.css` (layering comment)
+- `packages/engine/src/theme/modern.css` (layering comment)
+- `docs/js-api-user-guide-reference.md` (theming import example)
+
+### What failed and what I fixed
+
+- Initial typecheck/test pass for C/D had already been green, but this CSS cutover required re-running full validation because theme imports changed across all apps and Storybook.
+- No new errors were introduced by the CSS split itself.
+
+### Validation
+
+Executed:
+
+- `npm run typecheck`
+- `npm run -w packages/engine test`
+
+Result:
+
+- TypeScript build: pass
+- Engine tests: pass (`15` files, `154` tests)
+
+### Outcome
+
+Workstream E is complete for HC-45 hard-cutover scope:
+
+- legacy `base.css` removed,
+- modular packs are in place,
+- all app/storybook imports now use the modular theme entry,
+- ticket metadata and diary/changelog are updated.

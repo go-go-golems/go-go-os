@@ -19,3 +19,8 @@
 - Updated shell controller to use contribution command lane and adapter chain (no direct card-host rendering in controller)
 - Migrated inventory desktop customization (`menus`/`icons`/`onCommand`/startup side-effects) to contribution objects
 - Added C/D unit tests (`desktopContributions.test.ts`, `windowContentAdapter.test.ts`) and revalidated engine tests
+- Completed Workstream E CSS hard cutover by splitting `theme/base.css` into modular packs under `theme/desktop/*`
+- Replaced app and Storybook theme imports to use `@hypercard/engine/src/theme` modular entrypoint
+- Removed legacy `packages/engine/src/theme/base.css` and updated theme/docs comments to new import contract
+- Added `theme/desktop/theme/macos1.css` as dedicated desktop skin layer for explicit theming
+- Revalidated with `npm run typecheck` and `npm run -w packages/engine test`

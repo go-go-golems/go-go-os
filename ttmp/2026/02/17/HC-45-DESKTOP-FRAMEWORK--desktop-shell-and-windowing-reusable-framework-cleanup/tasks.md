@@ -28,3 +28,10 @@
 - [x] D1: Add window content adapter contracts and adapter-chain renderer
 - [x] D2: Add default app/card/fallback adapters and remove direct card-host rendering from controller
 - [x] D3: Allow contribution-provided adapters to extend precedence and validate with tests
+
+## Workstream E (CSS Modularization Hard Cutover)
+
+- [x] E1: Split `theme/base.css` into modular desktop CSS packs (`desktop/tokens.css`, `desktop/shell.css`, `desktop/primitives.css`, `desktop/chat.css`, `desktop/syntax.css`, `desktop/animations.css`)
+- [x] E2: Replace app + Storybook imports from legacy `theme/base.css` to modular theme entrypoints
+- [x] E3: Remove legacy `theme/base.css` and update theme/index + docs/comments to reflect cutover
+- [x] E4: Validate style/build integrity (`npm run typecheck`, `npm run -w packages/engine test`) and record diary/changelog updates

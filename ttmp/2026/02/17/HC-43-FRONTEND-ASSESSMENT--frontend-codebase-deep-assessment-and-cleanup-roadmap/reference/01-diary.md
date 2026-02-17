@@ -741,3 +741,77 @@ I also ran targeted chat tests to confirm the consolidation remains behavior-sta
 - Test result summary:
   - `Test Files 3 passed (3)`
   - `Tests 24 passed (24)`
+
+---
+
+## Step 9: Task-by-Task Hard-Cutover Verification - Vite Config Centralization
+
+I verified that all app Vite configs consume the shared `createHypercardViteConfig` helper and do not carry local alias/bootstrap divergence. This preserves the Phase 1 objective of a single bootstrap path for app configuration.
+
+A repo typecheck run also passed after this verification pass.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 6)
+
+**Assistant interpretation:** Execute the Vite centralization item as part of HC-43 replay, with no compatibility layers.
+
+**Inferred user intent:** Keep frontend app bootstrapping predictable and maintainable before deeper refactors.
+
+### What I did
+
+- Audited all app Vite configs:
+  - `apps/book-tracker-debug/vite.config.ts`
+  - `apps/crm/vite.config.ts`
+  - `apps/inventory/vite.config.ts`
+  - `apps/todo/vite.config.ts`
+- Verified all import/usage routes point to:
+  - `tooling/vite/createHypercardViteConfig.ts`
+- Ran:
+  - `npm run typecheck`
+
+### Why
+
+- Phase 1 centralization is about removing per-app drift at the config entrypoint.
+
+### What worked
+
+- Every app config uses the shared helper.
+- `npm run typecheck` passed.
+
+### What didn't work
+
+- N/A in this step.
+
+### What I learned
+
+- Inventory app's proxy override remains the only app-specific option, and it is configured through the shared helper options surface.
+
+### What was tricky to build
+
+- Verifying centralization required checking both call sites (`apps/*/vite.config.ts`) and the helper internals (`tooling/vite/createHypercardViteConfig.ts`) to ensure alias ownership lives in one place.
+
+### What warrants a second pair of eyes
+
+- Confirm future app additions follow the shared helper pattern and do not reintroduce local `defineConfig` forks.
+
+### What should be done in the future
+
+- Finish replay with Task 17 (Storybook/app-boot boundary docs alignment), then close HC-43 back to complete.
+
+### Code review instructions
+
+- Review app configs and helper:
+  - `apps/book-tracker-debug/vite.config.ts`
+  - `apps/crm/vite.config.ts`
+  - `apps/inventory/vite.config.ts`
+  - `apps/todo/vite.config.ts`
+  - `tooling/vite/createHypercardViteConfig.ts`
+- Re-run check:
+  - `npm run typecheck`
+
+### Technical details
+
+- Typecheck output summary:
+  - `> typecheck`
+  - `> tsc --build`

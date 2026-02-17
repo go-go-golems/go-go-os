@@ -13,6 +13,10 @@
   - confirmed helper definitions are centralized in `apps/inventory/src/features/chat/semHelpers.ts`
   - confirmed core chat modules import from shared helper
   - passed targeted chat tests (`24/24`)
+- Completed replay verification for Vite config centralization (Task 16):
+  - confirmed all app `vite.config.ts` files use `createHypercardViteConfig`
+  - confirmed shared alias/bootstrap ownership remains in `tooling/vite/createHypercardViteConfig.ts`
+  - passed repo typecheck (`npm run typecheck`)
 
 ## 2026-02-17
 

@@ -37,9 +37,39 @@ Ticket: HC-040-CODE-EDITOR
 - [x] A.6b All tests pass (153/153)
 - [ ] A.6c Visual check in browser
 
-## Phase B: Code Editor Window (future — NOT implementing now)
-- [ ] B.1 Install CodeMirror 6
-- [ ] B.2 Create CodeEditorWindow component
-- [ ] B.3 Wire save → registerRuntimeCard → live injection
-- [ ] B.4 Error display from QuickJS eval failures
-- [ ] B.5 "Edit" button in RuntimeCardDebugWindow
+## Phase B: Switch to CodeMirror + Editor Window
+
+### B.1 Install CodeMirror 6
+- [x] B.1a Install packages: codemirror, @codemirror/lang-javascript, @codemirror/lang-yaml, @codemirror/theme-one-dark
+- [x] B.1b Remove highlight.js dependency
+
+### B.2 Replace SyntaxHighlight internals
+- [x] B.2a Create `cmHighlight(code, language)` util using @lezer/highlight + classHighlighter
+- [x] B.2b Update SyntaxHighlight.tsx to use CM highlighter instead of hljs
+- [x] B.2c Update CSS theme rules: hljs-* → tok-* classes (15 light + 15 dark)
+- [x] B.2d Verify all 5 existing surfaces still work (153 tests pass, TS clean)
+
+### B.3 Create CodeEditorWindow component
+- [ ] B.3a Create `CodeEditorWindow.tsx` with full CM EditorView
+- [ ] B.3b Accept `cardId` and `initialCode` props
+- [ ] B.3c "Save & Inject" button → registerRuntimeCard + update artifact state
+- [ ] B.3d Error display area for eval failures
+- [ ] B.3e Register as app window in App.tsx (`code-editor:{cardId}`)
+
+### B.4 Wire "Edit" button from RuntimeCardDebugWindow
+- [ ] B.4a Add ✏️ Edit button on each registry card entry
+- [ ] B.4b Clicking opens CodeEditorWindow with card code
+
+### B.5 Wire "Edit" button from card timeline widget
+- [ ] B.5a Add ✏️ Edit button on card items with status=success in InventoryArtifactPanelWidgets
+- [ ] B.5b Look up artifact record for runtimeCardId + runtimeCardCode
+- [ ] B.5c Open CodeEditorWindow with card code
+
+### B.6 Storybook stories
+- [ ] B.6a SyntaxHighlight stories: JS light, JS dark, YAML light, YAML dark, with maxLines truncation
+- [ ] B.6b CodeEditorWindow stories: empty, pre-filled JS, save callback, error display
+
+### B.7 Verify
+- [ ] B.7a TypeScript clean
+- [ ] B.7b All tests pass
+- [ ] B.7c Visual check in browser

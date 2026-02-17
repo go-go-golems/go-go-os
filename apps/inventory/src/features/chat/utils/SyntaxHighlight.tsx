@@ -1,10 +1,31 @@
 import { useMemo, useState } from 'react';
-import hljs from 'highlight.js/lib/core';
-import javascript from 'highlight.js/lib/languages/javascript';
-import yaml from 'highlight.js/lib/languages/yaml';
+import { highlightCode, classHighlighter } from '@lezer/highlight';
+import { javascriptLanguage } from '@codemirror/lang-javascript';
+import { yamlLanguage } from '@codemirror/lang-yaml';
 
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('yaml', yaml);
+const parsers = {
+  javascript: javascriptLanguage.parser,
+  yaml: yamlLanguage.parser,
+} as const;
+
+function cmHighlight(code: string, language: 'javascript' | 'yaml'): string {
+  const parser = parsers[language];
+  const tree = parser.parse(code);
+  let html = '';
+  function putText(text: string, classes: string) {
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (classes) {
+      html += `<span class="${classes}">${escaped}</span>`;
+    } else {
+      html += escaped;
+    }
+  }
+  function putBreak() {
+    html += '\n';
+  }
+  highlightCode(code, tree, classHighlighter, putText, putBreak);
+  return html;
+}
 
 export interface SyntaxHighlightProps {
   code: string;
@@ -23,10 +44,7 @@ export function SyntaxHighlight({ code, language, maxLines = 0, variant = 'light
     ? lines.slice(0, maxLines).join('\n') + '\n…'
     : code;
 
-  const html = useMemo(
-    () => hljs.highlight(displayCode, { language }).value,
-    [displayCode, language],
-  );
+  const html = useMemo(() => cmHighlight(displayCode, language), [displayCode, language]);
 
   return (
     <div data-part="syntax-highlight" data-variant={variant}>
@@ -35,7 +53,7 @@ export function SyntaxHighlight({ code, language, maxLines = 0, variant = 'light
           margin: '4px 0',
           padding: '6px 8px',
           background: variant === 'dark' ? '#0d0d1a' : '#f6f8fa',
-          color: variant === 'dark' ? '#c8d6e5' : undefined,
+          color: variant === 'dark' ? '#c8d6e5' : '#24292f',
           borderRadius: 4,
           fontSize: 11,
           lineHeight: 1.5,

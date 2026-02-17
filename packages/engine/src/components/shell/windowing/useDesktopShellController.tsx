@@ -1,5 +1,5 @@
 import { type MouseEvent, type PointerEvent, type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { clearToast } from '../../../features/notifications/notificationsSlice';
 import { type NotificationsStateSlice, selectToast } from '../../../features/notifications/selectors';
 import {
@@ -20,11 +20,23 @@ import {
   setActiveMenu,
   setSelectedIcon,
 } from '../../../desktop/core/state/windowingSlice';
+import {
+  composeDesktopContributions,
+  routeContributionCommand,
+} from './desktopContributions';
+import {
+  createAppWindowContentAdapter,
+  createFallbackWindowContentAdapter,
+  createHypercardCardContentAdapter,
+} from './defaultWindowContentAdapters';
 import { dragOverlayStore, useDragOverlaySnapshot } from './dragOverlayStore';
-import { PluginCardSessionHost } from './PluginCardSessionHost';
 import { routeDesktopCommand } from './desktopCommandRouter';
 import type { DesktopShellProps } from './desktopShellTypes';
 import type { DesktopIconDef, DesktopMenuSection, DesktopWindowDef } from './types';
+import {
+  renderWindowContentWithAdapters,
+  type WindowContentAdapter,
+} from './windowContentAdapter';
 import { useWindowInteractionController } from './useWindowInteractionController';
 
 type ShellState = WindowingStateSlice & NotificationsStateSlice & Record<string, unknown>;
@@ -95,8 +107,10 @@ export function useDesktopShellController({
   icons: iconsProp,
   renderAppWindow,
   onCommand: onCommandProp,
+  contributions,
 }: DesktopShellProps): DesktopShellControllerResult {
   const dispatch = useDispatch();
+  const store = useStore();
   const lastOpenedHomeKeyRef = useRef<string | null>(null);
   const windowBodyCacheRef = useRef<Map<string, { signature: string; body: ReactNode }>>(new Map());
   const windows = useSelector((s: ShellState) => selectWindowsByZ(s));
@@ -106,19 +120,18 @@ export function useDesktopShellController({
   const toast = useSelector((s: ShellState) => selectToast(s));
   const dragOverlay = useDragOverlaySnapshot();
   const focusedWindowId = focusedWin?.id ?? null;
+  const composedContributions = useMemo(() => composeDesktopContributions(contributions), [contributions]);
 
-  const icons = useMemo(() => {
-    if (iconsProp) return iconsProp;
+  const defaultIcons = useMemo(() => {
     const cardIds = Object.keys(stack.cards);
     return cardIds.map((cardId) => ({
       id: cardId,
       label: stack.cards[cardId].title ?? cardId,
       icon: stack.cards[cardId].icon ?? '📄',
     }));
-  }, [iconsProp, stack.cards]);
+  }, [stack.cards]);
 
-  const menus = useMemo((): DesktopMenuSection[] => {
-    if (menusProp) return menusProp;
+  const defaultMenus = useMemo((): DesktopMenuSection[] => {
     return [
       {
         id: 'file',
@@ -151,7 +164,17 @@ export function useDesktopShellController({
         ],
       },
     ];
-  }, [menusProp, stack.cards, stack.homeCard]);
+  }, [stack.cards, stack.homeCard]);
+
+  const icons = useMemo(() => {
+    if (iconsProp) return iconsProp;
+    return composedContributions.icons.length > 0 ? composedContributions.icons : defaultIcons;
+  }, [composedContributions.icons, defaultIcons, iconsProp]);
+
+  const menus = useMemo((): DesktopMenuSection[] => {
+    if (menusProp) return menusProp;
+    return composedContributions.menus.length > 0 ? composedContributions.menus : defaultMenus;
+  }, [composedContributions.menus, defaultMenus, menusProp]);
 
   useEffect(() => {
     const homeCard = stack.cards[stack.homeCard];
@@ -175,6 +198,19 @@ export function useDesktopShellController({
       }),
     );
   }, [dispatch, homeParam, stack.id, stack.homeCard, stack.cards]);
+
+  const lastOpenedStartupKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (composedContributions.startupWindows.length === 0) return;
+    const startupKey = `${stack.id}:${homeParam ?? ''}:${composedContributions.startupWindows.map((w) => w.id).join('|')}`;
+    if (lastOpenedStartupKeyRef.current === startupKey) return;
+    lastOpenedStartupKeyRef.current = startupKey;
+
+    for (const startup of composedContributions.startupWindows) {
+      const payload = startup.create({ stack, homeParam });
+      if (payload) dispatch(openWindow(payload));
+    }
+  }, [composedContributions.startupWindows, dispatch, homeParam, stack]);
 
   const windowDefs = useMemo(() => {
     return windows.map((w) => {
@@ -320,6 +356,19 @@ export function useDesktopShellController({
 
   const handleCommand = useCallback(
     (commandId: string) => {
+      const contributionHandled = routeContributionCommand(
+        commandId,
+        composedContributions.commandHandlers,
+        {
+          dispatch,
+          getState: () => store.getState(),
+          focusedWindowId: focusedWin?.id ?? null,
+          openCardWindow,
+          closeWindow: handleClose,
+        },
+      );
+      if (contributionHandled) return;
+
       const handled = routeDesktopCommand(commandId, {
         homeCardId: stack.homeCard,
         focusedWindowId: focusedWin?.id ?? null,
@@ -343,37 +392,43 @@ export function useDesktopShellController({
       if (handled) return;
       onCommandProp?.(commandId);
     },
-    [dispatch, focusedWin?.id, handleClose, onCommandProp, openCardWindow, stack.homeCard, windows],
+    [
+      composedContributions.commandHandlers,
+      dispatch,
+      focusedWin?.id,
+      handleClose,
+      onCommandProp,
+      openCardWindow,
+      stack.homeCard,
+      store,
+      windows,
+    ],
+  );
+
+  const defaultAdapters = useMemo<WindowContentAdapter[]>(
+    () => [createAppWindowContentAdapter(), createHypercardCardContentAdapter(), createFallbackWindowContentAdapter()],
+    [],
+  );
+
+  const allAdapters = useMemo<WindowContentAdapter[]>(
+    () => [...composedContributions.windowContentAdapters, ...defaultAdapters],
+    [composedContributions.windowContentAdapters, defaultAdapters],
   );
 
   const buildWindowBody = useCallback(
     (winInstance: WindowInstance) => {
       if (!winInstance) return null;
-
-      if (winInstance.content.kind === 'app' && winInstance.content.appKey && renderAppWindow) {
-        const rendered = renderAppWindow(winInstance.content.appKey, winInstance.id);
-        if (rendered) return rendered;
-      }
-
-      const cardRef = winInstance.content.card;
-      if (winInstance.content.kind === 'card' && cardRef) {
-        return (
-          <PluginCardSessionHost
-            windowId={winInstance.id}
-            sessionId={cardRef.cardSessionId}
-            stack={stack}
-            mode={mode}
-          />
-        );
-      }
-
-      return (
-        <div style={{ padding: 10 }}>
-          <p>{winInstance.title}</p>
-        </div>
+      return renderWindowContentWithAdapters(
+        winInstance,
+        {
+          stack,
+          mode,
+          renderAppWindow,
+        },
+        allAdapters,
       );
     },
-    [mode, renderAppWindow, stack],
+    [allAdapters, mode, renderAppWindow, stack],
   );
 
   useEffect(() => {

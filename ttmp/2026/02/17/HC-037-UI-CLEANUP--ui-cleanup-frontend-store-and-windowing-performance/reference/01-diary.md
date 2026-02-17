@@ -20,6 +20,8 @@ RelatedFiles:
       Note: Execution log and failure recovery notes
     - Path: ttmp/2026/02/17/HC-037-UI-CLEANUP--ui-cleanup-frontend-store-and-windowing-performance/design-doc/02-frontend-storybook-state-management-and-css-design-system-cleanup-investigation.md
       Note: Second investigation deliverable documented in diary
+    - Path: ttmp/2026/02/17/HC-037-UI-CLEANUP--ui-cleanup-frontend-store-and-windowing-performance/design-doc/03-chat-window-message-and-timeline-widget-virtualization-performance-investigation.md
+      Note: Third focused investigation deliverable logged in diary
     - Path: ttmp/2026/02/17/HC-037-UI-CLEANUP--ui-cleanup-frontend-store-and-windowing-performance/reference/01-diary.md
       Note: Execution log for both investigations
 ExternalSources: []
@@ -28,6 +30,7 @@ LastUpdated: 2026-02-17T08:38:00-05:00
 WhatFor: Detailed implementation log for reproducibility and review.
 WhenToUse: Read when auditing what was done for HC-037 and why.
 ---
+
 
 
 
@@ -513,3 +516,91 @@ A key extension in this step was CSS architecture analysis for a reusable HyperC
 - File size checks:
   - `wc -w` => 3724 words
   - `wc -l` => 964 lines
+
+## Step 4: Focused Investigation — Chat Window Message/Timeline Virtualization
+
+This step created a dedicated third investigation focused specifically on chat rendering throughput, with emphasis on top-level message virtualization/windowing and timeline-widget rendering strategy. The design objective was to preserve chat semantics (streaming, auto-scroll, debug mode, inline widgets) while reducing render fan-out during long sessions.
+
+I intentionally kept this report implementation-oriented: concrete file-path evidence, phased rollout options, API sketches, risks, and testing guidance for safe adoption.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Add a section about improving the performance of the chat window by p otentially windowing the messages / timeline widgets shown. Create a new detailed investigation and design document and upload to remarable as well"
+
+**Assistant interpretation:** Produce a separate detailed design investigation focused on chat window performance via message/timeline widget windowing (virtualization), then publish it in HC-037 and upload it to reMarkable.
+
+**Inferred user intent:** De-risk and accelerate implementation of chat rendering performance improvements by having a standalone architecture plan, not just a subsection in previous docs.
+
+**Commit (code):** N/A — no git commit was created.
+
+### What I did
+
+- Inspected current chat render path and widget internals:
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+  - `apps/inventory/src/features/chat/InventoryTimelineWidget.tsx`
+  - `apps/inventory/src/features/chat/InventoryArtifactPanelWidgets.tsx`
+- Confirmed current message rendering is full-list mapping and identified pre-render message transformation (`displayMessages.map(...)`) as additional cost layer.
+- Confirmed widget-item caps (`MAX_TIMELINE_ITEMS=24`, `MAX_PANEL_ITEMS=16`) to separate top-level message scaling from nested widget scaling.
+- Added new design doc via docmgr:
+  - `design-doc/03-chat-window-message-and-timeline-widget-virtualization-performance-investigation.md`
+- Wrote a detailed report covering:
+  - baseline bottlenecks,
+  - three design options,
+  - recommended phased architecture,
+  - scroll anchoring behavior,
+  - API/pseudocode sketches,
+  - rollout/test plan and risk controls.
+
+### Why
+
+- Chat render performance has different constraints than earlier store/drag analyses.
+- A dedicated doc makes implementation planning and code review much simpler than extending broad prior reports.
+- Distinguishing top-level virtualization (high priority) from nested widget virtualization (conditional/future) avoids overengineering.
+
+### What worked
+
+- Existing code structure made it straightforward to identify message-map hotspots and scroll behavior dependencies.
+- The dedicated document path under HC-037 keeps this investigation clearly scoped and discoverable.
+
+### What didn't work
+
+- No live runtime profiling run was added in this step; recommendations remain code-path and architectural analysis based.
+
+### What I learned
+
+- Biggest immediate win is top-level message virtualization; nested timeline widget virtualization is usually secondary under current item caps.
+- Streaming-safe bottom anchoring is the highest-risk behavior to preserve during migration.
+
+### What was tricky to build
+
+- The subtle challenge was avoiding a simplistic “just add virtualization” plan. Chat has variable row heights, streaming growth, and pinned/unpinned scroll semantics that can easily regress.
+- I handled this by proposing phased rollout with feature flags and explicit anchoring hooks/tests, rather than immediate default cutover.
+
+### What warrants a second pair of eyes
+
+- Validate product expectations for pinned-bottom behavior during streams and user scroll overrides.
+- Validate whether soft windowing fallback should remain permanent even after full virtualization.
+- Validate library choice (`@tanstack/react-virtual`) against team standards.
+
+### What should be done in the future
+
+- Add benchmark/stress harness story (20/200/2000 rows, streaming active) before rollout.
+- Instrument render-count and frame-drop telemetry in dev mode to track gains and regressions.
+
+### Code review instructions
+
+- Review new report:
+  - `ttmp/2026/02/17/HC-037-UI-CLEANUP--ui-cleanup-frontend-store-and-windowing-performance/design-doc/03-chat-window-message-and-timeline-widget-virtualization-performance-investigation.md`
+- Validate baseline code anchors:
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+  - `apps/inventory/src/features/chat/InventoryTimelineWidget.tsx`
+
+### Technical details
+
+- New document word count: 2237 words (529 lines).
+- Upload destination requested/used: `/ai/2026/02/17/HC-037-UI-CLEANUP`.
+- Note: unrelated in-worktree app code changes (from earlier interruption) were not modified in this step; only HC-037 docs were updated.

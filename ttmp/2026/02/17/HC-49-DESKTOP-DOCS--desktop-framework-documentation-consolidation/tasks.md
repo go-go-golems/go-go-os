@@ -10,3 +10,11 @@
 - [x] D2.6: Author `Performance Model: Durable vs Ephemeral Lanes` documenting Redux durable state vs interaction overlay lane and diagnostics practices
 - [x] D2.7: Relate key source files to ticket/docs, run `docmgr doctor`, and update changelog/diary
 - [x] D2.8: Close HC-45 with changelog note that deferred documentation deliverables were consolidated in HC-49
+- [x] D3.1: Add Architecture Overview document (component tree, data flow, boot sequence, import map)
+- [x] D3.2: Rewrite Quickstart with prose, diagrams, progressive disclosure, What You'll Build, import map, next-steps
+- [x] D3.3: Rewrite Contribution API Reference with motivation, anatomy diagram, command routing flow, tutorial, common patterns
+- [ ] D3.4: Rewrite Window Content Adapter Guide with motivation, chain diagram, decision tree, end-to-end walkthrough
+- [ ] D3.5: Rewrite Theming and Parts Contract with motivation, theme layers diagram, visual parts map, CSS cookbook
+- [ ] D3.6: Rewrite Performance Model with problem statement, before/after, decision flowchart, lifecycle diagram, recipes
+- [ ] D3.7: Add Common Recipes cookbook document
+- [ ] D3.8: Add Reading Order / Start Here guide and cross-link all docs

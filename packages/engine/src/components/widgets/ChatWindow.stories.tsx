@@ -210,6 +210,18 @@ export function defaultWidgetRenderer(widget: InlineWidget): ReactNode {
 const meta = {
   title: 'Engine/Widgets/ChatWindow',
   component: ChatWindow,
+  excludeStories: [
+    'useSimulatedStream',
+    'STOCK_DATA',
+    'STOCK_COLUMNS',
+    'DEAL_DATA',
+    'DEAL_COLUMNS',
+    'REPORT_SECTIONS',
+    'CONTACT_DATA',
+    'CONTACT_COLUMNS',
+    'defaultWidgetRenderer',
+    'StoryFrame',
+  ],
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof ChatWindow>;
 

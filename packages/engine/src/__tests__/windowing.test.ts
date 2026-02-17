@@ -195,6 +195,14 @@ describe('windowingReducer', () => {
       expect(state.desktop.zCounter).toBe(5);
       expect(state.windows.w1.z).toBe(5);
     });
+
+    it('is a no-op when focusing the already-focused window', () => {
+      const state = reduce(openWindow(cardWindow('w1', 'browse')), focusWindow('w1'));
+
+      expect(state.desktop.focusedWindowId).toBe('w1');
+      expect(state.desktop.zCounter).toBe(1);
+      expect(state.windows.w1.z).toBe(1);
+    });
   });
 
   // ── closeWindow ──

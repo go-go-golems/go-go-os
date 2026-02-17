@@ -71,6 +71,7 @@ const windowingSlice = createSlice({
     focusWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
+      if (state.desktop.focusedWindowId === win.id) return;
 
       state.desktop.zCounter += 1;
       win.z = state.desktop.zCounter;

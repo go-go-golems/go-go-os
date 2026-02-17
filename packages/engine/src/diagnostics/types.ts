@@ -49,6 +49,8 @@ export interface ActionRateHistory {
   peakPerSec: number;
   /** Timestamp of last non-zero observation. Used for linger logic. */
   lastSeenTs: number;
+  /** Whether this action type is pinned (immune to linger pruning). */
+  pinned: boolean;
 }
 
 /** A single frame timing sample from the rAF monitor. */

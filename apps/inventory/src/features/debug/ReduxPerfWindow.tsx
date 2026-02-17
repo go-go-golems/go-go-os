@@ -65,7 +65,7 @@ function Sparkline({ data, dimmed }: { data: number[]; dimmed?: boolean }) {
  * Action types linger in the table for ~15s after they stop firing.
  */
 export function ReduxPerfWindow() {
-  const { snapshot: snap, paused, windowMs, actionHistory } = useDiagnosticsSnapshot(500);
+  const { snapshot: snap, paused, windowMs, actionHistory, togglePin } = useDiagnosticsSnapshot(500);
 
   const handleReset = useCallback(() => resetDiagnostics(), []);
   const handleTogglePause = useCallback(() => toggleDiagnosticsPause(), []);
@@ -122,6 +122,7 @@ export function ReduxPerfWindow() {
         <table style={styles.table}>
           <thead>
             <tr>
+              <th style={styles.thPin}>{/* pin */}</th>
               <th style={styles.th}>Action Type</th>
               <th style={styles.thRight}>Rate/s</th>
               <th style={styles.thCenter}>⌁</th>
@@ -131,13 +132,13 @@ export function ReduxPerfWindow() {
           <tbody>
             {actionHistory.length === 0 && (
               <tr>
-                <td colSpan={4} style={styles.td}>
+                <td colSpan={5} style={styles.td}>
                   <em>No actions yet</em>
                 </td>
               </tr>
             )}
             {actionHistory.map((entry) => (
-              <ActionRow key={entry.type} entry={entry} />
+              <ActionRow key={entry.type} entry={entry} onTogglePin={togglePin} />
             ))}
           </tbody>
         </table>
@@ -153,15 +154,21 @@ export function ReduxPerfWindow() {
   );
 }
 
-function ActionRow({ entry }: { entry: ActionRateHistory }) {
-  const inactive = entry.perSec === 0;
+function ActionRow({ entry, onTogglePin }: { entry: ActionRateHistory; onTogglePin: (type: string) => void }) {
+  const inactive = entry.perSec === 0 && !entry.pinned;
   const rowStyle: React.CSSProperties = inactive ? { opacity: 0.45 } : {};
+  const handlePin = useCallback(() => onTogglePin(entry.type), [onTogglePin, entry.type]);
   return (
     <tr style={rowStyle}>
+      <td style={styles.tdPin}>
+        <button onClick={handlePin} style={styles.pinBtn} title={entry.pinned ? 'Unpin' : 'Pin'}>
+          {entry.pinned ? '📌' : '∘'}
+        </button>
+      </td>
       <td style={styles.td}>
         <code style={styles.code}>{entry.type}</code>
       </td>
-      <td style={styles.tdRight}>{inactive ? '–' : fmt(entry.perSec, 1)}</td>
+      <td style={styles.tdRight}>{entry.perSec === 0 ? '–' : fmt(entry.perSec, 1)}</td>
       <td style={styles.tdCenter}>
         <Sparkline data={entry.sparkline} dimmed={inactive} />
       </td>
@@ -271,6 +278,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '10px',
     textTransform: 'uppercase' as const,
   },
+  thPin: {
+    width: '20px',
+    padding: '2px 2px',
+    borderBottom: '1px solid var(--hc-color-border, #ccc)',
+  },
   thRight: {
     textAlign: 'right' as const,
     padding: '2px 4px',
@@ -290,6 +302,21 @@ const styles: Record<string, React.CSSProperties> = {
   td: {
     padding: '2px 4px',
     borderBottom: '1px solid var(--hc-color-border-light, #eee)',
+  },
+  tdPin: {
+    width: '20px',
+    padding: '2px 2px',
+    borderBottom: '1px solid var(--hc-color-border-light, #eee)',
+    textAlign: 'center' as const,
+  },
+  pinBtn: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    fontSize: '11px',
+    lineHeight: 1,
+    opacity: 0.7,
   },
   tdRight: {
     padding: '2px 4px',

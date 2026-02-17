@@ -411,4 +411,50 @@ describe('accumulateHistory', () => {
     expect(history.get('a')!.peakPerSec).toBe(15);
     expect(history.get('b')!.peakPerSec).toBe(20);
   });
+
+  it('pinned types survive linger pruning', () => {
+    const pins = new Set(['sticky']);
+    let history = new Map<string, ActionRateHistory>();
+    history = accumulateHistory(history, [{ type: 'sticky', perSec: 5 }], now, 30, 1000, pins);
+    // 5s later, well past 1000ms linger — but pinned
+    history = accumulateHistory(history, [], now + 5000, 30, 1000, pins);
+
+    expect(history.has('sticky')).toBe(true);
+    expect(history.get('sticky')!.pinned).toBe(true);
+    expect(history.get('sticky')!.perSec).toBe(0);
+  });
+
+  it('unpinned types get pruned normally after linger', () => {
+    const pins = new Set(['sticky']);
+    let history = new Map<string, ActionRateHistory>();
+    history = accumulateHistory(history, [
+      { type: 'sticky', perSec: 5 },
+      { type: 'ephemeral', perSec: 5 },
+    ], now, 30, 1000, pins);
+    // 5s later
+    history = accumulateHistory(history, [], now + 5000, 30, 1000, pins);
+
+    expect(history.has('sticky')).toBe(true);
+    expect(history.has('ephemeral')).toBe(false);
+  });
+
+  it('newly seen types get pinned flag from pinnedTypes set', () => {
+    const pins = new Set(['pre-pinned']);
+    let history = new Map<string, ActionRateHistory>();
+    history = accumulateHistory(history, [{ type: 'pre-pinned', perSec: 3 }], now, 30, 1000, pins);
+
+    expect(history.get('pre-pinned')!.pinned).toBe(true);
+  });
+
+  it('pinned flag updates when pin set changes', () => {
+    let pins = new Set(['x']);
+    let history = new Map<string, ActionRateHistory>();
+    history = accumulateHistory(history, [{ type: 'x', perSec: 10 }], now, 30, 15000, pins);
+    expect(history.get('x')!.pinned).toBe(true);
+
+    // Unpin
+    pins = new Set<string>();
+    history = accumulateHistory(history, [{ type: 'x', perSec: 5 }], now + 500, 30, 15000, pins);
+    expect(history.get('x')!.pinned).toBe(false);
+  });
 });

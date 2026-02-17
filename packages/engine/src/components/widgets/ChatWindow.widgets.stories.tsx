@@ -16,11 +16,12 @@ import {
 
 const meta = {
   title: 'Engine/Widgets/ChatWindow',
+  component: ChatWindow,
   parameters: { layout: 'fullscreen' },
-} satisfies Meta;
+} satisfies Meta<typeof ChatWindow>;
 
 export default meta;
-type Story = StoryObj;
+type Story = StoryObj<typeof meta>;
 
 export const InlineDataTable: Story = {
   render: () => (

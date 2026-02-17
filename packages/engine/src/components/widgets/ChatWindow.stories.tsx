@@ -209,11 +209,12 @@ export function defaultWidgetRenderer(widget: InlineWidget): ReactNode {
 
 const meta = {
   title: 'Engine/Widgets/ChatWindow',
+  component: ChatWindow,
   parameters: { layout: 'fullscreen' },
-} satisfies Meta;
+} satisfies Meta<typeof ChatWindow>;
 
 export default meta;
-export type Story = StoryObj;
+export type Story = StoryObj<typeof meta>;
 
 export function StoryFrame({ children }: { children: ReactNode }) {
   return (

@@ -1,0 +1,53 @@
+---
+Title: Desktop Shell and Windowing Reusable Framework Cleanup
+Ticket: HC-45-DESKTOP-FRAMEWORK
+Status: active
+Topics:
+    - frontend
+    - architecture
+    - windowing
+    - cleanup
+    - design-system
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: packages/engine/src/components/shell/windowing/DesktopShell.tsx
+      Note: Current shell orchestration baseline and primary refactor target
+    - Path: packages/engine/src/components/shell/windowing/dragOverlayStore.ts
+      Note: Existing fast interaction lane architecture to preserve
+    - Path: packages/engine/src/desktop/core/state/windowingSlice.ts
+      Note: Durable desktop state model after HC-45 hard-cutover move
+    - Path: packages/engine/src/theme/base.css
+      Note: Monolithic style surface to modularize into reusable packs
+ExternalSources: []
+Summary: Ticket workspace for extracting DesktopShell/windowing into a reusable in-browser desktop framework with macOS-1 style theming support.
+LastUpdated: 2026-02-17T16:22:00-05:00
+WhatFor: Track analysis, planning, and implementation guidance for reusable desktop framework extraction.
+WhenToUse: Use when implementing or reviewing desktop-shell and windowing framework cleanup work.
+---
+
+# Desktop Shell and Windowing Reusable Framework Cleanup
+
+## Overview
+
+HC-45 captures the next-stage cleanup from app-specific shell integration toward a reusable desktop framework architecture. The focus is a macOS-1 styled in-browser OS developer platform built from existing HyperCard windowing primitives.
+
+## Key Documents
+
+- `design-doc/01-desktop-shell-and-windowing-reusability-analysis-for-in-browser-os-framework.md`
+- `design-doc/02-desktop-shell-and-windowing-reusable-framework-implementation-plan.md`
+- `reference/01-diary.md`
+
+## Current Status
+
+- Status: `active`
+- Analysis: complete
+- Implementation planning: complete
+- Implementation execution (T1-T3): complete
+- Upload to reMarkable: complete
+
+## Tasks and Changelog
+
+- See `tasks.md`
+- See `changelog.md`

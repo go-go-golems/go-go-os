@@ -1,11 +1,13 @@
 import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { DesktopShell, type DesktopContribution } from '@hypercard/engine/desktop-react';
+import {
+  CodeEditorWindow,
+  EventViewerWindow,
+  getRuntimeCardEditorInitialCode,
+} from '@hypercard/engine';
 import { type ReactNode, useCallback, useMemo } from 'react';
 import { STACK } from './domain/stack';
-import { EventViewerWindow } from './features/chat/EventViewerWindow';
 import { InventoryChatWindow } from './features/chat/InventoryChatWindow';
-import { CodeEditorWindow } from './features/chat/CodeEditorWindow';
-import { getEditorInitialCode } from './features/chat/editorLaunch';
 import { RuntimeCardDebugWindow } from './features/chat/RuntimeCardDebugWindow';
 import { ReduxPerfWindow } from './features/debug/ReduxPerfWindow';
 
@@ -56,7 +58,12 @@ export function App() {
     }
     if (appKey.startsWith('code-editor:')) {
       const cardId = appKey.slice('code-editor:'.length);
-      return <CodeEditorWindow cardId={cardId} initialCode={getEditorInitialCode(cardId)} />;
+      return (
+        <CodeEditorWindow
+          cardId={cardId}
+          initialCode={getRuntimeCardEditorInitialCode(cardId)}
+        />
+      );
     }
     return null;
   }, []);

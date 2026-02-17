@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { SyntaxHighlight } from '../utils/SyntaxHighlight';
+import { SyntaxHighlight } from '@hypercard/engine';
 
 const meta = {
   title: 'Apps/Inventory/Chat/SyntaxHighlight',

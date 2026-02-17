@@ -1,11 +1,20 @@
 import { ChatWindow, registerRuntimeCard, type ChatWindowMessage, type InlineWidget } from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
+import {
+  buildArtifactOpenWindowPayload,
+  emitConversationEvent,
+  extractArtifactUpsertFromSem,
+  formatTimelineUpsert,
+  HypercardCardPanelWidget as InventoryCardPanelWidget,
+  HypercardGeneratedWidgetPanel as InventoryGeneratedWidgetPanel,
+  HypercardTimelineWidget as InventoryTimelineWidget,
+  openRuntimeCardCodeEditor as openCodeEditor,
+  timelineItemsFromInlineWidget,
+  type TimelineItemUpdate,
+  upsertArtifact,
+} from '@hypercard/engine';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import { buildArtifactOpenWindowPayload, extractArtifactUpsertFromSem } from './artifactRuntime';
-import { upsertArtifact } from './artifactsSlice';
-import { openCodeEditor } from './editorLaunch';
-import { emitConversationEvent } from './eventBus';
 import {
   applyLLMDelta,
   applyLLMFinal,
@@ -46,9 +55,6 @@ import {
   type TimelineSnapshot,
   submitPrompt,
 } from './webchatClient';
-import { InventoryTimelineWidget, timelineItemsFromInlineWidget } from './InventoryTimelineWidget';
-import { InventoryCardPanelWidget, InventoryGeneratedWidgetPanel } from './InventoryArtifactPanelWidgets';
-import { formatTimelineUpsert, type TimelineItemUpdate } from './timelineProjection';
 import {
   booleanField,
   compactJSON,

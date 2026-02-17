@@ -1,6 +1,6 @@
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import type { OpenWindowPayload } from '../../desktop/core/state';
 import type { ArtifactSource } from './artifactsSlice';
-import { recordField, stringField, structuredRecordFromUnknown } from './semHelpers';
+import { recordField, stringField, structuredRecordFromUnknown } from './semFields';
 
 export interface ArtifactUpsert {
   id: string;
@@ -11,6 +11,25 @@ export interface ArtifactUpsert {
   runtimeCardId?: string;
   runtimeCardCode?: string;
 }
+
+export interface ArtifactTemplateResolver {
+  resolveCardId: (template: string | undefined) => string;
+  resolveIcon?: (template: string | undefined) => string;
+}
+
+const defaultTemplateResolver: ArtifactTemplateResolver = {
+  resolveCardId(template) {
+    const normalized = (template ?? '').trim().toLowerCase();
+    if (normalized === 'itemviewer') {
+      return 'itemViewer';
+    }
+    return 'reportViewer';
+  },
+  resolveIcon(template) {
+    const normalized = (template ?? '').trim().toLowerCase();
+    return normalized === 'itemviewer' ? '📦' : '📊';
+  },
+};
 
 function artifactFromStructured(
   record: Record<string, unknown>,
@@ -23,6 +42,7 @@ function artifactFromStructured(
   if (!artifactId) {
     return undefined;
   }
+
   return {
     id: artifactId,
     title: stringField(record, 'title'),
@@ -41,14 +61,16 @@ export function extractArtifactUpsertFromSem(
   }
 
   if (type === 'hypercard.widget.v1') {
-    const template = stringField(data, 'widgetType') ?? stringField(data, 'type') ?? stringField(data, 'template');
+    const template =
+      stringField(data, 'widgetType') ??
+      stringField(data, 'type') ??
+      stringField(data, 'template');
     return artifactFromStructured(data, 'widget', template);
   }
 
   if (type === 'hypercard.card.v2') {
     const upsert = artifactFromStructured(data, 'card');
     if (upsert) {
-      // Extract runtime card fields from the payload
       const payload = recordField(data, 'data');
       const cardData = payload ? recordField(payload, 'card') : undefined;
       if (cardData) {
@@ -67,16 +89,20 @@ export function extractArtifactUpsertFromSem(
   if (!entity || stringField(entity, 'kind') !== 'tool_result') {
     return undefined;
   }
+
   const toolResult = recordField(entity, 'toolResult');
   if (!toolResult) {
     return undefined;
   }
+
   const customKind = stringField(toolResult, 'customKind');
   const resultRecord =
-    structuredRecordFromUnknown(toolResult.result) ?? structuredRecordFromUnknown(toolResult.resultRaw);
+    structuredRecordFromUnknown(toolResult.result) ??
+    structuredRecordFromUnknown(toolResult.resultRaw);
   if (!resultRecord) {
     return undefined;
   }
+
   if (customKind === 'hypercard.widget.v1') {
     const template =
       stringField(resultRecord, 'widgetType') ??
@@ -84,10 +110,19 @@ export function extractArtifactUpsertFromSem(
       stringField(resultRecord, 'template');
     return artifactFromStructured(resultRecord, 'widget', template);
   }
+
   if (customKind === 'hypercard.card.v2') {
-    const upsert = artifactFromStructured(resultRecord, 'card', stringField(resultRecord, 'template'));
-    if (upsert && customKind === 'hypercard.card.v2') {
-      const cardData = recordField(resultRecord, 'card') ?? (resultRecord.data ? recordField(resultRecord.data as Record<string, unknown>, 'card') : undefined);
+    const upsert = artifactFromStructured(
+      resultRecord,
+      'card',
+      stringField(resultRecord, 'template'),
+    );
+    if (upsert) {
+      const cardData =
+        recordField(resultRecord, 'card') ??
+        (resultRecord.data
+          ? recordField(resultRecord.data as Record<string, unknown>, 'card')
+          : undefined);
       if (cardData) {
         upsert.runtimeCardId = stringField(cardData, 'id');
         upsert.runtimeCardCode = stringField(cardData, 'code');
@@ -95,23 +130,12 @@ export function extractArtifactUpsertFromSem(
     }
     return upsert;
   }
+
   return undefined;
 }
 
 function sanitizeArtifactKey(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
-}
-
-export function templateToCardId(template: string | undefined): string {
-  const normalized = (template ?? '').trim().toLowerCase();
-  if (normalized === 'itemviewer') {
-    return 'itemViewer';
-  }
-  return 'reportViewer';
-}
-
-function templateIcon(template: string | undefined): string {
-  return templateToCardId(template) === 'itemViewer' ? '📦' : '📊';
 }
 
 export function buildArtifactOpenWindowPayload(input: {
@@ -120,20 +144,25 @@ export function buildArtifactOpenWindowPayload(input: {
   title?: string;
   stackId?: string;
   runtimeCardId?: string;
+  templateResolver?: ArtifactTemplateResolver;
 }): OpenWindowPayload | undefined {
   const artifactId = input.artifactId.trim();
   if (artifactId.length === 0) {
     return undefined;
   }
+
   const safeKey = sanitizeArtifactKey(artifactId);
-  const cardId = input.runtimeCardId ?? templateToCardId(input.template);
+  const resolver = input.templateResolver ?? defaultTemplateResolver;
+  const cardId = input.runtimeCardId ?? resolver.resolveCardId(input.template);
   const title = input.title?.trim() || `Artifact ${artifactId}`;
   const stackId = (input.stackId ?? 'inventory').trim() || 'inventory';
 
   return {
     id: `window:artifact:${safeKey}`,
     title,
-    icon: input.runtimeCardId ? '🃏' : templateIcon(input.template),
+    icon: input.runtimeCardId
+      ? '🃏'
+      : (resolver.resolveIcon?.(input.template) ?? '📄'),
     bounds: { x: 220, y: 50, w: 520, h: 420 },
     content: {
       kind: 'card',
@@ -146,4 +175,8 @@ export function buildArtifactOpenWindowPayload(input: {
     },
     dedupeKey: `artifact:${artifactId}`,
   };
+}
+
+export function defaultArtifactTemplateResolver(): ArtifactTemplateResolver {
+  return defaultTemplateResolver;
 }

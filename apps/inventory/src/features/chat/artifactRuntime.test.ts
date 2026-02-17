@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildArtifactOpenWindowPayload,
   extractArtifactUpsertFromSem,
-} from './artifactRuntime';
+} from '@hypercard/engine';
 
 describe('artifactRuntime', () => {
   it('builds deduped open-window payload with artifact param', () => {

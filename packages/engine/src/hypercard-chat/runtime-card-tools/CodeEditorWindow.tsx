@@ -6,7 +6,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching, foldGutter, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { classHighlighter } from '@lezer/highlight';
-import { registerRuntimeCard, hasRuntimeCard } from '@hypercard/engine';
+import { registerRuntimeCard, hasRuntimeCard } from '../../plugin-runtime';
 
 export interface CodeEditorWindowProps {
   cardId: string;

@@ -15,7 +15,7 @@ export interface ArtifactRecord {
   injectionError?: string;
 }
 
-interface ArtifactsState {
+export interface ArtifactsState {
   byId: Record<string, ArtifactRecord>;
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { artifactsReducer, upsertArtifact } from './artifactsSlice';
+import { artifactsReducer, upsertArtifact } from '@hypercard/engine';
 
 function reduce(actions: Parameters<typeof artifactsReducer>[1][]) {
   let state = artifactsReducer(undefined, { type: '__test__/init' });

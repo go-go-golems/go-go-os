@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { EventViewerWindow } from '../EventViewerWindow';
-import type { EventLogEntry } from '../eventBus';
+import { EventViewerWindow, type EventLogEntry } from '@hypercard/engine';
 
 const meta: Meta<typeof EventViewerWindow> = {
   title: 'Apps/Inventory/Chat/EventViewer',

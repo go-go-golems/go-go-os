@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { emitConversationEvent, subscribeConversationEvents, type EventLogEntry } from './eventBus';
+import {
+  emitConversationEvent,
+  subscribeConversationEvents,
+  type EventLogEntry,
+} from '@hypercard/engine';
 
 describe('eventBus', () => {
   it('delivers events to subscribers', () => {

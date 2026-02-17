@@ -1,11 +1,7 @@
-import type { ArtifactRecord } from './artifactsSlice';
-
-interface ArtifactsStateShape {
-  byId: Record<string, ArtifactRecord>;
-}
+import type { ArtifactRecord, ArtifactsState } from './artifactsSlice';
 
 interface ArtifactsStateSlice {
-  artifacts: ArtifactsStateShape;
+  artifacts: ArtifactsState;
 }
 
 export const selectArtifactsById = (state: ArtifactsStateSlice) => state.artifacts.byId;

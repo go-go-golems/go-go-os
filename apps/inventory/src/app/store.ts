@@ -1,5 +1,5 @@
 import { createAppStore } from '@hypercard/engine';
-import { artifactsReducer } from '../features/chat/artifactsSlice';
+import { artifactsReducer } from '@hypercard/engine';
 import { chatReducer } from '../features/chat/chatSlice';
 import { inventoryReducer } from '../features/inventory/inventorySlice';
 import { salesReducer } from '../features/sales/salesSlice';

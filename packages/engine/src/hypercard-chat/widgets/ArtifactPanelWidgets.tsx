@@ -1,10 +1,8 @@
 import type { CSSProperties } from 'react';
-import type { TimelineWidgetItem } from './chatSlice';
-import { statusColor, statusGlyph } from './InventoryTimelineWidget';
-import { SyntaxHighlight } from './utils/SyntaxHighlight';
-import { toYaml } from './utils/yamlFormat';
-
-/* ── Shared styles ───────────────────────────────────────────────────── */
+import type { TimelineWidgetItem } from '../types';
+import { statusColor, statusGlyph } from './TimelineWidget';
+import { SyntaxHighlight } from '../utils/syntaxHighlight';
+import { toYaml } from '../utils/yamlFormat';
 
 const panelStyle: CSSProperties = {
   display: 'flex',
@@ -44,8 +42,6 @@ const openBtnStyle: CSSProperties = {
   fontSize: 10,
   cursor: 'pointer',
 };
-
-/* ── Metadata table (debug or error) ─────────────────────────────────── */
 
 const metaTableStyle: CSSProperties = {
   margin: '4px 0 0',
@@ -105,13 +101,9 @@ function MetadataTable({ item }: { item: TimelineWidgetItem }) {
   );
 }
 
-/* ── Should we show metadata? ────────────────────────────────────────── */
-
 function shouldShowMeta(item: TimelineWidgetItem, debug: boolean): boolean {
   return debug || item.status === 'error';
 }
-
-/* ── ArtifactPanel ───────────────────────────────────────────────────── */
 
 interface ArtifactPanelProps {
   items: TimelineWidgetItem[];
@@ -122,7 +114,14 @@ interface ArtifactPanelProps {
   debug?: boolean;
 }
 
-function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact, onEditCard, debug }: ArtifactPanelProps) {
+function ArtifactPanel({
+  items,
+  emptyText,
+  panelPart,
+  onOpenArtifact,
+  onEditCard,
+  debug,
+}: ArtifactPanelProps) {
   if (items.length === 0) {
     return (
       <div data-part={`${panelPart}-empty`} style={{ fontSize: 11, opacity: 0.75 }}>
@@ -138,16 +137,11 @@ function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact, onEditCard
 
         return (
           <div key={item.id} data-part={`${panelPart}-item`} data-status={item.status} style={itemStyle}>
-            {/* Status glyph */}
-            <span
-              data-part={`${panelPart}-status`}
-              style={{ fontWeight: 700, color: statusColor(item.status), textAlign: 'center' }}
-            >
+            <span data-part={`${panelPart}-status`} style={{ fontWeight: 700, color: statusColor(item.status), textAlign: 'center' }}>
               {statusGlyph(item.status)}
             </span>
 
             <div>
-              {/* Title row with chips and Open button */}
               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
                 <span style={{ fontWeight: 700 }}>{item.title}</span>
                 {item.template && <span style={chipStyle}>{item.template}</span>}
@@ -173,17 +167,12 @@ function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact, onEditCard
                 )}
               </div>
 
-              {/* Artifact ID */}
               {item.artifactId && (
                 <div style={{ opacity: 0.8, fontSize: 10 }}>artifact: {item.artifactId}</div>
               )}
 
-              {/* Detail text */}
-              {item.detail && (
-                <div style={{ opacity: 0.78 }}>{item.detail}</div>
-              )}
+              {item.detail && <div style={{ opacity: 0.78 }}>{item.detail}</div>}
 
-              {/* Metadata table (debug mode or error status) */}
               {showMeta && <MetadataTable item={item} />}
             </div>
           </div>
@@ -193,21 +182,24 @@ function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact, onEditCard
   );
 }
 
-/* ── Exported panel components ───────────────────────────────────────── */
-
-export interface InventoryCardPanelWidgetProps {
+export interface HypercardCardPanelWidgetProps {
   items: TimelineWidgetItem[];
   onOpenArtifact?: (item: TimelineWidgetItem) => void;
   onEditCard?: (item: TimelineWidgetItem) => void;
   debug?: boolean;
 }
 
-export function InventoryCardPanelWidget({ items, onOpenArtifact, onEditCard, debug }: InventoryCardPanelWidgetProps) {
+export function HypercardCardPanelWidget({
+  items,
+  onOpenArtifact,
+  onEditCard,
+  debug,
+}: HypercardCardPanelWidgetProps) {
   return (
     <ArtifactPanel
       items={items}
       emptyText="No card proposals yet."
-      panelPart="inventory-card-panel-widget"
+      panelPart="hypercard-card-panel-widget"
       onOpenArtifact={onOpenArtifact}
       onEditCard={onEditCard}
       debug={debug}
@@ -215,18 +207,22 @@ export function InventoryCardPanelWidget({ items, onOpenArtifact, onEditCard, de
   );
 }
 
-export interface InventoryGeneratedWidgetPanelProps {
+export interface HypercardGeneratedWidgetPanelProps {
   items: TimelineWidgetItem[];
   onOpenArtifact?: (item: TimelineWidgetItem) => void;
   debug?: boolean;
 }
 
-export function InventoryGeneratedWidgetPanel({ items, onOpenArtifact, debug }: InventoryGeneratedWidgetPanelProps) {
+export function HypercardGeneratedWidgetPanel({
+  items,
+  onOpenArtifact,
+  debug,
+}: HypercardGeneratedWidgetPanelProps) {
   return (
     <ArtifactPanel
       items={items}
       emptyText="No generated widgets yet."
-      panelPart="inventory-generated-widget-panel"
+      panelPart="hypercard-generated-widget-panel"
       onOpenArtifact={onOpenArtifact}
       debug={debug}
     />

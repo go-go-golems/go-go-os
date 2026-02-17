@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { InventoryTimelineWidget } from '../InventoryTimelineWidget';
-import type { TimelineWidgetItem } from '../chatSlice';
+import {
+  HypercardTimelineWidget as InventoryTimelineWidget,
+  type TimelineWidgetItem,
+} from '@hypercard/engine';
 
 function at(msAgo: number): number {
   return Date.now() - msAgo;

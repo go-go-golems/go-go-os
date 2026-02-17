@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTimelineUpsert } from './timelineProjection';
+import { formatTimelineUpsert } from '@hypercard/engine';
 
 describe('formatTimelineUpsert', () => {
   it('maps projected card status rows to running card timeline items', () => {

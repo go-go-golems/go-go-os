@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import {
-  InventoryCardPanelWidget,
-  InventoryGeneratedWidgetPanel,
-} from '../InventoryArtifactPanelWidgets';
-import type { TimelineWidgetItem } from '../chatSlice';
+  HypercardCardPanelWidget as InventoryCardPanelWidget,
+  HypercardGeneratedWidgetPanel as InventoryGeneratedWidgetPanel,
+  type TimelineWidgetItem,
+} from '@hypercard/engine';
 
 function at(msAgo: number): number {
   return Date.now() - msAgo;

@@ -18,11 +18,17 @@ RelatedFiles:
       Note: Existing fast interaction lane architecture to preserve
     - Path: packages/engine/src/desktop/core/state/windowingSlice.ts
       Note: Durable desktop state model after HC-45 hard-cutover move
+    - Path: packages/engine/src/components/shell/windowing/desktopContributions.ts
+      Note: Workstream C contribution contracts and composer implementation
+    - Path: packages/engine/src/components/shell/windowing/windowContentAdapter.ts
+      Note: Workstream D adapter-chain contract and renderer
+    - Path: apps/inventory/src/App.tsx
+      Note: First app migrated to contribution-based desktop configuration
     - Path: packages/engine/src/theme/base.css
       Note: Monolithic style surface to modularize into reusable packs
 ExternalSources: []
 Summary: Ticket workspace for extracting DesktopShell/windowing into a reusable in-browser desktop framework with macOS-1 style theming support.
-LastUpdated: 2026-02-17T16:22:00-05:00
+LastUpdated: 2026-02-17T16:36:00-05:00
 WhatFor: Track analysis, planning, and implementation guidance for reusable desktop framework extraction.
 WhenToUse: Use when implementing or reviewing desktop-shell and windowing framework cleanup work.
 ---
@@ -44,7 +50,9 @@ HC-45 captures the next-stage cleanup from app-specific shell integration toward
 - Status: `active`
 - Analysis: complete
 - Implementation planning: complete
-- Implementation execution (T1-T3): complete
+- Implementation execution (T1-T4): complete
+- Workstream C implementation: complete
+- Workstream D implementation: complete
 - Upload to reMarkable: complete
 
 ## Tasks and Changelog

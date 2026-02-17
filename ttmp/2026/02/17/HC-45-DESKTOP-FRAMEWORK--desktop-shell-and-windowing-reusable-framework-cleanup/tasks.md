@@ -16,3 +16,15 @@
 - [x] T2: Extract desktop command routing into a dedicated router module and wire `DesktopShell` through it
 - [x] T3: Split `DesktopShell` into controller + view composition (`useDesktopShellController` + `DesktopShellView`) with behavior parity
 - [x] T4: Update engine exports/tests/docs to new desktop paths, run validation, and record implementation diary/changelog
+
+## Workstream C (Extension Contracts)
+
+- [x] C1: Add `DesktopContribution` contracts and composition utilities (menus/icons/commands/startup windows)
+- [x] C2: Add contribution command routing path and integrate into shell controller before built-ins
+- [x] C3: Migrate inventory app desktop menus/icons/commands/startup behavior to contributions
+
+## Workstream D (Runtime Adapter Decoupling)
+
+- [x] D1: Add window content adapter contracts and adapter-chain renderer
+- [x] D2: Add default app/card/fallback adapters and remove direct card-host rendering from controller
+- [x] D3: Allow contribution-provided adapters to extend precedence and validate with tests

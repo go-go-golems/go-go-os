@@ -14,3 +14,8 @@
 - Completed `T2`: extracted built-in desktop command routing into `desktopCommandRouter` with dedicated tests
 - Completed `T3`: split monolithic `DesktopShell` into `useDesktopShellController` + `DesktopShellView` composition
 - Updated engine exports/imports to desktop core state paths and validated with `npm run -w packages/engine test`
+- Added Workstream C contracts: `desktopContributions` composer (menus/icons/commands/startup windows) and contribution command routing
+- Added Workstream D contracts: `windowContentAdapter` chain with default app/card/fallback adapters
+- Updated shell controller to use contribution command lane and adapter chain (no direct card-host rendering in controller)
+- Migrated inventory desktop customization (`menus`/`icons`/`onCommand`/startup side-effects) to contribution objects
+- Added C/D unit tests (`desktopContributions.test.ts`, `windowContentAdapter.test.ts`) and revalidated engine tests

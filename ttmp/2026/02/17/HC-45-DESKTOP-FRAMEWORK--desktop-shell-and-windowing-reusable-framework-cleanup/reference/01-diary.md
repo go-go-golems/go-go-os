@@ -31,13 +31,21 @@ RelatedFiles:
       Note: Controller hook extracted from monolithic DesktopShell implementation
     - Path: packages/engine/src/components/shell/windowing/DesktopShellView.tsx
       Note: Presentational shell view extracted for controller/view split
+    - Path: packages/engine/src/components/shell/windowing/desktopContributions.ts
+      Note: Workstream C contribution contracts and merge/routing logic
+    - Path: packages/engine/src/components/shell/windowing/windowContentAdapter.ts
+      Note: Workstream D adapter-chain contract and renderer
+    - Path: packages/engine/src/components/shell/windowing/defaultWindowContentAdapters.tsx
+      Note: Default app/card/fallback adapter implementations
+    - Path: apps/inventory/src/App.tsx
+      Note: Inventory desktop migration to contribution-based config
     - Path: packages/engine/src/theme/base.css
       Note: CSS modularization recommendations source
     - Path: ttmp/2026/02/17/HC-45-DESKTOP-FRAMEWORK--desktop-shell-and-windowing-reusable-framework-cleanup/design-doc/01-desktop-shell-and-windowing-reusability-analysis-for-in-browser-os-framework.md
       Note: Diary linkage to authored analysis output
 ExternalSources: []
 Summary: Step-by-step record of HC-45 preparation and hard-cutover implementation slices for desktop framework extraction.
-LastUpdated: 2026-02-17T16:20:00-05:00
+LastUpdated: 2026-02-17T16:37:00-05:00
 WhatFor: Preserve implementation history, decisions, and validation commands for handoff and review.
 WhenToUse: Use when reviewing how HC-45 analysis/planning artifacts were produced and validated.
 ---
@@ -396,3 +404,134 @@ I added a dedicated implementation section in `tasks.md` with four hard-cutover 
 - Verify there are no remaining `features/windowing` imports.
 - Review `DesktopShell` behavior parity via existing shell/windowing stories and tests.
 - Confirm command pass-through behavior for non-built-in command IDs.
+
+## Step 5: Implement Workstream C and D (Contribution Contracts + Adapter Chain Decoupling)
+
+I continued implementation with the next requested scope: Workstream C (extension contract formalization) and Workstream D (runtime adapter decoupling). This was a code-first pass focused on concrete contracts, controller integration, app migration for the first consumer, and test coverage.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, add tasks for C and D, continue."
+
+**Assistant interpretation:** Add explicit ticket tasks for C and D, then proceed directly with implementation and validation.
+
+**Inferred user intent:** Move beyond structural shell split and implement real extension/runtime decoupling mechanics now.
+
+### Task bookkeeping updates
+
+I added dedicated checked tasks in `tasks.md`:
+
+- Workstream C:
+  - `C1` contribution contracts/composer
+  - `C2` contribution command lane integration
+  - `C3` inventory app migration to contributions
+- Workstream D:
+  - `D1` adapter contract + adapter-chain renderer
+  - `D2` default app/card/fallback adapters and controller decoupling
+  - `D3` contribution-provided adapter precedence support
+
+### Workstream C implementation details
+
+#### New contract/composer module
+
+Created `packages/engine/src/components/shell/windowing/desktopContributions.ts` with:
+
+- `DesktopContribution`
+- `DesktopCommandHandler`
+- `DesktopCommandContext`
+- `StartupWindowFactory`
+- `composeDesktopContributions(...)`
+- `routeContributionCommand(...)`
+
+Key behavior implemented:
+
+1. Deterministic command ordering by priority (stable sort).
+2. Menu merge by section id with deterministic concatenation.
+3. Icon collision policy:
+   - throw in non-production
+   - warn/skip in production
+4. Startup window factories collected from contributions.
+
+#### Controller integration
+
+Updated `useDesktopShellController.tsx` to:
+
+1. compose contributions via `composeDesktopContributions`.
+2. derive menus/icons from contributions when legacy explicit props are absent.
+3. execute contribution command handlers **before** built-ins.
+4. dispatch startup windows (once per composition key) through controller-managed effect.
+
+### Workstream D implementation details
+
+#### New adapter contracts
+
+Created `packages/engine/src/components/shell/windowing/windowContentAdapter.ts`:
+
+- `WindowContentAdapter`
+- `WindowAdapterContext`
+- `renderWindowContentWithAdapters(...)`
+
+Routing behavior:
+
+- first adapter with `canRender` is asked to `render`.
+- if adapter returns `null`, routing continues to allow fallback layers.
+
+#### Default adapters
+
+Created `packages/engine/src/components/shell/windowing/defaultWindowContentAdapters.tsx`:
+
+1. app window adapter (`renderAppWindow` bridge)
+2. HyperCard card adapter (`PluginCardSessionHost` rendering)
+3. fallback adapter (generic placeholder)
+
+#### Controller decoupling
+
+`useDesktopShellController.tsx` no longer directly instantiates `PluginCardSessionHost` in `buildWindowBody`. Instead it now builds an adapter list:
+
+- contribution-provided adapters first
+- default adapters afterward
+
+and renders via `renderWindowContentWithAdapters(...)`.
+
+This isolates runtime-specific rendering policy behind adapters and narrows controller responsibility to orchestration.
+
+### Inventory app migration to contributions
+
+Updated `apps/inventory/src/App.tsx` to move desktop customization into contribution objects:
+
+1. menus/icons are now contribution data.
+2. command handling migrated to contribution command handlers.
+3. startup windows moved to contribution startup factories (chat + dev redux perf window).
+4. removed local mount effect + `onCommand`/`menus`/`icons` prop wiring to shell.
+
+The app still uses `renderAppWindow` for now, but runtime window rendering now flows through the adapter chain in the controller.
+
+### Tests added/updated
+
+Added:
+
+- `desktopContributions.test.ts`
+- `windowContentAdapter.test.ts`
+
+Existing suite also validates:
+
+- command router tests
+- windowing tests
+- plugin/runtime integration tests
+
+### Validation
+
+Executed:
+
+- `npm run -w packages/engine test`
+
+Result:
+
+- taxonomy check passed
+- vitest passed: `15` files, `153` tests
+
+### Outcome
+
+Workstream C and D implementation tasks are now complete in-ticket for this pass.
+
+Remaining broader HC-45 roadmap work still includes CSS/theme modularization and any further package/API surface polishing beyond current code cutover.

@@ -12,9 +12,9 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/17/HC-50-CHAT-COMPONENT--extract-inventory-chat-stack-into-reusable-hypercard-component/design-doc/01-inventory-chat-architecture-and-reusable-component-extraction-analysis.md
+    - Path: ttmp/2026/02/17/HC-50-CHAT-COMPONENT--extract-inventory-chat-stack-into-reusable-hypercard-component/design-doc/01-inventory-chat-architecture-and-reusable-component-extraction-analysis.md
       Note: Primary deliverable analysis document
-    - Path: 2026-02-12--hypercard-react/ttmp/2026/02/17/HC-50-CHAT-COMPONENT--extract-inventory-chat-stack-into-reusable-hypercard-component/reference/01-diary.md
+    - Path: ttmp/2026/02/17/HC-50-CHAT-COMPONENT--extract-inventory-chat-stack-into-reusable-hypercard-component/reference/01-diary.md
       Note: Investigation diary and command trail
 ExternalSources: []
 Summary: Deep analysis of current Inventory chat implementation, Pinocchio comparison, and recommended reusable extraction architecture for HyperCard apps.

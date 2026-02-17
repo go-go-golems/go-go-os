@@ -228,3 +228,66 @@ Files analyzed for this step:
 - `apps/inventory/src/app/store.ts`
 - `apps/inventory/src/main.tsx`
 - `apps/todo/src/App.tsx`
+
+## Step 3: Execute Documentation Improvement Plan
+
+Executed the full improvement plan from the suggestions document. Rewrote all 5 existing reference docs with prose, diagrams, progressive disclosure, and cross-links. Created 3 new documents: Architecture Overview, Common Recipes cookbook, and Start Here reading guide.
+
+### Prompt Context
+
+**User prompt (verbatim):** "alright, do it now, check off tasks in the ticket, commit at opportune intervals, and upload to remarkable as you (as individual documents when finished)"
+
+**Assistant interpretation:** Execute the improvement plan from the suggestions doc — rewrite all docs and add new ones, tracking tasks and committing incrementally.
+
+**Inferred user intent:** Get the docs into a polished, developer-friendly state, with proper ticket hygiene and reMarkable delivery.
+
+**Commit (code):** a7a216c — "HC-49: Rewrite quickstart, contribution API, add architecture overview"
+**Commit (code):** d64ab5c — "HC-49: Rewrite adapter guide, theming, and performance model docs"
+
+### What I did
+
+**New documents (3):**
+- `reference/07-desktop-framework-architecture-overview.md` — Component tree, data flow, boot sequence, import map
+- `reference/08-common-recipes.md` — 7 copy-paste recipes (chat panel, debug panel, singleton window, session nav, custom theme, Storybook, multiple contributions)
+- `reference/09-start-here-desktop-framework-reading-guide.md` — Reading paths for different developer profiles, document map, import cheat sheet
+
+**Rewritten documents (5):**
+- `reference/02-desktop-framework-quickstart.md` — Added "What You'll Build" ASCII sketch, prose before every code block, "Shortest Path" (3-line todo app), "What Just Happened?" section, content.kind table, minimal wiring checklist, next-steps links
+- `reference/03-desktop-contribution-api-reference.md` — Added motivation paragraph, anatomy diagram, step-by-step tutorial (4 steps), command routing flow diagram with 3-stage pipeline, matches+run explanation, common patterns section, complete interface reference
+- `reference/04-window-content-adapter-guide.md` — Added "Why Adapters?" explanation, decision tree, chain evaluation diagram with two worked examples, pass-through pattern with explanation, gotchas section, end-to-end dialog adapter walkthrough
+- `reference/05-theming-and-parts-contract.md` — Added motivation, theme layers diagram, CSS pack breakdown, visual parts map (ASCII art of entire shell), CSS selector cookbook (6 recipes), quick-retheme "5 most impactful variables" table
+- `reference/06-performance-model-durable-vs-ephemeral-lanes.md` — Added problem statement with before/after comparison, decision flowchart, concrete examples table, full window drag lifecycle with annotated ASCII art, complete ephemeral store template with key rules, diagnostics verification guide
+
+### Why
+- The existing docs were technically accurate but read like API extraction notes
+- New developers need prose, motivation, diagrams, and progressive structure to build a mental model
+
+### What worked
+- The suggestions document from Step 2 provided a clear checklist — no improvisation needed
+- Using the real todo app (3-line App.tsx) as the "minimal example" anchor made the progressive disclosure natural
+
+### What didn't work
+- N/A — straightforward execution of the plan.
+
+### What I learned
+- The "What Just Happened?" pattern (showing auto-generated defaults after the quickstart) is very effective for explaining implicit behavior
+- A reading-order guide with multiple paths ("new to project" vs "building an app" vs "going deeper") is more useful than a linear list
+
+### What was tricky to build
+- The visual parts map for theming required careful ASCII art to show nesting (desktop shell → menu bar → menu button → menu panel → menu item)
+- The command routing diagram needed to show three stages with fallthrough semantics without being overwhelming
+
+### What warrants a second pair of eyes
+- Whether the 7 recipes in the cookbook cover the right set of use cases
+- Whether the architecture overview's component tree accurately reflects the latest code
+
+### What should be done in the future
+- Consider mirroring these docs into `docs/` for discoverability outside the ticket system
+- Keep docs updated when APIs change — particularly the import map and adapter chain order
+
+### Code review instructions
+- Start with `reference/09-start-here-desktop-framework-reading-guide.md` (reading order)
+- Then `reference/07-desktop-framework-architecture-overview.md` (big picture)
+- Then review each rewritten doc: 02, 03, 04, 05, 06
+- Then `reference/08-common-recipes.md` (cookbook)
+- Verify ASCII diagrams render correctly in your Markdown viewer

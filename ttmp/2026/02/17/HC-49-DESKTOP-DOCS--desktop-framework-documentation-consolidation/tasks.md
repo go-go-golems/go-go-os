@@ -16,5 +16,5 @@
 - [x] D3.4: Rewrite Window Content Adapter Guide with motivation, chain diagram, decision tree, end-to-end walkthrough
 - [x] D3.5: Rewrite Theming and Parts Contract with motivation, theme layers diagram, visual parts map, CSS cookbook
 - [x] D3.6: Rewrite Performance Model with problem statement, before/after, decision flowchart, lifecycle diagram, recipes
-- [ ] D3.7: Add Common Recipes cookbook document
-- [ ] D3.8: Add Reading Order / Start Here guide and cross-link all docs
+- [x] D3.7: Add Common Recipes cookbook document
+- [x] D3.8: Add Reading Order / Start Here guide and cross-link all docs

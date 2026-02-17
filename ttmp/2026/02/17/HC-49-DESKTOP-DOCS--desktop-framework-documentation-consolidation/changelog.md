@@ -20,3 +20,8 @@ Step 2: Analyzed all 5 desktop framework reference docs and ~20 source files. Pr
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/17/HC-49-DESKTOP-DOCS--desktop-framework-documentation-consolidation/analysis/01-documentation-improvement-suggestions.md — Suggestions document
 
+
+## 2026-02-17
+
+Step 3: Rewrote all 5 existing docs with prose, diagrams, progressive disclosure, and cross-links. Added 3 new docs: Architecture Overview, Common Recipes cookbook, and Start Here reading guide.
+

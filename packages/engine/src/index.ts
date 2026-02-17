@@ -2,7 +2,7 @@
 //
 // USAGE:
 //   import { DesktopShell, DataTable, windowingReducer, ... } from '@hypercard/engine';
-//   import '@hypercard/engine/src/theme/base.css';      // load base tokens
+//   import '@hypercard/engine/src/theme';               // load default desktop/widget css packs
 //   import '@hypercard/engine/src/theme/modern.css';     // optional theme
 //
 

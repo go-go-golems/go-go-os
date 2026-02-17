@@ -5,6 +5,10 @@
 - Re-opened HC-43 execution flow to replay Phase 1 tasks with explicit hard-cutover constraints.
 - Added a new Phase 1 hard-cutover task block in `tasks.md` with direct "no backward compatibility" wording.
 - Set ticket status to `in_progress` while replay verification runs task-by-task.
+- Completed replay verification for dead-file cleanup (Task 14):
+  - confirmed removed files remain absent in active source
+  - confirmed no references to removed paths/symbols in `apps/` and `packages/`
+  - confirmed dead-file archive evidence remains intact
 
 ## 2026-02-17
 

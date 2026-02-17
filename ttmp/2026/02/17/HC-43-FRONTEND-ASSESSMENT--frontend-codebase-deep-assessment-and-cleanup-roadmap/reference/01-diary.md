@@ -592,3 +592,78 @@ This step only updates ticket control-plane artifacts (`tasks.md`, `index.md`, `
 ### Technical details
 
 - Replay mode constraints: hard cutover only; no feature flags, no compatibility wrappers, no migration layers.
+
+---
+
+## Step 7: Task-by-Task Hard-Cutover Verification - Dead Files and Exports
+
+I executed the dead-file verification pass for the replayed Phase 1 checklist. The objective was to prove hard cutover conditions still hold: removed files stay removed, removed exports stay removed, and archival evidence remains available.
+
+This step is evidence-only and intentionally does not introduce compatibility wrappers or restoration shims.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 6)
+
+**Assistant interpretation:** Execute the dead-file Phase 1 task in HC-43 as a hard-cutover verification step and record evidence.
+
+**Inferred user intent:** Keep source tree clean of deprecated artifacts while preserving enough provenance to audit removals.
+
+### What I did
+
+- Verified files remain absent from active source tree:
+  - `apps/inventory/src/stories/decorators.tsx`
+  - `packages/engine/src/plugin-runtime/worker/sandboxClient.ts`
+  - `packages/engine/src/plugin-runtime/worker/runtime.worker.ts`
+- Verified no active references remain via:
+  - `rg -n "sandboxClient|runtime\.worker|stories/decorators" packages apps -S`
+- Verified archive evidence exists in:
+  - `ttmp/2026/02/17/HC-43-FRONTEND-ASSESSMENT--frontend-codebase-deep-assessment-and-cleanup-roadmap/archive/dead-files/`
+- Re-checked active plugin-runtime barrel exports in:
+  - `packages/engine/src/plugin-runtime/index.ts`
+
+### Why
+
+- Hard cutover requires authoritative removal from active code paths, not just deprecation markers.
+
+### What worked
+
+- All three previously removed files are still absent.
+- No grep matches found for those removed paths/symbols in active `apps/` and `packages/` code.
+- Archive snapshots and archive log remain present.
+
+### What didn't work
+
+- N/A in this step.
+
+### What I learned
+
+- The previous cleanup held without regressions; there was no accidental reintroduction of dead worker/decorator files.
+
+### What was tricky to build
+
+- The only subtle point is ensuring evidence distinguishes "absent in source" from "present in ticket archive" so cleanup provenance is preserved without runtime leakage.
+
+### What warrants a second pair of eyes
+
+- Confirm no external tooling imports the archived paths by string from outside this monorepo.
+
+### What should be done in the future
+
+- Continue with Task 15 and Task 16 replay checks (SEM helper and Vite/app-boot documentation alignment).
+
+### Code review instructions
+
+- Validate absence and archive evidence:
+  - `packages/engine/src/plugin-runtime/index.ts`
+  - `ttmp/2026/02/17/HC-43-FRONTEND-ASSESSMENT--frontend-codebase-deep-assessment-and-cleanup-roadmap/archive/dead-files/01-dead-file-archive-log.md`
+  - `ttmp/2026/02/17/HC-43-FRONTEND-ASSESSMENT--frontend-codebase-deep-assessment-and-cleanup-roadmap/archive/dead-files/apps-inventory-src-stories-decorators.tsx`
+  - `ttmp/2026/02/17/HC-43-FRONTEND-ASSESSMENT--frontend-codebase-deep-assessment-and-cleanup-roadmap/archive/dead-files/packages-engine-src-plugin-runtime-worker-sandboxClient.ts`
+  - `ttmp/2026/02/17/HC-43-FRONTEND-ASSESSMENT--frontend-codebase-deep-assessment-and-cleanup-roadmap/archive/dead-files/packages-engine-src-plugin-runtime-worker-runtime.worker.ts`
+
+### Technical details
+
+- Verification command outputs captured during this step:
+  - `ABSENT:apps/inventory/src/stories/decorators.tsx`
+  - `ABSENT:packages/engine/src/plugin-runtime/worker/sandboxClient.ts`
+  - `ABSENT:packages/engine/src/plugin-runtime/worker/runtime.worker.ts`

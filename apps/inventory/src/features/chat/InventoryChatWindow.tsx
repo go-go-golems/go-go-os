@@ -48,6 +48,15 @@ import {
 import { InventoryTimelineWidget, timelineItemsFromInlineWidget } from './InventoryTimelineWidget';
 import { InventoryCardPanelWidget, InventoryGeneratedWidgetPanel } from './InventoryArtifactPanelWidgets';
 import { formatTimelineUpsert, type TimelineItemUpdate } from './timelineProjection';
+import {
+  booleanField,
+  compactJSON,
+  numberField,
+  recordField,
+  stringArray,
+  stringField,
+  stripTrailingWhitespace,
+} from './semHelpers';
 
 function eventIdFromEnvelope(envelope: SemEventEnvelope): string {
   const eventId = envelope.event?.id;
@@ -63,57 +72,6 @@ function eventOrDataId(envelope: SemEventEnvelope, data: Record<string, unknown>
     return dataId;
   }
   return eventIdFromEnvelope(envelope);
-}
-
-function stringField(record: Record<string, unknown>, key: string): string | undefined {
-  const value = record[key];
-  if (typeof value === 'string') {
-    return value;
-  }
-  return undefined;
-}
-
-function recordField(record: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
-  const value = record[key];
-  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return undefined;
-}
-
-function compactJSON(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '"<unserializable>"';
-  }
-}
-
-function stringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.filter((entry): entry is string => typeof entry === 'string');
-}
-
-function booleanField(record: Record<string, unknown>, key: string): boolean | undefined {
-  const value = record[key];
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  return undefined;
-}
-
-function stripTrailingWhitespace(value: string): string {
-  return value.replace(/[ \t]+$/gm, '').trimEnd();
-}
-
-function numberField(record: Record<string, unknown>, key: string): number | undefined {
-  const value = record[key];
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  return undefined;
 }
 
 function extractMetadata(envelope: SemEventEnvelope): Record<string, unknown> | undefined {

@@ -1,5 +1,6 @@
 import type { ChatWindowMessage, InlineWidget } from '@hypercard/engine';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { stripTrailingWhitespace } from './semHelpers';
 
 export type ChatConnectionStatus = 'idle' | 'connecting' | 'connected' | 'closed' | 'error';
 export type TimelineItemStatus = 'running' | 'success' | 'error' | 'info';
@@ -147,10 +148,6 @@ function findLatestStreamingMessage(conv: ConversationState): ChatWindowMessage 
 
 function isWidget(value: unknown): value is InlineWidget {
   return typeof value === 'object' && value !== null;
-}
-
-function stripTrailingWhitespace(value: string): string {
-  return value.replace(/[ \t]+$/gm, '').trimEnd();
 }
 
 function normalizeHydratedRole(value: string): ChatWindowMessage['role'] | undefined {

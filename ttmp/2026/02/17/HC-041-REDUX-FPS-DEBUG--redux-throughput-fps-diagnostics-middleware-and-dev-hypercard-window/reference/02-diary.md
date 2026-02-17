@@ -558,3 +558,40 @@ Burst-pattern action types (drag, chat stream deltas) appear and vanish quickly.
 - Review `accumulateHistory()` in `useDiagnosticsSnapshot.ts` — the `pinnedTypes` parameter and prune guard.
 - Review `ActionRow` in `ReduxPerfWindow.tsx` — pin button and dimming logic.
 - Run tests: `npx vitest run packages/engine/src/__tests__/diagnostics.test.ts` (37 tests).
+
+## Step 11: Fix sparkline smoothing — instantaneous per-tick rates
+
+The sparkline appeared smoothed because each sample was `events_in_5s_window / 5` — consecutive 500ms poll ticks used overlapping 5-second windows sharing ~90% of their data, inherently producing a moving average. Fixed by adding `computeInstantRates(intervalMs)` which counts only events in the last `intervalMs` (= poll interval, 500ms). Now the hook feeds instantaneous rates to `accumulateHistory` instead of rolling-window rates.
+
+### Prompt Context
+
+**User prompt (verbatim):** "the sparkline still seems to show smoothed data?"
+
+**Assistant interpretation:** The sparkline data is derived from the rolling window, causing overlap-smoothing. Need to use per-tick instantaneous rates instead.
+
+**Inferred user intent:** The sparkline should show actual spikes and drops in real time, not a smoothed-out moving average.
+
+**Commit (code):** 13e33be — "HC-041: Fix sparkline smoothing — use instantaneous per-tick rates, not rolling window"
+
+### What I did
+- Added `computeInstantRates(intervalMs)` to `diagnosticsStore.ts`: counts events only in the last `intervalMs` window, returns per-type rates. Same filtering (excludes `reduxPerf/` prefix).
+- Changed `useDiagnosticsSnapshot` to call `computeInstantRates(pollMs)` for sparkline data instead of using `snap.topActionRates`.
+- The main snapshot metrics (actions/sec, avg reducer, etc.) still use the full rolling window — only sparkline data changed.
+- Exported `computeInstantRates` from barrel. Added unit test (38 total).
+
+### Why
+A sparkline showing a moving average defeats its purpose — you can't see individual bursts or drops. With per-tick rates: 10 actions in one tick → spike to 20/s, no actions next tick → drop to 0.
+
+### What was tricky to build
+- The key insight: the sparkline and the summary metrics need *different* time windows. The summary uses the full rolling window (5s) for stable numbers; the sparkline uses a single tick (500ms) for responsiveness. Before this fix they shared the same source.
+
+### What warrants a second pair of eyes
+- `computeInstantRates` uses `Date.now()` internally, same as `computeSnapshot`. If the poll timer drifts, the 500ms interval might not perfectly align with the actual time between ticks. In practice this is fine — the rate calculation self-corrects since it divides by the configured interval.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `computeInstantRates()` in `diagnosticsStore.ts`.
+- Review the hook change in `useDiagnosticsSnapshot.ts` (one-line swap from `snap.topActionRates` to `computeInstantRates(pollMs)`).
+- Run: `npx vitest run packages/engine/src/__tests__/diagnostics.test.ts` (38 tests).

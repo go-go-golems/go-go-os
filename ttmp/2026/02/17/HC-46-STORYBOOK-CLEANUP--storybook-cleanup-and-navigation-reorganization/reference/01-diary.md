@@ -114,3 +114,76 @@ This step intentionally does not include monolithic story splitting yet; it esta
 - Canonical title convention now follows owner-first taxonomy:
   - `Apps/<AppName>/...`
   - `Packages/Engine/...`
+
+---
+
+## Step 2: Split Oversized Story Monoliths (ChatWindow + Desktop Primitives)
+
+I executed the monolith split pass for HC-46 by decomposing the largest widget story file and a large windowing story file into focused scenario modules. The intent was to reduce review overhead while keeping the same Storybook IA/title and runtime behavior.
+
+This step targets task 8 directly and keeps all stories under the same canonical package-aligned title tree.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Continue implementing HC-46 task list and commit progress incrementally, including monolith decomposition.
+
+**Inferred user intent:** Improve maintainability and navigation quality without regressing story coverage.
+
+### What I did
+
+- Split `ChatWindow` story monolith into focused files:
+  - `packages/engine/src/components/widgets/ChatWindow.stories.tsx` (core + shared helpers/data exports)
+  - `packages/engine/src/components/widgets/ChatWindow.widgets.stories.tsx` (inline widget/data scenarios)
+  - `packages/engine/src/components/widgets/ChatWindow.interaction.stories.tsx` (actions/system/mobile/timestamps scenarios)
+- Split `DesktopPrimitives` large scenario surface:
+  - kept core desktop primitive stories in `packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx`
+  - moved large workspace scenarios into `packages/engine/src/components/shell/windowing/DesktopPrimitives.workspace.stories.tsx`
+
+### Why
+
+- Large single-story files are difficult to review and evolve safely.
+- Splitting by scenario class makes ownership and edits more localized.
+
+### What worked
+
+- Typecheck passed after split.
+- Engine vitest suite passed after split.
+- Story title hierarchy remained canonical (`Packages/Engine/...`).
+
+### What didn't work
+
+- N/A in this step.
+
+### What I learned
+
+- Exporting shared fixtures/helpers from a core story file allows clean decomposition without duplicating large data fixtures.
+
+### What was tricky to build
+
+- Keeping story IDs and behavior intact while moving story definitions required careful separation of shared data/render helpers from scenario-specific story exports.
+
+### What warrants a second pair of eyes
+
+- Verify Storybook UI grouping for split files still appears cohesive and not confusingly fragmented.
+
+### What should be done in the future
+
+- Add explicit policy checks for file placement/title drift and finish maintainer docs.
+
+### Code review instructions
+
+- Review split outputs:
+  - `packages/engine/src/components/widgets/ChatWindow.stories.tsx`
+  - `packages/engine/src/components/widgets/ChatWindow.widgets.stories.tsx`
+  - `packages/engine/src/components/widgets/ChatWindow.interaction.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/DesktopPrimitives.stories.tsx`
+  - `packages/engine/src/components/shell/windowing/DesktopPrimitives.workspace.stories.tsx`
+- Validate with:
+  - `npm run typecheck`
+  - `npm run -w packages/engine test`
+
+### Technical details
+
+- Split strategy keeps identical title namespace, avoiding navigation regressions while reducing per-file complexity.

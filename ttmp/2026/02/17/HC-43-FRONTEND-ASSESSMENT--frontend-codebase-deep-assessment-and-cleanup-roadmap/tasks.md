@@ -14,5 +14,5 @@
 
 - [x] Remove legacy dead-file marker stub and archive it (`apps/inventory/src/stories/decorators.tsx`)
 - [x] Remove dead plugin-runtime worker exports/files and archive snapshots (`sandboxClient.ts`, `runtime.worker.ts`)
-- [ ] Consolidate duplicate SEM helper utilities in inventory chat parsing/projection paths
-- [ ] Add docs clarifying Storybook ownership and app boot model boundaries
+- [x] Consolidate duplicate SEM helper utilities in inventory chat parsing/projection paths
+- [x] Add docs clarifying Storybook ownership and app boot model boundaries

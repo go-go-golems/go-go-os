@@ -448,3 +448,81 @@ I validated file deadness by reference search, archived snapshots under the HC-4
 - Revert commits created before resuming HC-43 scope:
   - `1fa1070` Revert "test(engine): add desktop namespace export parity coverage"
   - `5daf495` Revert "refactor(engine): add desktop namespace compatibility barrels"
+
+---
+
+## Step 5: Complete Remaining HC-43 Phase 1 Tasks (SEM Helper Consolidation + Storybook/App-Boot Documentation)
+
+After completing dead-file cleanup, I finished the two remaining low-risk HC-43 Phase 1 tasks: consolidating duplicated SEM helper utilities and adding explicit ownership documentation for Storybook and app boot boundaries.
+
+This kept changes low-risk: mostly pure extraction/reuse of existing helper logic and additive documentation.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 4)
+
+**Assistant interpretation:** Continue Phase 1 low-risk tasks from HC-43, not broader refactor/cutover work.
+
+**Inferred user intent:** Reduce maintenance friction and ambiguity first, so later higher-risk cleanups have a cleaner baseline.
+
+**Commit (code):** `cf09373` — "refactor(inventory-chat): centralize shared sem parsing helpers"
+
+### What I did
+
+- Added shared SEM helper module:
+  - `apps/inventory/src/features/chat/semHelpers.ts`
+- Replaced duplicated helper implementations in:
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+  - `apps/inventory/src/features/chat/artifactRuntime.ts`
+  - `apps/inventory/src/features/chat/timelineProjection.ts`
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+- Added ownership doc:
+  - `docs/frontend/storybook-and-app-boot-model.md`
+
+### Why
+
+- HC-43 Phase 1 explicitly called out duplicate SEM helpers and docs for Storybook/app boot ownership.
+- Consolidation reduces drift risk (e.g., differing parsing behavior between projection and artifact extraction paths).
+
+### What worked
+
+- Consolidation was mostly mechanical replacement with no behavior change.
+- Targeted inventory chat tests and full typecheck passed.
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- Duplicated parser helper logic was spread across at least three chat modules; centralizing it materially improves readability and future edits.
+
+### What was tricky to build
+
+- Ensuring extraction stayed behavior-identical required touching multiple files while preserving function names/semantics and avoiding circular dependencies.
+
+### What warrants a second pair of eyes
+
+- Quick scan of helper call-sites for any subtle semantic coupling to previous local helper implementations.
+
+### What should be done in the future
+
+- With Phase 1 complete, next step is Phase 2 decomposition tasks (`InventoryChatWindow` split and `DesktopShell` concern split).
+
+### Code review instructions
+
+- Review helper module and call-site updates:
+  - `apps/inventory/src/features/chat/semHelpers.ts`
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+  - `apps/inventory/src/features/chat/artifactRuntime.ts`
+  - `apps/inventory/src/features/chat/timelineProjection.ts`
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+- Review new docs:
+  - `docs/frontend/storybook-and-app-boot-model.md`
+- Validate commands:
+  - `npm run typecheck`
+  - `npx vitest run apps/inventory/src/features/chat/chatSlice.test.ts apps/inventory/src/features/chat/artifactRuntime.test.ts apps/inventory/src/features/chat/InventoryChatWindow.timeline.test.ts`
+
+### Technical details
+
+- No API-level behavior changes were introduced; this is an internal deduplication and documentation-only boundary clarification step.

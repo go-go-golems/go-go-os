@@ -34,3 +34,17 @@ Completed deep frontend assessment + diary and uploaded bundled PDF to reMarkabl
   - `npm run -w packages/engine test`
 - Commit:
   - `d92e426` cleanup(hc-43): archive and remove dead legacy marker files
+- Completed HC-43 Phase 1 low-risk items:
+  - Consolidated duplicated SEM parsing helpers into `apps/inventory/src/features/chat/semHelpers.ts`
+  - Updated chat modules to consume shared helpers:
+    - `InventoryChatWindow.tsx`
+    - `artifactRuntime.ts`
+    - `timelineProjection.ts`
+    - `chatSlice.ts`
+  - Added Storybook/app boot ownership documentation:
+    - `docs/frontend/storybook-and-app-boot-model.md`
+- Validation:
+  - `npm run typecheck`
+  - `npx vitest run apps/inventory/src/features/chat/chatSlice.test.ts apps/inventory/src/features/chat/artifactRuntime.test.ts apps/inventory/src/features/chat/InventoryChatWindow.timeline.test.ts`
+- Commit:
+  - `cf09373` refactor(inventory-chat): centralize shared sem parsing helpers

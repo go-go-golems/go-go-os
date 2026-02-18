@@ -1,31 +1,22 @@
 import {
-  applySemTimelineOps,
   ChatWindow,
   createSemRegistry,
-  registerRuntimeCard,
+  hydrateTimelineSnapshot,
+  projectSemEnvelope,
   selectTimelineEntities as selectTimelineEntitiesForConversation,
   type ChatWindowMessage,
+  type ProjectionPipelineAdapter,
   type SemRegistry,
-  type TimelineEntity,
 } from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
-import {
-  emitConversationEvent,
-  extractArtifactUpsertFromSem,
-  upsertArtifact,
-} from '@hypercard/engine';
+import { emitConversationEvent } from '@hypercard/engine';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  markStreamStart,
-  mergeSuggestions,
   replaceSuggestions,
   setConnectionStatus,
-  setModelName,
   setStreamError,
-  setTurnStats,
   type TurnStats,
-  updateStreamTokens,
 } from './chatSlice';
 import {
   type ChatStateSlice,
@@ -39,247 +30,12 @@ import {
 import {
   InventoryWebChatClient,
   type InventoryWebChatClientHandlers,
-  type SemEventEnvelope,
-  type TimelineEntityRecord,
-  type TimelineSnapshot,
   submitPrompt,
 } from './webchatClient';
-import {
-  numberField,
-  stringArray,
-  stringField,
-  stripTrailingWhitespace,
-} from './semHelpers';
+import { stripTrailingWhitespace } from './semHelpers';
 import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
-
-function extractMetadata(envelope: SemEventEnvelope): Record<string, unknown> | undefined {
-  const meta = (envelope as Record<string, unknown>).event;
-  if (!meta || typeof meta !== 'object') return undefined;
-  const eventObj = meta as Record<string, unknown>;
-  const metadata = eventObj.metadata;
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return undefined;
-  return metadata as Record<string, unknown>;
-}
-
-function extractUsage(metadata: Record<string, unknown>): Record<string, unknown> | undefined {
-  const usage = metadata.usage;
-  if (!usage || typeof usage !== 'object' || Array.isArray(usage)) return undefined;
-  return usage as Record<string, unknown>;
-}
-
-function shortText(value: string | undefined, max = 180): string | undefined {
-  if (!value) {
-    return value;
-  }
-  if (value.length <= max) {
-    return value;
-  }
-  return `${value.slice(0, max)}...`;
-}
-
-function mapTimelineEntityToMessage(entity: TimelineEntity): ChatWindowMessage {
-  if (entity.kind === 'message') {
-    const roleRaw = typeof entity.props.role === 'string' ? entity.props.role : 'assistant';
-    const role: ChatWindowMessage['role'] =
-      roleRaw === 'user' ? 'user' : roleRaw === 'system' ? 'system' : 'ai';
-    const text = typeof entity.props.content === 'string' ? stripTrailingWhitespace(entity.props.content) : '';
-    const streaming = entity.props.streaming === true;
-    return {
-      id: entity.id,
-      role,
-      text,
-      status: streaming ? 'streaming' : 'complete',
-    };
-  }
-
-  if (entity.kind === 'tool_call') {
-    const name = typeof entity.props.name === 'string' ? entity.props.name : 'tool';
-    const done = entity.props.done === true;
-    return {
-      id: entity.id,
-      role: 'system',
-      text: done ? `Tool ${name} done` : `Tool ${name} running`,
-      status: done ? 'complete' : 'streaming',
-    };
-  }
-
-  if (entity.kind === 'tool_result') {
-    const customKind =
-      typeof entity.props.customKind === 'string' && entity.props.customKind.length > 0
-        ? ` (${entity.props.customKind})`
-        : '';
-    const resultText =
-      typeof entity.props.resultText === 'string'
-        ? entity.props.resultText
-        : shortText(
-            typeof entity.props.result === 'string'
-              ? entity.props.result
-              : JSON.stringify(entity.props.result ?? {}),
-          ) ?? '';
-    return {
-      id: entity.id,
-      role: 'system',
-      text: stripTrailingWhitespace(`Result${customKind}: ${resultText}`),
-      status: 'complete',
-    };
-  }
-
-  if (entity.kind === 'status') {
-    const text = typeof entity.props.text === 'string' ? entity.props.text : 'status';
-    const type = typeof entity.props.type === 'string' ? entity.props.type : 'info';
-    return {
-      id: entity.id,
-      role: 'system',
-      text: `[${type}] ${text}`,
-      status: type === 'error' ? 'error' : 'complete',
-    };
-  }
-
-  if (entity.kind === 'log') {
-    const level = typeof entity.props.level === 'string' ? entity.props.level : 'info';
-    const text = typeof entity.props.message === 'string' ? entity.props.message : 'log';
-    return {
-      id: entity.id,
-      role: 'system',
-      text: `[${level}] ${text}`,
-      status: 'complete',
-    };
-  }
-
-  return {
-    id: entity.id,
-    role: 'system',
-    text: `${entity.kind}: ${shortText(JSON.stringify(entity.props ?? {})) ?? ''}`,
-    status: 'complete',
-  };
-}
-
-function hydrateFromTimelineSnapshot(
-  snapshot: TimelineSnapshot,
-  dispatch: Dispatch<UnknownAction>,
-  conversationId: string,
-  semRegistry: SemRegistry,
-): void {
-  for (const entity of snapshot.entities as TimelineEntityRecord[]) {
-    const envelope: SemEventEnvelope = {
-      sem: true,
-      event: {
-        type: 'timeline.upsert',
-        id: entity.id,
-        data: {
-          version: snapshot.version,
-          entity: entity as Record<string, unknown>,
-        },
-      },
-    };
-    const result = semRegistry.handle(envelope, {
-      convId: conversationId,
-      now: Date.now,
-    });
-    applySemTimelineOps(dispatch, conversationId, result.ops);
-
-    const artifactUpdate = extractArtifactUpsertFromSem('timeline.upsert', {
-      entity: entity as Record<string, unknown>,
-    });
-    if (artifactUpdate) {
-      dispatch(upsertArtifact(artifactUpdate));
-    }
-  }
-}
-
-function onSemEnvelope(
-  envelope: SemEventEnvelope,
-  dispatch: Dispatch<UnknownAction>,
-  conversationId: string,
-  semRegistry: SemRegistry,
-): void {
-  const type = envelope.event?.type;
-  const data = envelope.event?.data ?? {};
-
-  const projected = semRegistry.handle(envelope, {
-    convId: conversationId,
-    now: Date.now,
-  });
-  applySemTimelineOps(dispatch, conversationId, projected.ops);
-
-  const artifactUpdate = extractArtifactUpsertFromSem(type, data);
-  if (artifactUpdate) {
-    dispatch(upsertArtifact(artifactUpdate));
-    if (artifactUpdate.runtimeCardId && artifactUpdate.runtimeCardCode) {
-      registerRuntimeCard(artifactUpdate.runtimeCardId, artifactUpdate.runtimeCardCode);
-    }
-  }
-
-  if (type === 'llm.start') {
-    const metadata = extractMetadata(envelope);
-    if (metadata) {
-      const model = stringField(metadata, 'model');
-      if (model) {
-        dispatch(setModelName({ conversationId, model }));
-      }
-    }
-    dispatch(markStreamStart({ conversationId, time: Date.now() }));
-    return;
-  }
-
-  if (type === 'llm.delta') {
-    const metadata = extractMetadata(envelope);
-    if (metadata) {
-      const usage = extractUsage(metadata);
-      if (usage) {
-        const outputTokens = numberField(usage, 'outputTokens');
-        if (outputTokens !== undefined) {
-          dispatch(updateStreamTokens({ conversationId, outputTokens }));
-        }
-      }
-    }
-    return;
-  }
-
-  if (type === 'llm.final') {
-    const metadata = extractMetadata(envelope);
-    if (metadata) {
-      const model = stringField(metadata, 'model');
-      if (model) {
-        dispatch(setModelName({ conversationId, model }));
-      }
-      const usage = extractUsage(metadata);
-      const stats: TurnStats = {};
-      if (usage) {
-        stats.inputTokens = numberField(usage, 'inputTokens');
-        stats.outputTokens = numberField(usage, 'outputTokens');
-        stats.cachedTokens = numberField(usage, 'cachedTokens');
-        stats.cacheCreationInputTokens = numberField(usage, 'cacheCreationInputTokens');
-        stats.cacheReadInputTokens = numberField(usage, 'cacheReadInputTokens');
-      }
-      stats.durationMs = numberField(metadata, 'durationMs');
-      if (stats.inputTokens !== undefined || stats.outputTokens !== undefined || stats.durationMs !== undefined) {
-        dispatch(setTurnStats({ conversationId, ...stats }));
-      }
-    }
-    return;
-  }
-
-  if (type === 'hypercard.suggestions.start' || type === 'hypercard.suggestions.update') {
-    const suggestions = stringArray(data.suggestions);
-    if (suggestions.length > 0) {
-      dispatch(mergeSuggestions({ conversationId, suggestions }));
-    }
-    return;
-  }
-
-  if (type === 'hypercard.suggestions.v1') {
-    const suggestions = stringArray(data.suggestions);
-    if (suggestions.length > 0) {
-      dispatch(replaceSuggestions({ conversationId, suggestions }));
-    }
-    return;
-  }
-
-  if (type === 'ws.error') {
-    dispatch(setStreamError({ conversationId, message: stringField(data, 'message') ?? 'websocket stream error' }));
-  }
-}
+import { createChatMetaProjectionAdapter, createInventoryArtifactProjectionAdapter } from './runtime/projectionAdapters';
+import { mapTimelineEntityToMessage } from './runtime/timelineEntityRenderer';
 
 function formatNumber(n: number): string {
   if (n >= 1000) {
@@ -352,7 +108,7 @@ export interface InventoryChatWindowProps {
 }
 
 export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<Dispatch<UnknownAction>>();
   const connectionStatus = useSelector((s: ChatStateSlice) => selectConnectionStatus(s, conversationId));
   const timelineEntities = useSelector((s: ChatStateSlice) =>
     selectTimelineEntitiesForConversation(s, conversationId),
@@ -366,6 +122,10 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
   const [debugMode, setDebugMode] = useState(false);
   const clientRef = useRef<InventoryWebChatClient | null>(null);
   const semRegistryRef = useRef<SemRegistry>(createSemRegistry());
+  const projectionAdaptersRef = useRef<ProjectionPipelineAdapter[]>([
+    createChatMetaProjectionAdapter(),
+    createInventoryArtifactProjectionAdapter(),
+  ]);
 
   useEffect(() => {
     const handlers: InventoryWebChatClientHandlers = {
@@ -374,10 +134,22 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
         emitConversationEvent(conversationId, envelope);
       },
       onSnapshot: (snapshot) => {
-        hydrateFromTimelineSnapshot(snapshot, dispatch, conversationId, semRegistryRef.current);
+        hydrateTimelineSnapshot({
+          conversationId,
+          dispatch,
+          semRegistry: semRegistryRef.current,
+          snapshot,
+          adapters: projectionAdaptersRef.current,
+        });
       },
       onEnvelope: (envelope) => {
-        onSemEnvelope(envelope, dispatch, conversationId, semRegistryRef.current);
+        projectSemEnvelope({
+          conversationId,
+          dispatch,
+          semRegistry: semRegistryRef.current,
+          envelope,
+          adapters: projectionAdaptersRef.current,
+        });
       },
       onStatus: (status) => dispatch(setConnectionStatus({ conversationId, status })),
       onError: (error) => dispatch(setStreamError({ conversationId, message: error })),

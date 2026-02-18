@@ -11,6 +11,7 @@ export * from './event-viewer/EventViewerWindow';
 export * from './runtime-card-tools/CodeEditorWindow';
 export * from './runtime-card-tools/editorLaunch';
 export * from './runtime-card-tools/RuntimeCardDebugWindow';
+export * from './runtime/projectionPipeline';
 
 export * from './sem/registry';
 export * from './sem/timelineMapper';

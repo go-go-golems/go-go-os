@@ -1,10 +1,12 @@
 import type { ChatWindowMessage } from '@hypercard/engine';
+import type { TimelineState } from '@hypercard/engine';
 import type { ChatConnectionStatus, ConversationState, TurnStats, DEFAULT_CHAT_SUGGESTIONS } from './chatSlice';
 
 export interface ChatStateSlice {
   chat: {
     conversations: Record<string, ConversationState>;
   };
+  timeline?: TimelineState;
 }
 
 const EMPTY_MESSAGES: ChatWindowMessage[] = [];

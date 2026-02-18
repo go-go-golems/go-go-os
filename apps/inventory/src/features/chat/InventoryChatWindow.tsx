@@ -1,46 +1,36 @@
-import { ChatWindow, registerRuntimeCard, type ChatWindowMessage, type InlineWidget } from '@hypercard/engine';
+import {
+  applySemTimelineOps,
+  ChatWindow,
+  createSemRegistry,
+  registerRuntimeCard,
+  selectTimelineEntities as selectTimelineEntitiesForConversation,
+  type ChatWindowMessage,
+  type SemRegistry,
+  type TimelineEntity,
+} from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
 import {
-  buildArtifactOpenWindowPayload,
   emitConversationEvent,
   extractArtifactUpsertFromSem,
-  formatTimelineUpsert,
-  HypercardCardPanelWidget as InventoryCardPanelWidget,
-  HypercardGeneratedWidgetPanel as InventoryGeneratedWidgetPanel,
-  HypercardTimelineWidget as InventoryTimelineWidget,
-  openRuntimeCardCodeEditor as openCodeEditor,
-  timelineItemsFromInlineWidget,
-  type TimelineItemUpdate,
   upsertArtifact,
 } from '@hypercard/engine';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector, useStore } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
-  applyLLMDelta,
-  applyLLMFinal,
-  applyLLMStart,
   markStreamStart,
   mergeSuggestions,
-  queueUserPrompt,
   replaceSuggestions,
   setConnectionStatus,
   setModelName,
   setStreamError,
   setTurnStats,
-  type TimelineWidgetItem,
   type TurnStats,
   updateStreamTokens,
-  upsertHydratedMessage,
-  upsertCardPanelItem,
-  upsertTimelineItem,
-  upsertWidgetPanelItem,
 } from './chatSlice';
 import {
   type ChatStateSlice,
   selectConnectionStatus,
   selectCurrentTurnStats,
-  selectIsStreaming,
-  selectMessages,
   selectModelName,
   selectStreamOutputTokens,
   selectStreamStartTime,
@@ -55,30 +45,11 @@ import {
   submitPrompt,
 } from './webchatClient';
 import {
-  booleanField,
-  compactJSON,
   numberField,
-  recordField,
   stringArray,
   stringField,
   stripTrailingWhitespace,
 } from './semHelpers';
-
-function eventIdFromEnvelope(envelope: SemEventEnvelope): string {
-  const eventId = envelope.event?.id;
-  if (typeof eventId === 'string' && eventId.length > 0) {
-    return eventId;
-  }
-  return `evt-${Date.now()}`;
-}
-
-function eventOrDataId(envelope: SemEventEnvelope, data: Record<string, unknown>): string {
-  const dataId = stringField(data, 'id');
-  if (dataId && dataId.length > 0) {
-    return dataId;
-  }
-  return eventIdFromEnvelope(envelope);
-}
 
 function extractMetadata(envelope: SemEventEnvelope): Record<string, unknown> | undefined {
   const meta = (envelope as Record<string, unknown>).event;
@@ -105,211 +76,136 @@ function shortText(value: string | undefined, max = 180): string | undefined {
   return `${value.slice(0, max)}...`;
 }
 
-function readyDetail(template: string | undefined, artifactId: string | undefined): string {
-  const parts: string[] = [];
-  if (template) {
-    parts.push(`template=${template}`);
+function mapTimelineEntityToMessage(entity: TimelineEntity): ChatWindowMessage {
+  if (entity.kind === 'message') {
+    const roleRaw = typeof entity.props.role === 'string' ? entity.props.role : 'assistant';
+    const role: ChatWindowMessage['role'] =
+      roleRaw === 'user' ? 'user' : roleRaw === 'system' ? 'system' : 'ai';
+    const text = typeof entity.props.content === 'string' ? stripTrailingWhitespace(entity.props.content) : '';
+    const streaming = entity.props.streaming === true;
+    return {
+      id: entity.id,
+      role,
+      text,
+      status: streaming ? 'streaming' : 'complete',
+    };
   }
-  if (artifactId) {
-    parts.push(`artifact=${artifactId}`);
+
+  if (entity.kind === 'tool_call') {
+    const name = typeof entity.props.name === 'string' ? entity.props.name : 'tool';
+    const done = entity.props.done === true;
+    return {
+      id: entity.id,
+      role: 'system',
+      text: done ? `Tool ${name} done` : `Tool ${name} running`,
+      status: done ? 'complete' : 'streaming',
+    };
   }
-  return parts.length > 0 ? parts.join(' · ') : 'ready';
+
+  if (entity.kind === 'tool_result') {
+    const customKind =
+      typeof entity.props.customKind === 'string' && entity.props.customKind.length > 0
+        ? ` (${entity.props.customKind})`
+        : '';
+    const resultText =
+      typeof entity.props.resultText === 'string'
+        ? entity.props.resultText
+        : shortText(
+            typeof entity.props.result === 'string'
+              ? entity.props.result
+              : JSON.stringify(entity.props.result ?? {}),
+          ) ?? '';
+    return {
+      id: entity.id,
+      role: 'system',
+      text: stripTrailingWhitespace(`Result${customKind}: ${resultText}`),
+      status: 'complete',
+    };
+  }
+
+  if (entity.kind === 'status') {
+    const text = typeof entity.props.text === 'string' ? entity.props.text : 'status';
+    const type = typeof entity.props.type === 'string' ? entity.props.type : 'info';
+    return {
+      id: entity.id,
+      role: 'system',
+      text: `[${type}] ${text}`,
+      status: type === 'error' ? 'error' : 'complete',
+    };
+  }
+
+  if (entity.kind === 'log') {
+    const level = typeof entity.props.level === 'string' ? entity.props.level : 'info';
+    const text = typeof entity.props.message === 'string' ? entity.props.message : 'log';
+    return {
+      id: entity.id,
+      role: 'system',
+      text: `[${level}] ${text}`,
+      status: 'complete',
+    };
+  }
+
+  return {
+    id: entity.id,
+    role: 'system',
+    text: `${entity.kind}: ${shortText(JSON.stringify(entity.props ?? {})) ?? ''}`,
+    status: 'complete',
+  };
 }
 
-function fanOutArtifactPanelUpdate(update: TimelineItemUpdate, dispatch: ReturnType<typeof useDispatch>, conversationId: string) {
-  if (update.kind === 'card') {
-    dispatch(upsertCardPanelItem({ ...update, conversationId }));
-  }
-  if (update.kind === 'widget') {
-    dispatch(upsertWidgetPanelItem({ ...update, conversationId }));
-  }
-}
-
-function formatHypercardLifecycle(
-  type: string,
-  data: Record<string, unknown>,
-): TimelineItemUpdate | undefined {
-  const title = stringField(data, 'title');
-  const itemId = stringField(data, 'itemId');
-
-  if (type === 'hypercard.widget.start') {
-    const id = itemId ?? 'unknown';
-    return {
-      id: `widget:${id}`,
-      title: title ?? 'Widget',
-      status: 'running',
-      detail: 'started',
-      kind: 'widget',
-      template: stringField(data, 'widgetType'),
-      rawData: data,
+function hydrateFromTimelineSnapshot(
+  snapshot: TimelineSnapshot,
+  dispatch: ReturnType<typeof useDispatch>,
+  conversationId: string,
+  semRegistry: SemRegistry,
+): void {
+  for (const entity of snapshot.entities as TimelineEntityRecord[]) {
+    const envelope: SemEventEnvelope = {
+      sem: true,
+      event: {
+        type: 'timeline.upsert',
+        id: entity.id,
+        data: {
+          version: snapshot.version,
+          entity: entity as Record<string, unknown>,
+        },
+      },
     };
-  }
-  if (type === 'hypercard.widget.update') {
-    const id = itemId ?? 'unknown';
-    return {
-      id: `widget:${id}`,
-      title: title ?? 'Widget',
-      status: 'running',
-      detail: 'updating',
-      kind: 'widget',
-      template: stringField(data, 'widgetType'),
-      rawData: data,
-    };
-  }
-  if (type === 'hypercard.widget.v1') {
-    const widgetType = stringField(data, 'widgetType') ?? stringField(data, 'template');
-    const payload = recordField(data, 'data');
-    const artifact = payload ? recordField(payload, 'artifact') : undefined;
-    const artifactId = artifact ? stringField(artifact, 'id') : undefined;
-    const id = itemId ?? 'unknown';
-    return {
-      id: `widget:${id}`,
-      title: title ?? 'Widget',
-      status: 'success',
-      detail: shortText(readyDetail(widgetType, artifactId)),
-      kind: 'widget',
-      template: widgetType,
-      artifactId,
-      rawData: data,
-    };
-  }
-  if (type === 'hypercard.widget.error') {
-    const id = itemId ?? 'unknown';
-    return {
-      id: `widget:${id}`,
-      title: title ?? 'Widget',
-      status: 'error',
-      detail: shortText(stringField(data, 'error') ?? 'unknown error'),
-      kind: 'widget',
-      template: stringField(data, 'widgetType'),
-      rawData: data,
-    };
-  }
+    const result = semRegistry.handle(envelope, {
+      convId: conversationId,
+      now: Date.now,
+    });
+    applySemTimelineOps(dispatch, conversationId, result.ops);
 
-  if (type === 'hypercard.card.start') {
-    const id = itemId ?? 'unknown';
-    const name = stringField(data, 'name') ?? title ?? 'Card';
-    return { id: `card:${id}`, title: name, status: 'running', detail: 'started', kind: 'card', rawData: data };
-  }
-  if (type === 'hypercard.card.update') {
-    const id = itemId ?? 'unknown';
-    const name = stringField(data, 'name') ?? title ?? 'Card';
-    return { id: `card:${id}`, title: name, status: 'running', detail: 'updating', kind: 'card', rawData: data };
-  }
-  if (type === 'hypercard.card.v2') {
-    const name = stringField(data, 'name');
-    const payload = recordField(data, 'data');
-    const artifact = payload ? recordField(payload, 'artifact') : undefined;
-    const artifactId = artifact ? stringField(artifact, 'id') : undefined;
-    const cardData = payload ? recordField(payload, 'card') : undefined;
-    const cardId = cardData ? stringField(cardData, 'id') : undefined;
-    const id = itemId ?? 'unknown';
-    return {
-      id: `card:${id}`,
-      title: name ?? title ?? 'Card',
-      status: 'success',
-      detail: shortText(readyDetail(cardId, artifactId)),
-      kind: 'card',
-      artifactId,
-      rawData: data,
-    };
-  }
-  if (type === 'hypercard.card.error') {
-    const id = itemId ?? 'unknown';
-    return {
-      id: `card:${id}`,
-      title: title ?? 'Card',
-      status: 'error',
-      detail: shortText(stringField(data, 'error') ?? 'unknown error'),
-      kind: 'card',
-    };
-  }
-
-  return undefined;
-}
-function parseTimelineMs(value: string | undefined): number {
-  if (!value) {
-    return 0;
-  }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return 0;
-  }
-  return parsed;
-}
-
-function hydrateEntity(entity: TimelineEntityRecord, dispatch: ReturnType<typeof useDispatch>, conversationId: string): void {
-  const kind = typeof entity.kind === 'string' ? entity.kind : '';
-  const id = typeof entity.id === 'string' ? entity.id : '';
-
-  if (kind === 'message') {
-    const message = recordField(entity, 'message');
-    if (!message) {
-      return;
+    const artifactUpdate = extractArtifactUpsertFromSem('timeline.upsert', {
+      entity: entity as Record<string, unknown>,
+    });
+    if (artifactUpdate) {
+      dispatch(upsertArtifact(artifactUpdate));
     }
-    const role = stringField(message, 'role');
-    if (!role) {
-      return;
-    }
-    const content = stringField(message, 'content');
-    const streaming = booleanField(message, 'streaming') ?? false;
-    dispatch(
-      upsertHydratedMessage({
-        conversationId,
-        id,
-        role,
-        text: content,
-        status: streaming ? 'streaming' : 'complete',
-      }),
-    );
-    return;
-  }
-
-  const eventData: Record<string, unknown> = { entity };
-  const artifactUpdate = extractArtifactUpsertFromSem('timeline.upsert', eventData);
-  if (artifactUpdate) {
-    dispatch(upsertArtifact(artifactUpdate));
-  }
-  const timelineUpdate = formatTimelineUpsert(eventData);
-  if (timelineUpdate) {
-    dispatch(upsertTimelineItem({ ...timelineUpdate, conversationId }));
-    fanOutArtifactPanelUpdate(timelineUpdate, dispatch, conversationId);
   }
 }
 
-function hydrateFromTimelineSnapshot(snapshot: TimelineSnapshot, dispatch: ReturnType<typeof useDispatch>, conversationId: string): void {
-  const sorted = [...snapshot.entities].sort((a, b) => {
-    const aCreated = parseTimelineMs(a.createdAtMs);
-    const bCreated = parseTimelineMs(b.createdAtMs);
-    if (aCreated !== bCreated) {
-      return aCreated - bCreated;
-    }
-    return parseTimelineMs(a.updatedAtMs) - parseTimelineMs(b.updatedAtMs);
-  });
-  for (const entity of sorted) {
-    hydrateEntity(entity, dispatch, conversationId);
-  }
-}
-
-function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof useDispatch>, conversationId: string): void {
+function onSemEnvelope(
+  envelope: SemEventEnvelope,
+  dispatch: ReturnType<typeof useDispatch>,
+  conversationId: string,
+  semRegistry: SemRegistry,
+): void {
   const type = envelope.event?.type;
   const data = envelope.event?.data ?? {};
-  const messageId = eventIdFromEnvelope(envelope);
+
+  const projected = semRegistry.handle(envelope, {
+    convId: conversationId,
+    now: Date.now,
+  });
+  applySemTimelineOps(dispatch, conversationId, projected.ops);
 
   const artifactUpdate = extractArtifactUpsertFromSem(type, data);
   if (artifactUpdate) {
     dispatch(upsertArtifact(artifactUpdate));
-    // Register runtime card code into the global registry for injection into plugin sessions
     if (artifactUpdate.runtimeCardId && artifactUpdate.runtimeCardCode) {
-      console.log('[HC-036] registerRuntimeCard', artifactUpdate.runtimeCardId, 'code length:', artifactUpdate.runtimeCardCode.length);
       registerRuntimeCard(artifactUpdate.runtimeCardId, artifactUpdate.runtimeCardCode);
-    } else if (type === 'hypercard.card.v2') {
-      console.warn('[HC-036] card.v2 artifact missing runtime card fields:', {
-        id: artifactUpdate.id,
-        hasRuntimeCardId: !!artifactUpdate.runtimeCardId,
-        hasRuntimeCardCode: !!artifactUpdate.runtimeCardCode,
-        dataKeys: Object.keys(data),
-      });
     }
   }
 
@@ -322,7 +218,6 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
       }
     }
     dispatch(markStreamStart({ conversationId, time: Date.now() }));
-    dispatch(applyLLMStart({ conversationId, messageId }));
     return;
   }
 
@@ -337,14 +232,6 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
         }
       }
     }
-    dispatch(
-      applyLLMDelta({
-        conversationId,
-        messageId,
-        cumulative: stringField(data, 'cumulative'),
-        delta: stringField(data, 'delta'),
-      }),
-    );
     return;
   }
 
@@ -369,86 +256,6 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
         dispatch(setTurnStats({ conversationId, ...stats }));
       }
     }
-    dispatch(
-      applyLLMFinal({
-        conversationId,
-        messageId,
-        text: stringField(data, 'text'),
-      }),
-    );
-    return;
-  }
-
-  if (type === 'tool.start') {
-    const toolId = eventOrDataId(envelope, data);
-    const name = stringField(data, 'name') ?? 'tool';
-    const input = data.input;
-    const argsText = typeof input === 'undefined' ? '' : ` args=${compactJSON(input)}`;
-    const rawData: Record<string, unknown> = { name };
-    if (typeof input !== 'undefined') {
-      rawData.input = input;
-    }
-    dispatch(
-      upsertTimelineItem({
-        conversationId,
-        id: `tool:${toolId}`,
-        title: `Tool ${name}`,
-        status: 'running',
-        detail: shortText(argsText.trim()),
-        kind: 'tool',
-        rawData,
-      }),
-    );
-    return;
-  }
-
-  if (type === 'tool.delta') {
-    const toolId = eventOrDataId(envelope, data);
-    const patch = data.patch;
-    const patchText = typeof patch === 'undefined' ? 'delta' : `patch=${compactJSON(patch)}`;
-    dispatch(
-      upsertTimelineItem({
-        conversationId,
-        id: `tool:${toolId}`,
-        title: `Tool ${toolId}`,
-        status: 'running',
-        detail: shortText(patchText),
-        kind: 'tool',
-        rawData: typeof patch !== 'undefined' ? { patch } : undefined,
-      }),
-    );
-    return;
-  }
-
-  if (type === 'tool.result') {
-    const toolId = eventOrDataId(envelope, data);
-    const result = typeof data.result === 'undefined' ? 'ok' : compactJSON(data.result);
-    dispatch(
-      upsertTimelineItem({
-        conversationId,
-        id: `tool:${toolId}`,
-        title: `Tool ${toolId}`,
-        status: 'running',
-        detail: shortText(`result=${result}`),
-        kind: 'tool',
-        rawData: typeof data.result !== 'undefined' ? { result: data.result } : undefined,
-      }),
-    );
-    return;
-  }
-
-  if (type === 'tool.done') {
-    const toolId = eventOrDataId(envelope, data);
-    dispatch(
-      upsertTimelineItem({
-        conversationId,
-        id: `tool:${toolId}`,
-        title: `Tool ${toolId}`,
-        status: 'success',
-        detail: 'done',
-        kind: 'tool',
-      }),
-    );
     return;
   }
 
@@ -464,22 +271,6 @@ function onSemEnvelope(envelope: SemEventEnvelope, dispatch: ReturnType<typeof u
     const suggestions = stringArray(data.suggestions);
     if (suggestions.length > 0) {
       dispatch(replaceSuggestions({ conversationId, suggestions }));
-    }
-    return;
-  }
-
-  const lifecycleText = type ? formatHypercardLifecycle(type, data) : undefined;
-  if (lifecycleText) {
-    dispatch(upsertTimelineItem({ ...lifecycleText, conversationId }));
-    fanOutArtifactPanelUpdate(lifecycleText, dispatch, conversationId);
-    return;
-  }
-
-  if (type === 'timeline.upsert') {
-    const timelineUpdate = formatTimelineUpsert(data);
-    if (timelineUpdate) {
-      dispatch(upsertTimelineItem({ ...timelineUpdate, conversationId }));
-      fanOutArtifactPanelUpdate(timelineUpdate, dispatch, conversationId);
     }
     return;
   }
@@ -561,11 +352,11 @@ export interface InventoryChatWindowProps {
 
 export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps) {
   const dispatch = useDispatch();
-  const store = useStore();
   const connectionStatus = useSelector((s: ChatStateSlice) => selectConnectionStatus(s, conversationId));
-  const messages = useSelector((s: ChatStateSlice) => selectMessages(s, conversationId));
+  const timelineEntities = useSelector((s: ChatStateSlice) =>
+    selectTimelineEntitiesForConversation(s, conversationId),
+  );
   const suggestions = useSelector((s: ChatStateSlice) => selectSuggestions(s, conversationId));
-  const isStreaming = useSelector((s: ChatStateSlice) => selectIsStreaming(s, conversationId));
   const modelName = useSelector((s: ChatStateSlice) => selectModelName(s, conversationId));
   const currentTurnStats = useSelector((s: ChatStateSlice) => selectCurrentTurnStats(s, conversationId));
   const streamStartTime = useSelector((s: ChatStateSlice) => selectStreamStartTime(s, conversationId));
@@ -573,6 +364,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
 
   const [debugMode, setDebugMode] = useState(false);
   const clientRef = useRef<InventoryWebChatClient | null>(null);
+  const semRegistryRef = useRef<SemRegistry>(createSemRegistry());
 
   useEffect(() => {
     const handlers: InventoryWebChatClientHandlers = {
@@ -581,10 +373,10 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
         emitConversationEvent(conversationId, envelope);
       },
       onSnapshot: (snapshot) => {
-        hydrateFromTimelineSnapshot(snapshot, dispatch, conversationId);
+        hydrateFromTimelineSnapshot(snapshot, dispatch, conversationId, semRegistryRef.current);
       },
       onEnvelope: (envelope) => {
-        onSemEnvelope(envelope, dispatch, conversationId);
+        onSemEnvelope(envelope, dispatch, conversationId, semRegistryRef.current);
       },
       onStatus: (status) => dispatch(setConnectionStatus({ conversationId, status })),
       onError: (error) => dispatch(setStreamError({ conversationId, message: error })),
@@ -608,9 +400,17 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
     return `${connectionStatus} · ${conversationId.slice(0, 8)}…`;
   }, [connectionStatus, conversationId]);
 
+  const isStreaming = useMemo(
+    () =>
+      timelineEntities.some(
+        (entity) => entity.kind === 'message' && entity.props.streaming === true,
+      ),
+    [timelineEntities],
+  );
+
   const displayMessages = useMemo<ChatWindowMessage[]>(
     () =>
-      messages.map((message) => {
+      timelineEntities.map(mapTimelineEntityToMessage).map((message) => {
         let msg = message;
         if (msg.role !== 'user' && msg.text) {
           const text = stripTrailingWhitespace(msg.text);
@@ -631,52 +431,8 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
         }
         return msg;
       }),
-    [messages, debugMode],
+    [timelineEntities, debugMode],
   );
-
-  const renderWidget = useCallback((widget: InlineWidget) => {
-    const items = timelineItemsFromInlineWidget(widget);
-    const openArtifact = (item: TimelineWidgetItem) => {
-      const artifactId = item.artifactId?.trim();
-      if (!artifactId) {
-        return;
-      }
-      // Look up artifact record for runtime card info
-      const storeState = store.getState() as { artifacts?: { byId: Record<string, { runtimeCardId?: string }> } };
-      const artifactRecord = storeState.artifacts?.byId?.[artifactId];
-      console.log('[HC-036] openArtifact', { artifactId, runtimeCardId: artifactRecord?.runtimeCardId, hasRecord: !!artifactRecord, allArtifactIds: Object.keys(storeState.artifacts?.byId ?? {}) });
-      const payload = buildArtifactOpenWindowPayload({
-        artifactId,
-        template: item.template,
-        title: item.title,
-        runtimeCardId: artifactRecord?.runtimeCardId,
-      });
-      if (!payload) {
-        return;
-      }
-      console.log('[HC-036] openWindow cardId:', payload.content?.card?.cardId);
-      dispatch(openWindow(payload));
-    };
-    const editCard = (item: TimelineWidgetItem) => {
-      const artifactId = item.artifactId?.trim();
-      if (!artifactId) return;
-      const storeState = store.getState() as { artifacts?: { byId: Record<string, { runtimeCardId?: string; runtimeCardCode?: string }> } };
-      const rec = storeState.artifacts?.byId?.[artifactId];
-      if (rec?.runtimeCardId && rec?.runtimeCardCode) {
-        openCodeEditor(dispatch, rec.runtimeCardId, rec.runtimeCardCode);
-      }
-    };
-    if (widget.type !== 'inventory.timeline') {
-      if (widget.type === 'inventory.cards') {
-        return <InventoryCardPanelWidget items={items} onOpenArtifact={openArtifact} onEditCard={editCard} debug={debugMode} />;
-      }
-      if (widget.type === 'inventory.widgets') {
-        return <InventoryGeneratedWidgetPanel items={items} onOpenArtifact={openArtifact} debug={debugMode} />;
-      }
-      return null;
-    }
-    return <InventoryTimelineWidget items={items} debug={debugMode} />;
-  }, [dispatch, debugMode]);
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -689,7 +445,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
         return;
       }
 
-      dispatch(queueUserPrompt({ conversationId, text: prompt }));
+      dispatch(replaceSuggestions({ conversationId, suggestions: [] }));
 
       try {
         await submitPrompt(prompt, conversationId);
@@ -719,7 +475,6 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
       messages={displayMessages}
       isStreaming={isStreaming}
       onSend={handleSend}
-      renderWidget={renderWidget}
       title="Inventory Chat"
       subtitle={subtitle}
       placeholder="Ask about inventory..."

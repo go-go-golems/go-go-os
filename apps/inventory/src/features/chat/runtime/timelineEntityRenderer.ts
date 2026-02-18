@@ -40,7 +40,7 @@ export function mapTimelineEntityToMessage(entity: TimelineEntity): ChatWindowMe
   if (entity.kind === 'tool_result') {
     const customKind =
       typeof entity.props.customKind === 'string' && entity.props.customKind.length > 0
-        ? ` (${entity.props.customKind})`
+        ? entity.props.customKind
         : '';
     const resultText =
       typeof entity.props.resultText === 'string'
@@ -50,10 +50,18 @@ export function mapTimelineEntityToMessage(entity: TimelineEntity): ChatWindowMe
               ? entity.props.result
               : JSON.stringify(entity.props.result ?? {}),
           ) ?? '';
+    const prefix =
+      customKind === 'hypercard.widget.v1'
+        ? 'Widget'
+        : customKind === 'hypercard.card.v2'
+          ? 'Card'
+          : customKind
+            ? `Result (${customKind})`
+            : 'Result';
     return {
       id: entity.id,
       role: 'system',
-      text: stripTrailingWhitespace(`Result${customKind}: ${resultText}`),
+      text: stripTrailingWhitespace(`${prefix}: ${resultText}`),
       status: 'complete',
     };
   }

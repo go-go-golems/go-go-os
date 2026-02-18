@@ -70,4 +70,76 @@ describe('SemRegistry default handlers', () => {
       expect(final.ops[0].entity.props.content).toBe('hello world');
     }
   });
+
+  it('projects hypercard.widget.update as status and hypercard.widget.v1 as summarized result', () => {
+    const registry = createSemRegistry({ enableTimelineUpsert: false });
+
+    const status = registry.handle(
+      {
+        sem: true,
+        event: {
+          type: 'hypercard.widget.update',
+          id: 'w-1',
+          data: { title: 'Low stock table' },
+        },
+      },
+      { convId: 'c1', now: () => 2000 },
+    );
+
+    expect(status.ops[0].type).toBe('upsertEntity');
+    if (status.ops[0].type === 'upsertEntity') {
+      expect(status.ops[0].entity.kind).toBe('status');
+      expect(status.ops[0].entity.props.text).toBe('Updating widget: Low stock table');
+    }
+
+    const ready = registry.handle(
+      {
+        sem: true,
+        event: {
+          type: 'hypercard.widget.v1',
+          id: 'w-1',
+          data: {
+            title: 'Low stock table',
+            widgetType: 'table',
+            data: { artifact: { id: 'low-stock-items', data: { rows: [] } } },
+          },
+        },
+      },
+      { convId: 'c1', now: () => 2001 },
+    );
+
+    expect(ready.ops[0].type).toBe('upsertEntity');
+    if (ready.ops[0].type === 'upsertEntity') {
+      expect(ready.ops[0].entity.kind).toBe('tool_result');
+      expect(ready.ops[0].entity.props.customKind).toBe('hypercard.widget.v1');
+      expect(ready.ops[0].entity.props.resultText).toBe(
+        'Widget ready: Low stock table (table, artifact=low-stock-items)',
+      );
+    }
+  });
+
+  it('can ignore timeline.upsert registration when configured', () => {
+    const registry = createSemRegistry({ enableTimelineUpsert: false });
+    const result = registry.handle(
+      {
+        sem: true,
+        event: {
+          type: 'timeline.upsert',
+          id: 'ignored',
+          data: {
+            version: '1',
+            entity: {
+              id: 'm1',
+              kind: 'message',
+              createdAtMs: '1',
+              message: { role: 'assistant', content: 'hello', streaming: false },
+            },
+          },
+        },
+      },
+      { convId: 'c1', now: () => 1 },
+    );
+
+    expect(result.ops).toHaveLength(0);
+  });
 });

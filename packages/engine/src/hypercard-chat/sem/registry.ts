@@ -30,6 +30,14 @@ function stringField(record: Record<string, unknown>, key: string): string | und
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
+function recordField(
+  record: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> | undefined {
+  const value = record[key];
+  return isRecord(value) ? value : undefined;
+}
+
 function eventId(event: SemEvent | undefined, fallbackPrefix: string): string {
   if (event?.id && event.id.trim()) return event.id;
   return `${fallbackPrefix}-${Date.now()}`;
@@ -213,9 +221,153 @@ function wsErrorHandler(envelope: SemEnvelope, ctx: SemContext): SemHandlerResul
   });
 }
 
-export function registerDefaultSemHandlers(registry: SemRegistry): void {
+function artifactIdFromStructuredData(
+  data: Record<string, unknown>,
+): string | undefined {
+  const payload = recordField(data, 'data');
+  const artifact = payload ? recordField(payload, 'artifact') : undefined;
+  return artifact ? stringField(artifact, 'id') : undefined;
+}
+
+function widgetStatusHandler(envelope: SemEnvelope, ctx: SemContext): SemHandlerResult {
+  const type = envelope.event?.type ?? 'hypercard.widget.update';
+  const data = asRecord(envelope.event?.data);
+  const title = stringField(data, 'title') ?? 'Widget';
+  const detail = type.endsWith('.start')
+    ? `Building widget: ${title}`
+    : `Updating widget: ${title}`;
+  return upsert({
+    id: `${eventId(envelope.event, 'hypercard-widget')}:status`,
+    kind: 'status',
+    createdAt: ctx.now(),
+    updatedAt: ctx.now(),
+    props: {
+      type: 'info',
+      text: detail,
+    },
+  });
+}
+
+function widgetErrorHandler(envelope: SemEnvelope, ctx: SemContext): SemHandlerResult {
+  const data = asRecord(envelope.event?.data);
+  const title = stringField(data, 'title') ?? 'Widget';
+  const errorText =
+    stringField(data, 'error') ??
+    stringField(data, 'message') ??
+    `Widget failed: ${title}`;
+  return upsert({
+    id: `${eventId(envelope.event, 'hypercard-widget')}:status`,
+    kind: 'status',
+    createdAt: ctx.now(),
+    updatedAt: ctx.now(),
+    props: {
+      type: 'error',
+      text: errorText,
+    },
+  });
+}
+
+function widgetV1ResultHandler(envelope: SemEnvelope, ctx: SemContext): SemHandlerResult {
+  const data = asRecord(envelope.event?.data);
+  const title = stringField(data, 'title') ?? 'Widget';
+  const widgetType =
+    stringField(data, 'widgetType') ??
+    stringField(data, 'type') ??
+    'widget';
+  const artifactId = artifactIdFromStructuredData(data);
+  const detail = artifactId
+    ? `Widget ready: ${title} (${widgetType}, artifact=${artifactId})`
+    : `Widget ready: ${title} (${widgetType})`;
+  return upsert({
+    id: `${eventId(envelope.event, 'hypercard-widget')}:result`,
+    kind: 'tool_result',
+    createdAt: ctx.now(),
+    updatedAt: ctx.now(),
+    props: {
+      customKind: 'hypercard.widget.v1',
+      result: data,
+      resultText: detail,
+      title,
+      widgetType,
+      artifactId,
+    },
+  });
+}
+
+function cardStatusHandler(envelope: SemEnvelope, ctx: SemContext): SemHandlerResult {
+  const type = envelope.event?.type ?? 'hypercard.card.update';
+  const data = asRecord(envelope.event?.data);
+  const title = stringField(data, 'title') ?? 'Card';
+  const detail = type.endsWith('.start')
+    ? `Building card proposal: ${title}`
+    : `Updating card proposal: ${title}`;
+  return upsert({
+    id: `${eventId(envelope.event, 'hypercard-card')}:status`,
+    kind: 'status',
+    createdAt: ctx.now(),
+    updatedAt: ctx.now(),
+    props: {
+      type: 'info',
+      text: detail,
+    },
+  });
+}
+
+function cardErrorHandler(envelope: SemEnvelope, ctx: SemContext): SemHandlerResult {
+  const data = asRecord(envelope.event?.data);
+  const title = stringField(data, 'title') ?? 'Card';
+  const errorText =
+    stringField(data, 'error') ??
+    stringField(data, 'message') ??
+    `Card failed: ${title}`;
+  return upsert({
+    id: `${eventId(envelope.event, 'hypercard-card')}:status`,
+    kind: 'status',
+    createdAt: ctx.now(),
+    updatedAt: ctx.now(),
+    props: {
+      type: 'error',
+      text: errorText,
+    },
+  });
+}
+
+function cardV2ResultHandler(envelope: SemEnvelope, ctx: SemContext): SemHandlerResult {
+  const data = asRecord(envelope.event?.data);
+  const title = stringField(data, 'title') ?? 'Card';
+  const template = stringField(data, 'template') ?? 'card';
+  const artifactId = artifactIdFromStructuredData(data);
+  const detail = artifactId
+    ? `Card ready: ${title} (template=${template}, artifact=${artifactId})`
+    : `Card ready: ${title} (template=${template})`;
+  return upsert({
+    id: `${eventId(envelope.event, 'hypercard-card')}:result`,
+    kind: 'tool_result',
+    createdAt: ctx.now(),
+    updatedAt: ctx.now(),
+    props: {
+      customKind: 'hypercard.card.v2',
+      result: data,
+      resultText: detail,
+      title,
+      template,
+      artifactId,
+    },
+  });
+}
+
+export interface SemRegistryOptions {
+  enableTimelineUpsert?: boolean;
+}
+
+export function registerDefaultSemHandlers(
+  registry: SemRegistry,
+  options: SemRegistryOptions = {},
+): void {
   registry.clear();
-  registry.register('timeline.upsert', timelineUpsertHandler);
+  if (options.enableTimelineUpsert !== false) {
+    registry.register('timeline.upsert', timelineUpsertHandler);
+  }
 
   registry.register('llm.start', llmStartHandler);
   registry.register('llm.delta', llmDeltaHandler);
@@ -230,13 +382,23 @@ export function registerDefaultSemHandlers(registry: SemRegistry): void {
   registry.register('tool.result', toolResultHandler);
   registry.register('tool.done', toolDoneHandler);
 
+  registry.register('hypercard.widget.start', widgetStatusHandler);
+  registry.register('hypercard.widget.update', widgetStatusHandler);
+  registry.register('hypercard.widget.error', widgetErrorHandler);
+  registry.register('hypercard.widget.v1', widgetV1ResultHandler);
+
+  registry.register('hypercard.card.start', cardStatusHandler);
+  registry.register('hypercard.card.update', cardStatusHandler);
+  registry.register('hypercard.card.error', cardErrorHandler);
+  registry.register('hypercard.card.v2', cardV2ResultHandler);
+
   registry.register('log', logHandler);
   registry.register('ws.error', wsErrorHandler);
 }
 
-export function createSemRegistry(): SemRegistry {
+export function createSemRegistry(options: SemRegistryOptions = {}): SemRegistry {
   const registry = new SemRegistry();
-  registerDefaultSemHandlers(registry);
+  registerDefaultSemHandlers(registry, options);
   return registry;
 }
 

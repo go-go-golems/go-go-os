@@ -1,7 +1,6 @@
 import {
   ChatWindow,
   createSemRegistry,
-  hydrateTimelineSnapshot,
   projectSemEnvelope,
   selectTimelineEntities as selectTimelineEntitiesForConversation,
   type ChatWindowMessage,
@@ -121,7 +120,9 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
 
   const [debugMode, setDebugMode] = useState(false);
   const clientRef = useRef<InventoryWebChatClient | null>(null);
-  const semRegistryRef = useRef<SemRegistry>(createSemRegistry());
+  const semRegistryRef = useRef<SemRegistry>(
+    createSemRegistry({ enableTimelineUpsert: false }),
+  );
   const projectionAdaptersRef = useRef<ProjectionPipelineAdapter[]>([
     createChatMetaProjectionAdapter(),
     createInventoryArtifactProjectionAdapter(),
@@ -133,16 +134,10 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
         // Raw ingress stream for EventViewer/debug tooling; do not gate on projection.
         emitConversationEvent(conversationId, envelope);
       },
-      onSnapshot: (snapshot) => {
-        hydrateTimelineSnapshot({
-          conversationId,
-          dispatch,
-          semRegistry: semRegistryRef.current,
-          snapshot,
-          adapters: projectionAdaptersRef.current,
-        });
-      },
       onEnvelope: (envelope) => {
+        if (envelope.event?.type === 'timeline.upsert') {
+          return;
+        }
         projectSemEnvelope({
           conversationId,
           dispatch,
@@ -156,7 +151,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
     };
 
     const client = new InventoryWebChatClient(conversationId, handlers, {
-      hydrate: true,
+      hydrate: false,
     });
     clientRef.current = client;
     client.connect();

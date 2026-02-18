@@ -30,7 +30,7 @@ RelatedFiles:
         Task checklist updated during session
 ExternalSources: []
 Summary: Step-by-step diary for initial HC-51 planning, post-review Pinocchio alignment rewrite, and reMarkable publication runs.
-LastUpdated: 2026-02-18T15:36:00Z
+LastUpdated: 2026-02-18T15:44:00Z
 WhatFor: Preserve implementation narrative and reproducible command history for HC-51 planning work.
 WhenToUse: Use to understand what was done, what decisions were made, and how outputs were generated.
 ---
@@ -552,3 +552,191 @@ npx vitest run packages/engine/src/hypercard-chat/timeline/timelineSlice.test.ts
 git commit -m "feat(hypercard-chat): add timeline core and sem registry foundation"
 docmgr task check --ticket HC-51-TIMELINE-FIRST-CHAT --id 9,10,11
 ```
+
+## Step 7: Implement session transport hydrate/buffer/replay and raw ingress hook (Impl C1/C2)
+
+This step introduced the transport/session behavior needed for timeline-first projection flow. I upgraded `InventoryWebChatClient` to own hydration and buffered replay sequencing, and wired raw envelope emission before projection in `InventoryChatWindow`.
+
+This keeps EventViewer decoupled from projection while moving runtime behavior closer to Pinocchio’s ws manager model.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 6)
+
+**Assistant interpretation:** Continue implementation tasks in order, commit each block, and keep detailed diary records.
+
+**Inferred user intent:** Ensure transport/event ingestion semantics are corrected before deeper store/UI cutover.
+
+**Commit (code):** `984659e` — "feat(inventory-chat): add hydrate-buffer-replay session flow and raw ingress emission"
+
+### What I did
+
+- Refactored `apps/inventory/src/features/chat/webchatClient.ts`:
+  - retained `seq` and `stream_id` in envelope type,
+  - added buffering while hydration is pending,
+  - added snapshot hydration callback (`onSnapshot`),
+  - added deterministic replay ordering (`sortBufferedEnvelopes`) preferring `stream_id`, then `seq`.
+- Added `onRawEnvelope` callback in client handlers to enforce raw ingress hook.
+- Updated `apps/inventory/src/features/chat/InventoryChatWindow.tsx`:
+  - emit raw events via `onRawEnvelope` before projection,
+  - hydrate timeline from client `onSnapshot` callback,
+  - remove manual bootstrap fetch path in component effect.
+- Added focused test coverage:
+  - `apps/inventory/src/features/chat/webchatClient.test.ts`.
+
+### Why
+
+This is a prerequisite for strict projection architecture:
+
+- ingress event emission must be independent of projection,
+- live/hydrated convergence should occur inside one session manager path,
+- component-level ad-hoc bootstrap logic must start shrinking.
+
+### What worked
+
+- Focused test command passed for new/changed transport behavior:
+  - `npx vitest run apps/inventory/src/features/chat/webchatClient.test.ts ...`
+- Session flow changes integrate cleanly with existing `onSemEnvelope` call path.
+
+### What didn't work
+
+- Full `npm run build -w apps/inventory` still fails due pre-existing Storybook type errors in engine `ChatWindow*.stories.tsx` requiring `args` fields.
+- This is unrelated to the session-manager modifications but blocks full workspace green checks.
+
+### What I learned
+
+Moving hydration and replay into the transport client immediately simplifies `InventoryChatWindow` lifecycle logic and makes future D2 replacement easier.
+
+### What was tricky to build
+
+The main nuance was ordering policy under mixed metadata quality (`stream_id` sometimes present, sometimes absent). The implemented comparator now uses `stream_id` first and falls back to bigint-compatible `seq` parsing.
+
+### What warrants a second pair of eyes
+
+- Replay ordering assumptions in `sortBufferedEnvelopes` for mixed stream-id/seq scenarios.
+- Whether malformed envelopes should be dropped vs emitted raw with explicit error markers.
+
+### What should be done in the future
+
+Proceed with D1/D2 to remove dependence on `chatSlice` projection writes and wire registry-based timeline entity operations directly.
+
+### Code review instructions
+
+Start with:
+
+- `apps/inventory/src/features/chat/webchatClient.ts`
+- `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+- `apps/inventory/src/features/chat/webchatClient.test.ts`
+
+Run focused tests:
+
+```bash
+npx vitest run apps/inventory/src/features/chat/webchatClient.test.ts
+```
+
+### Technical details
+
+Commands run:
+
+```bash
+npx vitest run apps/inventory/src/features/chat/webchatClient.test.ts packages/engine/src/hypercard-chat/timeline/timelineSlice.test.ts packages/engine/src/hypercard-chat/sem/registry.test.ts
+npm run build -w apps/inventory
+git commit -m "feat(inventory-chat): add hydrate-buffer-replay session flow and raw ingress emission"
+docmgr task check --ticket HC-51-TIMELINE-FIRST-CHAT --id 12,13
+```
+
+## Step 8: Cut over chat runtime rendering to timeline entities (Impl D1/D2/E1)
+
+This step moved the app runtime off message-centric reducer projection and onto timeline entities projected through the SEM registry.
+
+**Commit (code):** `63e3a54` — "feat(inventory-chat): cut over chat rendering to timeline entity projection"
+
+### What I did
+
+- Wired `timeline` reducer into inventory store alongside existing slices.
+- Switched `InventoryChatWindow` rendering to `selectTimelineEntities` + `mapTimelineEntityToMessage`.
+- Replaced runtime event-switch projection with registry-driven projection:
+  - `semRegistry.handle(...)`
+  - `applySemTimelineOps(...)`
+- Added snapshot hydration through synthetic `timeline.upsert` envelopes fed through the same registry path.
+- Preserved artifact extraction/indexing (`extractArtifactUpsertFromSem` + `upsertArtifact`) and runtime card registration.
+- Kept EventViewer raw stream ingress independent from projection path.
+
+### Why
+
+D1/D2/E1 are the structural cutover tasks that make timeline entities canonical. Once this landed, the app no longer depended on the legacy synthetic widget-message shaping path for normal rendering.
+
+### What worked
+
+- Chat UI rendered timeline entities correctly in place of legacy `chat.messages` population.
+- Artifact/card runtime flow remained intact after projection cutover.
+
+### What didn't work
+
+- Legacy reducer code/tests were still present, so F1 cleanup was still required to complete hard-cutover consistency.
+
+### What warrants review
+
+- Entity-to-`ChatWindowMessage` mapping assumptions in `mapTimelineEntityToMessage` for non-message entities.
+- Hydration path (`timeline snapshot -> synthetic timeline.upsert -> registry`) for deterministic replay correctness.
+
+### Technical details
+
+Commands used during this step:
+
+```bash
+npx vitest run apps/inventory/src/features/chat/*.test.ts
+npx vitest run packages/engine/src/hypercard-chat/timeline/timelineSlice.test.ts packages/engine/src/hypercard-chat/sem/registry.test.ts
+git commit -m "feat(inventory-chat): cut over chat rendering to timeline entity projection"
+```
+
+## Step 9: Remove legacy synthetic widget-message reducer path and complete validation (Impl F1/F2)
+
+This step finished the hard cutover by deleting old reducer responsibilities and replacing stale tests/selectors with timeline-first metadata expectations.
+
+**Commit (code):** `5141d98` — "refactor(inventory-chat): hard-cutover chat slice to timeline-first metadata"
+
+### What I changed
+
+- Simplified `apps/inventory/src/features/chat/chatSlice.ts` to metadata-only responsibilities:
+  - removed legacy message/timeline-widget reducers (`queueUserPrompt`, `applyLLM*`, `upsert*Panel*`, etc.),
+  - retained connection/suggestion/model/stats/stream meta handling only.
+- Updated `apps/inventory/src/features/chat/selectors.ts` to remove stale message/stream selectors tied to removed state.
+- Rewrote `apps/inventory/src/features/chat/chatSlice.test.ts` to cover the new contract (metadata, suggestions normalization, stream stats lifecycle, conversation isolation).
+- Tightened typing for SEM ops dispatch path:
+  - `packages/engine/src/hypercard-chat/sem/registry.ts` now accepts `Dispatch<UnknownAction>`.
+  - `InventoryChatWindow` helper signatures now use `Dispatch<UnknownAction>`.
+
+### Validation runbook and results
+
+Executed:
+
+```bash
+npx vitest run apps/inventory/src/features/chat/chatSlice.test.ts
+npx vitest run apps/inventory/src/features/chat/*.test.ts
+npx vitest run packages/engine/src/hypercard-chat/timeline/timelineSlice.test.ts packages/engine/src/hypercard-chat/sem/registry.test.ts
+npx tsc -p apps/inventory/tsconfig.json --pretty false
+npm run typecheck
+```
+
+Results:
+
+- Focused tests: passing (`8 files / 33 tests`).
+- Inventory TS compile: passing (`npx tsc -p apps/inventory/tsconfig.json`).
+- Root `npm run typecheck`: still failing due pre-existing Storybook typing errors requiring explicit `args` in multiple engine `ChatWindow*.stories.tsx` stories (unrelated to HC-51 runtime cutover).
+
+### Why this matters
+
+This removes the remaining dual-state ambiguity. Timeline entities are now the canonical render source, while chat slice stores only transport/session metadata and UX hints.
+
+### Review guidance
+
+Review in this order:
+
+- `apps/inventory/src/features/chat/chatSlice.ts`
+- `apps/inventory/src/features/chat/selectors.ts`
+- `apps/inventory/src/features/chat/chatSlice.test.ts`
+- `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+- `packages/engine/src/hypercard-chat/sem/registry.ts`
+
+Then run the validation commands above.

@@ -64,3 +64,35 @@ Implemented Impl A1/A2/B1 foundation (commit a6d375a): added engine timeline cor
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/sem/timelineMapper.ts — timeline.upsert entity mapper supporting snapshot variants
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/timeline/timelineSlice.ts — Conversation-scoped canonical timeline reducer
 
+
+## 2026-02-18
+
+Implemented Impl C1/C2 (commit 984659e): upgraded inventory webchat client to hydrate-buffer-replay flow with seq/stream_id retention and wired raw envelope emission at ingress before projection.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Ingress raw-event hook and snapshot callback integration
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/webchatClient.test.ts — Replay ordering tests for stream_id/seq behavior
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/webchatClient.ts — Hydration/replay session manager behavior and envelope ordering
+
+
+## 2026-02-18
+
+Implemented Impl D1/D2/E1 (commit 63e3a54): refactored inventory runtime to render from timeline entities via SEM registry projection, wired timeline reducer into app store, and preserved artifact/card runtime indexing from timeline semantic events.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/app/store.ts — Added timeline reducer wiring in inventory app store
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Registry-driven SEM projection and timeline-entity-based rendering path
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/selectors.ts — Chat state slice alignment for timeline-aware store shape
+
+
+## 2026-02-18
+
+Implemented Impl F1/F2 completion (commit 5141d98): removed legacy synthetic timeline widget-message reducer path, rewrote chat slice tests for metadata-only state contract, and completed focused runtime/test/typecheck validation.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.ts — Hard cutover to metadata-only chat slice
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.test.ts — New tests for suggestions/connection/stream stats metadata contract
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/sem/registry.ts — Dispatch typing alignment for timeline op applier

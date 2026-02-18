@@ -136,6 +136,31 @@ export function sortBufferedEnvelopes(envelopes: SemEventEnvelope[]): SemEventEn
   return [...envelopes].sort(compareBufferedOrder);
 }
 
+export interface EnvelopeRoutingState {
+  hydrated: boolean;
+  buffered: SemEventEnvelope[];
+}
+
+export interface EnvelopeRoutingHandlers {
+  onRawEnvelope?: (envelope: SemEventEnvelope) => void;
+  onEnvelope: (envelope: SemEventEnvelope) => void;
+}
+
+export function routeIncomingEnvelope(
+  state: EnvelopeRoutingState,
+  envelope: SemEventEnvelope,
+  handlers: EnvelopeRoutingHandlers,
+): void {
+  handlers.onRawEnvelope?.(envelope);
+
+  if (!state.hydrated) {
+    state.buffered.push(envelope);
+    return;
+  }
+
+  handlers.onEnvelope(envelope);
+}
+
 function normalizeEnvelope(raw: unknown): SemEventEnvelope {
   const envelope = normalizeRecord(raw) as SemEventEnvelope;
   const event = normalizeRecord(envelope.event);
@@ -204,14 +229,11 @@ export class InventoryWebChatClient {
     ws.onmessage = (event) => {
       try {
         const envelope = normalizeEnvelope(JSON.parse(String(event.data)));
-        this.handlers.onRawEnvelope?.(envelope);
-
-        if (!this.hydrated) {
-          this.buffered.push(envelope);
-          return;
-        }
-
-        this.handlers.onEnvelope(envelope);
+        routeIncomingEnvelope(
+          { hydrated: this.hydrated, buffered: this.buffered },
+          envelope,
+          this.handlers,
+        );
       } catch {
         this.handlers.onError?.('malformed websocket frame');
       }

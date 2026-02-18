@@ -17,6 +17,11 @@ import {
 const meta = {
   title: 'Engine/Widgets/ChatWindow',
   component: ChatWindow,
+  args: {
+    messages: [],
+    isStreaming: false,
+    onSend: () => {},
+  },
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof ChatWindow>;
 

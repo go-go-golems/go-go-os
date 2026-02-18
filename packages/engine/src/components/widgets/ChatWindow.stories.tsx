@@ -210,6 +210,11 @@ export function defaultWidgetRenderer(widget: InlineWidget): ReactNode {
 const meta = {
   title: 'Engine/Widgets/ChatWindow',
   component: ChatWindow,
+  args: {
+    messages: [],
+    isStreaming: false,
+    onSend: () => {},
+  },
   excludeStories: [
     'useSimulatedStream',
     'STOCK_DATA',

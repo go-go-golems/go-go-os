@@ -37,6 +37,8 @@ topics:
       description: Desktop and window manager architecture, behavior, and performance work
     - slug: design-system
       description: Token, parts, theming, and reusable UI styling system work
+    - slug: timeline
+      description: Timeline projection, timeline entities, and timeline-first architecture work.
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

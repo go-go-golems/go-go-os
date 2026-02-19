@@ -47,8 +47,8 @@ RelatedFiles:
     - Path: packages/engine/src/hypercard-chat/widgets/ArtifactPanelWidgets.tsx
       Note: Rich generated widget/card panel renderer to preserve with git mv-based extraction
 ExternalSources: []
-Summary: Updated HC-53 implementation playbook aligned with Pinocchio TimelineEntityV2/open-kind architecture and new tutorial-backed module registration model.
-LastUpdated: 2026-02-19T15:10:00-05:00
+Summary: Updated HC-53 implementation playbook aligned with Pinocchio TimelineEntityV2/open-kind architecture, including protobuf event-extraction flow and tutorial-backed module registration model.
+LastUpdated: 2026-02-19T15:30:00-05:00
 WhatFor: Provide a concrete implementation blueprint for restoring Hypercard rich widgets/cards using dedicated timeline kinds under the new open model.
 WhenToUse: Use when implementing HC-53 refactor and when reviewing migration away from tool_result/customKind routing.
 ---
@@ -143,7 +143,59 @@ Define dedicated kinds and payload contract conventions in HC-53 docs and code c
 
 Do not re-open Pinocchio core protobuf transport for every Hypercard domain kind.
 
-## Step 2: Backend Projection Cutover (go-inventory-chat)
+## Step 2: Protobuf Extraction of Hypercard SEM Events
+
+Before changing projection behavior, add a typed extraction layer for Hypercard SEM event payloads.
+
+Objective:
+
+1. stop relying on ad-hoc map decoding in projector handlers,
+2. validate payload shape once in translator/projector helpers,
+3. keep TimelineEntityV2 output stable (`kind + props`) while using protobuf for extraction/validation.
+
+Recommended schema ownership:
+
+1. app-owned proto package in Hypercard backend repo (or app-owned module path), not Pinocchio core transport:
+   - `.../proto/sem/hypercard/widget.proto`
+   - `.../proto/sem/hypercard/card.proto`
+2. generate Go bindings used by:
+   - SEM translator registration handlers
+   - timeline projector handlers in `go-inventory-chat/internal/pinoweb/hypercard_events.go`
+
+Extraction helper pattern:
+
+```go
+func extractWidgetLifecycle(raw json.RawMessage) (*hypercardpb.WidgetLifecycleV1, error) {
+  var pb hypercardpb.WidgetLifecycleV1
+  if err := protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(raw, &pb); err != nil {
+    return nil, err
+  }
+  return &pb, nil
+}
+```
+
+Then convert typed payload to timeline props in one place:
+
+```go
+func widgetPropsFromPB(pb *hypercardpb.WidgetLifecycleV1) map[string]any {
+  return map[string]any{
+    "schemaVersion": 1,
+    "itemId": pb.GetItemId(),
+    "title": pb.GetTitle(),
+    "phase": pb.GetPhase(),
+    "error": pb.GetError(),
+    "data": structToMap(pb.GetData()),
+  }
+}
+```
+
+Acceptance criteria:
+
+1. translator + projector tests decode protobuf payloads successfully.
+2. invalid payloads fail extraction deterministically (no silent map drift).
+3. emitted timeline entities remain `TimelineEntityV2(kind + props)` and do not depend on transport oneof.
+
+## Step 3: Backend Projection Cutover (go-inventory-chat)
 
 Update `go-inventory-chat/internal/pinoweb/hypercard_events.go` so Hypercard events project directly to dedicated V2 kinds.
 
@@ -177,18 +229,6 @@ Success criteria:
 1. no widget/card final payload emitted as tool_result.
 2. timeline snapshot shows dedicated kinds in `entities[].kind`.
 
-## Step 3: Frontend Projection Cutover (Hypercard Engine)
-
-Update `packages/engine/src/hypercard-chat/sem/registry.ts` and timeline mapping utilities.
-
-Required changes:
-
-1. `timeline.upsert` must be canonical for durable widget/card state.
-2. map `kind=hypercard_widget|hypercard_card` directly to timeline entities consumed by display synthesis.
-3. remove widget/card mapping through `tool_result.customKind` branches.
-
-If direct SEM custom events are still handled for non-durable UX hints, they must not become the durable widget/card source of truth.
-
 ## Step 4: Introduce Registry-Driven Frontend Extension Seams
 
 Adopt the same seam model used in Pinocchio web frontend:
@@ -203,7 +243,19 @@ Why this matters:
 2. enables self-contained feature packs.
 3. allows ChatWindow to stay generic.
 
-## Step 5: Extract Hypercard Renderer Pack (git mv First)
+## Step 5: Frontend Projection Cutover (Hypercard Engine)
+
+Update `packages/engine/src/hypercard-chat/sem/registry.ts` and timeline mapping utilities.
+
+Required changes:
+
+1. `timeline.upsert` must be canonical for durable widget/card state.
+2. map `kind=hypercard_widget|hypercard_card` directly to timeline entities consumed by display synthesis.
+3. remove widget/card mapping through `tool_result.customKind` branches.
+
+If direct SEM custom events are still handled for non-durable UX hints, they must not become the durable widget/card source of truth.
+
+## Step 6: Extract Hypercard Renderer Pack (git mv First)
 
 Before rewriting components, preserve history and styling via `git mv`:
 
@@ -218,7 +270,7 @@ Target end state:
 2. pack internals refer only to Hypercard kind contracts and props
 3. Inventory app only calls bootstrap/registration and provides host callbacks
 
-## Step 6: Simplify Inventory Chat Integration
+## Step 7: Simplify Inventory Chat Integration
 
 `apps/inventory/src/features/chat/InventoryChatWindow.tsx` should become orchestration glue, not type-dispatch owner.
 
@@ -233,7 +285,7 @@ Keep in app file:
 1. host actions (open/edit card, inventory-side effects)
 2. app-specific toolbar and UX controls
 
-## Step 7: Remove Legacy Compatibility Path (Hard Cut)
+## Step 8: Remove Legacy Compatibility Path (Hard Cut)
 
 Explicit removals required:
 
@@ -243,7 +295,7 @@ Explicit removals required:
 
 Do not ship dual old/new rendering paths.
 
-## Step 8: Validation Matrix
+## Step 9: Validation Matrix
 
 Backend validation:
 
@@ -263,7 +315,7 @@ End-to-end validation:
 2. verify timeline panel + generated panels render rich components (not JSON text)
 3. verify actions (Open/Edit/adjust stock/etc.) continue to work
 
-## Step 9: Documentation and Developer Workflow
+## Step 10: Documentation and Developer Workflow
 
 When implementing each subtask, link work back to tutorial patterns:
 

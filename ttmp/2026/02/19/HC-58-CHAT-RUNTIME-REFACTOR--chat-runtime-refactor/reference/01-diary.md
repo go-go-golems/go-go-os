@@ -722,3 +722,52 @@ This makes each task reviewable up front and reduces ambiguity before implementa
   - `packages/engine/src/hypercard-chat/sem/registry.ts`
   - `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
   - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+
+## Step 12: Clarify Task Narratives with Explicit Bigger-Purpose Wording
+I refined HC-58 task descriptions so each checkbox note is explicitly framed as both a concrete task explanation and its bigger role in the refactor.
+
+This keeps the backlog readable for implementation while making architectural intent visible at task granularity.
+
+### Prompt Context
+
+**User prompt (verbatim):** "explaining the task and what it's bigger purpose in the refactor is"
+
+**Assistant interpretation:** Reword task notes to explicitly explain what each task is and why it matters to the overall refactor.
+
+**Inferred user intent:** Improve task readability so execution order and architectural value are both obvious during implementation.
+
+**Commit (code):** N/A (documentation wording refinement in progress)
+
+### What I did
+- Updated wording in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+- Standardized annotation prefix from `Cleanup and purpose` to `Task explanation and bigger refactor purpose`.
+
+### Why
+- The new phrasing removes ambiguity and directly addresses the requested framing.
+
+### What worked
+- Existing task content already had strong intent; making the prefix explicit improved scanability without changing scope.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Simple phrasing changes can significantly improve backlog usability in long multi-phase refactors.
+
+### What was tricky to build
+- Preserving existing task semantics while tightening phrasing consistently across all checklist items.
+
+### What warrants a second pair of eyes
+- Validate that this wording convention should be kept for future tickets for consistency.
+
+### What should be done in the future
+- Apply the same wording convention to upcoming HC-58 tasks as they are added.
+
+### Code review instructions
+- Review wording changes in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+
+### Technical details
+- Mechanical replacement used:
+  - `Cleanup and purpose` -> `Task explanation and bigger refactor purpose`

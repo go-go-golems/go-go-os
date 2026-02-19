@@ -497,3 +497,52 @@ I also ran typecheck and focused test suites to verify the changes across engine
 - Validation commands:
   - `npm run typecheck`
   - `npx vitest run apps/inventory/src/features/chat/chatSlice.test.ts apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts apps/inventory/src/features/chat/eventBus.test.ts`
+
+## Step 8: Clarify Task Narratives with Explicit Bigger-Purpose Wording
+I applied the same explicit task-purpose phrasing to HC-59 so each completed checklist item now states both what it did and why it mattered to the broader cleanup.
+
+This keeps HC-59 aligned with HC-58 planning language and improves cross-ticket readability.
+
+### Prompt Context
+
+**User prompt (verbatim):** "explaining the task and what it's bigger purpose in the refactor is"
+
+**Assistant interpretation:** Ensure per-task notes explicitly communicate both execution scope and larger refactor intent.
+
+**Inferred user intent:** Make finished and pending task entries self-explanatory for fast review and continuation.
+
+**Commit (code):** N/A (documentation wording refinement in progress)
+
+### What I did
+- Updated wording in:
+  - `ttmp/2026/02/19/HC-59-REMOVE-SUGGESTIONS-FOR-NOW--remove-suggestions-for-now/tasks.md`
+- Standardized annotation prefix from `Cleanup and purpose` to `Task explanation and bigger refactor purpose`.
+
+### Why
+- Keeps task language explicit and consistent with current user direction.
+
+### What worked
+- Uniform wording across HC-59 tasks improved readability without changing any tracked outcomes.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Cross-ticket consistency in task narrative wording reduces review overhead.
+
+### What was tricky to build
+- Minimal; this was a controlled wording update with no behavioral changes.
+
+### What warrants a second pair of eyes
+- Confirm this phrasing style should be used for all future task additions.
+
+### What should be done in the future
+- Reuse this phrase structure for new HC-59 follow-up tasks if any are added.
+
+### Code review instructions
+- Review wording changes in:
+  - `ttmp/2026/02/19/HC-59-REMOVE-SUGGESTIONS-FOR-NOW--remove-suggestions-for-now/tasks.md`
+
+### Technical details
+- Mechanical replacement used:
+  - `Cleanup and purpose` -> `Task explanation and bigger refactor purpose`

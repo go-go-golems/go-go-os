@@ -161,3 +161,73 @@ This step completes the publication requirement and captures one verification hi
   - `/ai/2026/02/19/HC-59-REMOVE-SUGGESTIONS-FOR-NOW`
 - Remote artifact:
   - `01-implementation-plan-remove-suggestions-for-now.pdf`
+
+## Step 3: Suggestions Behavior Spec and Detailed Task Breakdown
+You requested that HC-59 first capture the suggestions feature behavior for future recreation, then proceed task-by-task with commits. I created a dedicated behavior-spec document before implementation and expanded the ticket task list accordingly.
+
+This step formalizes the reconstruction contract so removal work can proceed without losing the current feature semantics.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Let's work on HC-59, but also write a document in HC-59 that describes the suggestions feature from a behavior/feature point of view, so that we can recreate it once we did the bigger cleanup, later on. 
+
+First, write the feature wise document, then create tasks detailed in the ticket, then work through the ticket task by task ,committing as you go, continuing to update your diary."
+
+**Assistant interpretation:** Add a behavior-level suggestions spec in HC-59 first, then create a more detailed implementation task list, then execute those tasks sequentially with incremental commits and diary updates.
+
+**Inferred user intent:** Preserve product behavior knowledge while aggressively simplifying code now, so suggestions can be reintroduced deliberately after runtime cleanup.
+
+**Commit (code):** Pending (recorded after staging/commit step)
+
+### What I did
+- Created new design doc:
+  - `ttmp/2026/02/19/HC-59-REMOVE-SUGGESTIONS-FOR-NOW--remove-suggestions-for-now/design-doc/02-suggestions-feature-behavior-spec-for-future-rebuild.md`
+- Filled the behavior spec with:
+  - state semantics (defaults, cap, dedupe, merge/replace),
+  - event semantics (`hypercard.suggestions.start/update/v1`),
+  - render gating rules across `ChatWindow`, `ChatView`, `StreamingChatView`,
+  - send-path behavior and event viewer/styling details,
+  - future rebuild acceptance criteria.
+- Added detailed implementation tasks to HC-59 (post-baseline task set):
+  - remove inventory suggestion state/actions/selectors,
+  - remove SEM handling and InventoryChatWindow wiring,
+  - remove runtime/widget props and rendering,
+  - clean stories/docs/theme/event viewer,
+  - run tests/typecheck,
+  - keep diary/changelog and phase commits.
+
+### Why
+- Removing suggestions without a behavior spec would make future reintroduction guesswork and risk inconsistent UX semantics.
+
+### What worked
+- Existing code had clear behavior anchors, making it possible to write a precise reconstruction document.
+- The expanded task list now maps directly to implementation phases.
+
+### What didn't work
+- None in this step.
+
+### What I learned
+- The key semantics worth preserving are not only UI chips; merge-vs-replace event handling and dedupe policy are equally important for user-visible outcomes.
+
+### What was tricky to build
+- Distilling behavior from multiple layers without coupling the new spec to current architecture.
+- I handled this by documenting behavior contracts and acceptance criteria separately from current implementation details.
+
+### What warrants a second pair of eyes
+- Confirm whether future rebuild should preserve “clear suggestions on send” or intentionally change that behavior.
+
+### What should be done in the future
+- Keep this spec updated if removal work uncovers additional implicit behavior assumptions.
+
+### Code review instructions
+- Review new spec:
+  - `ttmp/2026/02/19/HC-59-REMOVE-SUGGESTIONS-FOR-NOW--remove-suggestions-for-now/design-doc/02-suggestions-feature-behavior-spec-for-future-rebuild.md`
+- Review updated task list:
+  - `ttmp/2026/02/19/HC-59-REMOVE-SUGGESTIONS-FOR-NOW--remove-suggestions-for-now/tasks.md`
+
+### Technical details
+- Source behavior references captured from:
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+  - `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`

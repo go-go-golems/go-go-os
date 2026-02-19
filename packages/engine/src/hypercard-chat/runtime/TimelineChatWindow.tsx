@@ -11,8 +11,6 @@ export interface TimelineChatWindowProps {
   title?: string;
   subtitle?: string;
   placeholder?: string;
-  suggestions?: string[];
-  showSuggestionsAlways?: boolean;
   headerActions?: ReactNode;
   footer?: ReactNode;
   widgetNamespace?: string;
@@ -27,8 +25,6 @@ export function TimelineChatWindow({
   title,
   subtitle,
   placeholder,
-  suggestions,
-  showSuggestionsAlways = false,
   headerActions,
   footer,
   widgetNamespace = 'hypercard',
@@ -65,8 +61,6 @@ export function TimelineChatWindow({
       title={title}
       subtitle={subtitle}
       placeholder={placeholder}
-      suggestions={suggestions}
-      showSuggestionsAlways={showSuggestionsAlways}
       headerActions={headerActions}
       footer={footer}
     />

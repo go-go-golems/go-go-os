@@ -8,7 +8,6 @@ export interface ChatSidebarProps {
   onSend: (text: string) => void;
   onCancel?: () => void;
   onAction?: (action: unknown) => void;
-  suggestions?: string[];
   title?: string;
   placeholder?: string;
   /** Additional content to render below the chat (e.g., model info) */
@@ -25,7 +24,6 @@ export function ChatSidebar({
   onSend,
   onCancel,
   onAction,
-  suggestions,
   title = 'AI Assistant',
   placeholder,
   footer,
@@ -90,7 +88,6 @@ export function ChatSidebar({
         <StreamingChatView
           messages={messages}
           isStreaming={isStreaming}
-          suggestions={suggestions}
           onSend={onSend}
           onCancel={onCancel}
           onAction={onAction}

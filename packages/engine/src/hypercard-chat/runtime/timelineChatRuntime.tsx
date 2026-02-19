@@ -71,8 +71,6 @@ export function TimelineChatRuntimeWindow({
   title,
   subtitle,
   placeholder,
-  suggestions,
-  showSuggestionsAlways,
   headerActions,
   footer,
 }: TimelineChatRuntimeWindowProps) {
@@ -132,8 +130,6 @@ export function TimelineChatRuntimeWindow({
       title={title}
       subtitle={subtitle}
       placeholder={placeholder}
-      suggestions={suggestions}
-      showSuggestionsAlways={showSuggestionsAlways}
       headerActions={headerActions}
       footer={footer}
       widgetNamespace={namespace}

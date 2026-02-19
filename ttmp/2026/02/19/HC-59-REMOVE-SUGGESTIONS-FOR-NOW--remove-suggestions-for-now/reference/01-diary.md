@@ -300,3 +300,65 @@ This phase intentionally keeps behavior coherent: suggestion reducers/selectors/
   - `npx vitest run apps/inventory/src/features/chat/chatSlice.test.ts apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
 - Result:
   - 2 files passed, 10 tests passed.
+
+## Step 5: Remove Suggestion Props and Rendering from Engine Runtime/Widgets
+The next phase removed suggestions from the engine runtime and shared chat component APIs, so the UI path no longer exposes suggestion props or suggestion chip rendering.
+
+This keeps HC-59 aligned with the hard-cut simplification direction and ensures inventory is not the only layer cleaned.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 3)
+
+**Assistant interpretation:** Continue task-by-task implementation by removing suggestions from engine runtime wrappers and widget components.
+
+**Inferred user intent:** Ensure suggestions are gone across shared chat surfaces, not only app-local inventory code.
+
+**Commit (code):** Pending (recorded after staging/commit step)
+
+### What I did
+- Removed suggestion props/rendering from:
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`
+  - `packages/engine/src/components/widgets/ChatView.tsx`
+  - `packages/engine/src/components/widgets/StreamingChatView.tsx`
+- Removed suggestion prop forwarding from runtime wrappers:
+  - `packages/engine/src/hypercard-chat/runtime/TimelineChatWindow.tsx`
+  - `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+- Removed suggestion prop pass-through in shell wrapper:
+  - `packages/engine/src/components/shell/ChatSidebar.tsx`
+- Updated welcome text in `ChatWindow` to remove suggestion-specific language.
+
+### Why
+- Keeping suggestion props in shared UI/runtime components would preserve unused API surface and encourage accidental reuse during refactor.
+
+### What worked
+- Suggestion behavior is now absent in the runtime/widget source path.
+- Remaining references are isolated to stories/docs/theme/event-viewer cleanup phase.
+
+### What didn't work
+- None in this step.
+
+### What I learned
+- Suggestions were exposed in both timeline-first and legacy views, so removing only one component family would leave inconsistent API contracts.
+
+### What was tricky to build
+- Ensuring runtime wrapper signatures and downstream props remained aligned after removing suggestion fields.
+- Resolved by deleting suggestion params from each layer in the pass-through chain (`TimelineChatRuntimeWindow -> TimelineChatWindow -> ChatWindow`).
+
+### What warrants a second pair of eyes
+- Confirm there are no external consumers outside this monorepo relying on removed suggestion props from engine widgets/runtime wrappers.
+
+### What should be done in the future
+- Finish story/doc/theme/event-viewer cleanup to remove remaining suggestion references.
+
+### Code review instructions
+- Review runtime/widget API cleanup:
+  - `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+  - `packages/engine/src/hypercard-chat/runtime/TimelineChatWindow.tsx`
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`
+  - `packages/engine/src/components/widgets/StreamingChatView.tsx`
+  - `packages/engine/src/components/widgets/ChatView.tsx`
+  - `packages/engine/src/components/shell/ChatSidebar.tsx`
+
+### Technical details
+- Post-change search still finds references only in stories/docs/theme/event-viewer, which are handled in the next task phase.

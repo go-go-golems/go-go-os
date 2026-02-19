@@ -6,7 +6,6 @@ import { Chip } from './Chip';
 export interface StreamingChatViewProps {
   messages: ChatMessage[];
   isStreaming: boolean;
-  suggestions?: string[];
   onSend: (text: string) => void;
   onCancel?: () => void;
   onAction?: (action: unknown) => void;
@@ -53,7 +52,6 @@ function ThinkingIndicator() {
 export function StreamingChatView({
   messages,
   isStreaming,
-  suggestions,
   onSend,
   onCancel,
   onAction,
@@ -134,16 +132,6 @@ export function StreamingChatView({
         })}
         <div ref={endRef} />
       </div>
-
-      {messages.length <= 1 && suggestions && !isStreaming && (
-        <div data-part="chat-suggestions">
-          {suggestions.map((s) => (
-            <Chip key={s} onClick={() => send(s)}>
-              {s}
-            </Chip>
-          ))}
-        </div>
-      )}
 
       <div data-part="chat-composer">
         <input

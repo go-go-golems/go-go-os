@@ -5,14 +5,13 @@ import { Chip } from './Chip';
 
 export interface ChatViewProps {
   messages: ChatMessage[];
-  suggestions?: string[];
   onSend: (text: string) => void;
   onAction: (action: unknown) => void;
   renderResults?: (results: unknown[]) => ReactNode;
   placeholder?: string;
 }
 
-export function ChatView({ messages, suggestions, onSend, onAction, renderResults, placeholder }: ChatViewProps) {
+export function ChatView({ messages, onSend, onAction, renderResults, placeholder }: ChatViewProps) {
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -49,15 +48,6 @@ export function ChatView({ messages, suggestions, onSend, onAction, renderResult
         ))}
         <div ref={endRef} />
       </div>
-      {messages.length <= 1 && suggestions && (
-        <div data-part="chat-suggestions">
-          {suggestions.map((s) => (
-            <Chip key={s} onClick={() => send(s)}>
-              {s}
-            </Chip>
-          ))}
-        </div>
-      )}
       <div data-part="chat-composer">
         <input
           data-part="field-input"

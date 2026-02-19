@@ -13,6 +13,6 @@
 - [x] Remove suggestion state/actions/selectors from inventory chatSlice
 - [x] Write suggestions behavior-spec document for future rebuild
 - [ ] Run tests/typecheck for inventory and engine surfaces impacted by HC-59
-- [ ] Remove suggestion props/rendering from engine runtime and chat widgets
+- [x] Remove suggestion props/rendering from engine runtime and chat widgets
 - [ ] Update diary/changelog throughout and commit each implementation phase
 - [ ] Clean up suggestion references in stories/docs/theme/event viewer

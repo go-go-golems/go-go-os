@@ -49,8 +49,6 @@ export interface ChatWindowProps {
   onSend: (text: string) => void;
   onCancel?: () => void;
   onAction?: (action: unknown) => void;
-  suggestions?: string[];
-  showSuggestionsAlways?: boolean;
   title?: string;
   subtitle?: string;
   placeholder?: string;
@@ -99,7 +97,7 @@ function WelcomeScreen({ children }: { children?: ReactNode }) {
           <div data-part="chat-window-welcome-icon">💬</div>
           <div data-part="chat-window-welcome-title">How can I help?</div>
           <div data-part="chat-window-welcome-hint">
-            Ask a question, request data, or try one of the suggestions below.
+            Ask a question or request data.
           </div>
         </>
       )}
@@ -115,8 +113,6 @@ export function ChatWindow({
   onSend,
   onCancel,
   onAction,
-  suggestions,
-  showSuggestionsAlways = false,
   title = 'Chat',
   subtitle,
   placeholder,
@@ -266,17 +262,6 @@ export function ChatWindow({
         {messages.map((m, i) => renderMessage(m, i))}
         <div ref={endRef} />
       </div>
-
-      {/* ── Suggestions ── */}
-      {suggestions && suggestions.length > 0 && (showSuggestionsAlways || ((isEmpty || messages.length <= 1) && !isStreaming)) && (
-        <div data-part="chat-suggestions">
-          {suggestions.map((s) => (
-            <Chip key={s} onClick={() => send(s)}>
-              {s}
-            </Chip>
-          ))}
-        </div>
-      )}
 
       {/* ── Composer ── */}
       <div data-part="chat-composer">

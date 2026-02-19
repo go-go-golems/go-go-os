@@ -30,7 +30,7 @@ RelatedFiles:
     - Path: 2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/sem/registry.ts
       Note: Current event->timeline op mapping including structured tool/widget events
     - Path: 2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/timeline/timelineSlice.ts
-      Note: Current version-aware upsert and rekey behavior
+      Note: Current version-aware upsert behavior with stable entity IDs
     - Path: 2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/sources/local/chat-runtime-chatgpt-pro.md
       Note: Imported proposal analyzed and corrected
 ExternalSources:
@@ -51,7 +51,7 @@ The most important correction is the streaming contract. `streaming/append` and 
 
 This document proposes a concrete runtime contract that preserves the good parts of the imported design and corrects the weak parts, with one explicit policy decision: hard cutover with no compatibility or fallback UI layers.
 - headless per-conversation runtime managed by a `ConversationManager`
-- idempotent reducer-level merge with version precedence and alias/canonical ID mapping
+- idempotent reducer-level merge with version precedence on stable entity IDs
 - streaming channels that support structured payloads (text, JSON patch, object patch, status transitions, widget/card fragments)
 - per-window selector subscriptions for distinct rerender profiles
 - kit-based extension API for runtime behaviors and widget rendering
@@ -98,7 +98,7 @@ This proposal is grounded in current implementation behavior.
 - Paths:
   - `packages/engine/src/hypercard-chat/sem/registry.ts`
   - `packages/engine/src/hypercard-chat/sem/timelineMapper.ts`
-- Timeline reducer already has version-aware merge behavior and `rekeyEntity`.
+- Timeline reducer already has version-aware merge behavior.
 - Path: `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`
 
 ### Widget registration model
@@ -137,7 +137,7 @@ Correction:
 Use typed streaming channels with typed fragments/patches.
 
 ### 2) Reducer merge needs explicit cross-entity transaction semantics
-Some events naturally produce multiple correlated mutations (example: tool result + done transitions, alias mapping + upsert). We need a transaction wrapper or batched commit semantics to avoid intermediate inconsistent UI states.
+Some events naturally produce multiple correlated mutations (example: tool result + done transitions, status + usage metadata updates). We need a transaction wrapper or batched commit semantics to avoid intermediate inconsistent UI states.
 
 ### 3) Ordering and replay semantics need a strict cursor contract
 The imported design calls out ordering conceptually, but the runtime must standardize order keys (`seq`/`stream_id`) and replay policy for buffered events and hydration reconciliation.
@@ -151,8 +151,8 @@ Current adapters run via `onEnvelope` with projected payload. We need explicit p
 - after projection pre-commit,
 - after commit with state diff summary.
 
-### 6) Alias/canonical IDs need first-class state and API
-We already have `rekeyEntity`, but alias mapping should be native in runtime state and not only ad hoc op emission.
+### 6) Stable entity IDs should be a hard invariant
+Entity IDs are stable by contract. Runtime and timeline reducers should not carry alias/canonical mapping state or rekey operations. Replay/dedup correctness should be implemented directly on stable `entityId` plus version precedence.
 
 ## Corrected Runtime Contract (Concrete)
 
@@ -180,7 +180,6 @@ type ConversationState = {
   timeline: {
     ids: string[];
     byId: Record<string, TimelineEntity>;
-    aliasToCanonical: Record<string, string>;
   };
 
   streams: {
@@ -227,8 +226,6 @@ type StreamChannelState = {
 type Mutation =
   | { type: 'timeline.upsert'; entity: TimelineEntity }
   | { type: 'timeline.remove'; id: string }
-  | { type: 'timeline.alias'; alias: string; canonicalId: string }
-  | { type: 'timeline.rekey'; fromId: string; toId: string }
   | { type: 'stream.open'; entityId: string; channel: string; initial?: unknown }
   | { type: 'stream.apply'; entityId: string; channel: string; fragment: StreamFragment }
   | { type: 'stream.finalize'; entityId: string; channel: string; final?: unknown }
@@ -263,16 +260,13 @@ type AdapterContext = {
 
 This prevents adapters from depending on implicit ordering.
 
-## Canonical ID and dedup strategy
+## Stable entity ID and dedup strategy
 
-### Canonical resolution
-For incoming entity updates, runtime resolves canonical ID by:
-1. explicit `canonicalId` in payload (if present),
-2. existing alias map lookup,
-3. defaulting to `entity.id`.
+### Stable ID invariant
+Runtime treats incoming `entity.id` as stable and authoritative. No alias lookup, canonicalization, or rekey pass exists in the runtime state model.
 
-### Alias recording
-Whenever an update includes known alternates (`aliases`, `sourceEventId`, old ID), runtime writes alias entries.
+### Replay behavior
+Duplicate/replayed updates target the same stable `entity.id` and merge idempotently through reducer version precedence.
 
 ### Merge precedence
 - if both sides have comparable versions: higher version wins field precedence,
@@ -329,7 +323,6 @@ type SemHandlerContext = {
   emit: (m: Mutation) => void;
   timeline: {
     upsert: (e: TimelineEntity) => void;
-    alias: (alias: string, canonicalId: string) => void;
   };
   stream: {
     open: (entityId: string, channel: string, initial?: unknown) => void;
@@ -401,7 +394,7 @@ Current inventory `createChatMetaProjectionAdapter()` should be split:
 
 ### Keep and evolve
 - `sem/registry.ts`: keep handler registration idea, evolve handler outputs to structured mutations.
-- `timeline/timelineSlice.ts`: keep version-aware merge base, extend with alias map and stream channels.
+- `timeline/timelineSlice.ts`: keep version-aware merge base, remove alias/rekey paths, and extend stream channels.
 - `runtime/projectionPipeline.ts`: evolve into phase-aware runtime pipeline.
 
 ### Replace/split
@@ -423,7 +416,7 @@ Current inventory `createChatMetaProjectionAdapter()` should be split:
 ## Implementation Plan
 
 ### Phase 0: Contract docs and invariants
-1. Freeze runtime invariants in docs (ordering, idempotency, version precedence, alias behavior).
+1. Freeze runtime invariants in docs (ordering, idempotency, version precedence, stable entity IDs).
 2. Define typed mutation and stream channel schemas.
 3. Define adapter phases.
 
@@ -474,7 +467,7 @@ This section maps the implementation backlog to concrete symbols/files so scope 
 | --- | --- | --- |
 | `HC58-IMPL-01` | Runtime core scaffold | `packages/engine/src/hypercard-chat/conversation/runtimeCore.ts` (new): `ConversationRuntimeState`, `ConversationMutation`, `createConversationRuntime`, `applyConversationMutations` |
 | `HC58-IMPL-02` | Structured stream channels | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/sem/types.ts`: `stream.open`, `stream.apply`, `stream.finalize`, `stream.error`, `StreamFragment` |
-| `HC58-IMPL-03` | Canonical/alias identity | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`: `aliasToCanonical`, `resolveCanonicalId`, integration with `rekeyEntity` |
+| `HC58-IMPL-03` | Stable entity ID invariants | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`: remove `timeline.alias`/`timeline.rekey` mutation handling and enforce stable `entity.id` merge path |
 | `HC58-IMPL-04` | Transaction semantics | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`: `applyMutationTransaction` with batched commit semantics |
 | `HC58-IMPL-05` | Conversation manager ownership | `packages/engine/src/hypercard-chat/conversation/manager.ts` (new): `ConversationManager`, `getRuntime`, `claimConnection`, `release` |
 | `HC58-IMPL-06` | Hook lifecycle simplification | `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`: remove hook-owned socket lifecycle in favor of manager subscriptions |
@@ -485,7 +478,7 @@ This section maps the implementation backlog to concrete symbols/files so scope 
 | `HC58-IMPL-11` | Timeline-native view | `packages/engine/src/hypercard-chat/runtime/TimelineConversationView.tsx` (new): direct runtime-selector rendering path |
 | `HC58-IMPL-12` | Wrapper chain removal | remove timeline-path dependency on `runtime/timelineChatRuntime.tsx`, `runtime/TimelineChatWindow.tsx`, `components/widgets/ChatWindow.tsx` |
 | `HC58-IMPL-13` | Public API cleanup | `packages/engine/src/hypercard-chat/index.ts`, `packages/engine/src/index.ts`: remove stale wrapper exports |
-| `HC58-IMPL-14` | Unit tests | add/update tests for alias resolution, version precedence, stream mutation semantics, transaction atomicity |
+| `HC58-IMPL-14` | Unit tests | add/update tests for stable entity ID merge invariants, version precedence, stream mutation semantics, transaction atomicity |
 | `HC58-IMPL-15` | Integration tests | validate replay idempotency, out-of-order handling (`event.seq`, `event.stream_id`), hydration reconciliation |
 | `HC58-IMPL-16` | Multi-window behavior | add test asserting one shared connection claim across two windows with same `conversationId` |
 | `HC58-IMPL-17` | Story/docs migration | update stories/docs to manager + timeline-native symbols; remove legacy wrapper guidance |
@@ -493,7 +486,7 @@ This section maps the implementation backlog to concrete symbols/files so scope 
 
 ## Validation Plan
 1. Unit tests for reducer semantics:
-- alias canonicalization,
+- stable entity ID invariants (no alias/rekey path),
 - version precedence,
 - structured stream apply/finalize,
 - transaction atomicity.
@@ -518,7 +511,7 @@ This section maps the implementation backlog to concrete symbols/files so scope 
 
 ## Open Questions
 1. Should `stream.apply` support JSON Patch natively at core level, or should kits pre-normalize to object patches?
-2. Do we require backend to always emit canonical IDs, or keep client alias heuristics long term?
+2. Should runtime reject alias/rekey event types at ingestion time or ignore/log them as unsupported?
 3. Should runtime own a persisted ring buffer for debug windows, or should debug tooling subscribe externally?
 4. Which stream channels should be standardized in v1 (`message.text`, `tool.patch`, `widget.patch`) versus kit-defined only?
 

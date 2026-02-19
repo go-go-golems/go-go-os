@@ -771,3 +771,65 @@ This keeps the backlog readable for implementation while making architectural in
 ### Technical details
 - Mechanical replacement used:
   - `Cleanup and purpose` -> `Task explanation and bigger refactor purpose`
+
+## Step 13: Remove Alias/Rekey/CID Design from HC-58
+I updated HC-58 architecture docs to make stable `entityId` semantics a hard invariant. The plan now explicitly removes timeline aliasing and rekey flows from runtime/timeline design.
+
+This keeps identity handling simple and deterministic: one stable `entity.id` path, version-aware merge, no alternate-ID maps.
+
+### Prompt Context
+
+**User prompt (verbatim):** "remove all that timeline.alias / timeline.rekey / canonicalId aliasing stuff from the timeline. EntityIDs are stable. that will simplify things. Update the 2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md and the tasks.md"
+
+**Assistant interpretation:** Rewrite HC-58 design/task planning to remove alias/canonical/rekey identity mechanics and enforce stable entity IDs only.
+
+**Inferred user intent:** Reduce timeline/runtime complexity and eliminate an unnecessary identity-mapping subsystem from the refactor plan.
+
+**Commit (code):** N/A (documentation updates in progress)
+
+### What I did
+- Updated design blueprint in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md`
+- Removed alias/rekey/canonical identity model from:
+  - runtime state shape,
+  - mutation union,
+  - dedup strategy section,
+  - SEM handler helper surface,
+  - execution map and validation text.
+- Updated backlog task in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+- Replaced `HC58-IMPL-03` with stable entity ID invariant scope and adjusted unit-test wording.
+
+### Why
+- Stable IDs are a simpler and stronger invariant than maintaining client-side alias/canonical mapping and rekey operations.
+
+### What worked
+- The design is now cleaner and more direct for implementation planning.
+- Task references now align with the simplified identity model.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The alias/canonical layer created more operational complexity than value once stable IDs are guaranteed.
+
+### What was tricky to build
+- Ensuring all references to aliasing/rekey behavior were removed from multiple sections (contract types, execution map, validation, tasks) while keeping the plan internally consistent.
+
+### What warrants a second pair of eyes
+- Confirm whether unsupported alias/rekey envelopes should be dropped silently or logged as explicit unsupported-event diagnostics.
+
+### What should be done in the future
+- Carry the same stable-ID invariant into code implementation tasks (`HC58-IMPL-03`, `HC58-IMPL-14`, `HC58-IMPL-15`).
+
+### Code review instructions
+- Start with:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md`
+- Then verify task sync in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+
+### Technical details
+- Key removals:
+  - `timeline.alias`, `timeline.rekey` mutations
+  - `aliasToCanonical` runtime state map
+  - canonical ID resolution flow in dedup strategy

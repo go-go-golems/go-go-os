@@ -8,7 +8,7 @@
 - [x] Validate proposal against current engine/inventory runtime implementation
   Task explanation and bigger refactor purpose: remove design assumptions that do not match real code paths before starting invasive changes.
 - [x] Close HC-57 and create HC-58 ticket workspace
-  Task explanation and bigger refactor purpose: consolidate work under one canonical runtime-refactor ticket and remove split tracking.
+  Task explanation and bigger refactor purpose: consolidate work under one runtime-refactor ticket and remove split tracking.
 - [x] Import and review /tmp/chat-runtime-chatgpt-pro.md source
   Task explanation and bigger refactor purpose: tie decisions to a concrete external proposal and record where we intentionally diverge.
 - [x] Write corrected detailed analysis and maintain diary in HC-58
@@ -40,10 +40,10 @@
   `stream.open`, `stream.apply`, `stream.finalize`, `stream.error`, `StreamFragment`
   Task explanation and bigger refactor purpose: replace text-centric stream assumptions with typed channels that handle tool/widget/card partials.
 
-- [ ] HC58-IMPL-03 Alias/canonical identity map:
+- [ ] HC58-IMPL-03 Stable entity ID invariants:
   `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`, symbols:
-  `aliasToCanonical`, `resolveCanonicalId`, integrate with existing `rekeyEntity`
-  Task explanation and bigger refactor purpose: eliminate duplicate-entity drift and make identity reconciliation explicit and testable.
+  remove `timeline.alias` / `timeline.rekey` handling, enforce direct `entity.id` merge semantics
+  Task explanation and bigger refactor purpose: simplify timeline identity handling by treating entity IDs as stable and removing aliasing complexity.
 
 - [ ] HC58-IMPL-04 Transaction apply path:
   `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`, symbols:
@@ -98,7 +98,7 @@
 
 - [ ] HC58-IMPL-14 Unit test coverage:
   add tests around reducer/runtime symbols:
-  alias resolution, version precedence, structured stream apply/finalize, transaction atomicity
+  stable entity ID merge invariants, version precedence, structured stream apply/finalize, transaction atomicity
   Task explanation and bigger refactor purpose: lock down core invariants so follow-on refactors cannot silently break correctness.
 
 - [ ] HC58-IMPL-15 Integration test coverage:

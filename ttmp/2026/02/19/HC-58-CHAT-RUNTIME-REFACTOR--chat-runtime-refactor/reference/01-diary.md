@@ -664,3 +664,61 @@ This closes the current HC-58 execution slice with verified runtime behavior and
 - Validation commands:
   - `npm run typecheck`
   - `npx vitest run apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts apps/inventory/src/features/chat/eventBus.test.ts apps/inventory/src/features/chat/webchatClient.test.ts`
+
+## Step 11: Add Symbol-Level Task/Design References
+You asked for more concrete symbols/references because the backlog was still too abstract to predict exact implementation targets. I tightened HC-58 planning artifacts by adding a symbol-level task map.
+
+This makes each task reviewable up front and reduces ambiguity before implementation phases start.
+
+### Prompt Context
+
+**User prompt (verbatim):** "add more symbols / references to the design to make the tasks more detailed. It's hard to exactly know what you are going to tackle"
+
+**Assistant interpretation:** Expand HC-58 tasks and design with explicit file/symbol references so implementation scope is concrete and traceable.
+
+**Inferred user intent:** Improve predictability and reviewability of upcoming HC-58 execution by naming exact target APIs/files per task.
+
+**Commit (code):** Pending (recorded after staging/commit step)
+
+### What I did
+- Reworked `Implementation Backlog (Up Front)` in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+- Added explicit task IDs (`HC58-IMPL-01` ... `HC58-IMPL-19`) and concrete file/symbol targets.
+- Added a mirrored execution map in design doc:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md`
+  - section: `Execution Map (Task -> Symbols)`
+
+### Why
+- The previous backlog described goals but not enough concrete symbol/file touchpoints to forecast exact implementation edits.
+
+### What worked
+- Backlog now has stable task IDs and direct symbol references for code review and implementation planning.
+
+### What didn't work
+- None in this step.
+
+### What I learned
+- Having task IDs shared between `tasks.md` and design doc creates a useful “plan <-> architecture” lookup path during iterative refactor work.
+
+### What was tricky to build
+- Balancing specificity with ongoing design evolution.
+- I solved this by marking new symbols in new modules as “to add” while linking existing symbols/files for current surfaces.
+
+### What warrants a second pair of eyes
+- Validate that proposed new symbol names (`ConversationManager`, `createConversationRuntime`, etc.) match preferred naming conventions before implementation starts.
+
+### What should be done in the future
+- Keep task IDs stable; if symbol names change during implementation, update both `tasks.md` and the execution map together.
+
+### Code review instructions
+- Review refined backlog:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+- Review symbol mapping section:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md`
+
+### Technical details
+- Source symbol baselines consulted before updating references:
+  - `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`
+  - `packages/engine/src/hypercard-chat/sem/registry.ts`
+  - `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
+  - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`

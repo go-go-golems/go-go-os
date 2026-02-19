@@ -467,6 +467,30 @@ Current inventory `createChatMetaProjectionAdapter()` should be split:
 3. Remove dead exports and stories tied to removed layers.
 4. Remove all suggestion APIs/events/styles from chat runtime path until runtime refactor stabilizes.
 
+## Execution Map (Task -> Symbols)
+This section maps the implementation backlog to concrete symbols/files so scope is explicit before each code phase.
+
+| Task ID | Concrete Target | Symbols / Files |
+| --- | --- | --- |
+| `HC58-IMPL-01` | Runtime core scaffold | `packages/engine/src/hypercard-chat/conversation/runtimeCore.ts` (new): `ConversationRuntimeState`, `ConversationMutation`, `createConversationRuntime`, `applyConversationMutations` |
+| `HC58-IMPL-02` | Structured stream channels | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/sem/types.ts`: `stream.open`, `stream.apply`, `stream.finalize`, `stream.error`, `StreamFragment` |
+| `HC58-IMPL-03` | Canonical/alias identity | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`: `aliasToCanonical`, `resolveCanonicalId`, integration with `rekeyEntity` |
+| `HC58-IMPL-04` | Transaction semantics | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`: `applyMutationTransaction` with batched commit semantics |
+| `HC58-IMPL-05` | Conversation manager ownership | `packages/engine/src/hypercard-chat/conversation/manager.ts` (new): `ConversationManager`, `getRuntime`, `claimConnection`, `release` |
+| `HC58-IMPL-06` | Hook lifecycle simplification | `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`: remove hook-owned socket lifecycle in favor of manager subscriptions |
+| `HC58-IMPL-07` | Runtime SEM metadata handling | `packages/engine/src/hypercard-chat/sem/registry.ts`: runtime-owned handling for `llm.start`, `llm.delta`, `llm.final`, `ws.error` |
+| `HC58-IMPL-08` | Inventory adapter narrowing | `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`: keep `createInventoryArtifactProjectionAdapter`, remove generic runtime metadata logic |
+| `HC58-IMPL-09` | Runtime selector API | `packages/engine/src/hypercard-chat/conversation/selectors.ts` (new): `useConversationConnection`, `useTimelineIds`, `useTimelineEntity`, `useStreamChannel`, `useMeta` |
+| `HC58-IMPL-10` | Inventory runtime-state extraction | `apps/inventory/src/features/chat/InventoryChatWindow.tsx`, `apps/inventory/src/features/chat/chatSlice.ts`: remove app-owned connection/model/stats runtime state |
+| `HC58-IMPL-11` | Timeline-native view | `packages/engine/src/hypercard-chat/runtime/TimelineConversationView.tsx` (new): direct runtime-selector rendering path |
+| `HC58-IMPL-12` | Wrapper chain removal | remove timeline-path dependency on `runtime/timelineChatRuntime.tsx`, `runtime/TimelineChatWindow.tsx`, `components/widgets/ChatWindow.tsx` |
+| `HC58-IMPL-13` | Public API cleanup | `packages/engine/src/hypercard-chat/index.ts`, `packages/engine/src/index.ts`: remove stale wrapper exports |
+| `HC58-IMPL-14` | Unit tests | add/update tests for alias resolution, version precedence, stream mutation semantics, transaction atomicity |
+| `HC58-IMPL-15` | Integration tests | validate replay idempotency, out-of-order handling (`event.seq`, `event.stream_id`), hydration reconciliation |
+| `HC58-IMPL-16` | Multi-window behavior | add test asserting one shared connection claim across two windows with same `conversationId` |
+| `HC58-IMPL-17` | Story/docs migration | update stories/docs to manager + timeline-native symbols; remove legacy wrapper guidance |
+| `HC58-IMPL-18` | Final validation | `npm run typecheck` + focused runtime/inventory suite + inventory chat smoke checks |
+
 ## Validation Plan
 1. Unit tests for reducer semantics:
 - alias canonicalization,

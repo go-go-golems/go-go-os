@@ -118,3 +118,12 @@ Updated diary Step 10 commit reference from pending placeholder to concrete comm
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md — Finalized Step-10 commit metadata
 
+
+## 2026-02-19
+
+Added full up-front HC-58 implementation backlog to tasks.md so future work is tracked from the start instead of incrementally adding tasks.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md — Added comprehensive implementation checklist section
+

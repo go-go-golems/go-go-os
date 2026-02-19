@@ -1,5 +1,5 @@
+import { formatTimelineEntity, formatTimelineUpsert } from '@hypercard/engine';
 import { describe, expect, it } from 'vitest';
-import { formatTimelineUpsert } from '@hypercard/engine';
 
 describe('formatTimelineUpsert', () => {
   it('maps projected card status rows to running card timeline items', () => {
@@ -126,5 +126,51 @@ describe('formatTimelineUpsert', () => {
       kind: 'tool',
     });
     expect(failed?.rawData).toEqual({ name: 'inventory_report' });
+  });
+
+  it('maps projected timeline entities with hypercard custom kinds to widget/card items', () => {
+    const widget = formatTimelineEntity({
+      id: 'tool-4:result',
+      kind: 'tool_result',
+      createdAt: 1,
+      props: {
+        toolCallId: 'tool-4',
+        customKind: 'hypercard.widget.v1',
+        result: {
+          title: 'Low stock table',
+          type: 'table',
+          data: { artifact: { id: 'artifact-1' } },
+        },
+      },
+    });
+
+    expect(widget).toMatchObject({
+      id: 'widget:tool-4',
+      kind: 'widget',
+      template: 'table',
+      artifactId: 'artifact-1',
+    });
+
+    const card = formatTimelineEntity({
+      id: 'tool-5:result',
+      kind: 'tool_result',
+      createdAt: 1,
+      props: {
+        toolCallId: 'tool-5',
+        customKind: 'hypercard.card.v2',
+        result: {
+          title: 'Restock proposal',
+          template: 'reportViewer',
+          data: { artifact: { id: 'artifact-2' } },
+        },
+      },
+    });
+
+    expect(card).toMatchObject({
+      id: 'card:tool-5',
+      kind: 'card',
+      template: 'reportViewer',
+      artifactId: 'artifact-2',
+    });
   });
 });

@@ -1,11 +1,6 @@
+import type { TimelineEntity } from '../timeline/types';
 import type { TimelineItemStatus, TimelineItemUpdate } from '../types';
-import {
-  booleanField,
-  compactJSON,
-  recordField,
-  stringField,
-  structuredRecordFromUnknown,
-} from './semFields';
+import { booleanField, compactJSON, recordField, stringField, structuredRecordFromUnknown } from './semFields';
 
 function shortText(value: string | undefined, max = 180): string | undefined {
   if (!value) {
@@ -25,9 +20,7 @@ interface ProjectedLifecycleStatus {
   detail: string;
 }
 
-function parseProjectedLifecycleStatus(
-  text: string | undefined,
-): ProjectedLifecycleStatus | undefined {
+function parseProjectedLifecycleStatus(text: string | undefined): ProjectedLifecycleStatus | undefined {
   if (!text) {
     return undefined;
   }
@@ -59,33 +52,20 @@ function parseProjectedLifecycleStatus(
     parseWithPrefix('Updating widget: ', 'widget', 'updating') ??
     parseWithPrefix('Building card proposal: ', 'card', 'started') ??
     parseWithPrefix('Updating card proposal: ', 'card', 'updating') ??
-    (trimmed.toLowerCase() === 'building widget...'
-      ? { kind: 'widget', detail: 'started' }
-      : undefined) ??
-    (trimmed.toLowerCase() === 'updating widget...'
-      ? { kind: 'widget', detail: 'updating' }
-      : undefined) ??
-    (trimmed.toLowerCase() === 'building card proposal...'
-      ? { kind: 'card', detail: 'started' }
-      : undefined) ??
-    (trimmed.toLowerCase() === 'updating card proposal...'
-      ? { kind: 'card', detail: 'updating' }
-      : undefined)
+    (trimmed.toLowerCase() === 'building widget...' ? { kind: 'widget', detail: 'started' } : undefined) ??
+    (trimmed.toLowerCase() === 'updating widget...' ? { kind: 'widget', detail: 'updating' } : undefined) ??
+    (trimmed.toLowerCase() === 'building card proposal...' ? { kind: 'card', detail: 'started' } : undefined) ??
+    (trimmed.toLowerCase() === 'updating card proposal...' ? { kind: 'card', detail: 'updating' } : undefined)
   );
 }
 
-function artifactIdFromStructuredResult(
-  result: Record<string, unknown> | undefined,
-): string | undefined {
+function artifactIdFromStructuredResult(result: Record<string, unknown> | undefined): string | undefined {
   const data = result ? recordField(result, 'data') : undefined;
   const artifact = data ? recordField(data, 'artifact') : undefined;
   return artifact ? stringField(artifact, 'id') : undefined;
 }
 
-function readyDetail(
-  template: string | undefined,
-  artifactId: string | undefined,
-): string {
+function readyDetail(template: string | undefined, artifactId: string | undefined): string {
   const parts: string[] = [];
   if (template) {
     parts.push(`template=${template}`);
@@ -106,9 +86,7 @@ function statusFromTimelineType(value: string | undefined): TimelineItemStatus {
   return 'info';
 }
 
-export function formatTimelineUpsert(
-  data: Record<string, unknown>,
-): TimelineItemUpdate | undefined {
+export function formatTimelineUpsert(data: Record<string, unknown>): TimelineItemUpdate | undefined {
   const entity = recordField(data, 'entity');
   if (!entity) {
     return undefined;
@@ -126,10 +104,7 @@ export function formatTimelineUpsert(
 
     let status: TimelineItemStatus = 'running';
     if (done) {
-      status =
-        statusValue === 'error' || statusValue === 'failed'
-          ? 'error'
-          : 'success';
+      status = statusValue === 'error' || statusValue === 'failed' ? 'error' : 'success';
     }
 
     const detail =
@@ -174,18 +149,14 @@ export function formatTimelineUpsert(
       prefix = 'card';
     }
 
-    const timelineKind =
-      prefix === 'widget' ? 'widget' : prefix === 'card' ? 'card' : 'timeline';
+    const timelineKind = prefix === 'widget' ? 'widget' : prefix === 'card' ? 'card' : 'timeline';
     const timelineStatus = projected ? 'running' : statusFromTimelineType(statusType);
 
     return {
       id: `${prefix}:${baseId}`,
       title: projected?.title ?? text ?? id,
       status: timelineStatus,
-      detail: shortText(
-        projected?.detail ??
-          (statusType ? `timeline status=${statusType}` : undefined),
-      ),
+      detail: shortText(projected?.detail ?? (statusType ? `timeline status=${statusType}` : undefined)),
       kind: timelineKind,
       rawData: entity as Record<string, unknown>,
     };
@@ -196,8 +167,7 @@ export function formatTimelineUpsert(
     const customKind = stringField(toolResult, 'customKind');
     const toolCallId = stringField(toolResult, 'toolCallId') ?? id;
     const resultRecord =
-      structuredRecordFromUnknown(toolResult.result) ??
-      structuredRecordFromUnknown(toolResult.resultRaw);
+      structuredRecordFromUnknown(toolResult.result) ?? structuredRecordFromUnknown(toolResult.resultRaw);
 
     const resultTitle = resultRecord ? stringField(resultRecord, 'title') : undefined;
     const resultTemplate = resultRecord ? stringField(resultRecord, 'template') : undefined;
@@ -230,8 +200,7 @@ export function formatTimelineUpsert(
       };
     }
 
-    const resultText =
-      stringField(toolResult, 'resultRaw') ?? compactJSON(toolResult.result);
+    const resultText = stringField(toolResult, 'resultRaw') ?? compactJSON(toolResult.result);
     return {
       id: `tool:${toolCallId}`,
       title: `Tool ${toolCallId}`,
@@ -240,6 +209,60 @@ export function formatTimelineUpsert(
       kind: 'tool',
       rawData: toolResult as Record<string, unknown>,
     };
+  }
+
+  return undefined;
+}
+
+export function formatTimelineEntity(entity: TimelineEntity): TimelineItemUpdate | undefined {
+  if (entity.kind === 'tool_call') {
+    return formatTimelineUpsert({
+      entity: {
+        id: entity.id,
+        kind: entity.kind,
+        toolCall: entity.props,
+      },
+    });
+  }
+
+  if (entity.kind === 'status') {
+    return formatTimelineUpsert({
+      entity: {
+        id: entity.id,
+        kind: entity.kind,
+        status: {
+          text: stringField(entity.props, 'text') ?? '',
+          type: stringField(entity.props, 'type') ?? 'info',
+        },
+      },
+    });
+  }
+
+  if (entity.kind === 'tool_result') {
+    const toolResult: Record<string, unknown> = {};
+    const toolCallId = stringField(entity.props, 'toolCallId');
+    const customKind = stringField(entity.props, 'customKind');
+    if (toolCallId) {
+      toolResult.toolCallId = toolCallId;
+    }
+    if (customKind) {
+      toolResult.customKind = customKind;
+    }
+    if (typeof entity.props.result !== 'undefined') {
+      toolResult.result = entity.props.result;
+    }
+    const resultText = stringField(entity.props, 'resultText');
+    if (resultText) {
+      toolResult.resultRaw = resultText;
+    }
+
+    return formatTimelineUpsert({
+      entity: {
+        id: entity.id,
+        kind: entity.kind,
+        toolResult,
+      },
+    });
   }
 
   return undefined;

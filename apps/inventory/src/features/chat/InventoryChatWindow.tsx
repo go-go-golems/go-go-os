@@ -1,22 +1,31 @@
 import {
+  buildArtifactOpenWindowPayload,
   ChatWindow,
-  createSemRegistry,
-  projectSemEnvelope,
-  selectTimelineEntities as selectTimelineEntitiesForConversation,
   type ChatWindowMessage,
+  createSemRegistry,
+  emitConversationEvent,
+  type InlineWidget,
+  HypercardCardPanelWidget as InventoryCardPanelWidget,
+  HypercardGeneratedWidgetPanel as InventoryGeneratedWidgetPanel,
+  HypercardTimelineWidget as InventoryTimelineWidget,
+  openRuntimeCardCodeEditor as openCodeEditor,
   type ProjectionPipelineAdapter,
+  projectSemEnvelope,
   type SemRegistry,
+  selectTimelineEntities as selectTimelineEntitiesForConversation,
+  type TimelineWidgetItem,
+  timelineItemsFromInlineWidget,
 } from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
-import { emitConversationEvent } from '@hypercard/engine';
+import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
+import { replaceSuggestions, setConnectionStatus, setStreamError, type TurnStats } from './chatSlice';
 import {
-  replaceSuggestions,
-  setConnectionStatus,
-  setStreamError,
-  type TurnStats,
-} from './chatSlice';
+  createChatMetaProjectionAdapter,
+  createInventoryArtifactProjectionAdapter,
+} from './runtime/projectionAdapters';
+import { buildTimelineDisplayMessages } from './runtime/timelineEntityRenderer';
 import {
   type ChatStateSlice,
   selectConnectionStatus,
@@ -26,15 +35,8 @@ import {
   selectStreamStartTime,
   selectSuggestions,
 } from './selectors';
-import {
-  InventoryWebChatClient,
-  type InventoryWebChatClientHandlers,
-  submitPrompt,
-} from './webchatClient';
 import { stripTrailingWhitespace } from './semHelpers';
-import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
-import { createChatMetaProjectionAdapter, createInventoryArtifactProjectionAdapter } from './runtime/projectionAdapters';
-import { mapTimelineEntityToMessage } from './runtime/timelineEntityRenderer';
+import { InventoryWebChatClient, type InventoryWebChatClientHandlers, submitPrompt } from './webchatClient';
 
 function formatNumber(n: number): string {
   if (n >= 1000) {
@@ -108,10 +110,9 @@ export interface InventoryChatWindowProps {
 
 export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps) {
   const dispatch = useDispatch<Dispatch<UnknownAction>>();
+  const store = useStore();
   const connectionStatus = useSelector((s: ChatStateSlice) => selectConnectionStatus(s, conversationId));
-  const timelineEntities = useSelector((s: ChatStateSlice) =>
-    selectTimelineEntitiesForConversation(s, conversationId),
-  );
+  const timelineEntities = useSelector((s: ChatStateSlice) => selectTimelineEntitiesForConversation(s, conversationId));
   const suggestions = useSelector((s: ChatStateSlice) => selectSuggestions(s, conversationId));
   const modelName = useSelector((s: ChatStateSlice) => selectModelName(s, conversationId));
   const currentTurnStats = useSelector((s: ChatStateSlice) => selectCurrentTurnStats(s, conversationId));
@@ -120,9 +121,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
 
   const [debugMode, setDebugMode] = useState(false);
   const clientRef = useRef<InventoryWebChatClient | null>(null);
-  const semRegistryRef = useRef<SemRegistry>(
-    createSemRegistry({ enableTimelineUpsert: false }),
-  );
+  const semRegistryRef = useRef<SemRegistry>(createSemRegistry({ enableTimelineUpsert: false }));
   const projectionAdaptersRef = useRef<ProjectionPipelineAdapter[]>([
     createChatMetaProjectionAdapter(),
     createInventoryArtifactProjectionAdapter(),
@@ -169,16 +168,13 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
   }, [connectionStatus, conversationId]);
 
   const isStreaming = useMemo(
-    () =>
-      timelineEntities.some(
-        (entity) => entity.kind === 'message' && entity.props.streaming === true,
-      ),
+    () => timelineEntities.some((entity) => entity.kind === 'message' && entity.props.streaming === true),
     [timelineEntities],
   );
 
   const displayMessages = useMemo<ChatWindowMessage[]>(
     () =>
-      timelineEntities.map(mapTimelineEntityToMessage).map((message) => {
+      buildTimelineDisplayMessages(timelineEntities).map((message) => {
         let msg = message;
         if (msg.role !== 'user' && msg.text) {
           const text = stripTrailingWhitespace(msg.text);
@@ -191,15 +187,76 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
           const existingContent = msg.content ?? (msg.text ? [{ kind: 'text' as const, text: msg.text }] : []);
           return {
             ...msg,
-            content: [
-              { kind: 'text' as const, text: badge },
-              ...existingContent,
-            ],
+            content: [{ kind: 'text' as const, text: badge }, ...existingContent],
           };
         }
         return msg;
       }),
     [timelineEntities, debugMode],
+  );
+
+  const renderWidget = useCallback(
+    (widget: InlineWidget) => {
+      const items = timelineItemsFromInlineWidget(widget);
+      const openArtifact = (item: TimelineWidgetItem) => {
+        const artifactId = item.artifactId?.trim();
+        if (!artifactId) {
+          return;
+        }
+        const storeState = store.getState() as {
+          artifacts?: { byId: Record<string, { runtimeCardId?: string }> };
+        };
+        const artifactRecord = storeState.artifacts?.byId?.[artifactId];
+        const payload = buildArtifactOpenWindowPayload({
+          artifactId,
+          template: item.template,
+          title: item.title,
+          runtimeCardId: artifactRecord?.runtimeCardId,
+        });
+        if (!payload) {
+          return;
+        }
+        dispatch(openWindow(payload));
+      };
+
+      const editCard = (item: TimelineWidgetItem) => {
+        const artifactId = item.artifactId?.trim();
+        if (!artifactId) {
+          return;
+        }
+        const storeState = store.getState() as {
+          artifacts?: {
+            byId: Record<string, { runtimeCardId?: string; runtimeCardCode?: string }>;
+          };
+        };
+        const record = storeState.artifacts?.byId?.[artifactId];
+        if (record?.runtimeCardId && record.runtimeCardCode) {
+          openCodeEditor(dispatch, record.runtimeCardId, record.runtimeCardCode);
+        }
+      };
+
+      if (widget.type === 'inventory.cards') {
+        return (
+          <InventoryCardPanelWidget
+            items={items}
+            onOpenArtifact={openArtifact}
+            onEditCard={editCard}
+            debug={debugMode}
+          />
+        );
+      }
+
+      if (widget.type === 'inventory.widgets') {
+        return <InventoryGeneratedWidgetPanel items={items} onOpenArtifact={openArtifact} debug={debugMode} />;
+      }
+
+      if (widget.type === 'inventory.timeline') {
+        return <InventoryTimelineWidget items={items} debug={debugMode} />;
+      }
+
+      return null;
+    },
+    [dispatch, debugMode, store],
   );
 
   const handleSend = useCallback(
@@ -243,6 +300,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
       messages={displayMessages}
       isStreaming={isStreaming}
       onSend={handleSend}
+      renderWidget={renderWidget}
       title="Inventory Chat"
       subtitle={subtitle}
       placeholder="Ask about inventory..."
@@ -250,12 +308,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
       showSuggestionsAlways
       headerActions={
         <>
-          <button
-            type="button"
-            data-part="btn"
-            onClick={openEventViewer}
-            style={{ fontSize: 10, padding: '1px 6px' }}
-          >
+          <button type="button" data-part="btn" onClick={openEventViewer} style={{ fontSize: 10, padding: '1px 6px' }}>
             📡 Events
           </button>
           <button

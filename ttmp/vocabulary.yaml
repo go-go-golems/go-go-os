@@ -39,6 +39,8 @@ topics:
       description: Token, parts, theming, and reusable UI styling system work
     - slug: timeline
       description: Timeline projection, timeline entities, and timeline-first architecture work.
+    - slug: webchat
+      description: Web chat runtime, transport, and UI behavior
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

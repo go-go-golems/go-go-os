@@ -19,7 +19,7 @@ RelatedFiles:
       Note: Authoritative implementation plan used during execution
 ExternalSources: []
 Summary: Execution diary for HC-54 task-by-task implementation and commit trail.
-LastUpdated: 2026-02-19T20:41:00-05:00
+LastUpdated: 2026-02-19T21:05:00-05:00
 WhatFor: Capture exact implementation steps, decisions, failures, and validations as HC-54 progresses.
 WhenToUse: Use when reviewing ongoing progress or resuming work from the last completed step.
 ---
@@ -484,3 +484,138 @@ Step 6 extracted the renderer pack to explicit pack-oriented file names and move
 
 1. Renderer pack is now centrally registered from engine (`registerHypercardWidgetPack`) with explicit app bootstrap call.
 2. Inventory-specific widget registration implementation file has been removed.
+
+## Step 7 + Step 8: Reusable chat runtime extraction and Inventory rewire
+
+These two steps were executed together because the runtime extraction and app cutover were tightly coupled. Core goal: remove inventory-local ChatWindow/timeline orchestration glue and replace it with shared engine runtime primitives.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Go ahead and work on it, task by task, commit at appropriate intervals, update your diary as you go.`
+
+**Assistant interpretation:** Continue sequential HC-54 execution with concrete runtime extraction and immediate app cutover to avoid leaving temporary dual wiring.
+
+**Inferred user intent:** End with Inventory consuming reusable runtime primitives while retaining only host-specific callbacks/business state behavior.
+
+### What I did
+
+1. Moved inventory-local timeline display renderer implementation into engine runtime:
+   - `apps/inventory/src/features/chat/runtime/timelineEntityRenderer.ts`
+   - -> `packages/engine/src/hypercard-chat/runtime/timelineDisplayMessages.ts` (`git mv`)
+2. Moved associated tests into engine runtime:
+   - `apps/inventory/src/features/chat/runtime/timelineEntityRenderer.test.ts`
+   - -> `packages/engine/src/hypercard-chat/runtime/timelineDisplayMessages.test.ts` (`git mv`)
+3. Added reusable engine chat shell component:
+   - `TimelineChatWindow` in `packages/engine/src/hypercard-chat/runtime/TimelineChatWindow.tsx`
+   - owns timeline->message projection, debug badge overlay, and registry-based inline widget render dispatch
+4. Added reusable engine connection/orchestration hook:
+   - `useProjectedChatConnection` in `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+   - owns client lifecycle + projection pipeline wiring + optional projection filtering
+5. Rewired `InventoryChatWindow` to consume shared runtime primitives:
+   - uses `TimelineChatWindow`
+   - uses `useProjectedChatConnection`
+   - retains only host-specific callbacks (artifact open/edit, UI actions, chat slice interactions, prompt submit)
+6. Added/updated engine exports for these runtime primitives.
+
+### Commands run
+
+1. Runtime extraction moves:
+   - `git mv apps/inventory/src/features/chat/runtime/timelineEntityRenderer.ts packages/engine/src/hypercard-chat/runtime/timelineDisplayMessages.ts`
+   - `git mv apps/inventory/src/features/chat/runtime/timelineEntityRenderer.test.ts packages/engine/src/hypercard-chat/runtime/timelineDisplayMessages.test.ts`
+2. Formatting:
+   - `npx biome check --write ...`
+3. Validation:
+   - `npm run test -w packages/engine`
+   - `npx vitest run apps/inventory/src/features/chat/InventoryChatWindow.timeline.test.ts apps/inventory/src/features/chat/artifactRuntime.test.ts apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+   - `npm run typecheck`
+
+### What worked
+
+1. Engine runtime now owns generic timeline display projection and chat shell integration.
+2. Inventory successfully consumes shared runtime and no longer owns timeline display renderer implementation.
+3. Tests and typecheck remained green after cutover.
+
+### What didn't work
+
+1. No blocking failures in this phase.
+
+### What I learned
+
+1. `useProjectedChatConnection` is a clean seam for app-specific websocket clients while centralizing projection pipeline lifecycle orchestration.
+2. Namespace-driven timeline display + widget pack registration enables shared runtime usage without app-local renderer duplication.
+
+### What was tricky to build
+
+1. Keeping Inventory behavior unchanged while moving multiple layers (display mapping, chat shell, connection orchestration) into shared runtime.
+2. Avoiding circular imports when extracting timeline display mapping into engine runtime.
+
+### What warrants a second pair of eyes
+
+1. Confirm whether timeline-upsert filtering strategy should be revised now that connection orchestration is centralized via hook.
+2. Confirm whether additional apps should adopt `TimelineChatWindow`/`useProjectedChatConnection` now or in follow-up ticket.
+
+### What should be done in the future
+
+1. Execute Step 9 final hard-cut validation sweep and dead-code cleanup.
+2. Decide whether to remove now-obsolete legacy tests/stories that mention old inventory-local component naming where applicable.
+
+### Technical details
+
+1. Inventory no longer contains `timelineEntityRenderer.ts` or widget-registry implementation.
+2. Shared runtime now includes reusable UI orchestration (`TimelineChatWindow`) and transport/projection orchestration (`useProjectedChatConnection`) primitives.
+
+## Step 9: Final hard-cut cleanup + validation gate
+
+Step 9 executed the final acceptance sweep across backend/frontend tests, compile checks, and legacy-path scans.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Go ahead and work on it, task by task, commit at appropriate intervals, update your diary as you go.`
+
+**Assistant interpretation:** Finish all remaining gate checks and close HC-54 with objective validation evidence.
+
+**Inferred user intent:** Complete clean cutover with no residual legacy paths and auditable test evidence.
+
+### What I did
+
+1. Ran full `go-inventory-chat` test sweep.
+2. Ran full engine test suite (including new runtime/pack tests).
+3. Ran targeted inventory chat tests covering timeline projection and artifact updates.
+4. Ran workspace TypeScript build/typecheck.
+5. Ran strict legacy-path search for forbidden widget/card custom-kind and old renderer-path references.
+6. Updated task/changelog/diary artifacts to mark final gate completion.
+
+### Commands run
+
+1. `cd go-inventory-chat && go test ./... -count=1`
+2. `npm run test -w packages/engine`
+3. `npx vitest run apps/inventory/src/features/chat/InventoryChatWindow.timeline.test.ts apps/inventory/src/features/chat/artifactRuntime.test.ts apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+4. `npm run typecheck`
+5. `rg -n "customKind\\s*===\\s*'hypercard\\.widget\\.v1'|customKind\\s*===\\s*'hypercard\\.card\\.v2'|tool_result.*hypercard\\.widget|tool_result.*hypercard\\.card|widgets/ArtifactPanelWidgets|widgets/TimelineWidget|runtime/timelineEntityRenderer" packages/engine/src apps/inventory/src go-inventory-chat/internal/pinoweb`
+
+### What worked
+
+1. All validation commands passed.
+2. No forbidden legacy matches were found in active code.
+3. Dedicated-kind architecture is now enforced across backend projection, frontend projection, runtime display, and inventory integration.
+
+### What didn't work
+
+1. No blocking issues. Known expected test stderr remains from a plugin-runtime error-path test.
+
+### What I learned
+
+1. The hard-cut gate is stronger when combining behavior tests with path-based code scans for known forbidden legacy patterns.
+
+### What was tricky to build
+
+1. Keeping multi-step refactor momentum while preserving deterministic test coverage throughout each checkpoint.
+
+### What warrants a second pair of eyes
+
+1. Optional follow-up: evaluate flipping inventory projection ingest from raw-event filtering to timeline-upsert-only mode now that reusable connection orchestration exists.
+
+### Technical details
+
+1. HC-54 task checklist is now fully complete (steps 1-9).
+2. Final acceptance conditions for legacy-removal and validation evidence have been satisfied.

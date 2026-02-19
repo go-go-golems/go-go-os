@@ -24,13 +24,13 @@
   - move renderer files preserving history/styles
   - make pack self-contained and registered via explicit bootstrap
   - remove duplicated inventory-local renderer implementations after pack cutover
-- [ ] 7) Generalize ChatWindow runtime and move chat orchestration out of Inventory:
+- [x] 7) Generalize ChatWindow runtime and move chat orchestration out of Inventory:
   - make ChatWindow integration reusable across apps through registry-driven dispatch and host callbacks
   - remove inventory-specific chat orchestration glue that is superseded by reusable runtime
-- [ ] 8) Rewire Inventory to consume reusable chat runtime + Hypercard pack only:
+- [x] 8) Rewire Inventory to consume reusable chat runtime + Hypercard pack only:
   - keep only inventory-specific host actions/business callbacks in app layer
   - remove remaining inventory chat projection/renderer wiring that duplicates shared behavior
-- [ ] 9) Final hard-cut cleanup + validation gate:
+- [x] 9) Final hard-cut cleanup + validation gate:
   - run full test/typecheck and end-to-end widget/card lifecycle validation
   - prove hydration/replay parity after refresh with dedicated kinds
   - remove any remaining dead symbols, compatibility aliases, feature flags, or legacy code paths related to old widget/card routing
@@ -45,3 +45,6 @@
 - [x] Step 4 backend projection hard-cut verified complete (dedicated kinds only, no widget/card tool_result/customKind paths)
 - [x] Step 5 frontend mapping cut over to dedicated kinds with legacy widget/card customKind branches removed
 - [x] Step 6 renderer pack extraction landed (`git mv` + engine-owned pack bootstrap + inventory-local widget registry removal)
+- [x] Step 7 reusable chat runtime extraction landed (`TimelineChatWindow` + `useProjectedChatConnection`)
+- [x] Step 8 inventory rewired to reusable runtime + engine pack with inventory layer reduced to host/business callbacks
+- [x] Step 9 hard-cut validation gate passed (full go/ts tests + typecheck + legacy-path scans clean)

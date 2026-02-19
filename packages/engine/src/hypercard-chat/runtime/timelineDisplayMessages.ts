@@ -1,10 +1,11 @@
-import {
-  type ChatWindowMessage,
-  formatTimelineEntity,
-  type TimelineEntity,
-  type TimelineWidgetItem,
-} from '@hypercard/engine';
-import { stripTrailingWhitespace } from '../semHelpers';
+import type { ChatWindowMessage } from '../../components/widgets/ChatWindow';
+import { formatTimelineEntity } from '../artifacts/timelineProjection';
+import type { TimelineEntity } from '../timeline/types';
+import type { TimelineWidgetItem } from '../types';
+
+function stripTrailingWhitespace(value: string): string {
+  return value.replace(/[ \t]+\n/g, '\n').replace(/[ \t]+$/g, '');
+}
 
 function shortText(value: string | undefined, max = 180): string | undefined {
   if (!value) return value;
@@ -13,6 +14,10 @@ function shortText(value: string | undefined, max = 180): string | undefined {
 }
 
 type WidgetGroup = 'timeline' | 'cards' | 'widgets';
+
+export interface TimelineDisplayMessagesOptions {
+  widgetNamespace?: string;
+}
 
 interface RoundWidgetBuckets {
   timeline: Map<string, TimelineWidgetItem>;
@@ -45,7 +50,17 @@ function ensureRoundBuckets(byRound: Map<number, RoundWidgetBuckets>, round: num
   return created;
 }
 
-function createWidgetMessage(group: WidgetGroup, round: number): ChatWindowMessage {
+function widgetNamespace(options: TimelineDisplayMessagesOptions): string {
+  const value = options.widgetNamespace?.trim();
+  return value && value.length > 0 ? value : 'hypercard';
+}
+
+function createWidgetMessage(
+  group: WidgetGroup,
+  round: number,
+  options: TimelineDisplayMessagesOptions,
+): ChatWindowMessage {
+  const namespace = widgetNamespace(options);
   if (group === 'cards') {
     return {
       id: `card-panel-widget-message-r${round}`,
@@ -56,8 +71,8 @@ function createWidgetMessage(group: WidgetGroup, round: number): ChatWindowMessa
         {
           kind: 'widget',
           widget: {
-            id: `inventory-card-panel-widget-r${round}`,
-            type: 'inventory.cards',
+            id: `${namespace}-card-panel-widget-r${round}`,
+            type: `${namespace}.cards`,
             label: `Generated Cards (${roundLabel(round)})`,
             props: { items: [] },
           },
@@ -76,8 +91,8 @@ function createWidgetMessage(group: WidgetGroup, round: number): ChatWindowMessa
         {
           kind: 'widget',
           widget: {
-            id: `inventory-widget-panel-widget-r${round}`,
-            type: 'inventory.widgets',
+            id: `${namespace}-widget-panel-widget-r${round}`,
+            type: `${namespace}.widgets`,
             label: `Generated Widgets (${roundLabel(round)})`,
             props: { items: [] },
           },
@@ -95,8 +110,8 @@ function createWidgetMessage(group: WidgetGroup, round: number): ChatWindowMessa
       {
         kind: 'widget',
         widget: {
-          id: `inventory-timeline-widget-r${round}`,
-          type: 'inventory.timeline',
+          id: `${namespace}-timeline-widget-r${round}`,
+          type: `${namespace}.timeline`,
           label: `Run Timeline (${roundLabel(round)})`,
           props: { items: [] },
         },
@@ -212,7 +227,10 @@ export function mapTimelineEntityToMessage(entity: TimelineEntity): ChatWindowMe
   };
 }
 
-export function buildTimelineDisplayMessages(timelineEntities: TimelineEntity[]): ChatWindowMessage[] {
+export function buildTimelineDisplayMessages(
+  timelineEntities: TimelineEntity[],
+  options: TimelineDisplayMessagesOptions = {},
+): ChatWindowMessage[] {
   const messages: ChatWindowMessage[] = [];
   const byRound = new Map<number, RoundWidgetBuckets>();
   const widgetMessages = new Map<string, ChatWindowMessage>();
@@ -237,7 +255,7 @@ export function buildTimelineDisplayMessages(timelineEntities: TimelineEntity[])
 
       const key = `${group}:r${activeRound}`;
       if (!widgetMessages.has(key)) {
-        const widgetMessage = createWidgetMessage(group, activeRound);
+        const widgetMessage = createWidgetMessage(group, activeRound, options);
         widgetMessages.set(key, widgetMessage);
         messages.push(widgetMessage);
       }

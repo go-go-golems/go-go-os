@@ -99,3 +99,27 @@ Completed HC-54 Step 6 by moving Hypercard widget panel files via `git mv`, intr
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/widgets/hypercardWidgetPack.test.ts — Renderer-pack registration tests
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Inventory now registers engine pack explicitly (`namespace: "inventory"`)
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/runtime/widgetRendererRegistry.tsx — Removed duplicated inventory-local registration implementation
+
+## 2026-02-19
+
+Completed HC-54 Steps 7 and 8 by extracting reusable chat runtime orchestration components/hooks into engine and rewiring Inventory to consume those shared primitives plus the engine-owned Hypercard widget pack.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/TimelineChatWindow.tsx — New reusable timeline-driven ChatWindow integration component
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts — New reusable projected-envelope connection orchestration hook
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/timelineDisplayMessages.ts — Inventory timeline display builder extracted into engine runtime
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/timelineDisplayMessages.test.ts — Extracted/updated runtime display tests
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Inventory now consumes reusable runtime primitives and keeps host/business callbacks
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/runtime/timelineEntityRenderer.ts — Removed inventory-local timeline renderer implementation (moved to engine runtime)
+
+## 2026-02-19
+
+Completed HC-54 Step 9 final hard-cut gate with full backend/frontend test validation, typecheck, and legacy-path scans; no active widget/card legacy custom-kind routing or old renderer-path references remain.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/go-inventory-chat/internal/pinoweb/hypercard_events.go — Dedicated backend projection source of truth revalidated
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/sem/registry.ts — Dedicated frontend hypercard lifecycle projection revalidated
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/TimelineChatWindow.tsx — Final reusable runtime integration target for chat shell
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Inventory final host-layer integration after cutover

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTimelineDisplayMessages, mapTimelineEntityToMessage } from './timelineEntityRenderer';
+import { buildTimelineDisplayMessages, mapTimelineEntityToMessage } from './timelineDisplayMessages';
 
 describe('mapTimelineEntityToMessage', () => {
   it('renders tool results with custom kind label', () => {

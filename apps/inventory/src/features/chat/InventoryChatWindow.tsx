@@ -1,30 +1,33 @@
 import {
   buildArtifactOpenWindowPayload,
-  ChatWindow,
-  type ChatWindowMessage,
   createSemRegistry,
   emitConversationEvent,
   type HypercardWidgetPackRenderContext,
-  type InlineWidget,
   openRuntimeCardCodeEditor as openCodeEditor,
+  type ProjectedChatClientHandlers,
   type ProjectionPipelineAdapter,
-  projectSemEnvelope,
   registerHypercardWidgetPack,
-  renderInlineWidget,
   type SemRegistry,
   selectTimelineEntities as selectTimelineEntitiesForConversation,
+  TimelineChatWindow,
   type TimelineWidgetItem,
+  useProjectedChatConnection,
 } from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
 import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import { replaceSuggestions, setConnectionStatus, setStreamError, type TurnStats } from './chatSlice';
+import {
+  type ChatConnectionStatus,
+  replaceSuggestions,
+  setConnectionStatus,
+  setStreamError,
+  type TurnStats,
+} from './chatSlice';
 import {
   createChatMetaProjectionAdapter,
   createInventoryArtifactProjectionAdapter,
 } from './runtime/projectionAdapters';
-import { buildTimelineDisplayMessages } from './runtime/timelineEntityRenderer';
 import {
   type ChatStateSlice,
   selectConnectionStatus,
@@ -34,7 +37,6 @@ import {
   selectStreamStartTime,
   selectSuggestions,
 } from './selectors';
-import { stripTrailingWhitespace } from './semHelpers';
 import { InventoryWebChatClient, type InventoryWebChatClientHandlers, submitPrompt } from './webchatClient';
 
 function formatNumber(n: number): string {
@@ -107,6 +109,14 @@ export interface InventoryChatWindowProps {
   conversationId: string;
 }
 
+function normalizeConnectionStatus(status: string): ChatConnectionStatus {
+  if (status === 'connecting') return 'connecting';
+  if (status === 'connected') return 'connected';
+  if (status === 'closed') return 'closed';
+  if (status === 'error') return 'error';
+  return 'error';
+}
+
 export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps) {
   const dispatch = useDispatch<Dispatch<UnknownAction>>();
   const store = useStore();
@@ -119,7 +129,6 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
   const streamOutputTokens = useSelector((s: ChatStateSlice) => selectStreamOutputTokens(s, conversationId));
 
   const [debugMode, setDebugMode] = useState(false);
-  const clientRef = useRef<InventoryWebChatClient | null>(null);
   const semRegistryRef = useRef<SemRegistry>(createSemRegistry({ enableTimelineUpsert: false }));
   const projectionAdaptersRef = useRef<ProjectionPipelineAdapter[]>([
     createChatMetaProjectionAdapter(),
@@ -130,41 +139,34 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
     registerHypercardWidgetPack({ namespace: 'inventory' });
   }, []);
 
-  useEffect(() => {
-    const handlers: InventoryWebChatClientHandlers = {
-      onRawEnvelope: (envelope) => {
-        // Raw ingress stream for EventViewer/debug tooling; do not gate on projection.
-        emitConversationEvent(conversationId, envelope);
-      },
-      onEnvelope: (envelope) => {
-        if (envelope.event?.type === 'timeline.upsert') {
-          return;
-        }
-        projectSemEnvelope({
-          conversationId,
-          dispatch,
-          semRegistry: semRegistryRef.current,
-          envelope,
-          adapters: projectionAdaptersRef.current,
-        });
-      },
-      onStatus: (status) => dispatch(setConnectionStatus({ conversationId, status })),
-      onError: (error) => dispatch(setStreamError({ conversationId, message: error })),
-    };
+  const createClient = useCallback(
+    (handlers: ProjectedChatClientHandlers): InventoryWebChatClient => {
+      const inventoryHandlers: InventoryWebChatClientHandlers = {
+        onRawEnvelope: handlers.onRawEnvelope,
+        onEnvelope: handlers.onEnvelope,
+        onStatus: handlers.onStatus as InventoryWebChatClientHandlers['onStatus'],
+        onError: handlers.onError,
+      };
+      return new InventoryWebChatClient(conversationId, inventoryHandlers, {
+        hydrate: false,
+      });
+    },
+    [conversationId],
+  );
 
-    const client = new InventoryWebChatClient(conversationId, handlers, {
-      hydrate: false,
-    });
-    clientRef.current = client;
-    client.connect();
-
-    return () => {
-      client.close();
-      if (client && clientRef.current === client) {
-        clientRef.current = null;
-      }
-    };
-  }, [conversationId, dispatch]);
+  useProjectedChatConnection({
+    conversationId,
+    dispatch,
+    semRegistry: semRegistryRef.current,
+    adapters: projectionAdaptersRef.current,
+    createClient,
+    onRawEnvelope: (envelope) => {
+      emitConversationEvent(conversationId, envelope);
+    },
+    onStatus: (status) => dispatch(setConnectionStatus({ conversationId, status: normalizeConnectionStatus(status) })),
+    onError: (error) => dispatch(setStreamError({ conversationId, message: error })),
+    shouldProjectEnvelope: (envelope) => envelope.event?.type !== 'timeline.upsert',
+  });
 
   const subtitle = useMemo(() => {
     return `${connectionStatus} · ${conversationId.slice(0, 8)}…`;
@@ -173,29 +175,6 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
   const isStreaming = useMemo(
     () => timelineEntities.some((entity) => entity.kind === 'message' && entity.props.streaming === true),
     [timelineEntities],
-  );
-
-  const displayMessages = useMemo<ChatWindowMessage[]>(
-    () =>
-      buildTimelineDisplayMessages(timelineEntities).map((message) => {
-        let msg = message;
-        if (msg.role !== 'user' && msg.text) {
-          const text = stripTrailingWhitespace(msg.text);
-          if (text !== msg.text) {
-            msg = { ...msg, text };
-          }
-        }
-        if (debugMode && msg.id) {
-          const badge = `[${msg.id} | ${msg.status ?? '—'} | ${msg.role}]`;
-          const existingContent = msg.content ?? (msg.text ? [{ kind: 'text' as const, text: msg.text }] : []);
-          return {
-            ...msg,
-            content: [{ kind: 'text' as const, text: badge }, ...existingContent],
-          };
-        }
-        return msg;
-      }),
-    [timelineEntities, debugMode],
   );
 
   const openArtifact = useCallback(
@@ -250,11 +229,6 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
     [debugMode, editCard, openArtifact],
   );
 
-  const renderWidget = useCallback(
-    (widget: InlineWidget) => renderInlineWidget(widget, widgetRenderContext),
-    [widgetRenderContext],
-  );
-
   const handleSend = useCallback(
     async (text: string) => {
       if (isStreaming) {
@@ -292,11 +266,13 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
   }, [dispatch, conversationId]);
 
   return (
-    <ChatWindow
-      messages={displayMessages}
+    <TimelineChatWindow
+      timelineEntities={timelineEntities}
       isStreaming={isStreaming}
       onSend={handleSend}
-      renderWidget={renderWidget}
+      widgetNamespace="inventory"
+      widgetRenderContext={widgetRenderContext}
+      debug={debugMode}
       title="Inventory Chat"
       subtitle={subtitle}
       placeholder="Ask about inventory..."

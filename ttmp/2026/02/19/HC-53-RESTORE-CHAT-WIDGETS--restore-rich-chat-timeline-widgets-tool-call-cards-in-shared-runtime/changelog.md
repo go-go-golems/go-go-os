@@ -49,3 +49,27 @@ Committed the docs-only HC-53 extension (`e659bdb`) and uploaded the refreshed a
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/design-doc/02-generic-chatwindow-and-hypercard-renderer-pack-architecture.md — Committed extended architecture analysis as durable ticket artifact
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/tasks.md — Closed docs-only publication task for reMarkable upload
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/reference/01-diary.md — Diary updated to include the extended analysis and publication trail
+
+
+## 2026-02-19
+
+Authored a new end-to-end implementation playbook for custom webchat timeline entities/widgets and uploaded it to reMarkable (`HC-53 Webchat Timeline Widget Entity Playbook.pdf`).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/design-doc/03-webchat-timeline-widget-entity-end-to-end-implementation-playbook.md — Added detailed implementation blueprint (protobuf contracts, backend/frontend projection registration, widget renderer registration, validation matrix)
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/index.md — Linked design-doc 03 from ticket hub
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/tasks.md — Marked playbook drafting and publication complete
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/reference/01-diary.md — Added Step 10 diary entry for this docs-only playbook request
+
+## 2026-02-19
+
+Updated HC-53 documentation to align with latest Pinocchio architecture changes (TimelineEntityV2 open model) and linked the new tutorial guides used as implementation templates.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/design-doc/03-webchat-timeline-widget-entity-end-to-end-implementation-playbook.md — Rewritten playbook: removed TimelineEntityV1/oneof assumptions, enforced dedicated-kind TimelineEntityV2 strategy, and documented registry/explicit-bootstrap flow
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/tasks.md — Refreshed task list for V2/open-kind cutover and tutorial-backed implementation checklist
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/index.md — Added canonical links to Pinocchio tutorials and updated status wording
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/pinocchio/pkg/doc/tutorials/04-intern-app-owned-middleware-events-timeline-widgets.md — Referenced as backend/frontend module registration template for HC-53 implementation
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/pinocchio/pkg/doc/tutorials/05-building-standalone-webchat-ui.md — Referenced as transport/hydration/render flow template for HC-53 implementation

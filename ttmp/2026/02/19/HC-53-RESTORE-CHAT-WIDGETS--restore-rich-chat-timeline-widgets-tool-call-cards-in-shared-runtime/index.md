@@ -20,7 +20,7 @@ RelatedFiles:
       Note: Shared TimelineEntity formatting parity helper
 ExternalSources: []
 Summary: HC-53 restores rich inline chat timeline widgets/tool-card rendering under timeline-first SEM projection architecture.
-LastUpdated: 2026-02-19T13:45:00-05:00
+LastUpdated: 2026-02-19T15:10:00-05:00
 WhatFor: Ticket hub for regression analysis, implementation diary, and delivery artifacts
 WhenToUse: Use when reviewing HC-53 implementation, validating behavior, or extending timeline projection UX
 ---
@@ -40,13 +40,16 @@ HC-53 restores the rich chat timeline experience that regressed during extractio
 
 - Design analysis: `design-doc/01-regression-analysis-and-restoration-plan-rich-timeline-projections.md`
 - Design analysis (reusable runtime + pinocchio/protobuf exploration): `design-doc/02-generic-chatwindow-and-hypercard-renderer-pack-architecture.md`
+- Design analysis (end-to-end implementation playbook, updated for TimelineEntityV2): `design-doc/03-webchat-timeline-widget-entity-end-to-end-implementation-playbook.md`
+- Pinocchio tutorial reference (feature-module registration pattern): `../../../../../../../pinocchio/pkg/doc/tutorials/04-intern-app-owned-middleware-events-timeline-widgets.md`
+- Pinocchio tutorial reference (standalone web UI timeline/WS flow): `../../../../../../../pinocchio/pkg/doc/tutorials/05-building-standalone-webchat-ui.md`
 - Diary: `reference/01-diary.md`
 - Tasks: `tasks.md`
 - Changelog: `changelog.md`
 
 ## Status
 
-Current status: **active** (extended docs iteration committed and uploaded)
+Current status: **active** (playbook aligned to Pinocchio TimelineEntityV2 and tutorial-backed implementation model)
 
 ## Topics
 

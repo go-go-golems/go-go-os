@@ -71,6 +71,22 @@ The recommended direction is a two-layer extraction:
 
 This model keeps the timeline-first projection architecture intact, removes inventory coupling (`inventory.timeline`, `inventory.widgets`, `inventory.cards`), and gives app teams one registration API instead of copy/pasted integration code.
 
+## Alignment note (2026-02-19, post Pinocchio GP-028)
+
+This document was originally drafted while Pinocchio still had mixed assumptions around `TimelineEntityV1` oneof history and `tool_result(customKind=...)` compatibility paths.
+
+Current HC-53 implementation guidance is now defined by:
+
+1. `ttmp/2026/02/19/HC-53-RESTORE-CHAT-WIDGETS--restore-rich-chat-timeline-widgets-tool-call-cards-in-shared-runtime/design-doc/03-webchat-timeline-widget-entity-end-to-end-implementation-playbook.md` (authoritative playbook)
+2. `pinocchio/pkg/doc/tutorials/04-intern-app-owned-middleware-events-timeline-widgets.md`
+3. `pinocchio/pkg/doc/tutorials/05-building-standalone-webchat-ui.md`
+
+When this document and design-doc 03 differ, follow design-doc 03. In particular:
+
+1. Use TimelineEntityV2 open kinds (`kind + props`) for Hypercard widget/card projection.
+2. Do not add new oneof transport cases per Hypercard kind.
+3. Remove legacy `tool_result/customKind` widget/card routing in the HC-53 cutover.
+
 ## Scope and goals
 
 This document focuses on frontend/runtime architecture in `2026-02-12--hypercard-react`, specifically:

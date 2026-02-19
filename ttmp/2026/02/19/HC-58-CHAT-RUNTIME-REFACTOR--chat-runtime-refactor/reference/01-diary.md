@@ -833,3 +833,67 @@ This keeps identity handling simple and deterministic: one stable `entity.id` pa
   - `timeline.alias`, `timeline.rekey` mutations
   - `aliasToCanonical` runtime state map
   - canonical ID resolution flow in dedup strategy
+
+## Step 14: Rewrite HC-58 to One-Projection-Path Simplicity
+I rewrote HC-58 documentation to enforce a simpler runtime model: all windows ingest the same SEM envelopes and run the same projection logic, with no per-window projection modes or filtering.
+
+I also simplified the implementation tasks so they now track deterministic single-path projection work instead of introducing extra stream-channel abstractions in this phase.
+
+### Prompt Context
+
+**User prompt (verbatim):** "yes, rewrite it and the tasks too. definitely simpler"
+
+**Assistant interpretation:** Rewrite HC-58 design doc and tasks to codify a minimal architecture: one shared projection path across windows and less abstraction overhead.
+
+**Inferred user intent:** Reduce architectural complexity and remove over-engineered concepts before implementation starts.
+
+**Commit (code):** N/A (documentation updates in progress)
+
+### What I did
+- Rewrote:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md`
+- New core policy in design:
+  - one SEM projection path for all windows,
+  - no projection-mode behavior differences,
+  - adapters are side-effects only,
+  - stable entity IDs.
+- Updated backlog in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+- Task simplifications included:
+  - `HC58-IMPL-02` renamed to one-path projection enforcement,
+  - `HC58-IMPL-04` renamed to deterministic envelope apply ordering,
+  - selector and test tasks aligned to one-path behavior.
+
+### Why
+- This keeps runtime behavior predictable and easier to reason about while matching pinocchio web-chat flow semantics.
+
+### What worked
+- The document is now internally consistent around a small set of hard invariants.
+- Tasks map cleanly to the simplified design.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Most complexity came from trying to design future-general stream abstractions too early; SEM-first projection + timeline upsert already covers current needs.
+
+### What was tricky to build
+- Keeping all sections aligned after simplifying assumptions (execution map, plan phases, validation, and task wording) so no stale abstraction language remained.
+
+### What warrants a second pair of eyes
+- Confirm whether `rekeyEntity` support should be removed entirely in HC-58 code phase or temporarily left only for legacy fixtures/tests.
+
+### What should be done in the future
+- Carry these invariants directly into runtime code tasks (`HC58-IMPL-02`, `HC58-IMPL-04`, `HC58-IMPL-14`, `HC58-IMPL-15`).
+
+### Code review instructions
+- Start with:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md`
+- Then review task alignment in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+
+### Technical details
+- Key architectural simplification:
+  - same envelopes + same projection path for every window,
+  - no projection mode controls,
+  - adapters constrained to post-projection side-effects.

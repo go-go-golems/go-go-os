@@ -35,20 +35,20 @@
   `ConversationRuntimeState`, `ConversationMutation`, `createConversationRuntime`, `applyConversationMutations`
   Task explanation and bigger refactor purpose: centralize runtime mutation/state logic so it is no longer split across wrappers, hooks, and app slices.
 
-- [ ] HC58-IMPL-02 Structured stream channels:
-  `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/sem/types.ts`, symbols:
-  `stream.open`, `stream.apply`, `stream.finalize`, `stream.error`, `StreamFragment`
-  Task explanation and bigger refactor purpose: replace text-centric stream assumptions with typed channels that handle tool/widget/card partials.
+- [ ] HC58-IMPL-02 One projection path for all windows:
+  `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts` + `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`, symbols:
+  one shared `projectSemEnvelope(...)` path for all windows, remove any per-window projection branching
+  Task explanation and bigger refactor purpose: enforce that every window ingests the same SEM envelopes and runs the same projection logic.
 
 - [ ] HC58-IMPL-03 Stable entity ID invariants:
   `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`, symbols:
   remove `timeline.alias` / `timeline.rekey` handling, enforce direct `entity.id` merge semantics
   Task explanation and bigger refactor purpose: simplify timeline identity handling by treating entity IDs as stable and removing aliasing complexity.
 
-- [ ] HC58-IMPL-04 Transaction apply path:
+- [ ] HC58-IMPL-04 Deterministic envelope apply ordering:
   `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`, symbols:
-  `applyMutationTransaction`, one-commit reducer semantics for correlated mutations
-  Task explanation and bigger refactor purpose: prevent transient invalid UI states from partially applied related mutations.
+  deterministic envelope apply ordering (`event.seq`/arrival order) with one reducer pass per envelope
+  Task explanation and bigger refactor purpose: keep projection behavior predictable without introducing extra abstraction layers.
 
 - [ ] HC58-IMPL-05 Manager-owned lifecycle:
   `packages/engine/src/hypercard-chat/conversation/manager.ts` (new), symbols:
@@ -67,12 +67,12 @@
 
 - [ ] HC58-IMPL-08 Inventory adapter narrowing:
   `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`, keep only domain side effects:
-  `createInventoryArtifactProjectionAdapter`, remove generic metadata responsibilities
-  Task explanation and bigger refactor purpose: keep inventory adapter scope domain-specific and reduce coupling to runtime internals.
+  `createInventoryArtifactProjectionAdapter`, remove generic metadata responsibilities and projection correctness logic
+  Task explanation and bigger refactor purpose: keep adapters strictly app-side-effect only and preserve one engine-owned projection truth.
 
 - [ ] HC58-IMPL-09 Runtime selector/hooks API:
   `packages/engine/src/hypercard-chat/conversation/selectors.ts` (new), symbols:
-  `useConversationConnection`, `useTimelineIds`, `useTimelineEntity`, `useStreamChannel`, `useMeta`
+  `useConversationConnection`, `useTimelineIds`, `useTimelineEntity`, `useMeta`
   Task explanation and bigger refactor purpose: provide stable read APIs so consumers do not re-derive runtime state ad hoc.
 
 - [ ] HC58-IMPL-10 Inventory migration to runtime selectors:
@@ -98,12 +98,12 @@
 
 - [ ] HC58-IMPL-14 Unit test coverage:
   add tests around reducer/runtime symbols:
-  stable entity ID merge invariants, version precedence, structured stream apply/finalize, transaction atomicity
+  stable entity ID merge invariants, version precedence, one-path projection invariants, deterministic apply ordering
   Task explanation and bigger refactor purpose: lock down core invariants so follow-on refactors cannot silently break correctness.
 
 - [ ] HC58-IMPL-15 Integration test coverage:
   duplicate replay, out-of-order frame handling (`event.seq`, `event.stream_id`),
-  reconnect hydration reconciliation in runtime connection path
+  reconnect hydration reconciliation in runtime connection path, and window parity on identical streams
   Task explanation and bigger refactor purpose: validate behavior under real stream conditions where ordering/replay bugs appear.
 
 - [ ] HC58-IMPL-16 Multi-window shared-connection test:

@@ -16,350 +16,170 @@ RelatedFiles:
     - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx
       Note: Real host integration constraints and runtime usage
     - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/chatSlice.ts
-      Note: Current inventory-owned runtime metadata and suggestions state targeted for extraction/removal
+      Note: Current inventory-owned runtime metadata targeted for extraction into runtime
     - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/runtime/projectionAdapters.ts
-      Note: Current adapter-level metadata and suggestions handling targeted for runtime-core ownership
+      Note: Current adapter-level metadata and artifact side effects; target is side-effects only
     - Path: 2026-02-12--hypercard-react/apps/inventory/src/features/chat/selectors.ts
-      Note: Current selector API that will be replaced by runtime selectors for connection and turn stats
+      Note: Current selector API that will be replaced by runtime selectors
     - Path: 2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts
-      Note: Current project/apply/adapter pipeline shape
+      Note: Current SEM projection pipeline and adapter hook point
     - Path: 2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx
-      Note: Current runtime wrapper and projectionMode gate behavior
+      Note: Current runtime wrapper and legacy projection-mode history
     - Path: 2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts
-      Note: Current connection lifecycle ownership and adapter skip-path logic
+      Note: Current hook-owned connection lifecycle
     - Path: 2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/sem/registry.ts
-      Note: Current event->timeline op mapping including structured tool/widget events
+      Note: Current event-to-timeline-op mapping
     - Path: 2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/timeline/timelineSlice.ts
       Note: Current version-aware upsert behavior with stable entity IDs
     - Path: 2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/sources/local/chat-runtime-chatgpt-pro.md
       Note: Imported proposal analyzed and corrected
 ExternalSources:
     - local:chat-runtime-chatgpt-pro.md
-Summary: In-depth technical analysis of imported chat runtime refactor proposal, including corrections for structured streaming data, concrete API contracts, migration mapping, and implementation risks.
-LastUpdated: 2026-02-19T17:22:58.109823143-05:00
-WhatFor: Align HC-58 on a concrete and correct runtime architecture before implementation.
-WhenToUse: Use when designing or implementing reusable multi-window chat runtime behavior.
+Summary: Simplified HC-58 runtime blueprint: one SEM projection path for all windows, no projection-mode behavior differences, stable entity IDs, and adapters restricted to host side effects.
+LastUpdated: 2026-02-19T21:45:00-05:00
+WhatFor: Align HC-58 implementation around a minimal and deterministic timeline runtime model.
+WhenToUse: Use when implementing or reviewing chat runtime behavior and ownership boundaries.
 ---
-
 
 # Chat Runtime Refactor Analysis and Concrete Blueprint
 
 ## Executive Summary
-The imported proposal is directionally strong and compatible with the goals behind HC-56 and HC-57: split headless conversation runtime from UI, remove projection-mode correctness toggles, and make extension points developer-first.
+This refactor is now explicitly simplified.
 
-The most important correction is the streaming contract. `streaming/append` and `streaming/finalize` as plain string operations are too narrow for our actual traffic. In our system, streaming and partial updates are not only text. We already handle tool deltas, tool result payloads, widget/card lifecycle updates, and metadata-rich SEM envelopes. The runtime must support typed structured stream fragments and patch semantics, not just cumulative text.
+Hard invariants:
+1. Every window receives the same SEM envelopes.
+2. Every window runs the same projection path.
+3. No projection-mode toggles, no event filtering by window.
+4. Timeline state is the single projected truth.
+5. Adapters are side-effects only (never projection correctness logic).
+6. Entity IDs are stable and used directly (no alias/rekey/canonical mapping).
 
-This document proposes a concrete runtime contract that preserves the good parts of the imported design and corrects the weak parts, with one explicit policy decision: hard cutover with no compatibility or fallback UI layers.
-- headless per-conversation runtime managed by a `ConversationManager`
-- idempotent reducer-level merge with version precedence on stable entity IDs
-- streaming channels that support structured payloads (text, JSON patch, object patch, status transitions, widget/card fragments)
-- per-window selector subscriptions for distinct rerender profiles
-- kit-based extension API for runtime behaviors and widget rendering
-- timeline-native UI (`TimelineConversationView`) as the only first-class chat surface
-- suggestions removed for now across runtime/UI/app state to simplify cutover and avoid preserving soon-to-be-replaced behavior
+This mirrors the practical shape in `pinocchio/cmd/web-chat`: SEM events (`llm.*`, `tool.*`, domain events) project into timeline entities; hydration replays timeline state; windows only differ in presentation.
 
 ## Problem Statement
-`TimelineChatRuntimeWindow` currently combines transport wiring, projection policy, registry wiring, adapter side-effects, and UI composition in one surface. This has three practical consequences:
+`TimelineChatRuntimeWindow` currently mixes connection lifecycle, projection pipeline wiring, adapters, and UI composition.
 
-1. API crowding and ownership confusion.
-- Runtime and UI concerns are configured together in `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`.
+Main issues:
+1. Ownership confusion: runtime concerns and UI concerns are configured together.
+2. Lifecycle coupling: connection is hook/mount-owned instead of conversation-runtime-owned.
+3. Historical projection policy toggles: correctness should never depend on per-window flags.
 
-2. Lifecycle coupling to component mount.
-- `useProjectedChatConnection` creates a client per mount and owns connect/close directly (`packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`).
-- Multiple windows on the same conversation can double-connect unless each host implements coordination.
-
-3. Projection correctness depends on caller policy.
-- `projectionMode` can drop non-`timeline.upsert` envelopes (`timeline-upsert-only` default in `timelineChatRuntime.tsx`).
-- This can be useful as a temporary guard, but correctness should not depend on UI-level filtering.
-
-We need a runtime architecture that supports:
-- many simultaneous windows over one conversation runtime,
-- deterministic dedup and merge correctness without “drop mode” switches,
-- extension by app developers without deep transport/projection knowledge,
-- structured streaming payloads (not only text).
+Desired end state:
+1. One deterministic projection pipeline for all windows.
+2. One runtime instance per conversation.
+3. UI surfaces read the same runtime state with different selectors/rendering.
 
 ## Current-System Grounding
-This proposal is grounded in current implementation behavior.
+Current runtime path in engine:
+1. Envelope enters `projectSemEnvelope(...)`.
+2. `semRegistry.handle(...)` returns timeline ops.
+3. `applySemTimelineOps(...)` updates timeline reducer.
+4. `adapters.onEnvelope(...)` runs app-specific follow-up logic.
 
-### Runtime seam today
-- `TimelineChatRuntimeWindow` wraps `TimelineChatWindow`, registers a widget pack, and opens a projected chat connection.
-- Path: `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+References:
+- `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
+- `packages/engine/src/hypercard-chat/sem/registry.ts`
+- `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`
 
-### Connection lifecycle today
-- `useProjectedChatConnection` instantiates `createClient(...)` in an effect and calls `connect()`/`close()`.
-- Path: `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+Current inventory host usage:
+- `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+- `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`
 
-### Projection pipeline today
-- Envelope -> `semRegistry.handle(...)` -> `applySemTimelineOps(...)` -> adapters.
-- Path: `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
+## Simplified Runtime Model (HC-58)
 
-### SEM mapping and timeline reducer
-- `SemRegistry` maps event types to timeline ops.
-- Paths:
-  - `packages/engine/src/hypercard-chat/sem/registry.ts`
-  - `packages/engine/src/hypercard-chat/sem/timelineMapper.ts`
-- Timeline reducer already has version-aware merge behavior.
-- Path: `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`
+### Input contract
+Runtime ingests SEM envelopes, primarily:
+- `llm.start`
+- `llm.delta`
+- `llm.final`
+- `llm.thinking.*`
+- `tool.start|delta|result|done`
+- `hypercard.widget.*` and `hypercard.card.*`
+- `timeline.upsert` (hydration / projector upsert path)
+- `ws.error`, `log`
 
-### Widget registration model
-- Widget renderers are globally registered into a module-level map with refcount by namespace.
-- Path: `packages/engine/src/hypercard-chat/widgets/hypercardWidgetPack.tsx`
+### Projection contract
+Projection remains SEM-first and timeline-upsert based.
 
-### Inventory integration (real host)
-- Inventory uses `TimelineChatRuntimeWindow` with `projectionMode="timeline-upsert-only"`, custom adapters, and host callbacks.
-- Path: `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+Runtime projection operation:
+1. Parse envelope.
+2. Route by `event.type` in SEM registry.
+3. Produce timeline ops (`addEntity`, `upsertEntity`, `clearConversation`).
+4. Apply ops in reducer.
+5. Run optional adapters for host side-effects.
 
-## Analysis of Imported Proposal
+No separate stream-channel abstraction is required in HC-58 v1.
 
-## What is correct and should be retained
-1. Headless runtime and UI split.
-2. Shared runtime instance per conversation ID.
-3. Manager-based lifecycle and multi-window support.
-4. No projection correctness toggles as core strategy.
-5. Reducer-level idempotency with version precedence.
-6. Kit-oriented extension surface.
-7. Selector-level subscription model for rerender control.
-
-## What needs correction or hardening
-
-### 1) Streaming model is too text-centric
-Imported mutation examples center on:
-- `streaming/append(entityId, delta: string)`
-- `streaming/finalize(entityId)`
-
-This is insufficient for our event space:
-- tool updates may stream structured patches (`tool.delta` patch object)
-- tool results can be structured objects, not plain strings
-- hypercard lifecycle events update structured `data` payloads
-- future multimodal payloads can include typed parts (text, JSON, media refs)
-
-Correction:
-Use typed streaming channels with typed fragments/patches.
-
-### 2) Reducer merge needs explicit cross-entity transaction semantics
-Some events naturally produce multiple correlated mutations (example: tool result + done transitions, status + usage metadata updates). We need a transaction wrapper or batched commit semantics to avoid intermediate inconsistent UI states.
-
-### 3) Ordering and replay semantics need a strict cursor contract
-The imported design calls out ordering conceptually, but the runtime must standardize order keys (`seq`/`stream_id`) and replay policy for buffered events and hydration reconciliation.
-
-### 4) Global widget registry side effects need confinement
-Current inline widget registry is module-global. Multi-window differing render policies should avoid global mutable renderer collisions.
-
-### 5) Adapter phase model should be explicit
-Current adapters run via `onEnvelope` with projected payload. We need explicit phases to avoid ambiguous assumptions:
-- before projection,
-- after projection pre-commit,
-- after commit with state diff summary.
-
-### 6) Stable entity IDs should be a hard invariant
-Entity IDs are stable by contract. Runtime and timeline reducers should not carry alias/canonical mapping state or rekey operations. Replay/dedup correctness should be implemented directly on stable `entityId` plus version precedence.
-
-## Corrected Runtime Contract (Concrete)
-
-### Runtime state
+### Runtime state contract
 ```ts
-type ConversationState = {
+type ConversationRuntimeState = {
   connection: {
     status: 'idle' | 'connecting' | 'connected' | 'closed' | 'error';
     error?: string;
-    connectedAtMs?: number;
-    lastFrameAtMs?: number;
   };
-
   cursor: {
     lastSeq?: string;
     lastStreamId?: string;
     hydratedVersion?: string;
   };
-
-  raw: {
-    ring: Envelope[]; // bounded
-    max: number;
-  };
-
   timeline: {
     ids: string[];
     byId: Record<string, TimelineEntity>;
   };
-
-  streams: {
-    // per-entity channel state for high-frequency/structured updates
-    byEntity: Record<string, Record<string, StreamChannelState>>;
-  };
-
   meta: Record<string, unknown>;
 };
 ```
 
-### Structured streaming channel model
-```ts
-type StreamChannelKind =
-  | 'message.text'
-  | 'message.parts'
-  | 'tool.progress'
-  | 'tool.patch'
-  | 'widget.patch'
-  | 'custom';
+## Projection and Adapter Rules
 
-type StreamFragment =
-  | { kind: 'text.delta'; text: string }
-  | { kind: 'text.cumulative'; text: string }
-  | { kind: 'json.patch'; ops: JsonPatchOp[] }
-  | { kind: 'object.patch'; patch: Record<string, unknown> }
-  | { kind: 'status'; value: string }
-  | { kind: 'parts.append'; parts: Array<{ type: string; data: unknown }> }
-  | { kind: 'replace'; value: unknown };
+### Projection rules
+1. Projection logic is engine-owned and deterministic.
+2. All windows use the same `projectSemEnvelope(...)` behavior.
+3. Ordering/replay behavior is based on `event.seq` and stable entity IDs.
+4. No projection-mode flags and no per-window filtering.
 
-type StreamChannelState = {
-  channel: StreamChannelKind | string;
-  status: 'open' | 'finalized' | 'errored';
-  value: unknown;
-  startedAtMs?: number;
-  updatedAtMs?: number;
-  finalizedAtMs?: number;
-  error?: string;
-};
-```
+### Adapter rules
+1. Adapters run after core projection.
+2. Adapters are allowed for host side-effects only.
+3. Adapters must not define timeline correctness behavior.
+4. Inventory metadata ownership currently in adapters moves into runtime meta over HC-58.
 
-### Mutation model (replaces string-only append/finalize)
-```ts
-type Mutation =
-  | { type: 'timeline.upsert'; entity: TimelineEntity }
-  | { type: 'timeline.remove'; id: string }
-  | { type: 'stream.open'; entityId: string; channel: string; initial?: unknown }
-  | { type: 'stream.apply'; entityId: string; channel: string; fragment: StreamFragment }
-  | { type: 'stream.finalize'; entityId: string; channel: string; final?: unknown }
-  | { type: 'stream.error'; entityId: string; channel: string; error: string }
-  | { type: 'meta.patch'; patch: Record<string, unknown> }
-  | { type: 'raw.append'; envelope: Envelope }
-  | { type: 'cursor.update'; seq?: string; streamId?: string; version?: string };
-```
+## Multi-Window Behavior
+If two windows are open on the same conversation:
+1. They share the same conversation runtime and connection.
+2. They receive the same projected timeline state.
+3. They can render differently, but not project differently.
 
-This addresses the exact gap you identified: finalization is not a text-only event and may include structured payload completion.
+Allowed differences between windows:
+- selector granularity,
+- visible panels/widgets,
+- formatting and layout.
 
-## Projection and adapter phases
-
-### Projection phases
-1. Ingest raw envelope (`raw.append`, `cursor.update`).
-2. Build mutation transaction via SEM handlers.
-3. Apply transaction in one reducer commit (or one batched block).
-4. Run post-commit adapters.
-
-### Adapter contract
-```ts
-type AdapterPhase = 'beforeProject' | 'afterProject' | 'afterCommit';
-
-type AdapterContext = {
-  phase: AdapterPhase;
-  envelope: Envelope;
-  mutations?: Mutation[];
-  prevState?: ConversationState;
-  nextState?: ConversationState;
-};
-```
-
-This prevents adapters from depending on implicit ordering.
-
-## Stable entity ID and dedup strategy
-
-### Stable ID invariant
-Runtime treats incoming `entity.id` as stable and authoritative. No alias lookup, canonicalization, or rekey pass exists in the runtime state model.
-
-### Replay behavior
-Duplicate/replayed updates target the same stable `entity.id` and merge idempotently through reducer version precedence.
-
-### Merge precedence
-- if both sides have comparable versions: higher version wins field precedence,
-- if only one side is versioned: versioned fields are authoritative,
-- if neither versioned: use semantic merger by kind (message/tool/widget), not only shallow merge.
-
-## ConversationManager and connection claims
-```ts
-type ConversationManager = {
-  getRuntime(conversationId: string): ConversationRuntime;
-  installKits(conversationId: string, kits: ConversationKit[]): void;
-  claimConnection(conversationId: string, opts?: { keepAliveMs?: number }): () => void;
-};
-```
-
-Behavior:
-- one runtime instance per conversation ID,
-- N window claims -> one shared transport connection,
-- disconnect after last release (immediate or keepAlive grace).
-
-## React selector surface for rerender profiles
-```ts
-useConversationConnection(conversationId)
-useTimelineIds(conversationId)
-useTimelineEntity(conversationId, entityId)
-useStreamChannel(conversationId, entityId, channel)
-useMeta(conversationId, selector)
-```
-
-Example:
-- live window subscribes to `message.text` stream channels,
-- final transcript window subscribes only to timeline entities.
-
-No projection-mode switches are needed for this distinction.
-
-## Kit API (developer-facing)
-
-### Runtime kits
-```ts
-type ConversationKit = {
-  id: string;
-  runtime?: {
-    registerSem?: (reg: SemHandlerRegistry) => void;
-    registerAdapters?: (reg: AdapterRegistry) => void;
-    mergeByKind?: Partial<Record<string, EntityMergeFn>>;
-  };
-  widgets?: WidgetPack;
-};
-```
-
-### SEM handler context
-```ts
-type SemHandlerContext = {
-  emit: (m: Mutation) => void;
-  timeline: {
-    upsert: (e: TimelineEntity) => void;
-  };
-  stream: {
-    open: (entityId: string, channel: string, initial?: unknown) => void;
-    apply: (entityId: string, channel: string, fragment: StreamFragment) => void;
-    finalize: (entityId: string, channel: string, final?: unknown) => void;
-    error: (entityId: string, channel: string, error: string) => void;
-  };
-  meta: {
-    patch: (patch: Record<string, unknown>) => void;
-  };
-};
-```
+Not allowed:
+- different event filtering,
+- different projection semantics,
+- mode-based projection behavior.
 
 ## UI Hard Cutover
-The chain `TimelineChatRuntimeWindow -> TimelineChatWindow -> ChatWindow` will be removed.
+The chain `TimelineChatRuntimeWindow -> TimelineChatWindow -> ChatWindow` is removed from the primary timeline path.
 
 Target:
-- headless runtime layer (`ConversationRuntime` + `ConversationManager`)
-- one timeline-native UI component (`TimelineConversationView`)
-- no `ChatWindow` bridge, no message-model adapter layer in the primary path
+1. Headless conversation runtime + manager.
+2. Timeline-native view (`TimelineConversationView`).
+3. No message-model bridge as primary runtime abstraction.
 
-### Why hard cutover
-1. `ChatWindow` is message-first while runtime state is entity-first, forcing lossy translation.
-2. The translation layer obscures structured timeline semantics and increases API confusion.
-3. Maintaining dual abstractions slows iteration and increases regression surface.
+## Inventory Ownership Cutover (`chatSlice`)
+Inventory currently holds runtime-ish state that should move to runtime core:
+- `connectionStatus`
+- `lastError`
+- `modelName`
+- turn/usage stats
 
-## Inventory Runtime Ownership Cutover (`chatSlice` Extraction)
-Inventory currently owns multiple runtime concerns in `apps/inventory/src/features/chat/chatSlice.ts` that should be runtime-core concerns in HC-58:
-- connection lifecycle state (`connectionStatus`, `lastError`),
-- model + usage/turn performance stats (`modelName`, `currentTurnStats`, `streamStartTime`, `streamOutputTokens`),
-- suggestions list and normalization (`suggestions`, merge/replace reducers).
-
-### Ownership target after HC-58
-1. Runtime core owns transport/meta/stream lifecycle state.
-2. Timeline UI consumes runtime selectors directly.
-3. Inventory keeps only host-specific orchestration and domain-side effects (artifact windows, custom actions, app shell behavior).
-4. Suggestions are removed entirely for now and not re-homed.
+After HC-58:
+1. Runtime owns connection and meta lifecycle.
+2. Inventory keeps domain-side effects and shell wiring.
+3. Inventory adapters keep artifact upserts/runtime card registration only.
+4. Suggestions remain removed.
 
 ### State mapping
 | Current Inventory State (`chatSlice`) | Target Owner | Target API Shape |
@@ -368,155 +188,111 @@ Inventory currently owns multiple runtime concerns in `apps/inventory/src/featur
 | `lastError` | runtime core | `useConversationConnection(conversationId).error` |
 | `modelName` | runtime core meta | `useMeta(conversationId, s => s.modelName)` |
 | `currentTurnStats` | runtime core meta | `useMeta(conversationId, s => s.turnStats)` |
-| `streamStartTime` | runtime core stream/meta | `useMeta(...)/useStreamChannel(...)` |
-| `streamOutputTokens` | runtime core stream/meta | `useStreamChannel(conversationId, entityId, 'message.text')` derived metrics |
-| `suggestions` | removed | no replacement in HC-58/HC-59 |
+| `streamStartTime` | runtime core meta | `useMeta(conversationId, s => s.streamStartTime)` |
+| `streamOutputTokens` | runtime core meta | `useMeta(conversationId, s => s.streamOutputTokens)` |
+| `suggestions` | removed | no replacement |
 
-### Adapter and event handling mapping
-Current inventory `createChatMetaProjectionAdapter()` should be split:
-1. Runtime-default SEM handlers own `llm.start`, `llm.delta`, `llm.final`, `ws.error` metadata projection.
-2. Inventory keeps only adapters for domain projections (artifact upserts/runtime cards) and host actions.
-3. `hypercard.suggestions.*` handlers are deleted; runtime ignores these events or classifies them as unhandled debug-only envelopes.
-
-### What remains in Inventory after extraction
-- Host action wiring (`onOpenArtifact`, `onEditCard`, event viewer emission),
-- transport factory specifics (`InventoryWebChatClient` construction),
-- window chrome concerns (title/subtitle/header actions),
-- optional app-specific derived presentation not required by runtime correctness.
-
-### What is intentionally removed now
-1. Suggestion reducers/actions/selectors in inventory state.
-2. Suggestion props from runtime/UI components.
-3. Suggestion event handling in inventory adapters.
-4. Suggestion-focused styles/stories/docs for timeline chat path.
-
-## Mapping from current files to target architecture
+## Mapping from Current Files to Target Architecture
 
 ### Keep and evolve
-- `sem/registry.ts`: keep handler registration idea, evolve handler outputs to structured mutations.
-- `timeline/timelineSlice.ts`: keep version-aware merge base, remove alias/rekey paths, and extend stream channels.
-- `runtime/projectionPipeline.ts`: evolve into phase-aware runtime pipeline.
+- `sem/registry.ts`: keep event-handler registration model.
+- `timeline/timelineSlice.ts`: keep version-aware merge with stable entity IDs.
+- `runtime/projectionPipeline.ts`: keep as one projection entrypoint.
 
 ### Replace/split
-- `runtime/useProjectedChatConnection.ts`:
-  - extract transport/session lifecycle into runtime core;
-  - hook should subscribe to runtime rather than own transport.
-- `runtime/timelineChatRuntime.tsx`:
-  - remove after replacing with provider/hooks + `TimelineConversationView`.
-- `runtime/TimelineChatWindow.tsx`:
-  - remove; responsibilities move into timeline-native view composition.
-- `components/widgets/ChatWindow.tsx`:
-  - remove from timeline chat stack; not used as intermediary UI abstraction.
+- `runtime/useProjectedChatConnection.ts`: remove hook-owned socket lifecycle; subscribe to manager-owned runtime.
+- `runtime/timelineChatRuntime.tsx`: remove from primary path.
+- `runtime/TimelineChatWindow.tsx`: remove from primary path.
+- `components/widgets/ChatWindow.tsx`: remove from primary timeline runtime path.
 
 ### Constrain
-- `widgets/hypercardWidgetPack.tsx` and inline registry:
-  - remove global renderer side effects from runtime path;
-  - move to per-window registry instance.
+- `projectionAdapters.ts` in host apps: side-effects only, no projection correctness.
 
 ## Implementation Plan
 
-### Phase 0: Contract docs and invariants
-1. Freeze runtime invariants in docs (ordering, idempotency, version precedence, stable entity IDs).
-2. Define typed mutation and stream channel schemas.
-3. Define adapter phases.
+### Phase 0: Freeze invariants
+1. Document one-projection-path rule.
+2. Document stable-entity-id rule.
+3. Document adapter side-effect-only rule.
 
-### Phase 1: Headless runtime core
-1. Add `conversation/runtimeCore.ts` with:
-- state container,
-- mutation reducer,
-- pipeline execution,
-- transport lifecycle hooks.
-2. Port existing `SemRegistry` handlers directly to new runtime mutation contract (no compatibility shim).
+### Phase 1: Runtime core + manager
+1. Add conversation runtime core module.
+2. Add manager cache by conversation ID.
+3. Move connection ownership to manager claims.
 
-### Phase 2: Manager + connection claims
-1. Add `conversation/manager.ts` runtime cache keyed by conversation ID.
-2. Implement claim/release reference counting and optional keepAlive.
+### Phase 2: One projection path enforcement
+1. Route all envelopes through shared `projectSemEnvelope(...)`.
+2. Remove remaining per-window projection branching.
+3. Align SEM registry behavior for deterministic ops.
 
-### Phase 3: Structured stream support
-1. Add stream channel reducer and selectors.
-2. Upgrade default SEM handlers:
-- `llm.delta` -> `stream.apply(message.text, text.*)`
-- `tool.delta` -> `stream.apply(tool.patch, object.patch)`
-- hypercard lifecycle updates -> structured stream or timeline patches as appropriate.
-3. Make stream channels + timeline entities the only data contract for chat UI consumers.
+### Phase 3: Inventory migration
+1. Move generic runtime metadata handling to runtime.
+2. Narrow inventory adapters to artifact/domain side-effects.
+3. Remove runtime-ish state from inventory `chatSlice`.
 
 ### Phase 4: UI cutover
-1. Add hook-level APIs (`useConversationRuntime`, selectors).
-2. Implement `TimelineConversationView` directly from timeline entities/stream channels.
-3. Remove `TimelineChatRuntimeWindow`, `TimelineChatWindow`, and `ChatWindow` from the timeline chat path.
-4. Add per-window widget registry provider.
+1. Add `TimelineConversationView` runtime consumer.
+2. Remove wrapper chain from timeline runtime path.
+3. Keep window differences to rendering/selectors only.
 
-### Phase 5: Host migration (Inventory first)
-1. Move `InventoryWebChatClient` ownership behind manager-backed runtime connection.
-2. Keep adapters, but move them to phased adapter API.
-3. Validate with two simultaneous inventory windows on same conversation.
-4. Remove inventory runtime state ownership in `chatSlice` for connection/meta/turn stats and consume runtime selectors instead.
-5. Delete `createChatMetaProjectionAdapter` responsibilities that are generic runtime concerns.
-6. Remove suggestions from inventory window props and send flow.
-
-### Phase 6: Cleanup after cutover
-1. Remove `projectionMode` API entirely.
-2. Delete event-drop branch and any wrapper-only plumbing.
-3. Remove dead exports and stories tied to removed layers.
-4. Remove all suggestion APIs/events/styles from chat runtime path until runtime refactor stabilizes.
+### Phase 5: cleanup and validation
+1. Remove dead exports/docs/stories from removed wrappers.
+2. Validate multi-window parity and replay/hydration behavior.
 
 ## Execution Map (Task -> Symbols)
-This section maps the implementation backlog to concrete symbols/files so scope is explicit before each code phase.
-
 | Task ID | Concrete Target | Symbols / Files |
 | --- | --- | --- |
 | `HC58-IMPL-01` | Runtime core scaffold | `packages/engine/src/hypercard-chat/conversation/runtimeCore.ts` (new): `ConversationRuntimeState`, `ConversationMutation`, `createConversationRuntime`, `applyConversationMutations` |
-| `HC58-IMPL-02` | Structured stream channels | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/sem/types.ts`: `stream.open`, `stream.apply`, `stream.finalize`, `stream.error`, `StreamFragment` |
-| `HC58-IMPL-03` | Stable entity ID invariants | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`: remove `timeline.alias`/`timeline.rekey` mutation handling and enforce stable `entity.id` merge path |
-| `HC58-IMPL-04` | Transaction semantics | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`: `applyMutationTransaction` with batched commit semantics |
+| `HC58-IMPL-02` | One projection path | `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`, `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`: single shared `projectSemEnvelope(...)` entrypoint for all windows |
+| `HC58-IMPL-03` | Stable entity ID invariants | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`: remove alias/rekey paths and enforce direct stable `entity.id` merge |
+| `HC58-IMPL-04` | Deterministic apply ordering | `runtimeCore.ts` (new) + `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`: one-pass deterministic envelope apply |
 | `HC58-IMPL-05` | Conversation manager ownership | `packages/engine/src/hypercard-chat/conversation/manager.ts` (new): `ConversationManager`, `getRuntime`, `claimConnection`, `release` |
-| `HC58-IMPL-06` | Hook lifecycle simplification | `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`: remove hook-owned socket lifecycle in favor of manager subscriptions |
-| `HC58-IMPL-07` | Runtime SEM metadata handling | `packages/engine/src/hypercard-chat/sem/registry.ts`: runtime-owned handling for `llm.start`, `llm.delta`, `llm.final`, `ws.error` |
-| `HC58-IMPL-08` | Inventory adapter narrowing | `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`: keep `createInventoryArtifactProjectionAdapter`, remove generic runtime metadata logic |
-| `HC58-IMPL-09` | Runtime selector API | `packages/engine/src/hypercard-chat/conversation/selectors.ts` (new): `useConversationConnection`, `useTimelineIds`, `useTimelineEntity`, `useStreamChannel`, `useMeta` |
+| `HC58-IMPL-06` | Hook lifecycle simplification | `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`: remove hook-owned socket lifecycle |
+| `HC58-IMPL-07` | Runtime SEM metadata handling | `packages/engine/src/hypercard-chat/sem/registry.ts`: runtime-owned handling for `llm.start`, `llm.delta`, `llm.final`, `ws.error` metadata |
+| `HC58-IMPL-08` | Inventory adapter narrowing | `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`: keep artifact/domain side-effects only |
+| `HC58-IMPL-09` | Runtime selector API | `packages/engine/src/hypercard-chat/conversation/selectors.ts` (new): `useConversationConnection`, `useTimelineIds`, `useTimelineEntity`, `useMeta` |
 | `HC58-IMPL-10` | Inventory runtime-state extraction | `apps/inventory/src/features/chat/InventoryChatWindow.tsx`, `apps/inventory/src/features/chat/chatSlice.ts`: remove app-owned connection/model/stats runtime state |
-| `HC58-IMPL-11` | Timeline-native view | `packages/engine/src/hypercard-chat/runtime/TimelineConversationView.tsx` (new): direct runtime-selector rendering path |
+| `HC58-IMPL-11` | Timeline-native view | `packages/engine/src/hypercard-chat/runtime/TimelineConversationView.tsx` (new): direct runtime-selector rendering |
 | `HC58-IMPL-12` | Wrapper chain removal | remove timeline-path dependency on `runtime/timelineChatRuntime.tsx`, `runtime/TimelineChatWindow.tsx`, `components/widgets/ChatWindow.tsx` |
 | `HC58-IMPL-13` | Public API cleanup | `packages/engine/src/hypercard-chat/index.ts`, `packages/engine/src/index.ts`: remove stale wrapper exports |
-| `HC58-IMPL-14` | Unit tests | add/update tests for stable entity ID merge invariants, version precedence, stream mutation semantics, transaction atomicity |
-| `HC58-IMPL-15` | Integration tests | validate replay idempotency, out-of-order handling (`event.seq`, `event.stream_id`), hydration reconciliation |
-| `HC58-IMPL-16` | Multi-window behavior | add test asserting one shared connection claim across two windows with same `conversationId` |
+| `HC58-IMPL-14` | Unit tests | add/update tests for stable ID merges, version precedence, one-path projection invariants, deterministic ordering |
+| `HC58-IMPL-15` | Integration tests | replay idempotency, out-of-order handling (`event.seq`, `event.stream_id`), hydration reconciliation, window parity |
+| `HC58-IMPL-16` | Multi-window behavior | assert one shared connection claim across two windows with same `conversationId` |
 | `HC58-IMPL-17` | Story/docs migration | update stories/docs to manager + timeline-native symbols; remove legacy wrapper guidance |
 | `HC58-IMPL-18` | Final validation | `npm run typecheck` + focused runtime/inventory suite + inventory chat smoke checks |
 
 ## Validation Plan
-1. Unit tests for reducer semantics:
-- stable entity ID invariants (no alias/rekey path),
+1. Unit tests:
+- stable entity ID invariants,
 - version precedence,
-- structured stream apply/finalize,
-- transaction atomicity.
+- deterministic envelope apply behavior.
+
 2. Runtime tests:
-- duplicate envelope replay idempotency,
-- out-of-order frame handling by seq/stream_id,
+- duplicate replay idempotency,
+- out-of-order frame handling via `event.seq`/`event.stream_id`,
 - reconnect hydration reconciliation.
+
 3. UI tests:
-- two windows same conversation with different selectors and rerender counts,
-- per-window widget registry isolation.
+- two windows same conversation show equivalent projected timeline state,
+- manager-owned single-connection behavior.
 
 ## Risks and Mitigations
+1. Risk: hidden window-specific projection assumptions remain.
+- Mitigation: remove all projection-mode and per-window filtering code; add parity tests.
 
-1. Risk: increased complexity in stream channel schema.
-- Mitigation: ship with minimal core channels and typed extension point.
+2. Risk: adapter side-effects still carry correctness logic.
+- Mitigation: move generic metadata projection to runtime and keep adapters domain-only.
 
-2. Risk: host adapters depending on implicit timing.
-- Mitigation: explicit phased adapter API and strict migration checklist.
-
-3. Risk: performance regressions from high-frequency stream mutations.
-- Mitigation: per-channel selectors, batched commits, and optional throttled channel adapters.
+3. Risk: migration churn across inventory state.
+- Mitigation: phase migration and lock with selector-level tests.
 
 ## Open Questions
-1. Should `stream.apply` support JSON Patch natively at core level, or should kits pre-normalize to object patches?
-2. Should runtime reject alias/rekey event types at ingestion time or ignore/log them as unsupported?
-3. Should runtime own a persisted ring buffer for debug windows, or should debug tooling subscribe externally?
-4. Which stream channels should be standardized in v1 (`message.text`, `tool.patch`, `widget.patch`) versus kit-defined only?
+1. Should unsupported SEM event types be logged in runtime debug state or only ignored?
+2. Should runtime expose raw-envelope ring buffer for debug views or keep that outside runtime core?
+3. Do we keep `rekeyEntity` reducer support only for backward test fixtures, or remove it during HC-58 code phase?
 
 ## Recommendation
-Proceed with the imported architecture direction, enforce a hard UI cutover to a timeline-native view, and do not implement the streaming API as text-only append/finalize. The runtime should adopt structured stream channels from the first implementation increment so tool/widget/card and future multimodal flows fit naturally without another redesign.
+Proceed with the simplified model: one SEM projection path for all windows, timeline entity upsert as core mechanism, stable entity IDs, and adapters limited to host side-effects. Avoid introducing additional stream-channel abstractions in HC-58.
 
 ## References
 - Imported proposal: `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/sources/local/chat-runtime-chatgpt-pro.md`

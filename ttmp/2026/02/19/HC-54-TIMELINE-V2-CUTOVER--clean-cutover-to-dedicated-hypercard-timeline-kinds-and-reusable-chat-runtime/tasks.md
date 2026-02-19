@@ -20,7 +20,7 @@
   - update Hypercard engine SEM/timeline mapping to ingest dedicated kinds from canonical `timeline.upsert`
   - remove `tool_result.customKind` widget/card mapping branches and related fallback logic
   - update/remove legacy tests tied to tool_result-based widget/card rendering
-- [ ] 6) Extract Hypercard renderer pack out of Inventory using `git mv` first:
+- [x] 6) Extract Hypercard renderer pack out of Inventory using `git mv` first:
   - move renderer files preserving history/styles
   - make pack self-contained and registered via explicit bootstrap
   - remove duplicated inventory-local renderer implementations after pack cutover
@@ -44,3 +44,4 @@
 - [x] Step 3 frontend registry seams landed (timeline kind normalizers + inline widget renderer registry + explicit inventory bootstrap)
 - [x] Step 4 backend projection hard-cut verified complete (dedicated kinds only, no widget/card tool_result/customKind paths)
 - [x] Step 5 frontend mapping cut over to dedicated kinds with legacy widget/card customKind branches removed
+- [x] Step 6 renderer pack extraction landed (`git mv` + engine-owned pack bootstrap + inventory-local widget registry removal)

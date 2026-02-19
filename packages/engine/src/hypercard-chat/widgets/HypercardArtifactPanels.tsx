@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
 import type { TimelineWidgetItem } from '../types';
-import { statusColor, statusGlyph } from './TimelineWidget';
 import { SyntaxHighlight } from '../utils/syntaxHighlight';
 import { toYaml } from '../utils/yamlFormat';
+import { statusColor, statusGlyph } from './HypercardTimelinePanel';
 
 const panelStyle: CSSProperties = {
   display: 'flex',
@@ -114,14 +114,7 @@ interface ArtifactPanelProps {
   debug?: boolean;
 }
 
-function ArtifactPanel({
-  items,
-  emptyText,
-  panelPart,
-  onOpenArtifact,
-  onEditCard,
-  debug,
-}: ArtifactPanelProps) {
+function ArtifactPanel({ items, emptyText, panelPart, onOpenArtifact, onEditCard, debug }: ArtifactPanelProps) {
   if (items.length === 0) {
     return (
       <div data-part={`${panelPart}-empty`} style={{ fontSize: 11, opacity: 0.75 }}>
@@ -137,7 +130,10 @@ function ArtifactPanel({
 
         return (
           <div key={item.id} data-part={`${panelPart}-item`} data-status={item.status} style={itemStyle}>
-            <span data-part={`${panelPart}-status`} style={{ fontWeight: 700, color: statusColor(item.status), textAlign: 'center' }}>
+            <span
+              data-part={`${panelPart}-status`}
+              style={{ fontWeight: 700, color: statusColor(item.status), textAlign: 'center' }}
+            >
               {statusGlyph(item.status)}
             </span>
 
@@ -167,9 +163,7 @@ function ArtifactPanel({
                 )}
               </div>
 
-              {item.artifactId && (
-                <div style={{ opacity: 0.8, fontSize: 10 }}>artifact: {item.artifactId}</div>
-              )}
+              {item.artifactId && <div style={{ opacity: 0.8, fontSize: 10 }}>artifact: {item.artifactId}</div>}
 
               {item.detail && <div style={{ opacity: 0.78 }}>{item.detail}</div>}
 
@@ -189,12 +183,7 @@ export interface HypercardCardPanelWidgetProps {
   debug?: boolean;
 }
 
-export function HypercardCardPanelWidget({
-  items,
-  onOpenArtifact,
-  onEditCard,
-  debug,
-}: HypercardCardPanelWidgetProps) {
+export function HypercardCardPanelWidget({ items, onOpenArtifact, onEditCard, debug }: HypercardCardPanelWidgetProps) {
   return (
     <ArtifactPanel
       items={items}
@@ -213,11 +202,7 @@ export interface HypercardGeneratedWidgetPanelProps {
   debug?: boolean;
 }
 
-export function HypercardGeneratedWidgetPanel({
-  items,
-  onOpenArtifact,
-  debug,
-}: HypercardGeneratedWidgetPanelProps) {
+export function HypercardGeneratedWidgetPanel({ items, onOpenArtifact, debug }: HypercardGeneratedWidgetPanelProps) {
   return (
     <ArtifactPanel
       items={items}

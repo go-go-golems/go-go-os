@@ -86,3 +86,16 @@ Completed HC-54 Step 5 by cutting frontend projection/render mapping over to ded
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.timeline.test.ts — Timeline projection tests updated to dedicated widget/card kinds
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/runtime/timelineEntityRenderer.test.ts — Renderer tests updated to dedicated kind fixtures
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/artifactRuntime.test.ts — Artifact extraction tests updated for dedicated timeline kinds
+
+## 2026-02-19
+
+Completed HC-54 Step 6 by moving Hypercard widget panel files via `git mv`, introducing an engine-owned explicit widget-pack registration entrypoint, and removing inventory-local widget registration duplication.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/widgets/HypercardTimelinePanel.tsx — `git mv` target for former timeline widget file
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/widgets/HypercardArtifactPanels.tsx — `git mv` target for former artifact panel widget file
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/widgets/hypercardWidgetPack.tsx — New explicit renderer-pack bootstrap/registration API
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/widgets/hypercardWidgetPack.test.ts — Renderer-pack registration tests
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Inventory now registers engine pack explicitly (`namespace: "inventory"`)
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/runtime/widgetRendererRegistry.tsx — Removed duplicated inventory-local registration implementation

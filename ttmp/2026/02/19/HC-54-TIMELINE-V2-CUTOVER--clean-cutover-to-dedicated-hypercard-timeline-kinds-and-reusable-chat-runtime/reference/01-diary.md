@@ -19,7 +19,7 @@ RelatedFiles:
       Note: Authoritative implementation plan used during execution
 ExternalSources: []
 Summary: Execution diary for HC-54 task-by-task implementation and commit trail.
-LastUpdated: 2026-02-19T20:28:00-05:00
+LastUpdated: 2026-02-19T20:41:00-05:00
 WhatFor: Capture exact implementation steps, decisions, failures, and validations as HC-54 progresses.
 WhenToUse: Use when reviewing ongoing progress or resuming work from the last completed step.
 ---
@@ -408,3 +408,79 @@ This step removed widget/card frontend dependency on `tool_result.customKind` an
 
 1. Hypercard lifecycle SEM events now normalize directly into dedicated timeline entities on the frontend registry path.
 2. Timeline projection and artifact extraction now derive widget/card data from dedicated entity props, not `tool_result.customKind`.
+
+## Step 6: Hypercard renderer pack extraction (`git mv` + engine bootstrap)
+
+Step 6 extracted the renderer pack to explicit pack-oriented file names and moved widget registration ownership into engine via explicit bootstrap API.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Go ahead and work on it, task by task, commit at appropriate intervals, update your diary as you go.`
+
+**Assistant interpretation:** Continue hard-cut sequence with file-history-preserving moves and modular registration extraction.
+
+**Inferred user intent:** Ensure renderer pack is self-contained and app integrations consume it via explicit registration, not duplicated app-local code.
+
+### What I did
+
+1. Moved renderer files with history-preserving `git mv`:
+   - `TimelineWidget.tsx` -> `HypercardTimelinePanel.tsx`
+   - `ArtifactPanelWidgets.tsx` -> `HypercardArtifactPanels.tsx`
+2. Updated internal imports and barrel exports to new file paths.
+3. Added engine-owned explicit bootstrap entrypoint:
+   - `registerHypercardWidgetPack({ namespace })`
+   - file: `packages/engine/src/hypercard-chat/widgets/hypercardWidgetPack.tsx`
+4. Added renderer-pack tests:
+   - `packages/engine/src/hypercard-chat/widgets/hypercardWidgetPack.test.ts`
+5. Rewired Inventory to call engine bootstrap directly:
+   - `registerHypercardWidgetPack({ namespace: 'inventory' })`
+6. Removed duplicated inventory-local widget registration file:
+   - deleted `apps/inventory/src/features/chat/runtime/widgetRendererRegistry.tsx`
+
+### Commands run
+
+1. Moves:
+   - `git mv packages/engine/src/hypercard-chat/widgets/TimelineWidget.tsx packages/engine/src/hypercard-chat/widgets/HypercardTimelinePanel.tsx`
+   - `git mv packages/engine/src/hypercard-chat/widgets/ArtifactPanelWidgets.tsx packages/engine/src/hypercard-chat/widgets/HypercardArtifactPanels.tsx`
+2. Formatting:
+   - `npx biome check --write ...`
+3. Validation:
+   - `npm run test -w packages/engine`
+   - `npx vitest run apps/inventory/src/features/chat/InventoryChatWindow.timeline.test.ts apps/inventory/src/features/chat/artifactRuntime.test.ts apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts apps/inventory/src/features/chat/runtime/timelineEntityRenderer.test.ts`
+   - `npm run typecheck`
+
+### What worked
+
+1. File moves preserved implementation and styling while switching to pack-oriented names.
+2. Engine pack bootstrap cleanly registered renderer triples (`timeline/cards/widgets`) under configurable namespace.
+3. Inventory integration now consumes engine-owned bootstrap with no local duplicate widget registry code.
+4. Engine and inventory test suites remained green.
+
+### What didn't work
+
+1. Initial renderer-pack test used `.test.tsx` and was skipped because engine Vitest config includes only `src/**/*.test.ts`; renamed to `.test.ts`.
+
+### What I learned
+
+1. Namespace-based bootstrap is a useful seam for app-specific widget-type prefixes without copying registration logic.
+2. Removing app-local registration duplication is straightforward once render context is injected through shared registry APIs.
+
+### What was tricky to build
+
+1. Preserving symbol compatibility while changing file layout and import graph.
+2. Ensuring new tests are discovered under package-specific Vitest include patterns.
+
+### What warrants a second pair of eyes
+
+1. Confirm naming preferences for exported symbols versus file names in final API docs.
+2. Confirm whether namespace defaults should remain `hypercard` or always be explicit at call sites.
+
+### What should be done in the future
+
+1. Execute Step 7 by extracting/genericizing remaining chat orchestration runtime away from Inventory-specific structure.
+2. Execute Step 8 app rewire completion to keep only host actions/business callbacks in inventory layer.
+
+### Technical details
+
+1. Renderer pack is now centrally registered from engine (`registerHypercardWidgetPack`) with explicit app bootstrap call.
+2. Inventory-specific widget registration implementation file has been removed.

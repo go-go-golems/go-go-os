@@ -1,13 +1,11 @@
-import { useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useState } from 'react';
 import type { InlineWidget } from '../../components/widgets';
 import type { TimelineItemStatus, TimelineWidgetItem } from '../types';
 import { SyntaxHighlight } from '../utils/syntaxHighlight';
 import { toYaml } from '../utils/yamlFormat';
 
-export function timelineItemsFromInlineWidget(
-  widget: InlineWidget,
-): TimelineWidgetItem[] {
+export function timelineItemsFromInlineWidget(widget: InlineWidget): TimelineWidgetItem[] {
   const raw = (widget.props as Record<string, unknown>).items;
   if (!Array.isArray(raw)) {
     return [];
@@ -182,7 +180,10 @@ export function HypercardTimelineWidget({ items, debug }: HypercardTimelineWidge
 
         return (
           <div key={item.id} data-part="hypercard-timeline-item" data-status={item.status} style={itemStyle}>
-            <span data-part="hypercard-timeline-status" style={{ fontWeight: 700, color: statusColor(item.status), textAlign: 'center' }}>
+            <span
+              data-part="hypercard-timeline-status"
+              style={{ fontWeight: 700, color: statusColor(item.status), textAlign: 'center' }}
+            >
               {statusGlyph(item.status)}
             </span>
 
@@ -220,9 +221,7 @@ export function HypercardTimelineWidget({ items, debug }: HypercardTimelineWidge
                 )}
               </div>
 
-              {item.artifactId && (
-                <div style={{ opacity: 0.8, fontSize: 10 }}>artifact: {item.artifactId}</div>
-              )}
+              {item.artifactId && <div style={{ opacity: 0.8, fontSize: 10 }}>artifact: {item.artifactId}</div>}
 
               {!expanded && item.detail && (
                 <div data-part="hypercard-timeline-detail" style={{ opacity: 0.78 }}>

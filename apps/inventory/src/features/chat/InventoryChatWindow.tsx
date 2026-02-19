@@ -4,10 +4,12 @@ import {
   type ChatWindowMessage,
   createSemRegistry,
   emitConversationEvent,
+  type HypercardWidgetPackRenderContext,
   type InlineWidget,
   openRuntimeCardCodeEditor as openCodeEditor,
   type ProjectionPipelineAdapter,
   projectSemEnvelope,
+  registerHypercardWidgetPack,
   renderInlineWidget,
   type SemRegistry,
   selectTimelineEntities as selectTimelineEntitiesForConversation,
@@ -33,10 +35,6 @@ import {
   selectSuggestions,
 } from './selectors';
 import { stripTrailingWhitespace } from './semHelpers';
-import {
-  bootstrapInventoryInlineWidgetRenderers,
-  type InventoryInlineWidgetRenderContext,
-} from './runtime/widgetRendererRegistry';
 import { InventoryWebChatClient, type InventoryWebChatClientHandlers, submitPrompt } from './webchatClient';
 
 function formatNumber(n: number): string {
@@ -129,7 +127,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
   ]);
 
   useEffect(() => {
-    bootstrapInventoryInlineWidgetRenderers();
+    registerHypercardWidgetPack({ namespace: 'inventory' });
   }, []);
 
   useEffect(() => {
@@ -243,7 +241,7 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
     [dispatch, store],
   );
 
-  const widgetRenderContext = useMemo<InventoryInlineWidgetRenderContext>(
+  const widgetRenderContext = useMemo<HypercardWidgetPackRenderContext>(
     () => ({
       debug: debugMode,
       onOpenArtifact: openArtifact,

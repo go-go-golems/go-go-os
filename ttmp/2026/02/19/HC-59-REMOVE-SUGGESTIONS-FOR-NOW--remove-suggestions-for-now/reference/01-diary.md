@@ -231,3 +231,72 @@ First, write the feature wise document, then create tasks detailed in the ticket
   - `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`
   - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
   - `packages/engine/src/components/widgets/ChatWindow.tsx`
+
+## Step 4: Remove Suggestion State and Inventory Wiring
+I started implementation by removing suggestions from inventory-owned runtime state and projection wiring, since those are the highest-coupling points and unblock subsequent runtime/UI cleanup.
+
+This phase intentionally keeps behavior coherent: suggestion reducers/selectors/events are deleted together so there is no partial dead API surface in inventory.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 3)
+
+**Assistant interpretation:** Execute HC-59 tasks sequentially, committing each phase, starting with core inventory/runtime removal work.
+
+**Inferred user intent:** Reduce complexity immediately in active inventory chat runtime path.
+
+**Commit (code):** Pending (recorded after staging/commit step)
+
+### What I did
+- Removed suggestion state and reducers from:
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+- Removed suggestion selector from:
+  - `apps/inventory/src/features/chat/selectors.ts`
+- Removed `hypercard.suggestions.*` handling from:
+  - `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`
+- Removed suggestion usage in inventory chat window:
+  - removed selector usage,
+  - removed send-time `replaceSuggestions([])` clearing,
+  - removed `suggestions` and `showSuggestionsAlways` props passed to `TimelineChatRuntimeWindow`
+  - file: `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+- Updated inventory tests for new slice contract:
+  - `apps/inventory/src/features/chat/chatSlice.test.ts`
+
+### Why
+- Inventory `chatSlice` and adapter wiring represented the current root of suggestion-specific runtime coupling.
+
+### What worked
+- All targeted removals applied cleanly without introducing temporary shims.
+- Focused tests passed:
+  - `npx vitest run apps/inventory/src/features/chat/chatSlice.test.ts apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+
+### What didn't work
+- None in this step.
+
+### What I learned
+- Suggestion behavior was concentrated enough in inventory to delete in one coherent phase without touching engine UI yet.
+
+### What was tricky to build
+- Keeping compile integrity while removing cross-file imports/exports.
+- I handled this by deleting reducer/selector/event/wiring dependencies in one pass before running tests.
+
+### What warrants a second pair of eyes
+- Confirm there are no implicit product dependencies on “clear suggestions on send” side effects in downstream telemetry or analytics hooks.
+
+### What should be done in the future
+- Continue with engine-side suggestion prop/render removal and then stories/docs cleanup.
+
+### Code review instructions
+- Review inventory removals:
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+  - `apps/inventory/src/features/chat/selectors.ts`
+  - `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+- Review updated tests:
+  - `apps/inventory/src/features/chat/chatSlice.test.ts`
+
+### Technical details
+- Validation command:
+  - `npx vitest run apps/inventory/src/features/chat/chatSlice.test.ts apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+- Result:
+  - 2 files passed, 10 tests passed.

@@ -17,7 +17,6 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import {
   type ChatConnectionStatus,
-  replaceSuggestions,
   setConnectionStatus,
   setStreamError,
   type TurnStats,
@@ -33,7 +32,6 @@ import {
   selectModelName,
   selectStreamOutputTokens,
   selectStreamStartTime,
-  selectSuggestions,
 } from './selectors';
 import { InventoryWebChatClient, type InventoryWebChatClientHandlers, submitPrompt } from './webchatClient';
 
@@ -120,7 +118,6 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
   const store = useStore();
   const connectionStatus = useSelector((s: ChatStateSlice) => selectConnectionStatus(s, conversationId));
   const timelineEntities = useSelector((s: ChatStateSlice) => selectTimelineEntitiesForConversation(s, conversationId));
-  const suggestions = useSelector((s: ChatStateSlice) => selectSuggestions(s, conversationId));
   const modelName = useSelector((s: ChatStateSlice) => selectModelName(s, conversationId));
   const currentTurnStats = useSelector((s: ChatStateSlice) => selectCurrentTurnStats(s, conversationId));
   const streamStartTime = useSelector((s: ChatStateSlice) => selectStreamStartTime(s, conversationId));
@@ -228,8 +225,6 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
         return;
       }
 
-      dispatch(replaceSuggestions({ conversationId, suggestions: [] }));
-
       try {
         await submitPrompt(prompt, conversationId);
       } catch (error) {
@@ -269,8 +264,6 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
       title="Inventory Chat"
       subtitle={subtitle}
       placeholder="Ask about inventory..."
-      suggestions={suggestions}
-      showSuggestionsAlways
       headerActions={
         <>
           <button type="button" data-part="btn" onClick={openEventViewer} style={{ fontSize: 10, padding: '1px 6px' }}>

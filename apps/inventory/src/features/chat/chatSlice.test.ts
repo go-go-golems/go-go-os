@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   chatReducer,
   markStreamStart,
-  mergeSuggestions,
   removeConversation,
-  replaceSuggestions,
   resetConversation,
   setConnectionStatus,
   setModelName,
@@ -38,46 +36,6 @@ describe('chatSlice (timeline-first metadata state)', () => {
 
     expect(state.conversations[C]?.connectionStatus).toBe('connected');
     expect(state.conversations[C]?.modelName).toBe('gpt-5');
-  });
-
-  it('normalizes and de-duplicates suggestions with a max cap', () => {
-    const state = reduce([
-      replaceSuggestions({
-        conversationId: C,
-        suggestions: [
-          '  Show current inventory status  ',
-          'show current inventory status',
-          'What items are low stock?',
-          'Summarize today sales',
-          'A',
-          'B',
-          'C',
-          'D',
-          'E',
-          'F',
-        ],
-      }),
-    ]);
-
-    expect(state.conversations[C]?.suggestions).toEqual([
-      'Show current inventory status',
-      'What items are low stock?',
-      'Summarize today sales',
-      'A',
-      'B',
-      'C',
-      'D',
-      'E',
-    ]);
-  });
-
-  it('merges suggestions into existing list while preserving uniqueness', () => {
-    const state = reduce([
-      replaceSuggestions({ conversationId: C, suggestions: ['A', 'B'] }),
-      mergeSuggestions({ conversationId: C, suggestions: ['b', 'C', 'D'] }),
-    ]);
-
-    expect(state.conversations[C]?.suggestions).toEqual(['A', 'B', 'C', 'D']);
   });
 
   it('marks stream start and tracks live output tokens', () => {
@@ -128,7 +86,6 @@ describe('chatSlice (timeline-first metadata state)', () => {
     const state = reduce([
       setConnectionStatus({ conversationId: C, status: 'connected' }),
       setModelName({ conversationId: C, model: 'gpt-5-mini' }),
-      replaceSuggestions({ conversationId: C, suggestions: ['X'] }),
       markStreamStart({ conversationId: C, time: 500 }),
       updateStreamTokens({ conversationId: C, outputTokens: 12 }),
       setStreamError({ conversationId: C, message: 'oops' }),
@@ -141,11 +98,6 @@ describe('chatSlice (timeline-first metadata state)', () => {
     expect(state.conversations[C]?.streamStartTime).toBeNull();
     expect(state.conversations[C]?.streamOutputTokens).toBe(0);
     expect(state.conversations[C]?.lastError).toBeNull();
-    expect(state.conversations[C]?.suggestions).toEqual([
-      'Show current inventory status',
-      'What items are low stock?',
-      'Summarize today sales',
-    ]);
   });
 
   it('removeConversation deletes only the targeted conversation', () => {

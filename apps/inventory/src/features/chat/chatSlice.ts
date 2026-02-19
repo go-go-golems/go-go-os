@@ -17,17 +17,8 @@ export interface TurnStats {
   tps?: number;
 }
 
-const MAX_SUGGESTIONS = 8;
-
-export const DEFAULT_CHAT_SUGGESTIONS = [
-  'Show current inventory status',
-  'What items are low stock?',
-  'Summarize today sales',
-];
-
 export interface ConversationState {
   connectionStatus: ChatConnectionStatus;
-  suggestions: string[];
   lastError: string | null;
   modelName: string | null;
   currentTurnStats: TurnStats | null;
@@ -38,7 +29,6 @@ export interface ConversationState {
 function createInitialConversationState(): ConversationState {
   return {
     connectionStatus: 'idle',
-    suggestions: [...DEFAULT_CHAT_SUGGESTIONS],
     lastError: null,
     modelName: null,
     currentTurnStats: null,
@@ -64,21 +54,6 @@ function getConv(state: ChatState, convId: string): ConversationState {
   return state.conversations[convId];
 }
 
-function normalizeSuggestionList(values: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const value of values) {
-    const next = value.trim();
-    if (!next) continue;
-    const key = next.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(next);
-    if (out.length >= MAX_SUGGESTIONS) break;
-  }
-  return out;
-}
-
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
@@ -99,7 +74,6 @@ const chatSlice = createSlice({
 
     resetConversation(state, action: PayloadAction<{ conversationId: string }>) {
       const conv = getConv(state, action.payload.conversationId);
-      conv.suggestions = [...DEFAULT_CHAT_SUGGESTIONS];
       conv.lastError = null;
       conv.modelName = null;
       conv.currentTurnStats = null;
@@ -109,25 +83,6 @@ const chatSlice = createSlice({
 
     removeConversation(state, action: PayloadAction<{ conversationId: string }>) {
       delete state.conversations[action.payload.conversationId];
-    },
-
-    replaceSuggestions(
-      state,
-      action: PayloadAction<WithConv<{ suggestions: string[] }>>,
-    ) {
-      const conv = getConv(state, action.payload.conversationId);
-      conv.suggestions = normalizeSuggestionList(action.payload.suggestions);
-    },
-
-    mergeSuggestions(
-      state,
-      action: PayloadAction<WithConv<{ suggestions: string[] }>>,
-    ) {
-      const conv = getConv(state, action.payload.conversationId);
-      conv.suggestions = normalizeSuggestionList([
-        ...conv.suggestions,
-        ...action.payload.suggestions,
-      ]);
     },
 
     setModelName(state, action: PayloadAction<WithConv<{ model: string }>>) {
@@ -171,8 +126,6 @@ export const {
   setStreamError,
   resetConversation,
   removeConversation,
-  replaceSuggestions,
-  mergeSuggestions,
   setModelName,
   markStreamStart,
   updateStreamTokens,

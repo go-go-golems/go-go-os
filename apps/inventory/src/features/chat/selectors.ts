@@ -12,17 +12,12 @@ export interface ChatStateSlice {
   timeline?: TimelineState;
 }
 
-const EMPTY_SUGGESTIONS: string[] = [];
-
 function getConv(state: ChatStateSlice, convId: string): ConversationState | undefined {
   return state.chat.conversations[convId];
 }
 
 export const selectConnectionStatus = (state: ChatStateSlice, convId: string): ChatConnectionStatus =>
   getConv(state, convId)?.connectionStatus ?? 'idle';
-
-export const selectSuggestions = (state: ChatStateSlice, convId: string): string[] =>
-  getConv(state, convId)?.suggestions ?? EMPTY_SUGGESTIONS;
 
 export const selectLastError = (state: ChatStateSlice, convId: string): string | null =>
   getConv(state, convId)?.lastError ?? null;

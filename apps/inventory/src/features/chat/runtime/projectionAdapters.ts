@@ -6,15 +6,13 @@ import {
 } from '@hypercard/engine';
 import {
   markStreamStart,
-  mergeSuggestions,
-  replaceSuggestions,
   setModelName,
   setStreamError,
   setTurnStats,
   type TurnStats,
   updateStreamTokens,
 } from '../chatSlice';
-import { numberField, stringArray, stringField } from '../semHelpers';
+import { numberField, stringField } from '../semHelpers';
 
 function extractMetadata(
   envelope: Record<string, unknown>,
@@ -110,22 +108,6 @@ export function createChatMetaProjectionAdapter(): ProjectionPipelineAdapter {
           ) {
             dispatch(setTurnStats({ conversationId, ...stats }));
           }
-        }
-        return;
-      }
-
-      if (type === 'hypercard.suggestions.start' || type === 'hypercard.suggestions.update') {
-        const suggestions = stringArray(data.suggestions);
-        if (suggestions.length > 0) {
-          dispatch(mergeSuggestions({ conversationId, suggestions }));
-        }
-        return;
-      }
-
-      if (type === 'hypercard.suggestions.v1') {
-        const suggestions = stringArray(data.suggestions);
-        if (suggestions.length > 0) {
-          dispatch(replaceSuggestions({ conversationId, suggestions }));
         }
         return;
       }

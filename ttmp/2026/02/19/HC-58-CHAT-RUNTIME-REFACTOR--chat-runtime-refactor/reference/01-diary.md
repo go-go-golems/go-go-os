@@ -375,7 +375,7 @@ This step makes HC-58 explicit about ownership boundaries: runtime concerns move
 
 **Inferred user intent:** Reduce architectural confusion by eliminating app-owned runtime concerns and avoid preserving suggestion behavior while runtime architecture is being refactored.
 
-**Commit (code):** Pending (recorded after staging/commit step)
+**Commit (code):** 9b94664 — "docs(HC-58,HC-59): remove-suggestions planning and publication"
 
 ### What I did
 - Re-read and grounded updates against:
@@ -434,3 +434,65 @@ This step makes HC-58 explicit about ownership boundaries: runtime concerns move
   - suggestion state/actions/selectors,
   - suggestion runtime props,
   - suggestion event handlers.
+
+## Step 7: HC-58 Code-Phase Kickoff and Task Breakdown
+You asked to actively work HC-58 in the same execution style as HC-59: task-by-task implementation, commits, and diary updates. I started by validating current runtime code state and converting HC-58 from “analysis complete” to an implementation backlog.
+
+This step is intentionally a planning checkpoint commit so subsequent refactor commits map cleanly to specific runtime tasks.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, now let's work on HC-58. Same task by task, commits and diary as you go."
+
+**Assistant interpretation:** Begin implementation work for HC-58 immediately, with explicit ticket tasks, incremental commits, and continuous diary/changelog bookkeeping.
+
+**Inferred user intent:** Execute the runtime refactor pragmatically in controlled, reviewable slices.
+
+**Commit (code):** Pending (recorded after staging/commit step)
+
+### What I did
+- Confirmed HC-58 ticket/doc state and existing completed tasks.
+- Inspected current runtime chain and integration points:
+  - `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+  - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+  - `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+- Added HC-58 implementation tasks for code phase:
+  - remove `projectionMode`/`timeline-upsert-only` gating,
+  - simplify connection hook path post-gating removal,
+  - update runtime stories/inventory integration,
+  - run typecheck/tests,
+  - keep diary/changelog and phase commits.
+- Cleaned duplicated task intent by preparing the task list for single-path execution.
+
+### Why
+- Existing HC-58 tasks only covered analysis work; implementation required explicit phase tasks to keep commit boundaries clean.
+
+### What worked
+- Runtime bottleneck and first refactor target (`projectionMode`) is clear and currently isolated in a few files.
+
+### What didn't work
+- Duplicate task entry appeared for diary/changelog updates and required cleanup.
+
+### What I learned
+- After HC-59 suggestion removal, the next high-value HC-58 cutover slice is eliminating projection gating (`timeline-upsert-only`) and its skip-path branches.
+
+### What was tricky to build
+- Balancing immediate code changes vs. traceable phase boundaries.
+- I resolved this by creating a dedicated kickoff phase before changing runtime behavior.
+
+### What warrants a second pair of eyes
+- Confirm no external consumers rely on `projectionMode` as an integration escape hatch.
+
+### What should be done in the future
+- Execute the newly added runtime tasks in order with one code-phase commit per task.
+
+### Code review instructions
+- Start with HC-58 task list and this step:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md`
+
+### Technical details
+- Core runtime files selected for first implementation slice:
+  - `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+  - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`

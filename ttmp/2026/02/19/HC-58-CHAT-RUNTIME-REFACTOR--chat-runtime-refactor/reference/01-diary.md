@@ -244,3 +244,66 @@ I also created this diary document as requested and prepared ticket task/changel
   - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md`
 - Source imported and referenced:
   - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/sources/local/chat-runtime-chatgpt-pro.md`
+
+## Step 4: Docmgr Hygiene and Validation Cleanup
+After creating the main deliverables, I ran a ticket hygiene pass with `docmgr doctor` and fixed all blocking issues so the workspace is structurally valid.
+
+This step intentionally happened after content authoring, because it is easier to fix vocabulary/frontmatter issues in one pass once document set and metadata are stable.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Keep the ticket in a robust, reviewable docmgr state, not just content-complete.
+
+**Inferred user intent:** Ensure the final HC-58 workspace is maintainable and passes docmgr validation with no blocking errors.
+
+**Commit (code):** N/A — documentation hygiene pass, committed in follow-up checkpoint.
+
+### What I did
+- Ran `docmgr doctor --ticket HC-58-CHAT-RUNTIME-REFACTOR --stale-after 30`.
+- Observed unknown topic warning for `developer-experience` and frontmatter parse error on imported source file.
+- Added vocabulary entry:
+  - `docmgr vocab add --category topics --slug developer-experience --description "Developer experience concerns such as API ergonomics, integration friction, and maintainability."`
+- Prepended frontmatter to imported source file:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/sources/local/chat-runtime-chatgpt-pro.md`
+- Re-ran doctor and confirmed only a non-blocking warning remains:
+  - `missing_numeric_prefix` on source filename.
+
+### Why
+- Ticket hygiene issues (especially frontmatter parse errors) create friction for search/validation pipelines and future updates.
+
+### What worked
+- Blocking doctor findings were eliminated.
+- Remaining finding is advisory only (filename prefix convention).
+
+### What didn't work
+- None in this step.
+
+### What I learned
+- Imported source files in `sources/local` still get linted by docmgr frontmatter checks, so they need minimal frontmatter if stored as `.md`.
+
+### What was tricky to build
+- Balancing preservation of imported source text vs. docmgr compliance.
+- Resolution: prepend metadata only; keep body content unchanged.
+
+### What warrants a second pair of eyes
+- Decide whether source files should be exempted from numeric-prefix conventions, or whether import tooling should auto-prefix source filenames.
+
+### What should be done in the future
+- Add a small helper around `docmgr import file` workflow that optionally applies compliant frontmatter + numeric prefix for source markdown files.
+
+### Code review instructions
+- Validate vocabulary update in:
+  - `ttmp/vocabulary.yaml`
+- Validate imported source frontmatter in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/sources/local/chat-runtime-chatgpt-pro.md`
+- Validate latest changelog entry in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/changelog.md`
+
+### Technical details
+- Doctor before fix reported:
+  - unknown topic `developer-experience`
+  - frontmatter parse error (`frontmatter delimiters '---' not found`) on imported source file
+- Doctor after fix reports only:
+  - `missing_numeric_prefix` warning on source filename.

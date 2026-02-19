@@ -1,3 +1,26 @@
+---
+Title: Imported External Analysis - Chat Runtime (ChatGPT Pro)
+Ticket: HC-58-CHAT-RUNTIME-REFACTOR
+Status: active
+Topics:
+    - architecture
+    - chat
+    - frontend
+    - timeline
+    - webchat
+    - developer-experience
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources:
+    - file:/tmp/chat-runtime-chatgpt-pro.md
+Summary: Imported external proposal used as input for HC-58 analysis.
+LastUpdated: 2026-02-19T17:22:58.109823143-05:00
+WhatFor: Preserve original source proposal text inside ticket workspace.
+WhenToUse: Use when reviewing the exact imported proposal that HC-58 critiques.
+---
+
 Below is a clean-slate design that hits your stated goals:
 
 * **Conversation management is headless** and independent of any chat window UI.
@@ -520,4 +543,3 @@ The design I’d ship:
 * **Per-window widget registries**: no global side effects; different windows can render differently.
 
 If you want, I can follow up with a concrete TypeScript interface file layout (e.g. `conversation/runtime.ts`, `conversation/kit.ts`, `conversation/react/*.ts`, `ui/chat-window/*.tsx`) that maps closely onto your existing hypercard engine pieces so it’s obvious where each current file migrates.
-

@@ -41,6 +41,8 @@ topics:
       description: Timeline projection, timeline entities, and timeline-first architecture work.
     - slug: webchat
       description: Web chat runtime, transport, and UI behavior
+    - slug: developer-experience
+      description: Developer experience concerns such as API ergonomics, integration friction, and maintainability.
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

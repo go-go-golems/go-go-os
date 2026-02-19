@@ -25,3 +25,13 @@ Recorded commit dda91ff for HC-58 analysis and diary deliverables.
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/01-chat-runtime-refactor-analysis-and-concrete-blueprint.md — Design analysis delivered in commit dda91ff
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md — Diary now references commit hash for traceability
 
+
+## 2026-02-19
+
+Docmgr hygiene pass: added vocabulary topic 'developer-experience' and frontmatter to imported source file; doctor now reports only a non-blocking missing numeric-prefix warning for source filename.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/sources/local/chat-runtime-chatgpt-pro.md — Prepended frontmatter so docmgr parsing succeeds
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/vocabulary.yaml — Added developer-experience topic to satisfy ticket/document vocabulary checks
+

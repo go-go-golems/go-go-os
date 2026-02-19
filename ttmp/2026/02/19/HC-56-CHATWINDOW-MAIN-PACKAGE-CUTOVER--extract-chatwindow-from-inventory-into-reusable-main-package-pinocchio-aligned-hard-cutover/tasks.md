@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] 1) Freeze clean-cut scope and deletion policy:
+- [x] 1) Freeze clean-cut scope and deletion policy:
   - document explicit no-backcompat rule in HC-56 docs and code comments
   - list all legacy inventory-owned chat runtime paths to delete (no shadow path allowed)
 - [x] 2) Create reusable main-package chat runtime boundary:
@@ -14,19 +14,19 @@
 - [x] 4) Extract renderer dispatch to registry-driven package seam:
   - keep kind normalizers and kind renderers registered via explicit bootstrap
   - remove inventory-local widget/card type switching logic now superseded by registry
-- [ ] 5) Extract Hypercard widget/card renderers as self-contained pack:
+- [x] 5) Extract Hypercard widget/card renderers as self-contained pack:
   - `git mv` renderer files first to preserve history and styling
   - keep pack registration explicit and app-triggered (no side-effect init)
 - [x] 6) Rewire inventory app to pure host/integration role:
   - replace inventory chat runtime ownership with reusable main package consumption
   - keep only inventory business callbacks and domain actions
-- [ ] 7) Storybook + contract stories for extracted components:
+- [x] 7) Storybook + contract stories for extracted components:
   - add stories for reusable chat runtime shell-facing components
   - add stories for extracted Hypercard renderer pack components
-- [ ] 8) Remove legacy code and test surface:
+- [x] 8) Remove legacy code and test surface:
   - delete old inventory runtime helpers, obsolete render branches, and compatibility adapters
   - delete or rewrite tests that assert legacy path behavior
-- [ ] 9) Validation gate:
+- [x] 9) Validation gate:
   - run frontend typecheck/tests + backend tests touched by runtime and projection seams
   - verify hydration + replay + live stream parity for widget/card and tool timeline rendering
   - fail ticket if any legacy inventory-owned chat orchestration path remains in active code

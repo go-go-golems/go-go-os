@@ -434,17 +434,18 @@ Actions:
 
 Primary files:
 
-1. `apps/inventory/src/features/chat/stories/TimelineChatWindow.stories.tsx`
-2. `apps/inventory/src/features/chat/stories/InventoryTimelineWidget.stories.tsx`
-3. `apps/inventory/src/features/chat/stories/InventoryArtifactPanelWidgets.stories.tsx`
-4. `packages/engine/src/components/widgets/ChatWindow.stories.tsx`
-5. `packages/engine/src/components/widgets/ChatWindow.widgets.stories.tsx`
+1. `packages/engine/src/components/widgets/TimelineChatWindow.stories.tsx`
+2. `packages/engine/src/components/widgets/TimelineChatRuntimeWindow.stories.tsx`
+3. `packages/engine/src/components/widgets/HypercardTimelineWidget.stories.tsx`
+4. `packages/engine/src/components/widgets/HypercardArtifactPanelWidgets.stories.tsx`
+5. `apps/inventory/src/features/chat/stories/ModelStats.stories.tsx`
 
 Actions:
 
 1. create package-owned stories for extracted runtime components and renderer pack components,
-2. leave app-only stories only for host callback integrations,
-3. ensure story args demonstrate registration bootstrap order.
+2. remove app-owned duplicates for package-owned renderers,
+3. leave app-only stories only for inventory host UX integrations,
+4. ensure story args demonstrate registration bootstrap order.
 
 ## 7. Migration Sequence with Commit Strategy
 
@@ -595,13 +596,18 @@ Expected outcome:
 
 Delete:
 
-1. any obsolete inventory runtime helper files superseded by reusable modules,
-2. tests that only validate removed legacy behavior.
+1. obsolete inventory chat story files now owned by engine package:
+   - `apps/inventory/src/features/chat/stories/TimelineChatWindow.stories.tsx`
+   - `apps/inventory/src/features/chat/stories/InventoryTimelineWidget.stories.tsx`
+   - `apps/inventory/src/features/chat/stories/InventoryArtifactPanelWidgets.stories.tsx`
+2. any remaining inventory-owned orchestration blocks that call `useProjectedChatConnection` directly.
+3. tests that only validate removed legacy behavior.
 
 Retain:
 
 1. inventory-specific domain adapters and callbacks,
-2. engine runtime primitives and registries as shared ownership.
+2. inventory host stories that validate app-specific footer/debug/UX behavior,
+3. engine runtime primitives and registries as shared ownership.
 
 ## 11. Risk Analysis and Mitigations
 

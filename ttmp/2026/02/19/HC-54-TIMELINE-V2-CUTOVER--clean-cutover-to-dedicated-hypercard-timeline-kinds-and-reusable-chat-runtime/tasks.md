@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] 1) Freeze dedicated TimelineEntityV2 contract for Hypercard kinds (`hypercard_widget`, `hypercard_card`) and deterministic IDs (`<itemId>:widget`, `<itemId>:card`):
+- [x] 1) Freeze dedicated TimelineEntityV2 contract for Hypercard kinds (`hypercard_widget`, `hypercard_card`) and deterministic IDs (`<itemId>:widget`, `<itemId>:card`):
   - define canonical required props fields and lifecycle phases in docs + code comments
   - remove/ban legacy contract references for widget/card routing (`tool_result.customKind`, oneof-era assumptions) from active HC-54 docs
 - [ ] 2) Add protobuf extraction layer for Hypercard SEM event payloads in backend:
@@ -39,3 +39,4 @@
 ## Done
 
 - [x] Create ticket workspace for clean TimelineEntityV2 cutover and populate 1-9 execution task plan
+- [x] Start implementation diary and complete Step 1 contract freeze + no-legacy baseline

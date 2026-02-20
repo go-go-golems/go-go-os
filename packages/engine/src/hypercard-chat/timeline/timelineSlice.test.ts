@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   addEntity,
   clearConversation,
-  rekeyEntity,
   timelineReducer,
   upsertEntity,
 } from './timelineSlice';
@@ -92,20 +91,6 @@ describe('timelineSlice', () => {
       done: true,
       extra: 'patched',
     });
-  });
-
-  it('rekeys entity ids', () => {
-    const state = reduce([
-      addEntity({
-        convId: 'a',
-        entity: { id: 'tmp', kind: 'message', createdAt: 1, props: {} },
-      }),
-      rekeyEntity({ convId: 'a', fromId: 'tmp', toId: 'm1' }),
-    ]);
-
-    expect(state.conversations.a.byId.tmp).toBeUndefined();
-    expect(state.conversations.a.byId.m1).toBeTruthy();
-    expect(state.conversations.a.order).toEqual(['m1']);
   });
 
   it('clears one conversation only', () => {

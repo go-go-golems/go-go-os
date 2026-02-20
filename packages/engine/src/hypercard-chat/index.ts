@@ -29,4 +29,3 @@ export * from './widgets/HypercardTimelinePanel';
 export * from './widgets/hypercardWidgetPack';
 export * from './widgets/inlineWidgetRegistry';
 
-export * from './windowAdapters';

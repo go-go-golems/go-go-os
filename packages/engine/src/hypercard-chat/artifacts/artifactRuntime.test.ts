@@ -1,4 +1,4 @@
-import { buildArtifactOpenWindowPayload, extractArtifactUpsertFromSem } from '@hypercard/engine';
+import { buildArtifactOpenWindowPayload, extractArtifactUpsertFromSem } from './artifactRuntime'
 import { describe, expect, it } from 'vitest';
 
 describe('artifactRuntime', () => {

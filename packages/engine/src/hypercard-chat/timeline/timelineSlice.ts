@@ -78,52 +78,13 @@ export const timelineSlice = createSlice({
         props: { ...(existing.props ?? {}), ...(incoming.props ?? {}) },
       };
     },
-    rekeyEntity(
-      state,
-      action: PayloadAction<{ convId: string; fromId: string; toId: string }>,
-    ) {
-      const { convId, fromId, toId } = action.payload;
-      if (!fromId || !toId || fromId === toId) return;
-      const conversation = ensureConversation(state, convId);
-      const from = conversation.byId[fromId];
-      if (!from) return;
-
-      const existing = conversation.byId[toId];
-      if (existing) {
-        conversation.byId[toId] = {
-          ...from,
-          ...existing,
-          id: toId,
-          createdAt: existing.createdAt || from.createdAt,
-          updatedAt: existing.updatedAt ?? from.updatedAt,
-          version: existing.version ?? from.version,
-          props: { ...(from.props ?? {}), ...(existing.props ?? {}) },
-        };
-      } else {
-        conversation.byId[toId] = { ...from, id: toId };
-      }
-
-      delete conversation.byId[fromId];
-
-      const fromIdx = conversation.order.indexOf(fromId);
-      if (fromIdx >= 0) {
-        const toIdx = conversation.order.indexOf(toId);
-        if (toIdx >= 0) {
-          conversation.order.splice(fromIdx, 1);
-        } else {
-          conversation.order[fromIdx] = toId;
-        }
-      }
-    },
   },
 });
 
 export const {
-  clearAll,
   clearConversation,
   addEntity,
   upsertEntity,
-  rekeyEntity,
 } = timelineSlice.actions;
 
 export const timelineReducer = timelineSlice.reducer;

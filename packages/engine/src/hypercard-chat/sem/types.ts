@@ -22,8 +22,6 @@ export interface SemContext {
 export type SemTimelineOp =
   | { type: 'addEntity'; entity: TimelineEntity }
   | { type: 'upsertEntity'; entity: TimelineEntity }
-    // XXX remove rekeyEntity
-  | { type: 'rekeyEntity'; fromId: string; toId: string }
     // XXX I don't think we have clearConversation
   | { type: 'clearConversation' };
 

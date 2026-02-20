@@ -3,7 +3,7 @@ import {
   emitConversationEvent,
   subscribeConversationEvents,
   type EventLogEntry,
-} from '@hypercard/engine';
+} from './eventBus'
 
 describe('eventBus', () => {
   it('delivers events to subscribers', () => {

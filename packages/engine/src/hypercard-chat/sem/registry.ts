@@ -1,5 +1,5 @@
 import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
-import { addEntity, clearConversation, rekeyEntity, upsertEntity } from '../timeline/timelineSlice';
+import { addEntity, clearConversation, upsertEntity } from '../timeline/timelineSlice';
 import type { TimelineEntity } from '../timeline/types';
 import { mapTimelineEntityFromUpsert } from './timelineMapper';
 import type {
@@ -341,10 +341,6 @@ export function applySemTimelineOps(dispatch: Dispatch<UnknownAction>, convId: s
     }
     if (op.type === 'upsertEntity') {
       dispatch(upsertEntity({ convId, entity: op.entity }));
-      continue;
-    }
-    if (op.type === 'rekeyEntity') {
-      dispatch(rekeyEntity({ convId, fromId: op.fromId, toId: op.toId }));
       continue;
     }
     dispatch(clearConversation({ convId }));

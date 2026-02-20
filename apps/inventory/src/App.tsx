@@ -1,12 +1,14 @@
 import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { DesktopShell, type DesktopContribution } from '@hypercard/engine/desktop-react';
+import {
+  ChatConversationWindow,
+  CodeEditorWindow,
+  EventViewerWindow,
+  getEditorInitialCode,
+  RuntimeCardDebugWindow,
+} from '@hypercard/engine';
 import { type ReactNode, useCallback, useMemo } from 'react';
 import { STACK } from './domain/stack';
-import { EventViewerWindow } from './features/chat/EventViewerWindow';
-import { InventoryChatWindow } from './features/chat/InventoryChatWindow';
-import { CodeEditorWindow } from './features/chat/CodeEditorWindow';
-import { getEditorInitialCode } from './features/chat/editorLaunch';
-import { RuntimeCardDebugWindow } from './features/chat/RuntimeCardDebugWindow';
 import { ReduxPerfWindow } from './features/debug/ReduxPerfWindow';
 
 const CHAT_APP_KEY = 'inventory-chat';
@@ -45,14 +47,14 @@ export function App() {
     }
     if (appKey.startsWith(`${CHAT_APP_KEY}:`)) {
       const convId = appKey.slice(CHAT_APP_KEY.length + 1);
-      return <InventoryChatWindow conversationId={convId} />;
+      return <ChatConversationWindow convId={convId} title="Inventory Chat" />;
     }
     if (appKey.startsWith('event-viewer:')) {
       const convId = appKey.slice('event-viewer:'.length);
       return <EventViewerWindow conversationId={convId} />;
     }
     if (appKey === 'runtime-card-debug') {
-      return <RuntimeCardDebugWindow />;
+      return <RuntimeCardDebugWindow stacks={[STACK]} />;
     }
     if (appKey.startsWith('code-editor:')) {
       const cardId = appKey.slice('code-editor:'.length);

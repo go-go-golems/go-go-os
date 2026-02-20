@@ -2,12 +2,7 @@ export { Btn, type BtnProps } from './Btn';
 export { ChatView, type ChatViewProps } from './ChatView';
 export {
   ChatWindow,
-  renderLegacyTimelineContent,
   type ChatWindowProps,
-  type ChatWindowMessage,
-  type ChatContentBlock,
-  type InlineWidget,
-  type LegacyTimelineRenderOptions,
 } from './ChatWindow';
 export { Chip, type ChipProps } from './Chip';
 export { DataTable, type DataTableProps } from './DataTable';

@@ -6,7 +6,7 @@ import {
   type SemEnvelope,
 } from '../sem/semRegistry';
 import { timelineEntityFromProto } from '../sem/timelineMapper';
-import { chatSessionSlice, type ChatConnectionStatus } from '../state/chatSessionSlice';
+import { chatSessionSlice, createChatError, type ChatConnectionStatus } from '../state/chatSessionSlice';
 import type { TimelineEntity } from '../state/timelineSlice';
 import { timelineSlice } from '../state/timelineSlice';
 import { isRecord } from '../utils/guards';
@@ -66,6 +66,11 @@ function toErrorMessage(error: unknown, fallback: string): string {
     return error.message;
   }
   return fallback;
+}
+
+function toBodyMessage(body: string, fallback: string): string {
+  const normalized = String(body ?? '').trim();
+  return normalized.length > 0 ? normalized : fallback;
 }
 
 function toSemEnvelope(payload: unknown): SemEnvelope | null {
@@ -162,9 +167,15 @@ class WsManager {
         })
       );
       args.dispatch(
-        chatSessionSlice.actions.setStreamError({
+        chatSessionSlice.actions.pushError({
           convId: args.convId,
-          error: 'websocket error',
+          error: createChatError({
+            kind: 'ws_error',
+            stage: 'stream',
+            source: 'wsManager.onerror',
+            message: 'websocket error',
+            recoverable: true,
+          }),
         })
       );
       args.onStatus?.('error');
@@ -190,9 +201,15 @@ class WsManager {
         });
       } catch (error) {
         args.dispatch(
-          chatSessionSlice.actions.setStreamError({
+          chatSessionSlice.actions.pushError({
             convId: args.convId,
-            error: toErrorMessage(error, 'malformed websocket frame'),
+            error: createChatError({
+              kind: 'sem_decode_error',
+              stage: 'stream',
+              source: 'wsManager.onmessage',
+              message: toErrorMessage(error, 'malformed websocket frame'),
+              recoverable: true,
+            }),
           })
         );
       }
@@ -264,18 +281,32 @@ class WsManager {
           applyTimelineSnapshot(args.convId, snapshot, args.dispatch);
         }
       } else {
+        const body = await response.text();
         args.dispatch(
-          chatSessionSlice.actions.setStreamError({
+          chatSessionSlice.actions.pushError({
             convId: args.convId,
-            error: `timeline request failed (${response.status})`,
+            error: createChatError({
+              kind: 'http_error',
+              stage: 'hydrate',
+              source: 'wsManager.hydrate',
+              status: response.status,
+              message: toBodyMessage(body, `timeline request failed (${response.status})`),
+              recoverable: response.status >= 500 || response.status === 429,
+            }),
           })
         );
       }
     } catch (error) {
       args.dispatch(
-        chatSessionSlice.actions.setStreamError({
+        chatSessionSlice.actions.pushError({
           convId: args.convId,
-          error: toErrorMessage(error, 'timeline hydrate failed'),
+          error: createChatError({
+            kind: 'hydrate_error',
+            stage: 'hydrate',
+            source: 'wsManager.hydrate',
+            message: toErrorMessage(error, 'timeline hydrate failed'),
+            recoverable: true,
+          }),
         })
       );
     }

@@ -1,18 +1,33 @@
 import { registerDefaultSemHandlers } from '../sem/semRegistry';
 import { registerHypercardTimelineModule } from '../../hypercard/timeline/registerHypercardTimeline';
+import {
+  createChatModuleBootstrap,
+  type ChatRuntimeModule,
+} from './moduleBootstrap';
 
-let modulesRegistered = false;
+const bootstrap = createChatModuleBootstrap([
+  {
+    id: 'chat.default-sem',
+    register: registerDefaultSemHandlers,
+  },
+  {
+    id: 'chat.hypercard-timeline',
+    register: registerHypercardTimelineModule,
+  },
+]);
 
 export function ensureChatModulesRegistered() {
-  if (modulesRegistered) {
-    return;
-  }
+  bootstrap.ensureRegistered();
+}
 
-  registerDefaultSemHandlers();
-  registerHypercardTimelineModule();
-  modulesRegistered = true;
+export function registerChatRuntimeModule(module: ChatRuntimeModule) {
+  bootstrap.registerModule(module);
+}
+
+export function listChatRuntimeModules(): string[] {
+  return bootstrap.listModules();
 }
 
 export function resetChatModulesRegistrationForTest() {
-  modulesRegistered = false;
+  bootstrap.resetForTest();
 }

@@ -66,6 +66,7 @@ describe('chatSessionSlice', () => {
     expect(state.byConvId['stream-1']?.streamStartTime).toBe(456);
     expect(state.byConvId['stream-1']?.streamOutputTokens).toBe(0);
     expect(state.byConvId['stream-1']?.lastError).toBeNull();
+    expect(state.byConvId['stream-1']?.currentError).toBeNull();
   });
 
   it('resets and clears a conversation session', () => {
@@ -77,5 +78,55 @@ describe('chatSessionSlice', () => {
     ]);
 
     expect(state.byConvId.r1).toBeUndefined();
+  });
+
+  it('supports structured error current/history state', () => {
+    const state = reduce([
+      actions.setError({
+        convId: 'e1',
+        error: {
+          kind: 'ws_error',
+          stage: 'connect',
+          message: 'socket refused',
+          source: 'unit',
+          recoverable: true,
+        },
+      }),
+      actions.pushError({
+        convId: 'e1',
+        error: {
+          kind: 'http_error',
+          stage: 'send',
+          message: 'chat request failed (500)',
+          source: 'unit',
+          status: 500,
+        },
+      }),
+      actions.clearError({ convId: 'e1' }),
+    ]);
+
+    expect(state.byConvId.e1?.lastError).toBeNull();
+    expect(state.byConvId.e1?.currentError).toBeNull();
+    expect(state.byConvId.e1?.errorHistory).toHaveLength(1);
+    expect(state.byConvId.e1?.errorHistory[0].kind).toBe('http_error');
+  });
+
+  it('caps error history to the most recent 20 entries', () => {
+    const many = Array.from({ length: 25 }, (_, i) =>
+      actions.pushError({
+        convId: 'e2',
+        error: {
+          kind: 'runtime_error',
+          stage: 'stream',
+          message: `err-${i}`,
+          source: 'unit',
+        },
+      })
+    );
+    const state = reduce(many);
+
+    expect(state.byConvId.e2?.errorHistory).toHaveLength(20);
+    expect(state.byConvId.e2?.errorHistory[0].message).toBe('err-5');
+    expect(state.byConvId.e2?.errorHistory[19].message).toBe('err-24');
   });
 });

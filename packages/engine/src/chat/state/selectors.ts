@@ -1,4 +1,4 @@
-import type { ChatSessionSliceState } from './chatSessionSlice';
+import type { ChatErrorRecord, ChatSessionSliceState } from './chatSessionSlice';
 import type { ConversationTimelineState, TimelineEntity, TimelineState } from './timelineSlice';
 
 export interface ChatStateSlice {
@@ -12,6 +12,7 @@ const EMPTY_TIMELINE: ConversationTimelineState = {
 };
 const EMPTY_TIMELINE_ENTITIES: TimelineEntity[] = [];
 const EMPTY_SUGGESTIONS: string[] = [];
+const EMPTY_ERROR_HISTORY: ChatErrorRecord[] = [];
 
 function getTimelineConversation(
   state: ChatStateSlice,
@@ -56,7 +57,22 @@ export const selectSuggestions = (state: ChatStateSlice, convId: string): string
   getChatSession(state, convId)?.suggestions ?? EMPTY_SUGGESTIONS;
 
 export const selectLastError = (state: ChatStateSlice, convId: string): string | null =>
-  getChatSession(state, convId)?.lastError ?? null;
+  getChatSession(state, convId)?.currentError?.message ?? getChatSession(state, convId)?.lastError ?? null;
+
+export const selectCurrentError = (
+  state: ChatStateSlice,
+  convId: string
+): ChatErrorRecord | null => getChatSession(state, convId)?.currentError ?? null;
+
+export const selectErrorHistory = (
+  state: ChatStateSlice,
+  convId: string
+): ChatErrorRecord[] => getChatSession(state, convId)?.errorHistory ?? EMPTY_ERROR_HISTORY;
+
+export const selectHasRecoverableError = (state: ChatStateSlice, convId: string): boolean => {
+  const current = getChatSession(state, convId)?.currentError;
+  return Boolean(current && current.recoverable !== false);
+};
 
 export const selectModelName = (state: ChatStateSlice, convId: string): string | null =>
   getChatSession(state, convId)?.modelName ?? null;

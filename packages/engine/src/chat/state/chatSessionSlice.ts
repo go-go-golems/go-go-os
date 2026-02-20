@@ -13,6 +13,49 @@ export interface TurnStats {
   tps?: number;
 }
 
+export type ChatErrorKind =
+  | 'ws_error'
+  | 'ws_close'
+  | 'hydrate_error'
+  | 'http_error'
+  | 'sem_decode_error'
+  | 'runtime_error'
+  | 'unknown_error';
+
+export type ChatErrorStage =
+  | 'connect'
+  | 'hydrate'
+  | 'stream'
+  | 'send'
+  | 'disconnect'
+  | 'unknown';
+
+export interface ChatErrorRecord {
+  id: string;
+  kind: ChatErrorKind;
+  stage: ChatErrorStage;
+  message: string;
+  source?: string;
+  code?: string;
+  status?: number;
+  recoverable?: boolean;
+  at: number;
+  details?: Record<string, unknown>;
+}
+
+export interface ChatErrorInput {
+  id?: string;
+  kind: ChatErrorKind;
+  stage: ChatErrorStage;
+  message?: string;
+  source?: string;
+  code?: string;
+  status?: number;
+  recoverable?: boolean;
+  at?: number;
+  details?: Record<string, unknown>;
+}
+
 export interface ChatSessionState {
   connectionStatus: ChatConnectionStatus;
   isStreaming: boolean;
@@ -22,6 +65,8 @@ export interface ChatSessionState {
   streamStartTime: number | null;
   streamOutputTokens: number;
   lastError: string | null;
+  currentError: ChatErrorRecord | null;
+  errorHistory: ChatErrorRecord[];
 }
 
 export interface ChatSessionSliceState {
@@ -29,6 +74,7 @@ export interface ChatSessionSliceState {
 }
 
 const MAX_SUGGESTIONS = 8;
+const MAX_ERROR_HISTORY = 20;
 
 export const DEFAULT_CHAT_SUGGESTIONS = [
   'Show current inventory status',
@@ -40,6 +86,41 @@ const initialState: ChatSessionSliceState = {
   byConvId: {},
 };
 
+let errorSeq = 0;
+
+function nextErrorId(): string {
+  errorSeq += 1;
+  return `chat-error-${errorSeq}`;
+}
+
+function defaultErrorMessage(kind: ChatErrorKind, stage: ChatErrorStage): string {
+  return `${kind.replace(/_/g, ' ')} (${stage})`;
+}
+
+function defaultRecoverable(kind: ChatErrorKind): boolean {
+  return kind !== 'unknown_error';
+}
+
+function toChatErrorRecord(input: ChatErrorInput): ChatErrorRecord {
+  const message = stripTrailingWhitespace(input.message ?? '').trim();
+  return {
+    id: input.id ?? nextErrorId(),
+    kind: input.kind,
+    stage: input.stage,
+    message: message.length > 0 ? message : defaultErrorMessage(input.kind, input.stage),
+    source: input.source,
+    code: input.code,
+    status: input.status,
+    recoverable: input.recoverable ?? defaultRecoverable(input.kind),
+    at: input.at ?? Date.now(),
+    details: input.details,
+  };
+}
+
+export function createChatError(input: ChatErrorInput): ChatErrorRecord {
+  return toChatErrorRecord(input);
+}
+
 function createInitialChatSessionState(): ChatSessionState {
   return {
     connectionStatus: 'idle',
@@ -50,6 +131,8 @@ function createInitialChatSessionState(): ChatSessionState {
     streamStartTime: null,
     streamOutputTokens: 0,
     lastError: null,
+    currentError: null,
+    errorHistory: [],
   };
 }
 
@@ -79,6 +162,19 @@ function normalizeSuggestionList(values: string[]): string[] {
   }
 
   return out;
+}
+
+function applyError(
+  session: ChatSessionState,
+  error: ChatErrorRecord | null,
+  options: { pushHistory: boolean }
+) {
+  session.currentError = error;
+  session.lastError = error?.message ?? null;
+  if (!error || !options.pushHistory) {
+    return;
+  }
+  session.errorHistory = [...session.errorHistory, error].slice(-MAX_ERROR_HISTORY);
 }
 
 export const chatSessionSlice = createSlice({
@@ -128,6 +224,7 @@ export const chatSessionSlice = createSlice({
       const session = getSession(state, action.payload.convId);
       session.streamStartTime = action.payload.streamStartTime ?? Date.now();
       session.streamOutputTokens = 0;
+      session.currentError = null;
       session.lastError = null;
     },
 
@@ -136,8 +233,42 @@ export const chatSessionSlice = createSlice({
       session.streamOutputTokens = Math.max(0, Math.trunc(action.payload.streamOutputTokens));
     },
 
+    setError(state, action: PayloadAction<{ convId: string; error: ChatErrorInput | null }>) {
+      const session = getSession(state, action.payload.convId);
+      if (!action.payload.error) {
+        applyError(session, null, { pushHistory: false });
+        return;
+      }
+      applyError(session, toChatErrorRecord(action.payload.error), { pushHistory: false });
+    },
+
+    pushError(state, action: PayloadAction<{ convId: string; error: ChatErrorInput }>) {
+      const session = getSession(state, action.payload.convId);
+      applyError(session, toChatErrorRecord(action.payload.error), { pushHistory: true });
+    },
+
+    clearError(state, action: PayloadAction<{ convId: string }>) {
+      const session = getSession(state, action.payload.convId);
+      applyError(session, null, { pushHistory: false });
+    },
+
     setStreamError(state, action: PayloadAction<{ convId: string; error: string | null }>) {
-      getSession(state, action.payload.convId).lastError = action.payload.error;
+      const session = getSession(state, action.payload.convId);
+      const normalized = stripTrailingWhitespace(action.payload.error ?? '').trim();
+      if (!normalized) {
+        applyError(session, null, { pushHistory: false });
+        return;
+      }
+      applyError(
+        session,
+        toChatErrorRecord({
+          kind: 'runtime_error',
+          stage: 'unknown',
+          source: 'chatSession.setStreamError',
+          message: normalized,
+        }),
+        { pushHistory: true }
+      );
     },
 
     resetSession(state, action: PayloadAction<{ convId: string }>) {

@@ -19,10 +19,14 @@ RelatedFiles:
       Note: F4 shared suggestion helpers
     - Path: packages/engine/src/chat/state/timelineSlice.ts
       Note: F4 reducers for upsert/consume suggestions
+    - Path: packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
+      Note: Fix non-card icon double-click routing through shell command pipeline
     - Path: packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts
       Note: F4 SEM handler migration from session to timeline
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/design-doc/01-exhaustive-legacy-and-consolidation-assessment-after-hc-01.md
       Note: Primary output of investigation documented in diary
+    - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/tasks.md
+      Note: Track and close icon double-click routing bug task
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/various/01-hc01-touched-files-existing.txt
       Note: Computed surviving touched-file set used in audit
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/various/02-hc01-touched-files-removed.txt
@@ -33,6 +37,7 @@ LastUpdated: 2026-02-20T16:24:04.03865615-05:00
 WhatFor: Preserve detailed investigation history for HC-02 cleanup scope derivation from HC-01 touched files.
 WhenToUse: Use when reviewing why each cleanup task exists and how findings were derived from concrete code evidence.
 ---
+
 
 
 
@@ -616,6 +621,71 @@ The fix was to make first-send lifecycle deterministic by forcing starter entity
   - `packages/engine/src/chat/components/ChatConversationWindow.tsx`
 - Re-run:
   - `pnpm exec vitest run packages/engine/src/chat/state/timelineSlice.test.ts packages/engine/src/chat/state/selectors.test.ts packages/engine/src/chat/runtime/registerChatModules.test.ts packages/engine/src/hypercard/timeline/hypercardCard.test.ts packages/engine/src/chat/state/chatSessionSlice.test.ts`
+  - `pnpm exec tsc -p packages/engine/tsconfig.json --noEmit`
+
+## Step 9: Fix desktop icon double-click routing for non-card icons
+
+Users reported that double-clicking desktop icons for `New Chat`, `Stacks & Cards`, and `Event Viewer` did nothing. Investigation showed that non-card icon opens were incorrectly routed to `onCommandProp` directly, which is frequently unset in contribution-driven shell usage.
+
+The fix routes non-card icon opens through the same internal command pipeline used by menu commands, so contribution handlers receive `icon.open.*` commands reliably.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Bugs to fix: 
+
+- double clicking on icons (new chat, stacks & cards, event viewer) doesn't work. Create a new task for this and work on it."
+
+**Assistant interpretation:** Add a dedicated cleanup task, then implement and validate a fix for desktop icon double-click behavior.
+
+**Inferred user intent:** Ensure icon UX matches desktop expectations and that contribution command handlers are consistently invoked.
+
+**Commit (code):** `6c33288` — "fix(desktop): route icon double-click commands through shell pipeline"
+
+### What I did
+- Added HC-02 task #16:
+  - `Fix desktop icon double-click command routing for non-card icons...`
+- Updated:
+  - `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx`
+- Refactor detail:
+  - renamed command executor callback to `routeCommand` (same logic as prior `handleCommand`)
+  - changed `handleOpenIcon` non-card path from:
+    - `onCommandProp?.('icon.open.<id>')`
+  - to:
+    - `routeCommand('icon.open.<id>')`
+
+### Why
+- `onCommandProp` is optional and not the normal path for contribution command handlers.
+- icon opens should use the same routing stack as menu commands:
+  1. contribution handlers
+  2. default desktop command router
+  3. optional external fallback (`onCommandProp`)
+
+### What worked
+- `desktopCommandRouter` and `desktopContributions` tests passed after change.
+- Engine typecheck passed.
+- Task #16 was checked off.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Command-path consistency is critical in shell architecture: separate ad-hoc paths for icon/menu actions drift quickly and cause regressions.
+
+### What was tricky to build
+- The subtle bug was not in the icon component itself (`onDoubleClick` fired correctly) but in controller routing for non-card icon IDs.
+
+### What warrants a second pair of eyes
+- Verify manually that icon behavior matches menu behavior for all contribution-defined icons beyond inventory-specific ones.
+
+### What should be done in the future
+- Add a controller-level regression test around icon-open routing once hook testing infrastructure is in place.
+
+### Code review instructions
+- Review:
+  - `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx`
+  - `ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/tasks.md`
+- Re-run:
+  - `pnpm exec vitest run packages/engine/src/components/shell/windowing/desktopContributions.test.ts packages/engine/src/components/shell/windowing/desktopCommandRouter.test.ts`
   - `pnpm exec tsc -p packages/engine/tsconfig.json --noEmit`
 
 ## Usage Examples

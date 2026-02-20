@@ -17,3 +17,4 @@
 - [ ] Clarify registry lifecycle API surface: keep and test unregister/clear APIs or remove them from public exports
 - [ ] Close remaining HC-01 runtime gate by running and documenting manual end-to-end verification checklist (`7.5`)
 - [ ] Add a lightweight synchronization process for copied SEM protobuf TS files under `packages/engine/src/chat/sem/pb`
+- [x] Fix desktop icon double-click command routing for non-card icons (new chat, stacks & cards, event viewer) so icon.open.* goes through contribution/default command pipeline

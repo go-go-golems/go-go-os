@@ -37,3 +37,14 @@ Follow-up fix after F4: prevent starter suggestions from reappearing after chat 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/components/ChatConversationWindow.tsx — Fix starter suggestion lifecycle race on first send
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/reference/01-diary.md — Step 8 diary entry for post-F4 suggestion persistence fix
 
+
+## 2026-02-20
+
+Fixed desktop icon double-click regression for non-card icons (new chat, stacks & cards, event viewer) by routing icon.open.* through the shell command pipeline; added and closed task #16 (commit 6c33288).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx — Route non-card icon opens through contribution/default command handlers
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/reference/01-diary.md — Step 9 diary details for icon routing fix
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/tasks.md — Added and checked icon double-click fix task
+

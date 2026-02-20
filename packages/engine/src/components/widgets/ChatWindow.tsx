@@ -6,7 +6,7 @@ export interface ChatWindowProps {
   timelineContent: ReactNode;
   timelineItemCount?: number;
   isStreaming: boolean;
-  onSend: (text: string) => void;
+  onSend: (text: string) => Promise<void> | void;
   onCancel?: () => void;
   suggestions?: string[];
   showSuggestionsAlways?: boolean;
@@ -50,16 +50,28 @@ export function ChatWindow({
   headerActions,
 }: ChatWindowProps) {
   const [input, setInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'instant' });
-  }, [timelineContent, timelineItemCount]);
+  });
 
-  function send(text: string) {
-    if (!text.trim() || isStreaming) return;
-    onSend(text.trim());
-    setInput('');
+  async function send(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || isStreaming || isSubmitting) return;
+    setSendError(null);
+    setIsSubmitting(true);
+    try {
+      await onSend(trimmed);
+      setInput('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setSendError(message || 'Failed to send message');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const isEmpty = timelineItemCount === 0;
@@ -69,18 +81,14 @@ export function ChatWindow({
       <div data-part="chat-window-header">
         <div data-part="chat-window-header-left">
           <span data-part="chat-window-title">💬 {title}</span>
-          {subtitle && (
-            <span data-part="chat-window-subtitle">{subtitle}</span>
-          )}
+          {subtitle && <span data-part="chat-window-subtitle">{subtitle}</span>}
         </div>
         <div data-part="chat-window-header-right">
           {headerActions}
           <span data-part="chat-window-msg-count">
             {timelineItemCount} message{timelineItemCount !== 1 ? 's' : ''}
           </span>
-          {isStreaming && onCancel && (
-            <Btn onClick={onCancel}>⏹ Stop</Btn>
-          )}
+          {isStreaming && onCancel && <Btn onClick={onCancel}>⏹ Stop</Btn>}
         </div>
       </div>
 
@@ -107,19 +115,23 @@ export function ChatWindow({
           data-part="field-input"
           style={{ flex: 1 }}
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={(event) => {
+            if (sendError) setSendError(null);
+            setInput(event.target.value);
+          }}
           onKeyDown={(event) => event.key === 'Enter' && send(input)}
-          placeholder={isStreaming ? 'Waiting for response…' : (placeholder ?? 'Type a message…')}
-          disabled={isStreaming}
+          placeholder={isStreaming || isSubmitting ? 'Waiting for response…' : (placeholder ?? 'Type a message…')}
+          disabled={isStreaming || isSubmitting}
         />
         {isStreaming ? (
           onCancel ? (
             <Btn onClick={onCancel}>⏹ Stop</Btn>
           ) : null
         ) : (
-          <Btn onClick={() => send(input)}>Send</Btn>
+          <Btn onClick={() => send(input)}>{isSubmitting ? 'Sending…' : 'Send'}</Btn>
         )}
       </div>
+      {sendError && <div data-part="chat-composer-error">{sendError}</div>}
 
       {footer && <div data-part="chat-window-footer">{footer}</div>}
     </div>

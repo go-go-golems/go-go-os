@@ -2,17 +2,17 @@
 
 ## Phase 1: Engine Chat Skeleton + SEM Registry + Timeline Slice
 
-- [ ] **1.1** Create directory structure for `packages/engine/src/chat/{sem,ws,state,utils,renderers,runtime,components,debug}` and `packages/engine/src/hypercard/{artifacts,timeline,editor,debug}`
-- [ ] **1.2** Copy + adapt SEM registry from `pinocchio/.../sem/registry.ts` to `packages/engine/src/chat/sem/semRegistry.ts` -- change Handler signature to `(ev, ctx: SemContext)`, update all handler bodies to use `ctx.dispatch` and `ctx.convId`
-- [ ] **1.3** Copy protobuf generated types from `pinocchio/.../sem/pb/` to `packages/engine/src/chat/sem/pb/` -- include all LLM, Tool, Log, Timeline schemas. Add `@bufbuild/protobuf` to engine's package.json
-- [ ] **1.4** Copy + adapt timeline mapper from `pinocchio/.../sem/timelineMapper.ts` to `packages/engine/src/chat/sem/timelineMapper.ts` -- update imports to local pb paths
-- [ ] **1.5** Copy timeline props registry from `pinocchio/.../sem/timelinePropsRegistry.ts` to `packages/engine/src/chat/sem/timelinePropsRegistry.ts`
-- [ ] **1.6** Create conversation-scoped timeline slice at `packages/engine/src/chat/state/timelineSlice.ts` -- state shape `{ byConvId: Record<string, { byId, order }> }`, adapt all actions from pinocchio's `timelineSlice.ts` to accept `convId` parameter
-- [ ] **1.7** Copy utility files: `number.ts` and `guards.ts` from pinocchio to `packages/engine/src/chat/utils/`; move `semHelpers.ts` from inventory to `packages/engine/src/chat/sem/semHelpers.ts`
-- [ ] **1.8** Create `chatSessionSlice` at `packages/engine/src/chat/state/chatSessionSlice.ts` -- per-conversation non-entity state (connectionStatus, isStreaming, suggestions, modelName, turnStats, streamStartTime, streamOutputTokens, lastError)
-- [ ] **1.9** Create conversation-scoped selectors at `packages/engine/src/chat/state/selectors.ts` for both timeline and session slices
-- [ ] **1.10** Create barrel export `packages/engine/src/chat/index.ts` and add `export * from './chat'` to `packages/engine/src/index.ts`
-- [ ] **1.11** Write unit tests for timelineSlice (upsert, version gating, conversation scoping, rekeyEntity) and semRegistry (handler registration, SemContext threading)
+- [x] **1.1** Create directory structure for `packages/engine/src/chat/{sem,ws,state,utils,renderers,runtime,components,debug}` and `packages/engine/src/hypercard/{artifacts,timeline,editor,debug}`
+- [x] **1.2** Copy + adapt SEM registry from `pinocchio/.../sem/registry.ts` to `packages/engine/src/chat/sem/semRegistry.ts` -- change Handler signature to `(ev, ctx: SemContext)`, update all handler bodies to use `ctx.dispatch` and `ctx.convId`
+- [x] **1.3** Copy protobuf generated types from `pinocchio/.../sem/pb/` to `packages/engine/src/chat/sem/pb/` -- include all LLM, Tool, Log, Timeline schemas. Add `@bufbuild/protobuf` to engine's package.json
+- [x] **1.4** Copy + adapt timeline mapper from `pinocchio/.../sem/timelineMapper.ts` to `packages/engine/src/chat/sem/timelineMapper.ts` -- update imports to local pb paths
+- [x] **1.5** Copy timeline props registry from `pinocchio/.../sem/timelinePropsRegistry.ts` to `packages/engine/src/chat/sem/timelinePropsRegistry.ts`
+- [x] **1.6** Create conversation-scoped timeline slice at `packages/engine/src/chat/state/timelineSlice.ts` -- state shape `{ byConvId: Record<string, { byId, order }> }`, adapt all actions from pinocchio's `timelineSlice.ts` to accept `convId` parameter
+- [x] **1.7** Copy utility files: `number.ts` and `guards.ts` from pinocchio to `packages/engine/src/chat/utils/`; move `semHelpers.ts` from inventory to `packages/engine/src/chat/sem/semHelpers.ts`
+- [x] **1.8** Create `chatSessionSlice` at `packages/engine/src/chat/state/chatSessionSlice.ts` -- per-conversation non-entity state (connectionStatus, isStreaming, suggestions, modelName, turnStats, streamStartTime, streamOutputTokens, lastError)
+- [x] **1.9** Create conversation-scoped selectors at `packages/engine/src/chat/state/selectors.ts` for both timeline and session slices
+- [x] **1.10** Create barrel export `packages/engine/src/chat/index.ts` and add `export * from './chat'` to `packages/engine/src/index.ts`
+- [x] **1.11** Write unit tests for timelineSlice (upsert, version gating, conversation scoping, rekeyEntity) and semRegistry (handler registration, SemContext threading)
 
 ## Phase 2: WebSocket Manager + HTTP Client
 

@@ -16,6 +16,18 @@ RelatedFiles:
     - Path: apps/inventory/src/features/chat/chatSlice.ts
     - Path: apps/inventory/src/features/chat/timelineProjection.ts
     - Path: apps/inventory/src/features/chat/webchatClient.ts
+    - Path: packages/engine/src/chat/chatApi.ts
+      Note: Resolved pre-existing typecheck gap for StreamHandlers
+    - Path: packages/engine/src/chat/sem/semRegistry.test.ts
+      Note: SemContext threading and handler registration tests
+    - Path: packages/engine/src/chat/sem/semRegistry.ts
+      Note: Phase 1 SemContext adaptation and default handlers
+    - Path: packages/engine/src/chat/state/chatSessionSlice.ts
+      Note: Per-conversation non-entity chat session state
+    - Path: packages/engine/src/chat/state/timelineSlice.test.ts
+      Note: Reducer tests for Phase 1 acceptance criteria
+    - Path: packages/engine/src/chat/state/timelineSlice.ts
+      Note: Conversation-scoped timeline reducer with version gating
     - Path: packages/engine/src/components/widgets/ChatWindow.tsx
     - Path: packages/engine/src/index.ts
     - Path: ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/changelog.md
@@ -30,6 +42,7 @@ LastUpdated: 2026-02-20T00:00:00Z
 WhatFor: Track exploration, decisions, and implementation progress
 WhenToUse: Reference during implementation and code review
 ---
+
 
 
 # Diary
@@ -318,3 +331,91 @@ The tricky part was preserving the same UX behaviors (role labels, streaming cur
 - Decision rename: from "ChatWindow Slot Extension" to renderer-only conversion
 - API direction: remove `messages` prop path, require `timelineContent: ReactNode`
 - Behavior ownership: message rendering logic moves into `MessageRenderer` and companion renderers
+
+---
+
+## Step 4: Phase 1 Implementation (Chat Skeleton, SEM Registry, Timeline/Session State)
+
+Implemented the full Phase 1 foundation in `packages/engine/src/chat/` and checked off tasks 1.1 through 1.11. This establishes the minimum engine-local chat architecture needed before WS/runtime/renderer migration in later phases.
+
+The key outcome is a conversation-scoped state model plus SemContext-driven dispatch in the SEM registry, with protobuf decode and unit tests in place. This lands the architectural seam needed for multi-window conversation isolation.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Work on docmgr ticket HC-01-EXTRACT-WEBCHAT and tackle task by task, keeping a detailed diary as you go. As you check off tasks by tasks, commit at opportune intervals."
+
+**Assistant interpretation:** Execute the ticket implementation sequentially, keep detailed ticket diary entries, check tasks as completed, and commit in focused batches.
+
+**Inferred user intent:** Drive implementation with disciplined execution tracking and auditability rather than ad-hoc coding.
+
+**Commit (code):** a813f39 — "feat(engine): scaffold chat sem + conversation-scoped timeline state"
+
+### What I did
+
+1. Implemented directory skeleton for `chat/*` and `hypercard/*` Phase 1 targets
+2. Copied/generated SEM protobuf TS files into `packages/engine/src/chat/sem/pb/`
+3. Adapted `semRegistry` to use `SemContext = { dispatch, convId }` and conv-scoped timeline dispatch
+4. Added conversation-scoped `timelineSlice` with version-gated upsert + rekey + snapshot + clear
+5. Added `chatSessionSlice` for non-entity per-conversation state
+6. Added conversation-scoped selectors for timeline/session state
+7. Added `chat` barrel export and wired `export * from './chat'` in engine index
+8. Added `@bufbuild/protobuf` dependency in engine package + lockfile update
+9. Added tests:
+   - `timelineSlice.test.ts` (upsert/scoping/version gating/rekey)
+   - `semRegistry.test.ts` (handler registration + SemContext threading)
+10. Fixed pre-existing compile gap by adding `packages/engine/src/chat/chatApi.ts` for `StreamHandlers` used by `chat/mocks/fakeStreamService.ts`
+11. Ran validation commands and then checked off tasks 1-11 with docmgr
+
+### Why
+
+Phase 1 is the architectural base for everything else. Without SemContext threading and conversation-scoped state, later work (wsManager, ChatConversationWindow, hypercard SEM modules) would accumulate incompatible assumptions.
+
+### What worked
+
+- Copy/adapt strategy from pinocchio made Phase 1 implementation direct and low-risk
+- Unit tests covered the critical behaviors called out by the task list (scoping, version gating, context threading)
+- Typecheck passed after adding missing `chatApi.ts`, confirming the new modules integrate with the package build
+
+### What didn't work
+
+- Initial `npm run -w packages/engine typecheck` failed with:
+  - `src/chat/mocks/fakeStreamService.ts(1,37): error TS2307: Cannot find module '../chatApi' or its corresponding type declarations.`
+- Resolution: added `packages/engine/src/chat/chatApi.ts` with `StreamHandlers` and related types, then reran typecheck successfully
+
+### What I learned
+
+- There was a latent typecheck issue in existing `chat/mocks` that had to be fixed to verify Phase 1 cleanly
+- Keeping timeline and session slices separate early clarifies which data belongs in entities vs non-entity session state
+
+### What was tricky to build
+
+Conversation-scoping while preserving pinocchio's version-gating semantics was the main sharp edge. The reducer logic has to preserve idempotence for unversioned updates while refusing stale versioned updates, and do that independently per `convId`. The approach was to keep the original upsert algorithm intact and apply it inside a per-conversation substate accessor.
+
+### What warrants a second pair of eyes
+
+- `timelineSlice` merge behavior when `props` payloads are non-object values
+- `semRegistry` event decode handling for malformed payloads (currently ignores decode failures silently)
+- Whether `chatSessionSlice` should retain both `setSuggestions` and `replaceSuggestions` long-term
+
+### What should be done in the future
+
+- Proceed to Phase 2 tasks (2.1-2.5): wsManager + HTTP runtime + conversation hook + integration tests
+
+### Code review instructions
+
+- Start with `packages/engine/src/chat/sem/semRegistry.ts` and `packages/engine/src/chat/state/timelineSlice.ts`
+- Then review `packages/engine/src/chat/state/chatSessionSlice.ts` and `packages/engine/src/chat/state/selectors.ts`
+- Validate with:
+  - `npm run -w packages/engine test -- src/chat/state/timelineSlice.test.ts src/chat/sem/semRegistry.test.ts`
+  - `npm run -w packages/engine typecheck`
+- Confirm task bookkeeping:
+  - `docmgr task list --ticket HC-01-EXTRACT-WEBCHAT`
+
+### Technical details
+
+- Added copied protobuf artifacts under `packages/engine/src/chat/sem/pb/proto/sem/{base,domain,team,timeline}`
+- Sem registry dispatch path now uses `timelineSlice.actions.{addEntity,upsertEntity}({ convId, entity })`
+- Timeline reducer state shape:
+  - `{ byConvId: Record<string, { byId: Record<string, TimelineEntity>, order: string[] }> }`
+- Task updates executed:
+  - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 1,2,3,4,5,6,7,8,9,10,11`

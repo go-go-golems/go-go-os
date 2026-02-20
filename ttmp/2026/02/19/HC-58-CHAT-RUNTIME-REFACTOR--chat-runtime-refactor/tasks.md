@@ -266,7 +266,7 @@ Verification:
 Covers plan points: 3, 8, 9.
 
 ### HC58-S4-T01 Move generic chat metadata extraction into runtime core
-- [ ] Extract model/usage/error metadata handling from inventory adapter into engine runtime.
+- [x] Extract model/usage/error metadata handling from inventory adapter into engine runtime.
 
 Files to edit:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.ts`
@@ -288,7 +288,7 @@ Verification:
 2. `cd 2026-02-12--hypercard-react && npm run typecheck`
 
 ### HC58-S4-T02 Migrate inventory footer and status consumers to runtime selectors
-- [ ] Replace inventory selectors and state reads with conversation runtime selectors.
+- [x] Replace inventory selectors and state reads with conversation runtime selectors.
 
 Files to edit:
 1. `2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx`
@@ -308,7 +308,7 @@ Verification:
 2. `cd 2026-02-12--hypercard-react && npm run typecheck`
 
 ### HC58-S4-T03 Narrow adapters to side-effects-only contract
-- [ ] Enforce adapter boundary: no core timeline correctness logic in adapters.
+- [x] Enforce adapter boundary: no core timeline correctness logic in adapters.
 
 Files to edit:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`

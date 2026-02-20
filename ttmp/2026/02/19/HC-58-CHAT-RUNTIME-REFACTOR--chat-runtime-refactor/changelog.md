@@ -41,6 +41,21 @@ Implemented HC-58 Section 3 code tasks (`HC58-S3-T01..T03`): validated single pr
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md — Section 3 tasks checked off after verification
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md — Added Step 18 command/test/commit trace for Section 3
 
+Implemented HC-58 Section 4 code tasks (`HC58-S4-T01..T03`): moved generic chat metadata extraction into `ConversationRuntime`, migrated inventory status/footer consumers to runtime selectors, removed inventory chat metadata adapter logic, and hardened adapter contract to side-effects-only with mutation guard assertions.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.ts — Runtime now owns model/stream/turn/error metadata extraction and state updates
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.test.ts — Added metadata extraction tests for llm/ws envelopes
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts — Documented and enforced side-effects-only adapter contract
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts — Supports injected manager-owned runtime instances
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/runtime/projectionAdapters.ts — Removed inventory chat metadata adapter; kept artifact side-effects adapter
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/InventoryChatWindow.tsx — Uses conversation runtime hooks for connection/meta status and provider-managed runtime ownership
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts — Updated to reflect adapter boundary and runtime-owned metadata model
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/apps/inventory/src/features/chat/selectors.ts — Removed deprecated inventory metadata selectors
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md — Section 4 tasks checked off after verification
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md — Added Step 19 command/test/commit trace for Section 4
+
 ## 2026-02-19
 
 - Initial workspace created

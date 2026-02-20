@@ -22,7 +22,7 @@ RelatedFiles:
 ExternalSources:
     - local:chat-runtime-chatgpt-pro.md
 Summary: Detailed implementation diary for HC-58 ticket setup, source import, proposal review, and concrete architecture analysis write-up.
-LastUpdated: 2026-02-19T19:45:00-05:00
+LastUpdated: 2026-02-19T19:55:06-05:00
 WhatFor: Preserve a step-by-step record of decisions, findings, and follow-up checks for the chat runtime refactor analysis.
 WhenToUse: Use when reviewing how HC-58 analysis was produced and why specific corrections were made.
 ---
@@ -1201,3 +1201,110 @@ I also checked off all Section 3 tasks after passing the required verification c
 - Validation outputs:
   - TypeScript build: success.
   - Vitest: `8 files passed`, `33 tests passed` (including updated runtime/registry/timeline suites).
+
+## Step 19: Complete Section 4 Runtime Metadata Ownership and Adapter Narrowing
+I completed Section 4 by moving generic LLM/WS metadata extraction into engine `ConversationRuntime`, migrating inventory status/footer consumers to runtime selectors, and reducing inventory adapters to side-effects-only responsibilities.
+
+I kept the section in two disciplined phases: code+tests first, then checklist/docs bookkeeping.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue, you have full permissions now"
+
+**Assistant interpretation:** Continue sequential task execution and keep checking off sections only after implementation and verification are complete.
+
+**Inferred user intent:** Keep momentum while preserving high-confidence traceability and low ambiguity across each section.
+
+**Commit (code):** 45fea65 — "feat(HC-58): migrate metadata ownership into conversation runtime"
+
+### What I did
+- Engine runtime metadata ownership:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.ts`
+  - Added runtime-owned envelope metadata handling for:
+    - `llm.start`: `modelName`, stream start/reset
+    - `llm.delta`: stream output token updates
+    - `llm.final`: turn stats + derived TPS + stream reset
+    - `ws.error`: runtime `lastError`
+  - Added safe/meta-diff update utility and error->meta propagation in `setConnectionStatus`.
+- Runtime/connection hook integration:
+  - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+  - Added optional injected `runtime` support so hook can claim/release existing manager-owned runtimes without disposing them.
+  - `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+  - Added optional `runtime` prop and passed through to connection hook.
+- Adapter boundary hardening:
+  - `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
+  - Documented adapter side-effects-only contract.
+  - Added dev assertion that throws if adapters mutate projection output (`ops/effects`).
+- Inventory migration off chat metadata adapter:
+  - `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`
+  - Removed `createChatMetaProjectionAdapter`; kept artifact-only side-effect adapter.
+  - `apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+  - Updated tests to validate timeline+artifact behavior without inventory chat metadata reducer coupling.
+- Inventory runtime selector usage:
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+  - Added `ConversationManagerProvider`, manager/runtime wiring, and runtime hook reads:
+    - `useConversationConnection`
+    - `useConversationMeta`
+    - `useConversationRuntime`
+  - Footer/status now consume runtime metadata.
+  - Submit-error path now sets runtime connection error directly.
+  - `apps/inventory/src/features/chat/selectors.ts`
+  - Removed deprecated chat metadata selectors.
+  - `apps/inventory/src/features/chat/chatSlice.ts`
+  - Added migration note that inventory-local metadata is legacy and runtime metadata is primary.
+- Runtime metadata tests:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.test.ts`
+  - Added envelope-driven metadata extraction assertions.
+
+### Why
+- Section 4 is the ownership cut: generic runtime metadata must live in engine runtime, not inventory adapters/slice, to make chat runtime reusable across apps.
+
+### What worked
+- Typecheck passed after migration.
+- Full engine test suite passed.
+- Updated inventory projection adapter test passed via direct vitest invocation.
+- Required greps for removed inventory metadata adapter calls and removed InventoryChatWindow metadata selectors returned no matches.
+
+### What didn't work
+- `apps/inventory` workspace has no `npm test` script; I validated inventory tests with:
+  - `npx vitest run apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+- I encountered expected local `// XXX` comments in SEM files and retained them per user instruction.
+
+### What I learned
+- The most reliable migration path was to keep timeline entity reads on Redux for now while shifting connection/meta ownership to runtime hooks; this allows incremental cutover without destabilizing UI rendering.
+
+### What was tricky to build
+- Preventing `useProjectedChatConnection` from disposing manager-owned runtime instances required adding explicit ownership tracking (`ownsRuntime`) in hook cleanup.
+
+### What warrants a second pair of eyes
+- `InventoryChatWindow` now creates a per-component conversation manager. This is acceptable for current wiring, but Section 7/8 may want a higher-level shared manager boundary if multiple runtime surfaces mount concurrently.
+
+### What should be done in the future
+- Continue with Section 5 (`HC58-S5-T01..T03`) to cut over primary rendering path to `TimelineConversationView` and demote `TimelineChatRuntimeWindow` to compatibility wrapper status.
+
+### Code review instructions
+- Runtime metadata extraction + contract:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.ts`
+  - `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
+- Inventory migration:
+  - `apps/inventory/src/features/chat/InventoryChatWindow.tsx`
+  - `apps/inventory/src/features/chat/runtime/projectionAdapters.ts`
+  - `apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+  - `apps/inventory/src/features/chat/selectors.ts`
+- Runtime metadata tests:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.test.ts`
+- Hook/wrapper integration:
+  - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+  - `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+
+### Technical details
+- Commands run:
+  - `npm run typecheck`
+  - `npm run test -w packages/engine`
+  - `npx vitest run apps/inventory/src/features/chat/runtime/projectionPipeline.test.ts`
+  - `rg -n "setModelName|markStreamStart|updateStreamTokens|setTurnStats" apps/inventory/src/features/chat/runtime/projectionAdapters.ts || true`
+  - `rg -n "selectConnectionStatus|selectModelName|selectCurrentTurnStats|selectStream" apps/inventory/src/features/chat/InventoryChatWindow.tsx || true`
+- Validation outputs:
+  - TypeScript build: success.
+  - Engine vitest suite: `27 files passed`, `196 tests passed`.
+  - Inventory projection pipeline test: `1 file passed`, `2 tests passed`.

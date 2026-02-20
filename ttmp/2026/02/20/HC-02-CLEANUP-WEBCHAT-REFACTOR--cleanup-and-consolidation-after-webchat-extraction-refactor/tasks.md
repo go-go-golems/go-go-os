@@ -7,7 +7,7 @@
 - [x] F1: Restore artifact open/edit behavior from hypercard timeline renderers by replacing orphan `hypercard:artifact` window events with a wired dispatch path
 - [x] F2: Reintroduce an explicit Event Viewer launch path in inventory shell (icon/menu/command for focused chat conversation)
 - [x] F3: Align `ChatWindow.onSend` async contract with `useConversation.send` to avoid unhandled promise rejections and make send failures observable at component level
-- [ ] F4: Decide and implement final suggestions architecture: timeline-entity projection vs formalized session projector action
+- [x] F4: Decide and implement final suggestions architecture: timeline-entity projection vs formalized session projector action
 - [ ] F5: Move default timeline renderer registration to explicit bootstrap lifecycle (not `ChatConversationWindow` mount side effect) and support safe late module registration
 - [ ] F6: Decouple `registerChatModules` defaults so generic chat runtime does not auto-register hypercard module unless requested
 - [ ] F7: Remove or finalize compatibility-only error pathways (`lastError`, `setStreamError`, fallback selector semantics) after structured error migration

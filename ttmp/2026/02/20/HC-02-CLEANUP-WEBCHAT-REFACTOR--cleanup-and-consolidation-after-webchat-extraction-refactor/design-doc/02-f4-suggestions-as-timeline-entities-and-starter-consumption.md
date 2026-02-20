@@ -10,13 +10,24 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
+      Note: Starter suggestion seeding and consume-on-first-send behavior
+    - Path: packages/engine/src/chat/state/selectors.ts
+      Note: Timeline-derived suggestion selection and render filtering
+    - Path: packages/engine/src/chat/state/suggestions.ts
+      Note: Suggestion constants
+    - Path: packages/engine/src/chat/state/timelineSlice.ts
+      Note: Timeline suggestion entity reducers and version-aware upsert
+    - Path: packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts
+      Note: SEM projection of hypercard suggestions into timeline artifacts
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-02-20T17:59:26.001070096-05:00
 WhatFor: Define F4 cutover from session-scoped suggestions to timeline entities, including starter suggestion behavior for empty chats.
 WhenToUse: Use while implementing/reviewing F4 so suggestion behavior stays entity-first and predictable.
 ---
+
 
 # F4 suggestions as timeline entities and starter consumption
 

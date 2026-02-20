@@ -11,6 +11,16 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
+      Note: F4 implementation details (starter suggestion lifecycle)
+    - Path: packages/engine/src/chat/state/selectors.ts
+      Note: F4 selector migration to timeline state
+    - Path: packages/engine/src/chat/state/suggestions.ts
+      Note: F4 shared suggestion helpers
+    - Path: packages/engine/src/chat/state/timelineSlice.ts
+      Note: F4 reducers for upsert/consume suggestions
+    - Path: packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts
+      Note: F4 SEM handler migration from session to timeline
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/design-doc/01-exhaustive-legacy-and-consolidation-assessment-after-hc-01.md
       Note: Primary output of investigation documented in diary
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/various/01-hc01-touched-files-existing.txt
@@ -23,6 +33,7 @@ LastUpdated: 2026-02-20T16:24:04.03865615-05:00
 WhatFor: Preserve detailed investigation history for HC-02 cleanup scope derivation from HC-01 touched files.
 WhenToUse: Use when reviewing why each cleanup task exists and how findings were derived from concrete code evidence.
 ---
+
 
 
 # Diary
@@ -456,6 +467,100 @@ await onSend(trimmed);
 setInput(''); // success only
 // catch => setSendError(...)
 ```
+
+## Step 7: Execute F4 with timeline suggestion artifacts and starter-consume lifecycle
+
+This step implemented the `F4` architecture cutover end-to-end, beginning with a dedicated design document and then applying code changes that remove session-backed suggestion state. Suggestions are now projected and consumed as timeline artifacts with the same entity-first model used by message/tool flows.
+
+The key user-facing addition was the starter-suggestions lifecycle: when conversation is empty, starter chips appear; on first user send (typed or clicked suggestion), starter suggestions are consumed and disappear.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, implement F4 then, add add the initial suggestions thing as shown. Add a little design document to the ticket about it first, then implement. That way we have a document that explains how this works and came to be"
+
+**Assistant interpretation:** Write an F4 design note first, then implement timeline-entity suggestion projection plus initial-suggestion behavior, and keep ticket tracking updated.
+
+**Inferred user intent:** Complete F4 as a hard cutover with traceable design rationale and maintainable implementation history.
+
+**Commit (docs/design):** `ab5b5b7` — "docs(hc-02): add F4 suggestions timeline design"
+
+**Commit (code):** `634fd16` — "feat(chat): project suggestions as timeline artifacts"
+
+### What I did
+- Added dedicated design doc:
+  - `design-doc/02-f4-suggestions-as-timeline-entities-and-starter-consumption.md`
+- Implemented shared suggestion helpers/constants:
+  - `packages/engine/src/chat/state/suggestions.ts`
+- Added timeline reducer actions for suggestion entities:
+  - `timelineSlice.actions.upsertSuggestions`
+  - `timelineSlice.actions.consumeSuggestions`
+- Migrated SEM suggestion handlers from session state to timeline projection:
+  - `registerHypercardTimeline.ts` now dispatches timeline suggestion actions for `hypercard.suggestions.start|update|v1`
+- Migrated selectors:
+  - `selectSuggestions` now derives from timeline entities (`assistant` preferred, `starter` only for empty timeline and not consumed)
+  - `selectRenderableTimelineEntities` filters out `suggestions` artifacts from timeline rendering/message counts
+- Updated `ChatConversationWindow`:
+  - seeds starter suggestions entity when conversation is empty
+  - wraps send path to consume starter suggestions on first interaction
+- Removed session-backed suggestion state/actions from `chatSessionSlice`.
+- Updated tests and added new selector/timeline tests for F4 behavior.
+- Checked off task `F4` in `tasks.md`.
+
+### Why
+- This was the highest remaining architectural inconsistency in chat state after extraction.
+- Suggestion behavior needed to become timeline-native while preserving existing chip UX.
+- Starter suggestions required explicit lifecycle state so behavior is deterministic and reviewable.
+
+### What worked
+- F4 cutover completed without dual-write compatibility path.
+- Targeted tests all passed:
+  - `selectors.test.ts`
+  - `timelineSlice.test.ts`
+  - `registerChatModules.test.ts`
+  - `hypercardCard.test.ts`
+  - `chatSessionSlice.test.ts`
+- Engine typecheck passed after changes.
+
+### What didn't work
+- Initial package-script test command failed because package-level `vitest` binary was not resolved in this workspace shape.
+- Exact failure:
+  - `sh: 1: vitest: not found`
+- Resolution:
+  - Installed deps via `pnpm install`
+  - Ran tests via root-level `pnpm exec vitest run ...` with explicit file paths.
+
+### What I learned
+- Timeline artifacts can support non-rendered UI state cleanly when selectors define a clear visibility policy.
+- Starter suggestion consumption is best handled in the send boundary, not inferred from backend timeline mutations.
+
+### What was tricky to build
+- Preserving current suggestions UX while moving storage models required splitting:
+  - timeline entity state (source of truth)
+  - renderable timeline rows (exclude `suggestions` kind)
+  - chip selector logic (assistant precedence + starter empty-state semantics).
+
+### What warrants a second pair of eyes
+- Confirm whether assistant suggestions should also be consumed on click or remain persistent until replaced by new SEM payloads (current implementation keeps them persistent).
+- Confirm long-term plan for retaining/removing `chatSession.lastError` compatibility fallback as later cleanup (`F7`).
+
+### What should be done in the future
+- Add integration test coverage at component level for:
+  - starter suggestions shown in empty state
+  - starter suggestions consumed after first successful send trigger
+  - assistant suggestions overriding starter suggestions.
+
+### Code review instructions
+- Start with design:
+  - `ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/design-doc/02-f4-suggestions-as-timeline-entities-and-starter-consumption.md`
+- Then review core implementation:
+  - `packages/engine/src/chat/state/suggestions.ts`
+  - `packages/engine/src/chat/state/timelineSlice.ts`
+  - `packages/engine/src/chat/state/selectors.ts`
+  - `packages/engine/src/chat/components/ChatConversationWindow.tsx`
+  - `packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts`
+- Validate:
+  - `pnpm exec vitest run packages/engine/src/chat/state/timelineSlice.test.ts packages/engine/src/chat/state/selectors.test.ts packages/engine/src/chat/runtime/registerChatModules.test.ts packages/engine/src/hypercard/timeline/hypercardCard.test.ts packages/engine/src/chat/state/chatSessionSlice.test.ts`
+  - `pnpm exec tsc -p packages/engine/tsconfig.json --noEmit`
 
 ## Usage Examples
 

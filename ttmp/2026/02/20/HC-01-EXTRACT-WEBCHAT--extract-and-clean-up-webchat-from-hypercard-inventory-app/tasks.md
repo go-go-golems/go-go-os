@@ -79,6 +79,7 @@
 - [ ] **8.3** Write new tests: `timelineSlice.test.ts` (conversation-scoped upsert, version gating), `semRegistry.test.ts` (handler registration, context threading), `timelineMapper.test.ts` (proto mapping, customKind remap), `chatSessionSlice.test.ts`, `hypercardWidget.test.ts`, `hypercardCard.test.ts`
 - [ ] **8.4** Move/recreate Storybook stories from inventory to engine alongside their components
 - [ ] **8.5** Verify full test suite passes and stories render correctly
+- [ ] **8.6** Cleanup legacy story adapter usage -- remove or rewrite stories that still depend on `ChatWindowMessage`/`renderLegacyTimelineContent` (`ChatWindow*.stories`, `ChatWindowDesktop.stories`) so story coverage is entity-native (`ChatConversationWindow` + renderer stories)
 
 ## Phase 9: Runtime Error Model + Registration Bootstrap Formalization
 

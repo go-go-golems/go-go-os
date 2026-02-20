@@ -138,3 +138,11 @@ Added Phase 9 follow-up task to re-evaluate ChatWindow vs ChatConversationWindow
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/tasks.md — Added task 9.3 for post-cleanup unification decision
 
+
+## 2026-02-20
+
+Added explicit Phase 8 story-cleanup task to remove legacy adapter-based story usage (ChatWindowMessage/renderLegacyTimelineContent) and make coverage entity-native.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/tasks.md — Added task 8.6 for legacy story cleanup

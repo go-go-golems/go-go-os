@@ -103,6 +103,15 @@ export function ChatConversationWindow({
   const sendWithSuggestionLifecycle = useCallback(
     async (prompt: string) => {
       dispatch(
+        timelineSlice.actions.upsertSuggestions({
+          convId,
+          entityId: STARTER_SUGGESTIONS_ENTITY_ID,
+          source: 'starter',
+          suggestions: DEFAULT_CHAT_SUGGESTIONS,
+          replace: true,
+        })
+      );
+      dispatch(
         timelineSlice.actions.consumeSuggestions({
           convId,
           entityId: STARTER_SUGGESTIONS_ENTITY_ID,

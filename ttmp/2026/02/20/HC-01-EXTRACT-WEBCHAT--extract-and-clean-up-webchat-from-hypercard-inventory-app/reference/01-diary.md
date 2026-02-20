@@ -46,12 +46,18 @@ RelatedFiles:
         Phase 4 event bus wiring
     - Path: packages/engine/src/chat/runtime/http.ts
       Note: Phase 2 HTTP helpers for prompt submit and timeline snapshot
+    - Path: packages/engine/src/chat/runtime/registerChatModules.test.ts
+      Note: Bootstrap idempotency and combined default/hypercard coverage
+    - Path: packages/engine/src/chat/runtime/registerChatModules.ts
+      Note: One-time global idempotent bootstrap for default + hypercard registration
     - Path: packages/engine/src/chat/runtime/useConversation.ts
       Note: Phase 2 React hook for lifecycle + send API
     - Path: packages/engine/src/chat/sem/semRegistry.test.ts
       Note: SemContext threading and handler registration tests
     - Path: packages/engine/src/chat/sem/semRegistry.ts
       Note: Phase 1 SemContext adaptation and default handlers
+    - Path: packages/engine/src/chat/sem/timelineMapper.test.ts
+      Note: CustomKind remap regression coverage
     - Path: packages/engine/src/chat/state/chatSessionSlice.ts
       Note: Per-conversation non-entity chat session state
     - Path: packages/engine/src/chat/state/timelineSlice.test.ts
@@ -70,6 +76,10 @@ RelatedFiles:
       Note: Phase 3 Storybook stories for builtin renderers
     - Path: packages/engine/src/components/widgets/ChatWindow.tsx
       Note: Phase 4 renderer-only shell conversion and legacy adapter helper
+    - Path: packages/engine/src/hypercard/artifacts/artifactRuntime.ts
+      Note: Engine-owned artifact extraction/open-window payload logic
+    - Path: packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts
+      Note: Registers hypercard SEM handlers/renderers
     - Path: packages/engine/src/index.ts
     - Path: ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/changelog.md
       Note: Recorded plan direction change
@@ -83,6 +93,7 @@ LastUpdated: 2026-02-20T00:00:00Z
 WhatFor: Track exploration, decisions, and implementation progress
 WhenToUse: Reference during implementation and code review
 ---
+
 
 
 
@@ -759,3 +770,114 @@ The tricky part was performing a hard API pivot on ChatWindow without stalling v
   - `wsManager.onEnvelope -> conversationManager -> emitConversationEvent(convId, envelope)`
 - Task updates executed:
   - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 23,24,25,26,27`
+
+---
+
+## Step 8: Phase 5 Implementation + One-Time Global Registration Cutover
+
+Implemented the full Phase 5 hypercard extraction and completed the hard cutover to one-time global handler/module registration. This moved artifacts, hypercard SEM handlers, renderers, and timeline remapping into `packages/engine`, then removed the per-connect registration path that could wipe extension handlers.
+
+The key behavior change is that chat + hypercard SEM registration now goes through a single idempotent bootstrap (`ensureChatModulesRegistered()`), and `registerDefaultSemHandlers()` is additive instead of clearing the registry. This prevents extension handlers from being lost after reconnect flows.
+
+### Prompt Context
+
+**User prompt (verbatim):** "add task to make it one-time global, can you already do so? We want a hard cutover anywya, what does it mean to avoid losing handlers?"
+
+**Assistant interpretation:** Add a tracked ticket task for one-time global registration, implement the hard cutover now, and explain the concrete failure mode around handler loss.
+
+**Inferred user intent:** Eliminate transitional/per-connect registration behavior and enforce one stable runtime registration model before proceeding to later phases.
+
+**Commit (code):** fd931ff — "feat(engine): extract hypercard timeline module with global bootstrap"
+
+### What I did
+
+1. Completed hypercard module extraction into engine:
+   - Added `packages/engine/src/hypercard/artifacts/{artifactsSlice.ts,artifactsSelectors.ts,artifactRuntime.ts}`
+   - Added `packages/engine/src/hypercard/timeline/{hypercardWidget.tsx,hypercardCard.tsx,registerHypercardTimeline.ts}`
+   - Added `packages/engine/src/hypercard/index.ts`
+2. Wired engine exports/store defaults:
+   - Added `hypercardArtifacts` reducer to `packages/engine/src/app/createAppStore.ts`
+   - Added hypercard barrel export in `packages/engine/src/index.ts`
+3. Implemented customKind remap in `packages/engine/src/chat/sem/timelineMapper.ts` for:
+   - `hypercard.widget.v1 -> hypercard_widget` with `widget:${itemId}`
+   - `hypercard.card.v2 -> hypercard_card` with `card:${itemId}`
+4. Implemented global one-time registration cutover:
+   - Added `packages/engine/src/chat/runtime/registerChatModules.ts`
+   - `ensureChatModulesRegistered()` registers defaults + hypercard module once
+   - Updated `conversationManager.ts` to initialize this bootstrap once at module load
+   - Removed per-connect `registerBaseSemHandlers` path from `wsManager.ts` and callsites
+5. Hardened registry behavior:
+   - Updated `registerDefaultSemHandlers()` in `semRegistry.ts` to no longer clear all handlers
+   - Added regression test in `semRegistry.test.ts` proving default registration does not wipe extension handlers
+6. Added/updated tests:
+   - `packages/engine/src/chat/runtime/registerChatModules.test.ts`
+   - `packages/engine/src/chat/sem/timelineMapper.test.ts`
+   - Updated `wsManager.test.ts`, `hypercardWidget.test.ts`, `hypercardCard.test.ts` to initialize via bootstrap
+7. Updated ticket task plan:
+   - Added task `5.13` for one-time global registration
+   - Checked tasks `5.1` through `5.13` via `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 28,29,30,31,32,33,34,35,36,37,38,39,40`
+
+### Why
+
+Per-connect default registration was unsafe because the default registration function previously cleared the shared handler map. Any extension handlers (hypercard) registered before/after could be dropped depending on call order. A single global bootstrap with additive default registration removes this fragility.
+
+### What worked
+
+- Hypercard module extraction compiled and passed targeted tests
+- The global bootstrap path worked with both runtime tests and direct SEM handler tests
+- Task tracking stayed aligned with implementation and validation
+
+### What didn't work
+
+- Typecheck initially failed with:
+  - `src/app/createAppStore.ts(47,17): error TS4058: Return type of exported function has or is using name 'ArtifactsState' ... but cannot be named.`
+- Command that surfaced it:
+  - `npm run -w packages/engine typecheck`
+- Resolution:
+  - Exported `ArtifactsState` from `packages/engine/src/hypercard/artifacts/artifactsSlice.ts`
+
+### What I learned
+
+- The registry-clear behavior in `registerDefaultSemHandlers()` was the root cause of “losing handlers”; fixing call timing alone is not sufficient unless default registration becomes additive or strictly isolated.
+- An explicit bootstrap module improves test ergonomics and makes registration ownership obvious.
+
+### What was tricky to build
+
+The tricky part was preserving deterministic test setup after moving to one-time bootstrap. Tests that call `clearSemHandlers()` need a way to re-run bootstrap in isolation, so I added `resetChatModulesRegistrationForTest()` to reset bootstrap state between tests.
+
+### What warrants a second pair of eyes
+
+1. Whether module-load bootstrap in `conversationManager.ts` is the final desired lifecycle boundary or should be moved to a dedicated app bootstrap module.
+2. Any external consumers that use `WsManager` directly (without `conversationManager`) must call `ensureChatModulesRegistered()`; review if an additional guard is needed for public API safety.
+
+### What should be done in the future
+
+- Proceed to Phase 6 tasks (debug/editor window extraction), while keeping direct-`WsManager` usage patterns in mind.
+
+### Code review instructions
+
+- Start with registration flow:
+  - `packages/engine/src/chat/runtime/registerChatModules.ts`
+  - `packages/engine/src/chat/runtime/conversationManager.ts`
+  - `packages/engine/src/chat/ws/wsManager.ts`
+- Then review hypercard extraction:
+  - `packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts`
+  - `packages/engine/src/hypercard/timeline/hypercardWidget.tsx`
+  - `packages/engine/src/hypercard/timeline/hypercardCard.tsx`
+  - `packages/engine/src/hypercard/artifacts/artifactRuntime.ts`
+- Validate with:
+  - `npm run -w packages/engine typecheck`
+  - `npm run -w packages/engine test -- src/chat/sem/semRegistry.test.ts src/chat/sem/timelineMapper.test.ts src/chat/runtime/registerChatModules.test.ts src/chat/ws/wsManager.test.ts src/hypercard/timeline/hypercardWidget.test.ts src/hypercard/timeline/hypercardCard.test.ts`
+
+### Technical details
+
+- New one-time bootstrap API:
+  - `ensureChatModulesRegistered()`
+  - `resetChatModulesRegistrationForTest()`
+- Handler-loss failure mode (pre-cutover):
+  - `registerDefaultSemHandlers()` called `clearSemHandlers()`
+  - Later default re-registration removed hypercard handlers from the shared map
+- Task update commands executed:
+  - `docmgr task add --ticket HC-01-EXTRACT-WEBCHAT --text "...5.13..."`
+  - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 40`
+  - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 28,29,30,31,32,33,34,35,36,37,38,39`

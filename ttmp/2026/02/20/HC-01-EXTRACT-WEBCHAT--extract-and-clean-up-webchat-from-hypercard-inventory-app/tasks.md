@@ -41,18 +41,19 @@
 
 ## Phase 5: Hypercard Module -- Artifacts, Timeline Entities, Renderers
 
-- [ ] **5.1** Move artifactsSlice from `apps/inventory/.../artifactsSlice.ts` to `packages/engine/src/hypercard/artifacts/artifactsSlice.ts` (verbatim copy)
-- [ ] **5.2** Move artifactsSelectors from `apps/inventory/.../artifactsSelectors.ts` to `packages/engine/src/hypercard/artifacts/artifactsSelectors.ts`
-- [ ] **5.3** Move artifactRuntime from `apps/inventory/.../artifactRuntime.ts` to `packages/engine/src/hypercard/artifacts/artifactRuntime.ts` -- update imports
-- [ ] **5.4** Create hypercard widget SEM handlers at `packages/engine/src/hypercard/timeline/hypercardWidget.ts` -- handle `hypercard.widget.{start,update,v1,error}`, upsert timeline entity kind `hypercard_widget` with ID `widget:${itemId}`, dispatch artifact upsert when applicable
-- [ ] **5.5** Create hypercard card SEM handlers at `packages/engine/src/hypercard/timeline/hypercardCard.ts` -- handle `hypercard.card.{start,update,v2,error}`, upsert timeline entity kind `hypercard_card` with ID `card:${itemId}`, dispatch artifact upsert + runtime card registration
-- [ ] **5.6** Add hypercard suggestion handlers for `hypercard.suggestions.{start,update,v1}` -- dispatch to chatSessionSlice.mergeSuggestions/replaceSuggestions
-- [ ] **5.7** Add customKind remap hook to `timelineMapper.ts` -- when `timeline.upsert` entity has `customKind === 'hypercard.widget.v1'` or `'hypercard.card.v2'`, remap to `hypercard_widget`/`hypercard_card` with stable entity IDs
-- [ ] **5.8** Create `registerHypercardTimelineModule()` at `packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts` -- registers all hypercard SEM handlers + renderers
-- [ ] **5.9** Create hypercard_widget and hypercard_card renderers -- show lifecycle status, artifact open/edit buttons
-- [ ] **5.10** Add hypercardArtifacts reducer to `createAppStore` defaults
-- [ ] **5.11** Create barrel export `packages/engine/src/hypercard/index.ts`, add to engine's `index.ts`
-- [ ] **5.12** Write tests for hypercard SEM handlers (given SEM event -> correct entity + artifact upsert) and customKind remap
+- [x] **5.1** Move artifactsSlice from `apps/inventory/.../artifactsSlice.ts` to `packages/engine/src/hypercard/artifacts/artifactsSlice.ts` (verbatim copy)
+- [x] **5.2** Move artifactsSelectors from `apps/inventory/.../artifactsSelectors.ts` to `packages/engine/src/hypercard/artifacts/artifactsSelectors.ts`
+- [x] **5.3** Move artifactRuntime from `apps/inventory/.../artifactRuntime.ts` to `packages/engine/src/hypercard/artifacts/artifactRuntime.ts` -- update imports
+- [x] **5.4** Create hypercard widget SEM handlers at `packages/engine/src/hypercard/timeline/hypercardWidget.ts` -- handle `hypercard.widget.{start,update,v1,error}`, upsert timeline entity kind `hypercard_widget` with ID `widget:${itemId}`, dispatch artifact upsert when applicable
+- [x] **5.5** Create hypercard card SEM handlers at `packages/engine/src/hypercard/timeline/hypercardCard.ts` -- handle `hypercard.card.{start,update,v2,error}`, upsert timeline entity kind `hypercard_card` with ID `card:${itemId}`, dispatch artifact upsert + runtime card registration
+- [x] **5.6** Add hypercard suggestion handlers for `hypercard.suggestions.{start,update,v1}` -- dispatch to chatSessionSlice.mergeSuggestions/replaceSuggestions
+- [x] **5.7** Add customKind remap hook to `timelineMapper.ts` -- when `timeline.upsert` entity has `customKind === 'hypercard.widget.v1'` or `'hypercard.card.v2'`, remap to `hypercard_widget`/`hypercard_card` with stable entity IDs
+- [x] **5.8** Create `registerHypercardTimelineModule()` at `packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts` -- registers all hypercard SEM handlers + renderers
+- [x] **5.9** Create hypercard_widget and hypercard_card renderers -- show lifecycle status, artifact open/edit buttons
+- [x] **5.10** Add hypercardArtifacts reducer to `createAppStore` defaults
+- [x] **5.11** Create barrel export `packages/engine/src/hypercard/index.ts`, add to engine's `index.ts`
+- [x] **5.12** Write tests for hypercard SEM handlers (given SEM event -> correct entity + artifact upsert) and customKind remap
+- [x] **5.13** Hard-cutover to one-time global registration for chat/hypercard modules -- add idempotent bootstrap for `registerDefaultSemHandlers()` + `registerHypercardTimelineModule()`, remove per-connect registration flags/paths in `WsManager` and `ConversationManager`, and ensure tests initialize handlers via bootstrap
 
 ## Phase 6: Debug + Editor Windows
 

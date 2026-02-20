@@ -67,3 +67,28 @@ Phase 4 complete: converted ChatWindow to renderer-only timeline shell, added Ch
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatConversationWindow.stories.tsx — Added Storybook story with mocked WS/fetch backend
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatWindow.tsx — Removed message-centric rendering from ChatWindow and introduced timelineContent shell API
 
+
+## 2026-02-20
+
+Phase 5: added one-time global chat/hypercard module bootstrap and hard-cut over from per-connect registration; added regression tests to ensure default registration no longer wipes extension handlers.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/conversationManager.ts — Removed per-connect registration and switched to global bootstrap
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/registerChatModules.ts — Introduced idempotent one-time registration for default SEM + hypercard module
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/sem/semRegistry.test.ts — Added regression test that defaults do not clear extension handlers
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/sem/semRegistry.ts — Made default registration additive to avoid wiping extension handlers
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/ws/wsManager.ts — Removed per-connect base registration flag/path
+
+
+## 2026-02-20
+
+Phase 5 complete (commit fd931ff): extracted hypercard artifacts/timeline module into engine, added customKind remap tests, and hard-cut over to one-time global chat/hypercard registration.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/app/createAppStore.ts — Added hypercardArtifacts reducer default
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/registerChatModules.ts — Idempotent one-time global registration bootstrap
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/sem/timelineMapper.test.ts — Added remap tests for hypercard customKind
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts — Central hypercard module registration
+

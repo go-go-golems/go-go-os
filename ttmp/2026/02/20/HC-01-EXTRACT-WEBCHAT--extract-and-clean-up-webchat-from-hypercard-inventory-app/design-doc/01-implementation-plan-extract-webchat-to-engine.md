@@ -472,7 +472,7 @@ State shape is conversation-scoped just like the timeline slice:
      - `registerSem('hypercard.widget.start', ...)` (and all other hypercard SEM types)
      - `registerTimelineRenderer('hypercard_widget', HypercardWidgetRenderer)`
      - `registerTimelineRenderer('hypercard_card', HypercardCardRenderer)`
-   - Called during conversation bootstrap alongside `registerDefaultSemHandlers()` and `registerDefaultTimelineRenderers()`
+   - Registered from a one-time global bootstrap (idempotent), not per-conversation connect
 
 9. Register hypercard artifacts reducer in `createAppStore`:
    - **File:** `packages/engine/src/app/createAppStore.ts`
@@ -594,7 +594,7 @@ State shape is conversation-scoped just like the timeline slice:
 
 1. **Protobuf schema maintenance:** Should engine own its own proto generation, or continue to copy from pinocchio? Long-term, a shared proto package would be ideal.
 
-2. **Module registration timing:** Should `registerDefaultSemHandlers()` + `registerHypercardTimelineModule()` be called once at app boot, or per-conversation? Pinocchio calls it in `wsManager.connect()`. The ChatGPT analysis suggests "bootstrap once (or idempotently)".
+2. **Module registration timing:** Resolved: use one-time global idempotent bootstrap for `registerDefaultSemHandlers()` + `registerHypercardTimelineModule()`; do not re-register on each `connect()`.
 
 3. **StatsFooter scope:** The live streaming TPS counter in `StatsFooter` uses `Date.now() - streamStartTime` which requires re-rendering on a timer. Should this be a concern of the engine or left to the app?
 

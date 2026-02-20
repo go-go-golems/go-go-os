@@ -378,6 +378,85 @@ rg -n "fakeStreamService|fakeStream\\(|StreamHandlers|chatApi\\.ts|from '../chat
 npm run typecheck -w packages/engine
 ```
 
+## Step 6: Execute F3 with async-aware send contract in ChatWindow
+
+After `F1`, `F2`, and `F9`, the next requested implementation was `F3`: align `ChatWindow` with async `useConversation.send` semantics. The key change was to make the widget treat `onSend` as potentially async, await it, and only clear input on success.
+
+I also added local composer-level error visibility and pending state so failures are observable in component UI without relying only on global session error surfaces.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, do the recommended version and check F3 off."
+
+**Assistant interpretation:** Implement the async-safe contract (the recommended approach) and close `F3` in HC-02 tasks.
+
+**Inferred user intent:** Eliminate send contract ambiguity and improve reliability/UX around failed sends.
+
+**Commit (code):** `90621f0` — "fix(chat): make ChatWindow send async-aware with local error state"
+
+### What I did
+- Updated `ChatWindowProps.onSend` from sync-only to async-capable:
+  - `(text: string) => Promise<void> | void`
+- Made `send(...)` in `ChatWindow` async and guarded:
+  - bails on empty, streaming, or already submitting
+  - awaits `onSend`
+  - clears input only on success
+  - catches errors and surfaces message in local `sendError` state
+  - toggles local `isSubmitting` state
+- Added component-level failure visibility:
+  - `<div data-part="chat-composer-error">{sendError}</div>`
+- Updated composer behavior:
+  - disables input while `isSubmitting` or streaming
+  - send button shows `Sending…` during in-flight send
+  - clears local error on user input change
+- Checked off `F3` in ticket tasks.
+
+### Why
+- Previous sync contract hid rejected send promises from the component and always cleared input, even on failure.
+- Async-aware contract allows deterministic UX for failure and retry flows.
+
+### What worked
+- Engine typecheck passed after contract update.
+- Biome check passed on modified widget file.
+- No integration callsite changes required because `void` send handlers remain assignable.
+
+### What didn't work
+- Biome flagged prior effect dependencies in `ChatWindow` when touched.
+- Resolution: simplified autoscroll effect to run each render, preserving expected behavior and satisfying lint constraints.
+
+### What I learned
+- Even when global error state exists, local composer error feedback is necessary for immediate send-failure affordance.
+
+### What was tricky to build
+- Keeping behavior backwards-compatible while changing contract meant using union return type (`Promise<void> | void`) rather than forcing all callers async immediately.
+
+### What warrants a second pair of eyes
+- Confirm desired UX around transient composer error text (lifetime/wording) and whether it should be tokenized/localized through shared UI patterns.
+
+### What should be done in the future
+- Add widget-level tests for:
+  - successful send clears input
+  - failed send preserves input and displays error
+  - repeated send is blocked while submitting.
+
+### Code review instructions
+- Review file:
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`
+- Verify:
+  - `npm run typecheck -w packages/engine`
+  - `npx biome check packages/engine/src/components/widgets/ChatWindow.tsx`
+
+### Technical details
+```ts
+// New contract
+onSend: (text: string) => Promise<void> | void;
+
+// Send behavior
+await onSend(trimmed);
+setInput(''); // success only
+// catch => setSendError(...)
+```
+
 ## Usage Examples
 
 <!-- Show how to use this reference in practice -->

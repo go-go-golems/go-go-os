@@ -1,18 +1,30 @@
 import { registerTimelineRenderer } from '../../chat/renderers/rendererRegistry';
 import { registerSem } from '../../chat/sem/semRegistry';
 import { stringArray } from '../../chat/sem/semHelpers';
-import { chatSessionSlice } from '../../chat/state/chatSessionSlice';
+import { timelineSlice } from '../../chat/state/timelineSlice';
+import { ASSISTANT_SUGGESTIONS_ENTITY_ID } from '../../chat/state/suggestions';
 import { HypercardCardRenderer, registerHypercardCardSemHandlers } from './hypercardCard';
 import { HypercardWidgetRenderer, registerHypercardWidgetSemHandlers } from './hypercardWidget';
+
+function suggestionVersionFromSeq(seq: unknown): number | undefined {
+  if (typeof seq !== 'number' || !Number.isFinite(seq) || seq <= 0) {
+    return undefined;
+  }
+  return seq;
+}
 
 function registerHypercardSuggestionSemHandlers() {
   registerSem('hypercard.suggestions.start', (ev, ctx) => {
     const suggestions = stringArray((ev.data as Record<string, unknown>)?.suggestions);
     if (suggestions.length === 0) return;
     ctx.dispatch(
-      chatSessionSlice.actions.mergeSuggestions({
+      timelineSlice.actions.upsertSuggestions({
         convId: ctx.convId,
-        suggestions,
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: suggestions,
+        replace: false,
+        version: suggestionVersionFromSeq(ev.seq),
       })
     );
   });
@@ -21,9 +33,13 @@ function registerHypercardSuggestionSemHandlers() {
     const suggestions = stringArray((ev.data as Record<string, unknown>)?.suggestions);
     if (suggestions.length === 0) return;
     ctx.dispatch(
-      chatSessionSlice.actions.mergeSuggestions({
+      timelineSlice.actions.upsertSuggestions({
         convId: ctx.convId,
-        suggestions,
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: suggestions,
+        replace: false,
+        version: suggestionVersionFromSeq(ev.seq),
       })
     );
   });
@@ -32,9 +48,13 @@ function registerHypercardSuggestionSemHandlers() {
     const suggestions = stringArray((ev.data as Record<string, unknown>)?.suggestions);
     if (suggestions.length === 0) return;
     ctx.dispatch(
-      chatSessionSlice.actions.replaceSuggestions({
+      timelineSlice.actions.upsertSuggestions({
         convId: ctx.convId,
-        suggestions,
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: suggestions,
+        replace: true,
+        version: suggestionVersionFromSeq(ev.seq),
       })
     );
   });

@@ -59,7 +59,6 @@ export interface ChatErrorInput {
 export interface ChatSessionState {
   connectionStatus: ChatConnectionStatus;
   isStreaming: boolean;
-  suggestions: string[];
   modelName: string | null;
   turnStats: TurnStats | null;
   streamStartTime: number | null;
@@ -72,15 +71,7 @@ export interface ChatSessionState {
 export interface ChatSessionSliceState {
   byConvId: Record<string, ChatSessionState>;
 }
-
-const MAX_SUGGESTIONS = 8;
 const MAX_ERROR_HISTORY = 20;
-
-export const DEFAULT_CHAT_SUGGESTIONS = [
-  'Show current inventory status',
-  'What items are low stock?',
-  'Summarize today sales',
-];
 
 const initialState: ChatSessionSliceState = {
   byConvId: {},
@@ -125,7 +116,6 @@ function createInitialChatSessionState(): ChatSessionState {
   return {
     connectionStatus: 'idle',
     isStreaming: false,
-    suggestions: [...DEFAULT_CHAT_SUGGESTIONS],
     modelName: null,
     turnStats: null,
     streamStartTime: null,
@@ -141,27 +131,6 @@ function getSession(state: ChatSessionSliceState, convId: string): ChatSessionSt
     state.byConvId[convId] = createInitialChatSessionState();
   }
   return state.byConvId[convId];
-}
-
-function normalizeSuggestionList(values: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-
-  for (const value of values) {
-    const next = stripTrailingWhitespace(value).trim();
-    if (!next) continue;
-
-    const key = next.toLowerCase();
-    if (seen.has(key)) continue;
-
-    seen.add(key);
-    out.push(next);
-    if (out.length >= MAX_SUGGESTIONS) {
-      break;
-    }
-  }
-
-  return out;
 }
 
 function applyError(
@@ -190,26 +159,6 @@ export const chatSessionSlice = createSlice({
 
     setIsStreaming(state, action: PayloadAction<{ convId: string; isStreaming: boolean }>) {
       getSession(state, action.payload.convId).isStreaming = action.payload.isStreaming;
-    },
-
-    setSuggestions(state, action: PayloadAction<{ convId: string; suggestions: string[] }>) {
-      const normalized = normalizeSuggestionList(action.payload.suggestions);
-      getSession(state, action.payload.convId).suggestions =
-        normalized.length > 0 ? normalized : [...DEFAULT_CHAT_SUGGESTIONS];
-    },
-
-    replaceSuggestions(state, action: PayloadAction<{ convId: string; suggestions: string[] }>) {
-      const normalized = normalizeSuggestionList(action.payload.suggestions);
-      getSession(state, action.payload.convId).suggestions =
-        normalized.length > 0 ? normalized : [...DEFAULT_CHAT_SUGGESTIONS];
-    },
-
-    mergeSuggestions(state, action: PayloadAction<{ convId: string; suggestions: string[] }>) {
-      const session = getSession(state, action.payload.convId);
-      session.suggestions = normalizeSuggestionList([
-        ...session.suggestions,
-        ...action.payload.suggestions,
-      ]);
     },
 
     setModelName(state, action: PayloadAction<{ convId: string; modelName: string | null }>) {

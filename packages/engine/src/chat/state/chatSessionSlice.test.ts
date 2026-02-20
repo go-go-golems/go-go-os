@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chatSessionReducer, chatSessionSlice, DEFAULT_CHAT_SUGGESTIONS } from './chatSessionSlice';
+import { chatSessionReducer, chatSessionSlice } from './chatSessionSlice';
 
 const actions = chatSessionSlice.actions;
 
@@ -23,34 +23,6 @@ describe('chatSessionSlice', () => {
     expect(state.byConvId.a?.isStreaming).toBe(true);
     expect(state.byConvId.b?.connectionStatus).toBe('error');
     expect(state.byConvId.b?.isStreaming).toBe(false);
-  });
-
-  it('normalizes and merges suggestions', () => {
-    const state = reduce([
-      actions.setSuggestions({
-        convId: 's1',
-        suggestions: ['  true  ', 'Show totals', 'show totals', '', '  '],
-      }),
-      actions.mergeSuggestions({
-        convId: 's1',
-        suggestions: ['What items are low stock?', 'show totals', 'Summarize today sales'],
-      }),
-    ]);
-
-    expect(state.byConvId.s1?.suggestions).toEqual([
-      'true',
-      'Show totals',
-      'What items are low stock?',
-      'Summarize today sales',
-    ]);
-  });
-
-  it('falls back to defaults when suggestion payload normalizes to empty', () => {
-    const state = reduce([
-      actions.replaceSuggestions({ convId: 's2', suggestions: ['   ', '\n\t'] }),
-    ]);
-
-    expect(state.byConvId.s2?.suggestions).toEqual(DEFAULT_CHAT_SUGGESTIONS);
   });
 
   it('tracks stream start, token updates, and clears errors on restart', () => {

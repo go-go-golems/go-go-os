@@ -9,6 +9,7 @@ import { chatSessionSlice } from '../../chat/state/chatSessionSlice';
 import { timelineSlice } from '../../chat/state/timelineSlice';
 import { clearRuntimeCardRegistry, hasRuntimeCard } from '../../plugin-runtime/runtimeCardRegistry';
 import { hypercardArtifactsReducer } from '../artifacts/artifactsSlice';
+import { ASSISTANT_SUGGESTIONS_ENTITY_ID, readSuggestionsEntityProps } from '../../chat/state/suggestions';
 
 function createStore() {
   return configureStore({
@@ -76,7 +77,7 @@ describe('hypercard card handlers', () => {
     expect(hasRuntimeCard('runtime-low-stock')).toBe(true);
   });
 
-  it('updates suggestions from hypercard.suggestions.v1', () => {
+  it('projects suggestions from hypercard.suggestions.v1 into timeline', () => {
     const store = createStore();
 
     handleSem(
@@ -93,9 +94,10 @@ describe('hypercard card handlers', () => {
       { convId: 'conv-card', dispatch: store.dispatch }
     );
 
-    expect(store.getState().chatSession.byConvId['conv-card'].suggestions).toEqual([
-      'Open low stock card',
-      'Show margin report',
-    ]);
+    expect(
+      readSuggestionsEntityProps(
+        store.getState().timeline.byConvId['conv-card'].byId[ASSISTANT_SUGGESTIONS_ENTITY_ID]
+      )?.items
+    ).toEqual(['Open low stock card', 'Show margin report']);
   });
 });

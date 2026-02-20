@@ -1,5 +1,5 @@
-import { type ReactNode, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { type ReactNode, useCallback, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { ChatWindow } from '../../components/widgets/ChatWindow';
 import {
   registerDefaultTimelineRenderers,
@@ -8,14 +8,20 @@ import {
 import type { RenderEntity } from '../renderers/types';
 import {
   type ChatStateSlice,
-  selectConnectionStatus,
   selectCurrentTurnStats,
   selectModelName,
+  selectRenderableTimelineEntities,
+  selectTimelineEntityById,
   selectStreamOutputTokens,
   selectStreamStartTime,
   selectSuggestions,
-  selectTimelineEntities,
 } from '../state/selectors';
+import {
+  DEFAULT_CHAT_SUGGESTIONS,
+  readSuggestionsEntityProps,
+  STARTER_SUGGESTIONS_ENTITY_ID,
+} from '../state/suggestions';
+import { timelineSlice } from '../state/timelineSlice';
 import { isRecord } from '../utils/guards';
 import { useConversation } from '../runtime/useConversation';
 import { StatsFooter } from './StatsFooter';
@@ -51,10 +57,14 @@ export function ChatConversationWindow({
   placeholder,
   headerActions,
 }: ChatConversationWindowProps) {
+  const dispatch = useDispatch();
   const { send, connectionStatus, isStreaming } = useConversation(convId, basePrefix);
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
-    selectTimelineEntities(state, convId)
+    selectRenderableTimelineEntities(state, convId)
+  );
+  const starterSuggestionsEntity = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
+    selectTimelineEntityById(state, convId, STARTER_SUGGESTIONS_ENTITY_ID)
   );
   const suggestions = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectSuggestions(state, convId)
@@ -70,6 +80,37 @@ export function ChatConversationWindow({
   );
   const streamOutputTokens = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectStreamOutputTokens(state, convId)
+  );
+
+  useEffect(() => {
+    if (entities.length > 0) {
+      return;
+    }
+    if (readSuggestionsEntityProps(starterSuggestionsEntity)) {
+      return;
+    }
+    dispatch(
+      timelineSlice.actions.upsertSuggestions({
+        convId,
+        entityId: STARTER_SUGGESTIONS_ENTITY_ID,
+        source: 'starter',
+        suggestions: DEFAULT_CHAT_SUGGESTIONS,
+        replace: true,
+      })
+    );
+  }, [convId, dispatch, entities.length, starterSuggestionsEntity]);
+
+  const sendWithSuggestionLifecycle = useCallback(
+    async (prompt: string) => {
+      dispatch(
+        timelineSlice.actions.consumeSuggestions({
+          convId,
+          entityId: STARTER_SUGGESTIONS_ENTITY_ID,
+        })
+      );
+      await send(prompt);
+    },
+    [convId, dispatch, send]
   );
 
   const renderers = useMemo(() => {
@@ -99,7 +140,7 @@ export function ChatConversationWindow({
       timelineContent={timelineContent}
       timelineItemCount={entities.length}
       isStreaming={isStreaming}
-      onSend={send}
+      onSend={sendWithSuggestionLifecycle}
       suggestions={suggestions}
       showSuggestionsAlways
       title={title}

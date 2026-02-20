@@ -1,5 +1,11 @@
 import type { ChatErrorRecord, ChatSessionSliceState } from './chatSessionSlice';
 import type { ConversationTimelineState, TimelineEntity, TimelineState } from './timelineSlice';
+import {
+  ASSISTANT_SUGGESTIONS_ENTITY_ID,
+  readSuggestionsEntityProps,
+  STARTER_SUGGESTIONS_ENTITY_ID,
+  SUGGESTIONS_ENTITY_KIND,
+} from './suggestions';
 
 export interface ChatStateSlice {
   timeline: TimelineState;
@@ -41,6 +47,11 @@ export const selectTimelineEntities = (
   return conv.order.map((id) => conv.byId[id]).filter(Boolean);
 };
 
+export const selectRenderableTimelineEntities = (
+  state: ChatStateSlice,
+  convId: string
+): TimelineEntity[] => selectTimelineEntities(state, convId).filter((entity) => entity.kind !== SUGGESTIONS_ENTITY_KIND);
+
 export const selectTimelineEntityById = (
   state: ChatStateSlice,
   convId: string,
@@ -54,7 +65,26 @@ export const selectIsStreaming = (state: ChatStateSlice, convId: string): boolea
   getChatSession(state, convId)?.isStreaming ?? false;
 
 export const selectSuggestions = (state: ChatStateSlice, convId: string): string[] =>
-  getChatSession(state, convId)?.suggestions ?? EMPTY_SUGGESTIONS;
+{
+  const conv = getTimelineConversation(state, convId);
+
+  const assistant = readSuggestionsEntityProps(conv.byId[ASSISTANT_SUGGESTIONS_ENTITY_ID]);
+  if (assistant && assistant.consumedAt === undefined && assistant.items.length > 0) {
+    return assistant.items;
+  }
+
+  const starter = readSuggestionsEntityProps(conv.byId[STARTER_SUGGESTIONS_ENTITY_ID]);
+  if (!starter || starter.consumedAt !== undefined || starter.items.length === 0) {
+    return EMPTY_SUGGESTIONS;
+  }
+
+  const hasRenderableEntities = conv.order.some((id) => {
+    const entity = conv.byId[id];
+    return Boolean(entity && entity.kind !== SUGGESTIONS_ENTITY_KIND);
+  });
+
+  return hasRenderableEntities ? EMPTY_SUGGESTIONS : starter.items;
+};
 
 export const selectLastError = (state: ChatStateSlice, convId: string): string | null =>
   getChatSession(state, convId)?.currentError?.message ?? getChatSession(state, convId)?.lastError ?? null;

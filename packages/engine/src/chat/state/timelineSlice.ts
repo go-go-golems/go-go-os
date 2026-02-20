@@ -1,4 +1,10 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import {
+  normalizeSuggestionList,
+  readSuggestionsEntityProps,
+  SUGGESTIONS_ENTITY_KIND,
+  type SuggestionsSource,
+} from './suggestions';
 
 export type TimelineEntity = {
   id: string;
@@ -34,6 +40,22 @@ interface ApplySnapshotPayload {
   entities: TimelineEntity[];
 }
 
+interface UpsertSuggestionsPayload {
+  convId: string;
+  entityId: string;
+  source: SuggestionsSource;
+  suggestions: string[];
+  replace?: boolean;
+  version?: number;
+  updatedAt?: number;
+}
+
+interface ConsumeSuggestionsPayload {
+  convId: string;
+  entityId: string;
+  consumedAt?: number;
+}
+
 const initialState: TimelineState = {
   byConvId: {},
 };
@@ -50,6 +72,13 @@ function ensureConversationTimeline(state: TimelineState, convId: string): Conve
     state.byConvId[convId] = createConversationTimelineState();
   }
   return state.byConvId[convId];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
 }
 
 export const timelineSlice = createSlice({
@@ -148,6 +177,73 @@ export const timelineSlice = createSlice({
         createdAt: existing.createdAt,
         kind: entity.kind || existing.kind,
         props: { ...(existing.props as Record<string, unknown>), ...(entity.props as Record<string, unknown>) },
+      };
+    },
+
+    upsertSuggestions(state, action: PayloadAction<UpsertSuggestionsPayload>) {
+      const { convId, entityId, source, replace = false, version, updatedAt } = action.payload;
+      const normalized = normalizeSuggestionList(action.payload.suggestions);
+      if (normalized.length === 0) return;
+
+      const conv = ensureConversationTimeline(state, convId);
+      const existing = conv.byId[entityId];
+
+      const existingVersion =
+        typeof existing?.version === 'number' && Number.isFinite(existing.version) ? existing.version : 0;
+      const incomingVersion = typeof version === 'number' && Number.isFinite(version) ? version : 0;
+      if (incomingVersion > 0 && incomingVersion < existingVersion) {
+        return;
+      }
+
+      const existingProps = readSuggestionsEntityProps(existing);
+      const nextItems = replace
+        ? normalized
+        : normalizeSuggestionList([...(existingProps?.items ?? []), ...normalized]);
+      const nextAt = updatedAt ?? Date.now();
+
+      const entity: TimelineEntity = {
+        id: entityId,
+        kind: SUGGESTIONS_ENTITY_KIND,
+        createdAt: existing?.createdAt ?? nextAt,
+        updatedAt: nextAt,
+        version: incomingVersion > 0 ? incomingVersion : existing?.version,
+        props: {
+          ...asRecord(existing?.props),
+          source,
+          items: nextItems,
+        },
+      };
+
+      if (!existing) {
+        conv.byId[entity.id] = entity;
+        conv.order.push(entity.id);
+        return;
+      }
+
+      conv.byId[entity.id] = entity;
+    },
+
+    consumeSuggestions(state, action: PayloadAction<ConsumeSuggestionsPayload>) {
+      const { convId, entityId, consumedAt } = action.payload;
+      const conv = state.byConvId[convId];
+      if (!conv) return;
+      const existing = conv.byId[entityId];
+      if (!existing || existing.kind !== SUGGESTIONS_ENTITY_KIND) return;
+
+      const at = consumedAt ?? Date.now();
+      const existingProps = asRecord(existing.props);
+      const prevConsumedAt = existingProps.consumedAt;
+      if (typeof prevConsumedAt === 'number' && Number.isFinite(prevConsumedAt)) {
+        return;
+      }
+
+      conv.byId[entityId] = {
+        ...existing,
+        updatedAt: at,
+        props: {
+          ...existingProps,
+          consumedAt: at,
+        },
       };
     },
 

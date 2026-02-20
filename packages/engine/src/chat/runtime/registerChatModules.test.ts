@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { chatSessionSlice } from '../state/chatSessionSlice';
+import { readSuggestionsEntityProps, ASSISTANT_SUGGESTIONS_ENTITY_ID } from '../state/suggestions';
 import { timelineSlice } from '../state/timelineSlice';
 import { clearSemHandlers, handleSem } from '../sem/semRegistry';
 import { hypercardArtifactsReducer } from '../../hypercard/artifacts/artifactsSlice';
@@ -63,7 +64,11 @@ describe('registerChatModules', () => {
 
     const state = store.getState();
     expect(state.timeline.byConvId['conv-1'].byId['msg-1'].kind).toBe('message');
-    expect(state.chatSession.byConvId['conv-1'].suggestions).toEqual(['Open card']);
+    expect(
+      readSuggestionsEntityProps(
+        state.timeline.byConvId['conv-1'].byId[ASSISTANT_SUGGESTIONS_ENTITY_ID]
+      )?.items
+    ).toEqual(['Open card']);
   });
 
   it('exposes module contract registration and applies modules once', () => {

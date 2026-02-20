@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { describe, expect, it } from 'vitest';
+import { ASSISTANT_SUGGESTIONS_ENTITY_ID, STARTER_SUGGESTIONS_ENTITY_ID } from './suggestions';
 import { timelineSlice } from './timelineSlice';
 
 function createStore() {
@@ -164,6 +165,76 @@ describe('timelineSlice', () => {
       first: 'alpha',
       to: true,
       second: 'beta',
+    });
+  });
+
+  it('upserts, replaces, and consumes suggestion entities with version gating', () => {
+    const store = createStore();
+
+    store.dispatch(
+      timelineSlice.actions.upsertSuggestions({
+        convId: 'conv-suggestions',
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: ['Open card', 'Show margin'],
+        replace: false,
+        version: 2,
+      })
+    );
+
+    store.dispatch(
+      timelineSlice.actions.upsertSuggestions({
+        convId: 'conv-suggestions',
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: ['open card', 'Review sales'],
+        replace: false,
+        version: 2,
+      })
+    );
+
+    store.dispatch(
+      timelineSlice.actions.upsertSuggestions({
+        convId: 'conv-suggestions',
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: ['stale'],
+        replace: true,
+        version: 1,
+      })
+    );
+
+    store.dispatch(
+      timelineSlice.actions.upsertSuggestions({
+        convId: 'conv-suggestions',
+        entityId: STARTER_SUGGESTIONS_ENTITY_ID,
+        source: 'starter',
+        suggestions: ['Show status', 'Show status'],
+        replace: true,
+      })
+    );
+
+    store.dispatch(
+      timelineSlice.actions.consumeSuggestions({
+        convId: 'conv-suggestions',
+        entityId: STARTER_SUGGESTIONS_ENTITY_ID,
+        consumedAt: 123,
+      })
+    );
+
+    const conv = store.getState().timeline.byConvId['conv-suggestions'];
+    const assistant = conv.byId[ASSISTANT_SUGGESTIONS_ENTITY_ID];
+    const starter = conv.byId[STARTER_SUGGESTIONS_ENTITY_ID];
+
+    expect(assistant.version).toBe(2);
+    expect(assistant.props).toEqual({
+      source: 'assistant',
+      items: ['Open card', 'Show margin', 'Review sales'],
+    });
+    expect(starter.props).toEqual({
+      source: 'starter',
+      items: ['Show status'],
+      consumedAt: 123,
     });
   });
 });

@@ -39,6 +39,8 @@ Recommendation: model suggestions as first-class timeline entities (`kind: 'sugg
 
 This preserves the user-facing suggestion chips while removing the architectural special case.
 
+Secondary viable option: if we intentionally keep suggestions outside timeline, use a single projector action with reducer options encoded in action `meta` (`mode`, `seq`, `source`) rather than multiple ad-hoc reducers. This still improves determinism and replay semantics.
+
 ## Problem Statement
 
 ### Current behavior
@@ -65,7 +67,9 @@ In diary Step 4, one second-pair-of-eyes concern was whether `chatSessionSlice` 
 
 ## Proposed Solution
 
-### 1) Introduce suggestion timeline entity kind
+### Option 1 (preferred): Timeline entity projection
+
+#### 1) Introduce suggestion timeline entity kind
 
 Define entity contract:
 
@@ -80,7 +84,7 @@ props: {
 version?: number // from event.seq when available
 ```
 
-### 2) Project SEM suggestion events into timeline
+#### 2) Project SEM suggestion events into timeline
 
 In `registerHypercardTimelineModule`, replace direct `chatSessionSlice` dispatches with:
 
@@ -88,7 +92,7 @@ In `registerHypercardTimelineModule`, replace direct `chatSessionSlice` dispatch
 2. upsert `timelineSlice` entity in conversation scope
 3. use `event.seq` as entity version if finite to preserve monotonic update semantics
 
-### 3) Derive active suggestion list from timeline entities
+#### 3) Derive active suggestion list from timeline entities
 
 Add selector(s) that compute current suggestions for a conversation from timeline state, e.g.:
 
@@ -98,7 +102,7 @@ Add selector(s) that compute current suggestions for a conversation from timelin
 
 `ChatConversationWindow` should use this timeline-derived selector instead of `selectSuggestions` from `chatSessionSlice`.
 
-### 4) Render suggestion updates as timeline content (optional but recommended)
+#### 4) Render suggestion updates as timeline content (optional but recommended)
 
 Add `SuggestionsRenderer` and register it in timeline registry:
 
@@ -107,7 +111,7 @@ Add `SuggestionsRenderer` and register it in timeline registry:
 
 This keeps suggestions visible in history and debuggable from timeline/event traces.
 
-### 5) Reduce chatSession special casing
+#### 5) Reduce chatSession special casing
 
 After migration:
 
@@ -115,6 +119,95 @@ After migration:
 2. keep `chatSession.suggestions` only as temporary fallback or remove it in follow-up cleanup
 
 End-state target: suggestions are timeline-projected data, not session-side mutable list.
+
+### Option 2 (fallback): Keep suggestions outside timeline, but formalize projector semantics
+
+If we choose to keep suggestions in `chatSessionSlice`, the key is to avoid multiple bespoke reducer paths and make projection options explicit.
+
+#### 1) Use one suggestion action with metadata options
+
+Redux `dispatch` does not support `dispatch(action, options)`.  
+Use action `meta` (or thunk args) to carry projector options:
+
+```ts
+type SuggestionMeta = {
+  mode: 'merge' | 'replace';
+  source: string; // SEM event type
+  seq?: number;   // ordering/version hint
+};
+```
+
+```ts
+applySemSuggestions: {
+  reducer(
+    state,
+    action: PayloadAction<{ convId: string; suggestions: string[] }, string, SuggestionMeta>
+  ) {
+    const session = getSession(state, action.payload.convId);
+
+    // Stale drop guard for replay/reorder safety
+    if (
+      typeof action.meta.seq === 'number' &&
+      typeof session.suggestionsSeq === 'number' &&
+      action.meta.seq < session.suggestionsSeq
+    ) {
+      return;
+    }
+
+    if (action.meta.mode === 'replace') {
+      session.suggestions = normalizeSuggestionList(action.payload.suggestions);
+    } else {
+      session.suggestions = normalizeSuggestionList([
+        ...session.suggestions,
+        ...action.payload.suggestions,
+      ]);
+    }
+
+    if (typeof action.meta.seq === 'number') {
+      session.suggestionsSeq = action.meta.seq;
+    }
+  },
+  prepare(payload: { convId: string; suggestions: string[] }, meta: SuggestionMeta) {
+    return { payload, meta };
+  },
+}
+```
+
+#### 2) Projector hook / SEM handler usage
+
+```ts
+registerSem('hypercard.suggestions.update', (ev, ctx) => {
+  const suggestions = stringArray((ev.data as any)?.suggestions);
+  if (suggestions.length === 0) return;
+
+  ctx.dispatch(
+    chatSessionSlice.actions.applySemSuggestions(
+      { convId: ctx.convId, suggestions },
+      { mode: 'merge', source: ev.type, seq: ev.seq }
+    )
+  );
+});
+
+registerSem('hypercard.suggestions.v1', (ev, ctx) => {
+  const suggestions = stringArray((ev.data as any)?.suggestions);
+  if (suggestions.length === 0) return;
+
+  ctx.dispatch(
+    chatSessionSlice.actions.applySemSuggestions(
+      { convId: ctx.convId, suggestions },
+      { mode: 'replace', source: ev.type, seq: ev.seq }
+    )
+  );
+});
+```
+
+#### 3) Why this fallback is materially better than current state
+
+1. single reducer entrypoint for SEM suggestions
+2. explicit mode semantics (`merge` vs `replace`) in one place
+3. optional stale-drop ordering guard using `seq`
+4. simpler tests than multiple action/reducer combinations
+5. still compatible with existing `ChatWindow` suggestion prop
 
 ## Design Decisions
 
@@ -160,6 +253,14 @@ Rationale:
 
 Prevents UX regressions while moving storage/projection model.
 
+### Decision 5: If session-backed suggestions remain, encode projector options in action meta
+
+Rationale:
+
+1. keeps semantics explicit and testable
+2. avoids hidden coupling between handler type and reducer choice
+3. allows ordering safety (`seq`) without timeline entity migration
+
 ## Alternatives Considered
 
 ### Alternative A: Keep current special-case session actions
@@ -185,6 +286,17 @@ Rejected because:
 1. blurs semantic boundary (suggestions are not chat message text)
 2. forces MessageRenderer awareness of suggestion payload conventions
 3. reduces type clarity and renderer modularity
+
+### Alternative D: Keep suggestions session-backed but formalize SEM projection contract
+
+Status: viable fallback if timeline migration is postponed.
+
+Tradeoff profile:
+
+1. better than current special-case actions (deterministic, explicit, testable)
+2. still not fully entity-first architecture
+3. lower migration cost than Option 1
+4. can serve as intermediate step before full timeline entity adoption
 
 ## Implementation Plan
 
@@ -214,6 +326,14 @@ Rejected because:
    - `packages/engine/src/chat/state/chatSessionSlice.ts`
 2. Update tests and docs to confirm timeline-only projection.
 
+### Alternative implementation track (if choosing Option 2)
+
+1. Add `applySemSuggestions` reducer + `suggestionsSeq` field to `chatSessionSlice`
+2. Replace existing `mergeSuggestions`/`replaceSuggestions` SEM dispatches with `applySemSuggestions(..., meta)`
+3. Remove direct usage of `mergeSuggestions`/`replaceSuggestions` from SEM codepaths
+4. Add tests for `seq` stale-drop behavior and mode-specific updates
+5. Keep future migration path open to Option 1 by preserving normalized payload contract
+
 ### Testing/verification checklist
 
 1. Suggestion SEM events create/update timeline entity with expected mode/source.
@@ -221,6 +341,7 @@ Rejected because:
 3. Suggestion chips in `ChatWindow` still behave identically (click-to-send).
 4. Hydration/replay preserves final suggestion state.
 5. No remaining direct suggestion writes to `chatSessionSlice` from SEM handlers.
+6. (Option 2 path) projector metadata mode/seq produce deterministic updates under replay.
 
 ## Open Questions
 
@@ -228,6 +349,7 @@ Rejected because:
 2. Should `merge` vs `replace` semantics stay explicit in props or be normalized away at handler time?
 3. Do we keep `DEFAULT_CHAT_SUGGESTIONS` fallback in `chatSessionSlice`, move it to selector-layer fallback, or both during migration?
 4. Should we eventually treat quick actions/buttons similarly as timeline entities for full symmetry?
+5. Which path should we choose first: Option 1 (full entity projection) or Option 2 (session-backed but projector-contract-based)?
 
 ## References
 

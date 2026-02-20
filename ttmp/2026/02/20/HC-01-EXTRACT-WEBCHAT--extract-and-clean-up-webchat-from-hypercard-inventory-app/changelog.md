@@ -110,3 +110,12 @@ Added analysis document proposing suggestion handling via timeline entities/SEM 
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/design-doc/02-analysis-project-suggestions-as-timeline-entities.md — Primary analysis for de-specializing suggestions into timeline entities
 
+
+## 2026-02-20
+
+Expanded suggestions analysis doc with a second detailed option: keep suggestions outside timeline via a formal SEM projector action using metadata options (mode/source/seq) and reducer-side stale gating.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/design-doc/02-analysis-project-suggestions-as-timeline-entities.md — Added Option 2 projector-meta design and implementation track
+

@@ -101,3 +101,12 @@ Added a dedicated reference document explaining Step 4 Phase 1 timeline reducer 
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/reference/02-conversation-scoped-timeline-reducer-semantics-and-version-gating.md — Primary explanatory reference for reducer/version semantics
 
+
+## 2026-02-20
+
+Added analysis document proposing suggestion handling via timeline entities/SEM projection (instead of chatSession special-casing), with migration options, ordering/version strategy, and implementation plan.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/design-doc/02-analysis-project-suggestions-as-timeline-entities.md — Primary analysis for de-specializing suggestions into timeline entities
+

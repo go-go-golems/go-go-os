@@ -8,6 +8,17 @@ Added a new HC-58 V1 implementation plan document that rewrites the refactor int
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/design-doc/02-hc58-v1-simplified-implementation-plan.md — New primary implementation plan for HC-58 V1
 
+Implemented HC-58 Section 1 code tasks (`HC58-S1-T01..T03`): introduced the new conversation runtime module scaffold, manager reference lifecycle, React provider/selectors, public engine export wiring, and passing manager identity/disposal tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.ts — New runtime core scaffold for conversation-owned state and lifecycle
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/manager.ts — New one-runtime-per-conversation manager with release/dispose behavior
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/manager.test.ts — New tests validating manager identity and disposal invariants
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/index.ts — Export wiring for the new conversation module
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md — Section 1 tasks checked off after implementation and validation
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md — Detailed Step 16 execution diary with command/test trace
+
 ## 2026-02-19
 
 - Initial workspace created

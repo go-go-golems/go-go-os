@@ -953,3 +953,94 @@ This keeps the simplified one-path model clear and avoids introducing conceptual
 
 ### Technical details
 - No behavioral/code changes. Documentation terminology alignment only.
+
+## Step 16: Start Implementation Execution with Section 1 Runtime Scaffolding
+I started HC-58 execution from the new sectioned task list and implemented Section 1 in full: conversation runtime module scaffolding, manager cache lifecycle behavior, React provider/hooks selectors, and manager identity tests.
+
+This step intentionally avoids invasive integration changes yet. The goal was to establish the new runtime ownership primitives first so downstream migration tasks (connection ownership, metadata migration, and UI cutover) have a stable target.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, now start working on the ticket, task by task, checking tasks off as you go, keeping a detailed diary as you work, committing at appropriate times."
+
+**Assistant interpretation:** Begin immediate HC-58 implementation in strict task order, mark tasks complete as done, maintain a detailed diary entry for each concrete step, and commit in reviewable increments.
+
+**Inferred user intent:** Move from planning to concrete execution with clear progress traceability and low ambiguity for continuation/review.
+
+**Commit (code):** f2de089 — "feat(HC-58): scaffold conversation runtime module and finish section 1 tasks"
+
+### What I did
+- Implemented new conversation runtime module files:
+  - `packages/engine/src/hypercard-chat/conversation/types.ts`
+  - `packages/engine/src/hypercard-chat/conversation/runtime.ts`
+  - `packages/engine/src/hypercard-chat/conversation/manager.ts`
+  - `packages/engine/src/hypercard-chat/conversation/context.tsx`
+  - `packages/engine/src/hypercard-chat/conversation/selectors.ts`
+  - `packages/engine/src/hypercard-chat/conversation/index.ts`
+- Added manager identity/disposal tests:
+  - `packages/engine/src/hypercard-chat/conversation/manager.test.ts`
+- Wired exports:
+  - `packages/engine/src/hypercard-chat/index.ts`
+- Updated HC-58 task checklist by checking off completed Section 1 tasks:
+  - `HC58-S1-T01`
+  - `HC58-S1-T02`
+  - `HC58-S1-T03`
+  in `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+- Validation commands run:
+  - `npm run typecheck` (repo root `2026-02-12--hypercard-react`)
+  - `npm run test -w packages/engine -- manager.test.ts`
+
+### Why
+- Section 1 is foundational and low-risk. It introduces the ownership model and API surface without breaking existing inventory behavior.
+- Completing and validating Section 1 before touching lifecycle integration reduces blast radius.
+
+### What worked
+- Typecheck passed cleanly.
+- New manager tests passed:
+  - same conversation ID returns same runtime instance,
+  - different IDs return different runtime instances,
+  - last release disposes and allows clean recreation.
+- Task bookkeeping remained synchronized with implementation progress.
+
+### What didn't work
+- An early status command in parallel output returned empty stdout, so I reran status checks directly in the repo to confirm working tree state.
+- No build/test failures occurred in this step.
+
+### What I learned
+- The conversation runtime primitives can be introduced incrementally without immediate coupling to Redux app store migration.
+- Manager reference counting for `getRuntime/releaseRuntime` is straightforward to enforce and test in isolation.
+
+### What was tricky to build
+- The main design edge was balancing "new runtime core" with current projection pipeline dependencies.
+- I kept runtime ingestion on existing `projectSemEnvelope/hydrateTimelineSnapshot` so behavior stays aligned with current semantics while still exposing the new ownership API.
+- Another subtle point was hook/runtime lifetime: `useConversationRuntime` now pairs `getRuntime` with `releaseRuntime` in effect cleanup so manager ref counting stays correct.
+
+### What warrants a second pair of eyes
+- `conversation/runtime.ts` currently wires adapters through the runtime-owned projection dispatch path. This is a deliberate transitional setup, but it should be reviewed before Section 4 (adapter boundary hardening) to ensure no implicit side-effect assumptions creep in.
+- Selector hooks currently subscribe to full runtime snapshots; Section 5/6 may later want finer-grained selector memoization for render isolation.
+
+### What should be done in the future
+- Next immediate work item is Section 2 (`HC58-S2-T01..T04`): move active connection lifecycle ownership from `useProjectedChatConnection` to `ConversationRuntime` claim/refcount semantics.
+
+### Code review instructions
+- Start with new contracts:
+  - `packages/engine/src/hypercard-chat/conversation/types.ts`
+  - `packages/engine/src/hypercard-chat/conversation/runtime.ts`
+  - `packages/engine/src/hypercard-chat/conversation/manager.ts`
+- Then review React integration:
+  - `packages/engine/src/hypercard-chat/conversation/context.tsx`
+  - `packages/engine/src/hypercard-chat/conversation/selectors.ts`
+- Validate manager behavior in:
+  - `packages/engine/src/hypercard-chat/conversation/manager.test.ts`
+- Confirm export surface change:
+  - `packages/engine/src/hypercard-chat/index.ts`
+- Confirm task updates:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+
+### Technical details
+- Commands run:
+  - `npm run typecheck`
+  - `npm run test -w packages/engine -- manager.test.ts`
+- Validation outputs:
+  - TypeScript build: success.
+  - Vitest: `3 passed` in `manager.test.ts`.

@@ -31,7 +31,7 @@ Required per task:
 Covers plan points: 1, 6, 16.
 
 ### HC58-S1-T01 Create `conversation/` module skeleton
-- [ ] Create the conversation runtime module files.
+- [x] Create the conversation runtime module files.
 
 Files to create:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/types.ts`
@@ -67,7 +67,7 @@ Verification:
 1. `cd 2026-02-12--hypercard-react && npm run typecheck`
 
 ### HC58-S1-T02 Wire new conversation exports into engine public API
-- [ ] Export the new conversation runtime API from engine entrypoints.
+- [x] Export the new conversation runtime API from engine entrypoints.
 
 Files to edit:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/index.ts`
@@ -90,7 +90,7 @@ Verification:
 1. `cd 2026-02-12--hypercard-react && npm run typecheck`
 
 ### HC58-S1-T03 Add manager identity tests
-- [ ] Add tests for one-runtime-per-conversation behavior.
+- [x] Add tests for one-runtime-per-conversation behavior.
 
 Files to create:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/manager.test.ts`
@@ -539,4 +539,3 @@ Verification:
 - [ ] `cd 2026-02-12--hypercard-react && npm run test -w packages/engine`
 - [ ] Multi-window manual smoke test documented in changelog.
 - [ ] HC-58 design-doc, tasks, and changelog updated in same final PR.
-

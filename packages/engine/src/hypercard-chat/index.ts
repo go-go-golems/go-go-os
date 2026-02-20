@@ -2,6 +2,7 @@ export * from './artifacts/artifactRuntime';
 export * from './artifacts/artifactsSelectors';
 export * from './artifacts/artifactsSlice';
 export * from './artifacts/timelineProjection';
+export * from './conversation';
 export * from './event-viewer/EventViewerWindow';
 
 export * from './event-viewer/eventBus';

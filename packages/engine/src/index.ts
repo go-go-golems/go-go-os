@@ -23,6 +23,8 @@ export * from './components/widgets';
 export * from './debug';
 // ── Diagnostics (Redux perf / FPS) ──
 export * from './diagnostics';
+// ── Hypercard ──
+export * from './hypercard';
 // ── State ──
 export {
   clearToast,

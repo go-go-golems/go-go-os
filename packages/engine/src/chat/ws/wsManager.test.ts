@@ -1,5 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearSemHandlers } from '../sem/semRegistry';
+import {
+  ensureChatModulesRegistered,
+  resetChatModulesRegistrationForTest,
+} from '../runtime/registerChatModules';
 import { chatSessionSlice } from '../state/chatSessionSlice';
 import { timelineSlice } from '../state/timelineSlice';
 import { WsManager } from './wsManager';
@@ -38,6 +43,12 @@ function createStore() {
 }
 
 describe('wsManager', () => {
+  beforeEach(() => {
+    clearSemHandlers();
+    resetChatModulesRegistrationForTest();
+    ensureChatModulesRegistered();
+  });
+
   it('dispatches SEM frames into timeline entities after connect', async () => {
     const store = createStore();
     const manager = new WsManager();

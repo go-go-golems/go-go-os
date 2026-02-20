@@ -1,5 +1,6 @@
 import type { TimelineEntityV2 } from './pb/proto/sem/timeline/transport_pb';
 import type { TimelineEntity } from '../state/timelineSlice';
+import { recordField, stringField, structuredRecordFromUnknown } from './semHelpers';
 import { toNumber, toNumberOr } from '../utils/number';
 import { normalizeTimelineProps } from './timelinePropsRegistry';
 
@@ -12,12 +13,89 @@ export function propsFromTimelineEntity(e: TimelineEntityV2): Record<string, unk
   return normalizeTimelineProps(e?.kind ?? '', base);
 }
 
+function normalizedToolCallId(id: string, props: Record<string, unknown>): string {
+  const fromProps = stringField(props, 'toolCallId');
+  if (fromProps) {
+    return fromProps;
+  }
+  if (id.endsWith(':result')) {
+    return id.slice(0, -7);
+  }
+  if (id.endsWith(':custom')) {
+    return id.slice(0, -7);
+  }
+  return id;
+}
+
+function artifactIdFromResult(result: Record<string, unknown> | undefined): string | undefined {
+  if (!result) return undefined;
+  const artifact = recordField(result, 'artifact');
+  if (artifact) {
+    return stringField(artifact, 'id');
+  }
+  const data = recordField(result, 'data');
+  const nestedArtifact = data ? recordField(data, 'artifact') : undefined;
+  if (nestedArtifact) {
+    return stringField(nestedArtifact, 'id');
+  }
+  return undefined;
+}
+
+function remapCustomKind(entity: TimelineEntity): TimelineEntity {
+  if (entity.kind !== 'tool_result') {
+    return entity;
+  }
+  if (!isObject(entity.props)) {
+    return entity;
+  }
+
+  const customKind = stringField(entity.props, 'customKind');
+  if (customKind !== 'hypercard.widget.v1' && customKind !== 'hypercard.card.v2') {
+    return entity;
+  }
+
+  const resultRecord = structuredRecordFromUnknown(entity.props.result);
+  const toolCallId = normalizedToolCallId(entity.id, entity.props);
+  const itemId = stringField(resultRecord ?? {}, 'itemId') ?? toolCallId;
+  const artifactId = artifactIdFromResult(resultRecord ?? undefined);
+
+  if (customKind === 'hypercard.widget.v1') {
+    return {
+      ...entity,
+      id: `widget:${itemId}`,
+      kind: 'hypercard_widget',
+      props: {
+        ...entity.props,
+        itemId,
+        artifactId,
+        status: 'success',
+        title: stringField(resultRecord ?? {}, 'title') ?? 'Widget',
+        detail: 'ready',
+      },
+    };
+  }
+
+  return {
+    ...entity,
+    id: `card:${itemId}`,
+    kind: 'hypercard_card',
+    props: {
+      ...entity.props,
+      itemId,
+      artifactId,
+      status: 'success',
+      title: stringField(resultRecord ?? {}, 'title') ?? 'Card',
+      detail: 'ready',
+    },
+  };
+}
+
 export function timelineEntityFromProto(e: TimelineEntityV2, version?: unknown): TimelineEntity | null {
   if (!e?.id || !e?.kind) return null;
   const createdAt = toNumberOr((e as any).createdAtMs, Date.now());
   const updatedAt = toNumber((e as any).updatedAtMs) || undefined;
   const versionNum = toNumber(version);
-  return {
+  const mapped: TimelineEntity = {
     id: e.id,
     kind: e.kind,
     createdAt,
@@ -25,4 +103,5 @@ export function timelineEntityFromProto(e: TimelineEntityV2, version?: unknown):
     version: typeof versionNum === 'number' ? versionNum : undefined,
     props: propsFromTimelineEntity(e),
   };
+  return remapCustomKind(mapped);
 }

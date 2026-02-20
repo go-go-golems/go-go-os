@@ -1,7 +1,10 @@
 import type { ChatConnectionStatus } from '../state/chatSessionSlice';
 import { emitConversationEvent } from '../debug/eventBus';
 import { fetchTimelineSnapshot, submitPrompt } from './http';
+import { ensureChatModulesRegistered } from './registerChatModules';
 import { WsManager } from '../ws/wsManager';
+
+ensureChatModulesRegistered();
 
 export interface ConversationConnectArgs {
   convId: string;

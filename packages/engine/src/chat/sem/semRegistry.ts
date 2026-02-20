@@ -85,7 +85,9 @@ function decodeProto<T extends Message>(schema: GenMessage<T>, raw: unknown): T 
 }
 
 export function registerDefaultSemHandlers() {
-  clearSemHandlers();
+  // Intentionally additive: callers that need a clean slate must call
+  // clearSemHandlers() explicitly (tests do this in beforeEach).
+  // This prevents default registration from wiping extension handlers.
 
   registerSem('timeline.upsert', (ev, ctx) => {
     const data = decodeProto<TimelineUpsertV2>(TimelineUpsertV2Schema, ev.data);

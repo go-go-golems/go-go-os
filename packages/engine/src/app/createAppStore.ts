@@ -6,6 +6,7 @@ import { startFrameMonitor } from '../diagnostics/frameMonitor';
 import { pluginCardRuntimeReducer } from '../features/pluginCardRuntime/pluginCardRuntimeSlice';
 import { notificationsReducer } from '../features/notifications/notificationsSlice';
 import { windowingReducer } from '../desktop/core/state/windowingSlice';
+import { hypercardArtifactsReducer } from '../hypercard/artifacts/artifactsSlice';
 
 /** Options for `createAppStore`. */
 export interface CreateAppStoreOptions {
@@ -54,6 +55,7 @@ export function createAppStore<T extends Record<string, Reducer>>(
     windowing: windowingReducer,
     notifications: notificationsReducer,
     debug: debugReducer,
+    hypercardArtifacts: hypercardArtifactsReducer,
     ...domainReducers,
   };
 

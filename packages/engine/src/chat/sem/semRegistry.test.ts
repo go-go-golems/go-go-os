@@ -97,4 +97,23 @@ describe('semRegistry', () => {
       streaming: true,
     });
   });
+
+  it('does not clear extension handlers when registering defaults', () => {
+    const extensionHandler = vi.fn();
+    registerSem('hypercard.widget.start', extensionHandler);
+    registerDefaultSemHandlers();
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'hypercard.widget.start',
+          id: 'evt-widget',
+        },
+      },
+      { convId: 'conv-1', dispatch: vi.fn() }
+    );
+
+    expect(extensionHandler).toHaveBeenCalledTimes(1);
+  });
 });

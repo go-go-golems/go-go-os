@@ -2,7 +2,6 @@ import { fromJson } from '@bufbuild/protobuf';
 import { type TimelineSnapshotV2, TimelineSnapshotV2Schema } from '../sem/pb/proto/sem/timeline/transport_pb';
 import {
   handleSem,
-  registerDefaultSemHandlers,
   type SemContext,
   type SemEnvelope,
 } from '../sem/semRegistry';
@@ -106,7 +105,6 @@ class WsManager {
     this.lastOnStatus = args.onStatus ?? null;
     this.lastDispatch = args.dispatch;
 
-    registerDefaultSemHandlers();
     args.dispatch(
       chatSessionSlice.actions.setConnectionStatus({
         convId: args.convId,

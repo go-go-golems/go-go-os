@@ -10,6 +10,7 @@ export * from './renderers/rendererRegistry';
 export * from './renderers/types';
 export * from './runtime/conversationManager';
 export * from './runtime/http';
+export * from './runtime/registerChatModules';
 export * from './runtime/useConversation';
 export * from './state/chatSessionSlice';
 export * from './state/selectors';

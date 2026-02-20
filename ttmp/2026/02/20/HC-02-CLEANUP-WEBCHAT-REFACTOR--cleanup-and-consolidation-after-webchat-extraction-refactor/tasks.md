@@ -19,3 +19,4 @@
 - [ ] Add a lightweight synchronization process for copied SEM protobuf TS files under `packages/engine/src/chat/sem/pb`
 - [x] Fix desktop icon double-click command routing for non-card icons (new chat, stacks & cards, event viewer) so icon.open.* goes through contribution/default command pipeline
 - [x] Restore chat-window header actions (Event Viewer launch + debug mode toggle) in inventory assistant window with per-conversation behavior
+- [x] Add chat timeline renderer debug mode toggle in header and extend renderer API with context; implement full-content debug rendering for hypercard widget/card entities

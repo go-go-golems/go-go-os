@@ -12,9 +12,15 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: apps/inventory/src/App.tsx
-      Note: Restore chat header actions for event viewer and debug launch
+      Note: |-
+        Restore chat header actions for event viewer and debug launch
+        Add local chat render-mode toggle in header actions
     - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
-      Note: F4 implementation details (starter suggestion lifecycle)
+      Note: |-
+        F4 implementation details (starter suggestion lifecycle)
+        Pass render context to timeline renderers
+    - Path: packages/engine/src/chat/renderers/types.ts
+      Note: Renderer context contract with render mode
     - Path: packages/engine/src/chat/state/selectors.ts
       Note: F4 selector migration to timeline state
     - Path: packages/engine/src/chat/state/suggestions.ts
@@ -23,6 +29,10 @@ RelatedFiles:
       Note: F4 reducers for upsert/consume suggestions
     - Path: packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
       Note: Fix non-card icon double-click routing through shell command pipeline
+    - Path: packages/engine/src/hypercard/timeline/hypercardCard.tsx
+      Note: Debug-mode full-content rendering for card entities
+    - Path: packages/engine/src/hypercard/timeline/hypercardWidget.tsx
+      Note: Debug-mode full-content rendering for widget entities
     - Path: packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts
       Note: F4 SEM handler migration from session to timeline
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/design-doc/01-exhaustive-legacy-and-consolidation-assessment-after-hc-01.md
@@ -31,6 +41,7 @@ RelatedFiles:
       Note: |-
         Track and close icon double-click routing bug task
         Track and close header-actions restoration task
+        Track and close renderer debug mode task
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/various/01-hc01-touched-files-existing.txt
       Note: Computed surviving touched-file set used in audit
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/various/02-hc01-touched-files-removed.txt
@@ -41,6 +52,7 @@ LastUpdated: 2026-02-20T16:24:04.03865615-05:00
 WhatFor: Preserve detailed investigation history for HC-02 cleanup scope derivation from HC-01 touched files.
 WhenToUse: Use when reviewing why each cleanup task exists and how findings were derived from concrete code evidence.
 ---
+
 
 
 
@@ -757,6 +769,84 @@ This step restores those controls with per-conversation Event Viewer launch and 
   - `pnpm exec tsc -p apps/inventory/tsconfig.json --noEmit`
   - `pnpm exec tsc -p packages/engine/tsconfig.json --noEmit`
   - `pnpm exec vitest run packages/engine/src/components/shell/windowing/desktopContributions.test.ts packages/engine/src/components/shell/windowing/desktopCommandRouter.test.ts`
+
+## Step 11: Add renderer debug mode toggle and full widget/card content views
+
+After restoring chat header controls, the requested behavior was to make debug a true render-mode toggle. This step introduced a small renderer-context contract so timeline renderers can vary output by mode, then implemented full-content debug views for hypercard widget/card entities.
+
+The inventory chat header now toggles `normal`/`debug` mode in-place, instead of opening an external debug window from that button.
+
+### Prompt Context
+
+**User prompt (verbatim):** "alright, do it. Create a new task for it. Add debug modes for widget and card showing the full content."
+
+**Assistant interpretation:** Create and execute a task that adds renderer-level debug mode with a header toggle and richer widget/card debug output.
+
+**Inferred user intent:** Inspect timeline artifacts directly inside chat without leaving context, with complete card/widget payload visibility.
+
+**Commit (code):** `33748ac` — "feat(chat): add renderer debug mode toggle and context"
+
+### What I did
+- Added task #18 in HC-02 and checked it off after implementation.
+- Extended renderer contract:
+  - `packages/engine/src/chat/renderers/types.ts`
+  - added `RenderMode = 'normal' | 'debug'`
+  - added `RenderContext { mode, convId }`
+  - updated `TimelineRenderer` props to include optional `ctx`
+- Updated `ChatConversationWindow`:
+  - `packages/engine/src/chat/components/ChatConversationWindow.tsx`
+  - added optional `renderMode` prop (default `normal`)
+  - passes `ctx={{ mode: renderMode, convId }}` into each renderer
+- Updated inventory chat integration:
+  - `apps/inventory/src/App.tsx`
+  - `InventoryChatAssistantWindow` now holds local render mode state
+  - header debug button toggles mode (`🔍 Debug` / `🔍 Debug ON`)
+- Added full-content debug rendering for hypercard entities:
+  - `packages/engine/src/hypercard/timeline/hypercardWidget.tsx`
+  - `packages/engine/src/hypercard/timeline/hypercardCard.tsx`
+  - in `debug` mode each renderer now shows full `e.props` JSON in a `<pre>` block
+
+### Why
+- Debug toggle should affect timeline presentation directly.
+- Widget/card payloads are where most inspection value is during integration debugging.
+- A renderer-context API keeps this extensible without hard-coding debug wrappers in chat shell.
+
+### What worked
+- Engine typecheck passed.
+- Inventory app typecheck passed after rebuilding engine project refs.
+- Targeted tests passed for timeline handlers and desktop routing.
+
+### What didn't work
+- Inventory typecheck initially failed because project references were still using stale generated declarations for `ChatConversationWindowProps`.
+- Resolution:
+  - ran `pnpm exec tsc -b packages/engine`
+  - reran inventory typecheck successfully.
+
+### What I learned
+- Renderer context is a low-friction extensibility seam for debug/inspection modes that avoids renderer-specific global state.
+
+### What was tricky to build
+- Cross-package TS project references required refreshing engine build artifacts before app-level typecheck recognized new props.
+
+### What warrants a second pair of eyes
+- Validate that the amount of debug JSON shown for large widget/card payloads remains usable in real sessions.
+
+### What should be done in the future
+- Optionally add per-renderer compact/expanded debug formatting helpers to avoid repeating raw JSON blocks.
+
+### Code review instructions
+- Review:
+  - `packages/engine/src/chat/renderers/types.ts`
+  - `packages/engine/src/chat/components/ChatConversationWindow.tsx`
+  - `packages/engine/src/hypercard/timeline/hypercardWidget.tsx`
+  - `packages/engine/src/hypercard/timeline/hypercardCard.tsx`
+  - `apps/inventory/src/App.tsx`
+  - `ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/tasks.md`
+- Re-run:
+  - `pnpm exec tsc -b packages/engine`
+  - `pnpm exec tsc -p packages/engine/tsconfig.json --noEmit`
+  - `pnpm exec tsc -p apps/inventory/tsconfig.json --noEmit`
+  - `pnpm exec vitest run packages/engine/src/hypercard/timeline/hypercardWidget.test.ts packages/engine/src/hypercard/timeline/hypercardCard.test.ts packages/engine/src/chat/runtime/registerChatModules.test.ts packages/engine/src/components/shell/windowing/desktopCommandRouter.test.ts packages/engine/src/components/shell/windowing/desktopContributions.test.ts`
 
 ## Usage Examples
 

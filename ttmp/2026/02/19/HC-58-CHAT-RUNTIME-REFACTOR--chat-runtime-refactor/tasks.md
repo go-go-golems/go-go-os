@@ -112,7 +112,7 @@ Verification:
 Covers plan points: 2, 12.
 
 ### HC58-S2-T01 Move client lifecycle out of `useProjectedChatConnection`
-- [ ] Refactor connection lifecycle ownership into `ConversationRuntime`.
+- [x] Refactor connection lifecycle ownership into `ConversationRuntime`.
 
 Files to edit:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
@@ -136,7 +136,7 @@ Verification:
 2. `cd 2026-02-12--hypercard-react && npm run typecheck`
 
 ### HC58-S2-T02 Implement connection claim reference counting
-- [ ] Add claim counting behavior in runtime.
+- [x] Add claim counting behavior in runtime.
 
 Files to edit:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.ts`
@@ -163,7 +163,7 @@ Verification:
 2. `cd 2026-02-12--hypercard-react && npm run test -w packages/engine -- runtime.test.ts`
 
 ### HC58-S2-T03 Port hydrate-buffer-replay sequence to runtime-owned lifecycle
-- [ ] Implement connect/hydrate/buffer/replay in runtime.
+- [x] Implement connect/hydrate/buffer/replay in runtime.
 
 Files to edit:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.ts`
@@ -184,7 +184,7 @@ Verification:
 2. `cd 2026-02-12--hypercard-react && npm run test -w packages/engine`
 
 ### HC58-S2-T04 Add explicit multi-window single-connection test
-- [ ] Add test proving two windows sharing one conversation use one connection.
+- [x] Add test proving two windows sharing one conversation use one connection.
 
 Files to create/edit:
 1. `2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.integration.test.ts`

@@ -22,7 +22,7 @@ RelatedFiles:
 ExternalSources:
     - local:chat-runtime-chatgpt-pro.md
 Summary: Detailed implementation diary for HC-58 ticket setup, source import, proposal review, and concrete architecture analysis write-up.
-LastUpdated: 2026-02-19T17:22:58.200990477-05:00
+LastUpdated: 2026-02-19T19:42:19-05:00
 WhatFor: Preserve a step-by-step record of decisions, findings, and follow-up checks for the chat runtime refactor analysis.
 WhenToUse: Use when reviewing how HC-58 analysis was produced and why specific corrections were made.
 ---
@@ -1044,3 +1044,83 @@ This step intentionally avoids invasive integration changes yet. The goal was to
 - Validation outputs:
   - TypeScript build: success.
   - Vitest: `3 passed` in `manager.test.ts`.
+
+## Step 17: Complete Section 2 Runtime-Owned Connection Lifecycle
+I continued HC-58 execution with Section 2 and moved active transport lifecycle control into `ConversationRuntime`, including claim-based connection refcounting and runtime-owned hydrate/buffer/replay behavior.
+
+I completed the section in one code commit plus task bookkeeping updates after rerunning the section verification commands.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue, you have full permissions now"
+
+**Assistant interpretation:** Resume from the saved in-progress Section 2 state, finish implementation and verification, check off tasks, and continue following task-by-task execution discipline.
+
+**Inferred user intent:** Keep momentum on HC-58 implementation with explicit progress tracking and no ambiguity around completed work.
+
+**Commit (code):** e07604e — "feat(HC-58): move projected connection lifecycle into conversation runtime"
+
+### What I did
+- Updated runtime lifecycle ownership in:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.ts`
+- Updated projected hook wiring in:
+  - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+- Added Section 2 tests:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.test.ts`
+  - `packages/engine/src/hypercard-chat/conversation/runtime.integration.test.ts`
+- Implemented and validated:
+  - runtime `claimConnection()` refcount with single connect / last-release disconnect,
+  - runtime-owned `ensureConnected()` / `maybeDisconnect()` flow,
+  - optional hydration gate (`waitForHydration`) with envelope buffering and deterministic replay sorted by `stream_id` then `seq`,
+  - callback passthrough hooks (`onRawEnvelope`, `onStatus`, `onError`) from runtime client handlers.
+- Checked off Section 2 tasks in:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+  - `HC58-S2-T01`
+  - `HC58-S2-T02`
+  - `HC58-S2-T03`
+  - `HC58-S2-T04`
+
+### Why
+- Section 2 is required before metadata/UI migration sections, because runtime must own transport and hydration lifecycle semantics for multi-window correctness.
+
+### What worked
+- Typecheck passed after lifecycle refactor.
+- Runtime and integration tests passed:
+  - one-connect/two-claims behavior,
+  - buffered replay on hydration,
+  - single disconnect on last release.
+- Hook no longer directly calls `client.connect()` / `client.close()`.
+
+### What didn't work
+- Initial grep verification command returned exit code `1` with empty output. This was expected because no direct client lifecycle calls remained in the hook file.
+
+### What I learned
+- Centralizing lifecycle in runtime significantly simplifies the hook contract and creates a clean seam for manager-based sharing in later sections.
+
+### What was tricky to build
+- Replay ordering needed safe `seq` comparison for both numeric and string representations; I used `BigInt` parsing with fallback handling to keep ordering deterministic.
+
+### What warrants a second pair of eyes
+- `useProjectedChatConnection` currently creates/disposes runtime per hook instance; this is acceptable for Section 2 but should be revisited when wiring shared manager ownership into the primary runtime UI path in later tasks.
+
+### What should be done in the future
+- Continue with Section 3 (`HC58-S3-T01..T03`) to lock single projection-path invariants and deterministic reducer/replay behavior in tests.
+
+### Code review instructions
+- Review lifecycle changes first:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.ts`
+  - `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+- Then verify tests:
+  - `packages/engine/src/hypercard-chat/conversation/runtime.test.ts`
+  - `packages/engine/src/hypercard-chat/conversation/runtime.integration.test.ts`
+- Confirm Section 2 checklist state:
+  - `ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md`
+
+### Technical details
+- Commands run:
+  - `rg -n "createClient\(|client.connect\(|client.close\(" packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
+  - `npm run typecheck`
+  - `npm run test -w packages/engine -- runtime.test.ts runtime.integration.test.ts`
+- Validation outputs:
+  - TypeScript build: success.
+  - Vitest: `3 files passed`, `7 tests passed` (including `runtime.test.ts` and `runtime.integration.test.ts`).

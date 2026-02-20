@@ -19,6 +19,17 @@ Implemented HC-58 Section 1 code tasks (`HC58-S1-T01..T03`): introduced the new 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md — Section 1 tasks checked off after implementation and validation
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md — Detailed Step 16 execution diary with command/test trace
 
+Implemented HC-58 Section 2 code tasks (`HC58-S2-T01..T04`): moved projected connection lifecycle ownership into `ConversationRuntime`, added claim/refcount connect-disconnect semantics, runtime-owned hydrate-buffer-replay sequencing, and explicit single-connection multi-window tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.ts — Added runtime-owned connection lifecycle helpers, hydration buffering/replay, and callback wiring
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts — Replaced direct client connect/close ownership with `ConversationRuntime` claim/release flow
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.test.ts — Added claim lifecycle and hydrate-replay behavior tests
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/conversation/runtime.integration.test.ts — Added explicit one-runtime two-claims single-connect regression test
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/tasks.md — Section 2 tasks checked off after passing verification
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/19/HC-58-CHAT-RUNTIME-REFACTOR--chat-runtime-refactor/reference/01-diary.md — Added Step 17 command/test/commit trace for Section 2
+
 ## 2026-02-19
 
 - Initial workspace created

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { handleSem, clearSemHandlers } from '../../chat/sem/semRegistry';
 import {
   ensureChatModulesRegistered,
+  registerHypercardTimelineChatModule,
   resetChatModulesRegistrationForTest,
 } from '../../chat/runtime/registerChatModules';
 import { chatSessionSlice } from '../../chat/state/chatSessionSlice';
@@ -23,6 +24,7 @@ describe('hypercard widget handlers', () => {
   beforeEach(() => {
     clearSemHandlers();
     resetChatModulesRegistrationForTest();
+    registerHypercardTimelineChatModule();
     ensureChatModulesRegistered();
   });
 

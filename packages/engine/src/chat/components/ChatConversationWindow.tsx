@@ -1,9 +1,10 @@
-import { type ReactNode, useCallback, useEffect, useMemo } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChatWindow } from '../../components/widgets/ChatWindow';
 import {
-  registerDefaultTimelineRenderers,
+  getTimelineRendererRegistryVersion,
   resolveTimelineRenderers,
+  subscribeTimelineRenderers,
 } from '../renderers/rendererRegistry';
 import type { RenderEntity, RenderMode } from '../renderers/types';
 import {
@@ -124,10 +125,15 @@ export function ChatConversationWindow({
     [convId, dispatch, send]
   );
 
-  const renderers = useMemo(() => {
-    registerDefaultTimelineRenderers();
-    return resolveTimelineRenderers();
-  }, []);
+  const rendererRegistryVersion = useSyncExternalStore(
+    subscribeTimelineRenderers,
+    getTimelineRendererRegistryVersion,
+    getTimelineRendererRegistryVersion
+  );
+  const renderers = useMemo(
+    () => resolveTimelineRenderers(),
+    [rendererRegistryVersion]
+  );
 
   const timelineContent = useMemo(
     () =>

@@ -4,8 +4,6 @@ import { fetchTimelineSnapshot, submitPrompt } from './http';
 import { ensureChatModulesRegistered } from './registerChatModules';
 import { WsManager } from '../ws/wsManager';
 
-ensureChatModulesRegistered();
-
 export interface ConversationConnectArgs {
   convId: string;
   dispatch: (action: unknown) => unknown;
@@ -24,6 +22,8 @@ export class ConversationManager {
   private readonly sessions = new Map<string, ConversationSession>();
 
   async connect(args: ConversationConnectArgs): Promise<void> {
+    ensureChatModulesRegistered();
+
     const existing = this.sessions.get(args.convId);
     if (existing) {
       existing.refs += 1;

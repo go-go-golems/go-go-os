@@ -1,12 +1,18 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { chatSessionSlice } from '../state/chatSessionSlice';
+import {
+  clearRegisteredTimelineRenderers,
+  registerTimelineRenderer,
+  resolveTimelineRenderers,
+} from '../renderers/rendererRegistry';
 import { readSuggestionsEntityProps, ASSISTANT_SUGGESTIONS_ENTITY_ID } from '../state/suggestions';
 import { timelineSlice } from '../state/timelineSlice';
 import { clearSemHandlers, handleSem } from '../sem/semRegistry';
 import { hypercardArtifactsReducer } from '../../hypercard/artifacts/artifactsSlice';
 import {
   ensureChatModulesRegistered,
+  registerHypercardTimelineChatModule,
   listChatRuntimeModules,
   registerChatRuntimeModule,
   resetChatModulesRegistrationForTest,
@@ -25,10 +31,11 @@ function createStore() {
 describe('registerChatModules', () => {
   beforeEach(() => {
     clearSemHandlers();
+    clearRegisteredTimelineRenderers();
     resetChatModulesRegistrationForTest();
   });
 
-  it('registers default and hypercard handlers with an idempotent bootstrap', () => {
+  it('registers default handlers and supports late hypercard registration', () => {
     ensureChatModulesRegistered();
     ensureChatModulesRegistered();
 
@@ -64,11 +71,30 @@ describe('registerChatModules', () => {
 
     const state = store.getState();
     expect(state.timeline.byConvId['conv-1'].byId['msg-1'].kind).toBe('message');
+    expect(state.timeline.byConvId['conv-1'].byId[ASSISTANT_SUGGESTIONS_ENTITY_ID]).toBeUndefined();
+
+    registerHypercardTimelineChatModule();
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'hypercard.suggestions.v1',
+          id: 'evt-suggestions-2',
+          data: {
+            suggestions: ['Open card now'],
+          },
+        },
+      },
+      { convId: 'conv-1', dispatch: store.dispatch }
+    );
+
+    const withHypercard = store.getState();
     expect(
       readSuggestionsEntityProps(
-        state.timeline.byConvId['conv-1'].byId[ASSISTANT_SUGGESTIONS_ENTITY_ID]
+        withHypercard.timeline.byConvId['conv-1'].byId[ASSISTANT_SUGGESTIONS_ENTITY_ID]
       )?.items
-    ).toEqual(['Open card']);
+    ).toEqual(['Open card now']);
   });
 
   it('exposes module contract registration and applies modules once', () => {
@@ -91,8 +117,23 @@ describe('registerChatModules', () => {
 
     const modules = listChatRuntimeModules();
     expect(modules).toContain('chat.default-sem');
-    expect(modules).toContain('chat.hypercard-timeline');
+    expect(modules).toContain('chat.default-renderers');
     expect(modules).toContain('test.before-ensure');
     expect(modules).toContain('test.after-ensure');
+  });
+
+  it('applies renderer modules registered after bootstrap', () => {
+    ensureChatModulesRegistered();
+
+    const customRenderer = vi.fn(() => null);
+    registerChatRuntimeModule({
+      id: 'test.renderer-module',
+      register: () => {
+        registerTimelineRenderer('custom_kind', customRenderer);
+      },
+    });
+
+    const renderers = resolveTimelineRenderers();
+    expect(renderers.custom_kind).toBe(customRenderer);
   });
 });

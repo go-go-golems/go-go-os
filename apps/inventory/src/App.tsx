@@ -1,8 +1,11 @@
 import {
   ChatConversationWindow,
   CodeEditorWindow,
+  ensureChatModulesRegistered,
   EventViewerWindow,
   getEditorInitialCode,
+  registerChatRuntimeModule,
+  registerHypercardTimelineModule,
   RuntimeCardDebugWindow,
 } from '@hypercard/engine';
 import { type OpenWindowPayload, openWindow } from '@hypercard/engine/desktop-core';
@@ -14,6 +17,12 @@ import { ReduxPerfWindow } from './features/debug/ReduxPerfWindow';
 
 const CHAT_APP_KEY = 'inventory-chat';
 const REDUX_PERF_APP_KEY = 'redux-perf-debug';
+
+registerChatRuntimeModule({
+  id: 'chat.hypercard-timeline',
+  register: registerHypercardTimelineModule,
+});
+ensureChatModulesRegistered();
 
 function newConversationId(): string {
   return typeof window.crypto?.randomUUID === 'function' ? window.crypto.randomUUID() : `inv-${Date.now()}`;

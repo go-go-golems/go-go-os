@@ -12,7 +12,7 @@
 - [ ] F6: Decouple `registerChatModules` defaults so generic chat runtime does not auto-register hypercard module unless requested
 - [ ] F7: Remove or finalize compatibility-only error pathways (`lastError`, `setStreamError`, fallback selector semantics) after structured error migration
 - [ ] F8: Resolve artifact runtime cleanup by either wiring or removing leftover utility pathways (including `buildArtifactOpenWindowPayload` integration checks)
-- [ ] F9: Remove dead/unused webchat refactor leftovers (`fakeStreamService.ts`, `chatApi.ts`) if callgraph confirms zero runtime usage
+- [x] F9: Remove dead/unused webchat refactor leftovers (`fakeStreamService.ts`, `chatApi.ts`) after confirming zero runtime usage
 - [ ] Remove unused singleton export `wsManager` or route runtime to consistently use singleton and document the contract
 - [ ] Clarify registry lifecycle API surface: keep and test unregister/clear APIs or remove them from public exports
 - [ ] Close remaining HC-01 runtime gate by running and documenting manual end-to-end verification checklist (`7.5`)

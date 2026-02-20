@@ -217,3 +217,27 @@ Phase 8 progress: completed `8.2`, `8.3`, `8.4`, and `8.6` via engine test migra
 - `npm test` passed (191 tests)
 - `npm run storybook:check` passed
 - `npm run build-storybook` failed due unrelated pre-existing CRM import/export mismatch (`apps/crm/src/app/store.ts` expecting non-exported `streamingChatReducer`), so `8.5` remains open
+
+
+## 2026-02-20
+
+Phase 9 complete (`9.1`, `9.2`, `9.3`) via structured chat runtime error model, formal module-bootstrap contract for SEM/hypercard registration, and post-cleanup decision to keep `ChatWindow` (shell) + `ChatConversationWindow` (container) split while removing legacy timeline adapter exports.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/state/chatSessionSlice.ts — Added typed chat error model (`ChatErrorRecord`) with `currentError` + bounded `errorHistory` and new reducer actions
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/state/selectors.ts — Added structured error selectors and compatibility behavior for `selectLastError`
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/http.ts — Added `ChatHttpError` with stage/status/url metadata
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/useConversation.ts — Migrated connect/send error dispatch to structured typed errors
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/ws/wsManager.ts — Migrated websocket/hydrate/parse error dispatch to structured typed errors
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/moduleBootstrap.ts — New module bootstrap contract (`ChatRuntimeModule`) and orchestrator factory
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/registerChatModules.ts — Routed registration through explicit bootstrap orchestration + module registration/list APIs
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatWindow.tsx — Removed legacy `renderLegacyTimelineContent` adapter surface
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/index.ts — Removed legacy ChatWindow adapter exports
+
+### Validation Notes
+
+- `npm run -w packages/engine typecheck` passed
+- `npm test` passed (194 tests)
+- `npm run storybook:check` passed
+- Ticket tasks now complete except `7.5` and `8.5` (manual/global verification gates)

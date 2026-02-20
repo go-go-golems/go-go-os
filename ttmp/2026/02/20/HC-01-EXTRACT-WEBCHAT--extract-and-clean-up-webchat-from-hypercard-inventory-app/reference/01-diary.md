@@ -1315,3 +1315,127 @@ The `eventBus` test migration needed adaptation to stricter engine SEM typing (`
   - `8.2`, `8.3`, `8.4`, `8.6`
 - Remaining open in this phase:
   - `8.5` (global story-render verification blocked by unrelated CRM export mismatch)
+
+---
+
+## Step 13: Phase 9 Runtime Error Model + Bootstrap Contract + Shell/Container Decision
+
+Implemented the Phase 9 engineering tasks by introducing a structured chat runtime error model (`9.1`), formalizing SEM/hypercard module registration behind an explicit module-bootstrap contract (`9.2`), and completing the post-cleanup ChatWindow/ChatConversationWindow re-evaluation (`9.3`) with a keep-split decision plus legacy-adapter retirement.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue past Phase 8 into Phase 9 implementation tasks.
+
+**Inferred user intent:** Finish the remaining architectural follow-through tasks after hard-cutover, not just leave design docs unimplemented.
+
+**Commit (code):** `e9d8031` — "feat(engine): add structured chat errors and module bootstrap contract"
+
+### What I did
+
+1. Implemented structured runtime error state (`9.1`):
+   - Extended `chatSessionSlice` with:
+     - `ChatErrorKind`, `ChatErrorStage`, `ChatErrorRecord`, `ChatErrorInput`
+     - `currentError: ChatErrorRecord | null`
+     - `errorHistory: ChatErrorRecord[]` (bounded to 20)
+   - Added reducers:
+     - `setError({ convId, error })`
+     - `pushError({ convId, error })`
+     - `clearError({ convId })`
+   - Kept compatibility action `setStreamError` but mapped it to structured runtime errors
+   - Added `createChatError(...)` helper for callsites
+2. Migrated runtime producers away from string-only channeling:
+   - `wsManager` now dispatches typed errors for:
+     - websocket errors (`ws_error`/`stream`)
+     - malformed SEM frames (`sem_decode_error`/`stream`)
+     - hydrate HTTP failures (`http_error`/`hydrate`, includes status)
+     - hydrate runtime failures (`hydrate_error`/`hydrate`)
+   - `useConversation` now maps connect/send failures to typed errors
+   - `http.ts` now throws `ChatHttpError` with stage/status/url metadata
+3. Added structured-error selectors:
+   - `selectCurrentError`
+   - `selectErrorHistory`
+   - `selectHasRecoverableError`
+   - `selectLastError` now prefers `currentError?.message` for compatibility
+4. Added/updated tests:
+   - Expanded `chatSessionSlice.test.ts` for structured current/history behavior and bounded history
+   - Updated `registerChatModules.test.ts` for new bootstrap contract behavior
+5. Implemented formal bootstrap module contract (`9.2`):
+   - Added `chat/runtime/moduleBootstrap.ts` with `ChatRuntimeModule { id, register }`
+   - Added orchestrator factory `createChatModuleBootstrap(...)`
+   - Updated `registerChatModules.ts` to register default SEM + hypercard module through explicit bootstrap contract
+   - Added runtime module management API:
+     - `registerChatRuntimeModule(...)`
+     - `listChatRuntimeModules()`
+6. Re-evaluated ChatWindow/ChatConversationWindow (`9.3`) and implemented decision:
+   - Decision: **keep shell/container split**
+     - `ChatWindow` remains presentational shell
+     - `ChatConversationWindow` remains runtime/data container
+   - Retired remaining legacy adapter surface in `ChatWindow`:
+     - removed `renderLegacyTimelineContent`
+     - removed legacy types (`ChatWindowMessage`, content-block adapter types)
+     - updated widget barrel exports accordingly
+
+### Why
+
+- Structured errors were needed to replace ambiguous string-only runtime failures and align with the design doc’s staged taxonomy.
+- Formal module bootstrap contract removes ad-hoc registration coupling and prepares future module orchestration.
+- Keeping shell/container split preserves composability while eliminating now-unused legacy adapter APIs.
+
+### What worked
+
+- Engine typecheck passed after all changes.
+- Focused and full test suites passed (194 tests).
+- Story taxonomy check remained stable after API cleanup.
+
+### What didn't work
+
+- No new blockers in this step.
+- Previously known cross-app blockers remain for open tasks (`7.5`, `8.5`): workspace-global type/story build paths still fail due unrelated CRM export mismatch.
+
+### What I learned
+
+- Most runtime callsites needed only small mapping wrappers once a central `createChatError` helper existed.
+- Module bootstrap contract was lightweight to introduce and immediately improved test/control surfaces.
+- Legacy adapter retirement in `ChatWindow` became low risk after story cleanup removed all adapter consumers.
+
+### What was tricky to build
+
+The key subtlety was test isolation for runtime module registration: dynamically added modules must not leak across tests. `moduleBootstrap.resetForTest()` now restores baseline modules only.
+
+### What warrants a second pair of eyes
+
+1. Validate desired defaults for `recoverable` inference by error kind/stage (current defaults are intentionally conservative).
+2. Confirm external package consumers (if any) are aligned with removal of `renderLegacyTimelineContent` and related legacy ChatWindow types.
+
+### What should be done in the future
+
+- Close remaining open verification tasks:
+  - `7.5` manual runtime behavior verification (boot/connect/stream/artifact/event viewer)
+  - `8.5` global story render verification once unrelated CRM export mismatch is addressed or build scope is narrowed
+
+### Code review instructions
+
+- Structured error model:
+  - `packages/engine/src/chat/state/chatSessionSlice.ts`
+  - `packages/engine/src/chat/state/selectors.ts`
+  - `packages/engine/src/chat/runtime/useConversation.ts`
+  - `packages/engine/src/chat/ws/wsManager.ts`
+  - `packages/engine/src/chat/runtime/http.ts`
+- Bootstrap contract:
+  - `packages/engine/src/chat/runtime/moduleBootstrap.ts`
+  - `packages/engine/src/chat/runtime/registerChatModules.ts`
+  - `packages/engine/src/chat/runtime/registerChatModules.test.ts`
+- Shell/container cleanup decision:
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`
+  - `packages/engine/src/components/widgets/index.ts`
+
+### Technical details
+
+- Tasks completed in this step:
+  - `9.1` structured runtime error state implementation
+  - `9.2` formal module-bootstrap contract + orchestration
+  - `9.3` unification re-evaluation decision (keep split) + legacy adapter retirement
+- Remaining open tasks in ticket:
+  - `7.5`, `8.5`

@@ -1,8 +1,10 @@
 import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
 import { useEffect, useRef } from 'react';
+import { createConversationRuntime } from '../conversation/runtime';
+import type { ConversationRuntime } from '../conversation/types';
 import type { SemRegistry } from '../sem/registry';
 import type { SemEnvelope } from '../sem/types';
-import { type ProjectionPipelineAdapter, projectSemEnvelope } from './projectionPipeline';
+import { type ProjectionPipelineAdapter } from './projectionPipeline';
 
 export interface ProjectedChatConnectionStatus {
   status: string;
@@ -43,7 +45,7 @@ export function useProjectedChatConnection({
   onStatus,
   onError,
 }: UseProjectedChatConnectionInput): void {
-  const clientRef = useRef<ProjectedChatClient | null>(null);
+  const runtimeRef = useRef<ConversationRuntime | null>(null);
   const callbacksRef = useRef<{
     adapters: ProjectionPipelineAdapter[];
     onRawEnvelope?: (envelope: SemEnvelope) => void;
@@ -66,18 +68,14 @@ export function useProjectedChatConnection({
   };
 
   useEffect(() => {
-    const client = createClient({
+    const runtime = createConversationRuntime({
+      conversationId,
+      semRegistry,
+      dispatch,
+      createClient,
+      getAdapters: () => callbacksRef.current.adapters,
       onRawEnvelope: (envelope) => {
         callbacksRef.current.onRawEnvelope?.(envelope);
-      },
-      onEnvelope: (envelope) => {
-        projectSemEnvelope({
-          conversationId,
-          dispatch,
-          semRegistry,
-          envelope,
-          adapters: callbacksRef.current.adapters,
-        });
       },
       onStatus: (status) => {
         callbacksRef.current.onStatus?.(status);
@@ -86,13 +84,14 @@ export function useProjectedChatConnection({
         callbacksRef.current.onError?.(error);
       },
     });
-    clientRef.current = client;
-    client.connect();
+    runtimeRef.current = runtime;
+    const releaseConnection = runtime.claimConnection();
 
     return () => {
-      client.close();
-      if (clientRef.current === client) {
-        clientRef.current = null;
+      releaseConnection();
+      runtime.dispose();
+      if (runtimeRef.current === runtime) {
+        runtimeRef.current = null;
       }
     };
   }, [

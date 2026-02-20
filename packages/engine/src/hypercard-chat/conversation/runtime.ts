@@ -50,7 +50,46 @@ export interface CreateConversationRuntimeOptions {
   conversationId: string;
   semRegistry: SemRegistry;
   createClient: ConversationRuntimeClientFactory;
+  dispatch?: Dispatch<UnknownAction>;
   adapters?: ProjectionPipelineAdapter[];
+  getAdapters?: () => ProjectionPipelineAdapter[];
+  waitForHydration?: boolean;
+  onRawEnvelope?: (envelope: SemEnvelope) => void;
+  onStatus?: (status: ConversationConnectionStatus) => void;
+  onError?: (error: string) => void;
+}
+
+function seqAsBigInt(value: unknown): bigint | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return BigInt(Math.trunc(value));
+  }
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      return BigInt(value);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+function compareBufferedEnvelopes(a: SemEnvelope, b: SemEnvelope): number {
+  const aStream = streamId(a.event?.stream_id);
+  const bStream = streamId(b.event?.stream_id);
+  if (aStream && bStream) {
+    if (aStream < bStream) return -1;
+    if (aStream > bStream) return 1;
+  }
+
+  const aSeq = seqAsBigInt(a.event?.seq);
+  const bSeq = seqAsBigInt(b.event?.seq);
+  if (aSeq !== undefined && bSeq !== undefined) {
+    if (aSeq < bSeq) return -1;
+    if (aSeq > bSeq) return 1;
+  }
+  if (aSeq !== undefined && bSeq === undefined) return -1;
+  if (aSeq === undefined && bSeq !== undefined) return 1;
+  return 0;
 }
 
 export function createConversationRuntime(
@@ -60,11 +99,19 @@ export function createConversationRuntime(
     conversationId,
     semRegistry,
     createClient,
+    dispatch: externalDispatch,
     adapters = [],
+    getAdapters,
+    waitForHydration = false,
+    onRawEnvelope,
+    onStatus,
+    onError,
   } = options;
 
   let disposed = false;
   let connectionClaims = 0;
+  let hydrated = !waitForHydration;
+  let buffered: SemEnvelope[] = [];
   let client: ConversationRuntimeClient | null = null;
   const listeners = new Set<ConversationRuntimeListener>();
   let timelineState = timelineReducer(undefined, { type: '@@INIT' } as UnknownAction);
@@ -115,6 +162,16 @@ export function createConversationRuntime(
     return action;
   };
 
+  const pipelineDispatch: Dispatch<UnknownAction> = (action) => {
+    timelineDispatch(action);
+    externalDispatch?.(action);
+    return action;
+  };
+
+  const activeAdapters = (): ProjectionPipelineAdapter[] => {
+    return getAdapters?.() ?? adapters;
+  };
+
   const applyEnvelopeCursor = (envelope: SemEnvelope) => {
     const seq = normalizeSeq(envelope.event?.seq);
     const nextStreamId = streamId(envelope.event?.stream_id);
@@ -136,14 +193,46 @@ export function createConversationRuntime(
     });
   };
 
+  const projectEnvelope = (envelope: SemEnvelope) => {
+    projectSemEnvelope({
+      conversationId,
+      dispatch: pipelineDispatch,
+      envelope,
+      semRegistry,
+      adapters: activeAdapters(),
+    });
+  };
+
+  const replayBuffered = () => {
+    if (buffered.length === 0) return;
+    const replay = [...buffered].sort(compareBufferedEnvelopes);
+    buffered = [];
+    for (const envelope of replay) {
+      projectEnvelope(envelope);
+    }
+  };
+
+  const ensureConnected = () => {
+    ensureClient();
+    runtime.setConnectionStatus('connecting');
+    client?.connect();
+  };
+
+  const maybeDisconnect = () => {
+    if (connectionClaims > 0) return;
+    client?.close();
+    client = null;
+    runtime.setConnectionStatus('closed');
+  };
+
   const ensureClient = () => {
     if (client) return;
     client = createClient({
       onEnvelope: (envelope) => {
         runtime.ingestEnvelope(envelope);
       },
-      onRawEnvelope: () => {
-        // Reserved for debug/event-viewer hooks in later phases.
+      onRawEnvelope: (envelope) => {
+        onRawEnvelope?.(envelope);
       },
       onSnapshot: (snapshot) => {
         runtime.hydrateSnapshot(snapshot);
@@ -152,6 +241,7 @@ export function createConversationRuntime(
         runtime.setConnectionStatus(normalizeConnectionStatus(status));
       },
       onError: (error) => {
+        onError?.(error);
         runtime.setConnectionStatus('error', error);
       },
     });
@@ -172,52 +262,46 @@ export function createConversationRuntime(
       let released = false;
       connectionClaims += 1;
       if (connectionClaims === 1) {
-        ensureClient();
-        runtime.setConnectionStatus('connecting');
-        client?.connect();
+        ensureConnected();
       }
 
       return () => {
         if (released || disposed) return;
         released = true;
         connectionClaims = Math.max(0, connectionClaims - 1);
-        if (connectionClaims === 0) {
-          client?.close();
-          client = null;
-          runtime.setConnectionStatus('closed');
-        }
+        maybeDisconnect();
       };
     },
     ingestEnvelope: (envelope) => {
       if (disposed) return;
       applyEnvelopeCursor(envelope);
-      projectSemEnvelope({
-        conversationId,
-        dispatch: timelineDispatch,
-        envelope,
-        semRegistry,
-        adapters,
-      });
+      if (!hydrated) {
+        buffered.push(envelope);
+        return;
+      }
+      projectEnvelope(envelope);
     },
     hydrateSnapshot: (snapshot: TimelineSnapshotPayload) => {
       if (disposed) return;
       hydrateTimelineSnapshot({
         conversationId,
-        dispatch: timelineDispatch,
+        dispatch: pipelineDispatch,
         semRegistry,
         snapshot,
-        adapters,
+        adapters: activeAdapters(),
       });
       const version = normalizeSeq(snapshot.version);
-      if (!version || state.connection.hydratedVersion === version) return;
-
-      setState({
-        ...state,
-        connection: {
-          ...state.connection,
-          hydratedVersion: version,
-        },
-      });
+      hydrated = true;
+      replayBuffered();
+      if (version && state.connection.hydratedVersion !== version) {
+        setState({
+          ...state,
+          connection: {
+            ...state.connection,
+            hydratedVersion: version,
+          },
+        });
+      }
     },
     setConnectionStatus: (status, error) => {
       if (disposed) return;
@@ -236,11 +320,14 @@ export function createConversationRuntime(
           error,
         },
       });
+      onStatus?.(status);
     },
     dispose: () => {
       if (disposed) return;
       disposed = true;
       connectionClaims = 0;
+      hydrated = true;
+      buffered = [];
       client?.close();
       client = null;
       listeners.clear();
@@ -249,4 +336,3 @@ export function createConversationRuntime(
 
   return runtime;
 }
-

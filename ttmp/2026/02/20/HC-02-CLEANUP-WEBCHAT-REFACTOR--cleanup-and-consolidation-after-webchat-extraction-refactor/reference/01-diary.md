@@ -15,12 +15,22 @@ RelatedFiles:
       Note: |-
         Restore chat header actions for event viewer and debug launch
         Add local chat render-mode toggle in header actions
+        F6 explicit inventory registration of hypercard timeline module
     - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
       Note: |-
         F4 implementation details (starter suggestion lifecycle)
         Pass render context to timeline renderers
+        F5 remove local renderer registration side-effect and subscribe to registry changes
+    - Path: packages/engine/src/chat/renderers/rendererRegistry.ts
+      Note: F5 renderer registry subscription/versioning for safe late module registration
     - Path: packages/engine/src/chat/renderers/types.ts
       Note: Renderer context contract with render mode
+    - Path: packages/engine/src/chat/runtime/conversationManager.ts
+      Note: F6 move bootstrap ensure to connect-time lifecycle
+    - Path: packages/engine/src/chat/runtime/registerChatModules.test.ts
+      Note: F6 default-module and late-registration coverage
+    - Path: packages/engine/src/chat/runtime/registerChatModules.ts
+      Note: F5/F6 bootstrap split (default modules + explicit hypercard opt-in)
     - Path: packages/engine/src/chat/state/selectors.ts
       Note: F4 selector migration to timeline state
     - Path: packages/engine/src/chat/state/suggestions.ts
@@ -29,8 +39,12 @@ RelatedFiles:
       Note: F4 reducers for upsert/consume suggestions
     - Path: packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
       Note: Fix non-card icon double-click routing through shell command pipeline
+    - Path: packages/engine/src/hypercard/timeline/hypercardCard.test.ts
+      Note: F6 explicit hypercard module registration in tests
     - Path: packages/engine/src/hypercard/timeline/hypercardCard.tsx
       Note: Debug-mode full-content rendering for card entities
+    - Path: packages/engine/src/hypercard/timeline/hypercardWidget.test.ts
+      Note: F6 explicit hypercard module registration in tests
     - Path: packages/engine/src/hypercard/timeline/hypercardWidget.tsx
       Note: Debug-mode full-content rendering for widget entities
     - Path: packages/engine/src/hypercard/timeline/registerHypercardTimeline.ts
@@ -42,6 +56,7 @@ RelatedFiles:
         Track and close icon double-click routing bug task
         Track and close header-actions restoration task
         Track and close renderer debug mode task
+        F5 and F6 task closures
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/various/01-hc01-touched-files-existing.txt
       Note: Computed surviving touched-file set used in audit
     - Path: ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/various/02-hc01-touched-files-removed.txt
@@ -52,6 +67,7 @@ LastUpdated: 2026-02-20T16:24:04.03865615-05:00
 WhatFor: Preserve detailed investigation history for HC-02 cleanup scope derivation from HC-01 touched files.
 WhenToUse: Use when reviewing why each cleanup task exists and how findings were derived from concrete code evidence.
 ---
+
 
 
 
@@ -847,6 +863,107 @@ The inventory chat header now toggles `normal`/`debug` mode in-place, instead of
   - `pnpm exec tsc -p packages/engine/tsconfig.json --noEmit`
   - `pnpm exec tsc -p apps/inventory/tsconfig.json --noEmit`
   - `pnpm exec vitest run packages/engine/src/hypercard/timeline/hypercardWidget.test.ts packages/engine/src/hypercard/timeline/hypercardCard.test.ts packages/engine/src/chat/runtime/registerChatModules.test.ts packages/engine/src/components/shell/windowing/desktopCommandRouter.test.ts packages/engine/src/components/shell/windowing/desktopContributions.test.ts`
+
+## Step 12: Execute F5/F6 with explicit renderer bootstrap and hypercard opt-in
+
+This step completed `F5` and `F6` together by splitting chat runtime bootstrap responsibilities. Default chat runtime now registers only generic chat modules, while hypercard timeline integration is explicitly opted in by host app setup.
+
+In parallel, renderer registry lifecycle was hardened so late module registration can safely update renderer resolution for mounted chat windows.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Now do F5, F6"
+
+**Assistant interpretation:** Implement both pending cleanup tasks: renderer bootstrap lifecycle changes (F5) and hypercard decoupling from chat defaults (F6).
+
+**Inferred user intent:** Finish the planned architecture cleanup so generic chat runtime stays clean and extension modules register explicitly.
+
+**Commit (code):** `8b8d2b8` — "refactor(chat): complete F5/F6 bootstrap and module decoupling"
+
+### What I did
+- F5: moved renderer registration out of `ChatConversationWindow` mount side effect.
+  - `packages/engine/src/chat/components/ChatConversationWindow.tsx`
+  - removed `registerDefaultTimelineRenderers()` call from component lifecycle.
+  - switched to `useSyncExternalStore` subscription (`subscribeTimelineRenderers`) + `resolveTimelineRenderers()` refresh.
+- F5: added renderer registry change notifications for safe late module registration.
+  - `packages/engine/src/chat/renderers/rendererRegistry.ts`
+  - added registry versioning + subscribe API.
+  - mutation actions now emit change notifications only when state actually changes.
+- F5/F6: moved default renderer registration into chat bootstrap modules.
+  - `packages/engine/src/chat/runtime/registerChatModules.ts`
+  - default modules now:
+    - `chat.default-sem`
+    - `chat.default-renderers`
+- F6: decoupled hypercard module from default runtime bootstrap.
+  - `chat.hypercard-timeline` is no longer registered by default.
+  - added explicit helper:
+    - `registerHypercardTimelineChatModule()`
+    - `ensureHypercardChatModulesRegistered()`
+- F6: removed import-time bootstrap side effect from conversation manager.
+  - `packages/engine/src/chat/runtime/conversationManager.ts`
+  - now calls `ensureChatModulesRegistered()` on `connect()` instead of module import.
+- F6: wired inventory app to opt in explicitly.
+  - `apps/inventory/src/App.tsx`
+  - registers hypercard timeline module via `registerChatRuntimeModule(...)` + `registerHypercardTimelineModule`.
+  - then calls `ensureChatModulesRegistered()`.
+- Updated tests for new default/opt-in behavior:
+  - `packages/engine/src/chat/runtime/registerChatModules.test.ts`
+  - `packages/engine/src/hypercard/timeline/hypercardWidget.test.ts`
+  - `packages/engine/src/hypercard/timeline/hypercardCard.test.ts`
+
+### Why
+- F5 required explicit lifecycle ownership for renderer registration.
+- F6 required generic chat runtime to stop carrying hypercard-specific behavior by default.
+- Combined implementation keeps extension architecture predictable:
+  1. core chat defaults always available
+  2. domain modules registered explicitly by host app
+  3. late module registrations visible to mounted chat windows.
+
+### What worked
+- Targeted runtime + hypercard + ws tests passed.
+- Engine typecheck passed.
+- Inventory typecheck passed after rebuild of engine project references.
+- Tasks `F5` and `F6` were checked off.
+
+### What didn't work
+- Inventory app typecheck initially failed to resolve newly added helper export from root barrel in current reference setup.
+- Resolution:
+  - switched inventory wiring to explicit and already-visible symbols:
+    - `registerChatRuntimeModule`
+    - `registerHypercardTimelineModule`
+  - preserved F6 behavior without relying on that new helper import path.
+
+### What I learned
+- Extension decoupling is safest when runtime bootstrap side effects occur on active connection lifecycle, not on module import.
+
+### What was tricky to build
+- Achieving “safe late module registration” needed both:
+  - module bootstrap applying newly registered modules post-bootstrap
+  - UI-layer renderer resolution refresh on registry mutation.
+
+### What warrants a second pair of eyes
+- Confirm host apps outside inventory explicitly register required domain modules now that hypercard is opt-in.
+
+### What should be done in the future
+- Add a concise integration guideline snippet for host apps:
+  - which modules to register for chat-only vs chat+hypercard setups.
+
+### Code review instructions
+- Review:
+  - `packages/engine/src/chat/renderers/rendererRegistry.ts`
+  - `packages/engine/src/chat/components/ChatConversationWindow.tsx`
+  - `packages/engine/src/chat/runtime/registerChatModules.ts`
+  - `packages/engine/src/chat/runtime/conversationManager.ts`
+  - `apps/inventory/src/App.tsx`
+  - `packages/engine/src/chat/runtime/registerChatModules.test.ts`
+  - `packages/engine/src/hypercard/timeline/hypercardWidget.test.ts`
+  - `packages/engine/src/hypercard/timeline/hypercardCard.test.ts`
+  - `ttmp/2026/02/20/HC-02-CLEANUP-WEBCHAT-REFACTOR--cleanup-and-consolidation-after-webchat-extraction-refactor/tasks.md`
+- Re-run:
+  - `pnpm exec vitest run packages/engine/src/chat/runtime/registerChatModules.test.ts packages/engine/src/hypercard/timeline/hypercardWidget.test.ts packages/engine/src/hypercard/timeline/hypercardCard.test.ts packages/engine/src/chat/ws/wsManager.test.ts`
+  - `pnpm exec tsc -b packages/engine`
+  - `pnpm exec tsc -p packages/engine/tsconfig.json --noEmit`
+  - `pnpm exec tsc -p apps/inventory/tsconfig.json --noEmit`
 
 ## Usage Examples
 

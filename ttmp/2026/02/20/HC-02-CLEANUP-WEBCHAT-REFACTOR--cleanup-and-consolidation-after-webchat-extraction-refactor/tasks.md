@@ -8,8 +8,8 @@
 - [x] F2: Reintroduce an explicit Event Viewer launch path in inventory shell (icon/menu/command for focused chat conversation)
 - [x] F3: Align `ChatWindow.onSend` async contract with `useConversation.send` to avoid unhandled promise rejections and make send failures observable at component level
 - [x] F4: Decide and implement final suggestions architecture: timeline-entity projection vs formalized session projector action
-- [ ] F5: Move default timeline renderer registration to explicit bootstrap lifecycle (not `ChatConversationWindow` mount side effect) and support safe late module registration
-- [ ] F6: Decouple `registerChatModules` defaults so generic chat runtime does not auto-register hypercard module unless requested
+- [x] F5: Move default timeline renderer registration to explicit bootstrap lifecycle (not `ChatConversationWindow` mount side effect) and support safe late module registration
+- [x] F6: Decouple `registerChatModules` defaults so generic chat runtime does not auto-register hypercard module unless requested
 - [ ] F7: Remove or finalize compatibility-only error pathways (`lastError`, `setStreamError`, fallback selector semantics) after structured error migration
 - [ ] F8: Resolve artifact runtime cleanup by either wiring or removing leftover utility pathways (including `buildArtifactOpenWindowPayload` integration checks)
 - [x] F9: Remove dead/unused webchat refactor leftovers (`fakeStreamService.ts`, `chatApi.ts`) after confirming zero runtime usage

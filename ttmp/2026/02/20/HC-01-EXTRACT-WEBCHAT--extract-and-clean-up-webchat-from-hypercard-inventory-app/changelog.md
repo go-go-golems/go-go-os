@@ -23,3 +23,16 @@ Phase 1 complete: implemented engine chat skeleton, SemContext-based SEM registr
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/state/timelineSlice.test.ts — Added timeline reducer tests for scoping/version/rekey
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/state/timelineSlice.ts — Added conversation-scoped timeline state and version-gated upsert
 
+
+## 2026-02-20
+
+Phase 2 complete: added wsManager with hydration buffering/replay, HTTP helpers, conversationManager, useConversation hook, and WS integration tests (commit a788974).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/conversationManager.ts — Added per-conversation lifecycle manager around WS and HTTP
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/http.ts — Added submitPrompt and fetchTimelineSnapshot helpers with basePrefix
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/useConversation.ts — Added React hook for conversation connect/disconnect/send state
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/ws/wsManager.test.ts — Added WS integration tests for frame dispatch and hydration buffering
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/ws/wsManager.ts — Adapted pinocchio WS manager to SemContext and chatSessionSlice
+

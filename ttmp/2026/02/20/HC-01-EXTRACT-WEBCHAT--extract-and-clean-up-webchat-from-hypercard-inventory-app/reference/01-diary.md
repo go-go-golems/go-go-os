@@ -18,6 +18,12 @@ RelatedFiles:
     - Path: apps/inventory/src/features/chat/webchatClient.ts
     - Path: packages/engine/src/chat/chatApi.ts
       Note: Resolved pre-existing typecheck gap for StreamHandlers
+    - Path: packages/engine/src/chat/runtime/conversationManager.ts
+      Note: Phase 2 per-conversation runtime lifecycle manager
+    - Path: packages/engine/src/chat/runtime/http.ts
+      Note: Phase 2 HTTP helpers for prompt submit and timeline snapshot
+    - Path: packages/engine/src/chat/runtime/useConversation.ts
+      Note: Phase 2 React hook for lifecycle + send API
     - Path: packages/engine/src/chat/sem/semRegistry.test.ts
       Note: SemContext threading and handler registration tests
     - Path: packages/engine/src/chat/sem/semRegistry.ts
@@ -28,6 +34,10 @@ RelatedFiles:
       Note: Reducer tests for Phase 1 acceptance criteria
     - Path: packages/engine/src/chat/state/timelineSlice.ts
       Note: Conversation-scoped timeline reducer with version gating
+    - Path: packages/engine/src/chat/ws/wsManager.test.ts
+      Note: Phase 2 integration coverage for WS replay behavior
+    - Path: packages/engine/src/chat/ws/wsManager.ts
+      Note: Phase 2 WS runtime with hydration buffering and SemContext dispatch
     - Path: packages/engine/src/components/widgets/ChatWindow.tsx
     - Path: packages/engine/src/index.ts
     - Path: ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/changelog.md
@@ -42,6 +52,7 @@ LastUpdated: 2026-02-20T00:00:00Z
 WhatFor: Track exploration, decisions, and implementation progress
 WhenToUse: Reference during implementation and code review
 ---
+
 
 
 
@@ -419,3 +430,102 @@ Conversation-scoping while preserving pinocchio's version-gating semantics was t
   - `{ byConvId: Record<string, { byId: Record<string, TimelineEntity>, order: string[] }> }`
 - Task updates executed:
   - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 1,2,3,4,5,6,7,8,9,10,11`
+
+---
+
+## Step 5: Phase 2 Implementation (WS Manager, HTTP Runtime, Conversation Lifecycle)
+
+Implemented Phase 2 runtime plumbing for chat connectivity and hydration. This adds the engine-local WS manager, HTTP helpers, and a per-conversation lifecycle manager used by the new `useConversation` hook.
+
+The Phase 2 integration test verifies that SEM frames flow from a mocked WebSocket into Redux timeline entities and that hydration buffering/replay works when frames arrive before snapshot application completes.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 4)
+
+**Assistant interpretation:** Continue sequential task execution and keep diary/task/commit bookkeeping in lockstep.
+
+**Inferred user intent:** Progress through the implementation plan with verifiable, incremental milestones.
+
+**Commit (code):** a788974 — "feat(engine): add websocket runtime and conversation manager"
+
+### What I did
+
+1. Added `packages/engine/src/chat/ws/wsManager.ts` adapted from pinocchio:
+   - threaded `SemContext` (`dispatch`, `convId`) into `handleSem`
+   - replaced appSlice/errorSlice dependencies with `chatSessionSlice` + `timelineSlice`
+   - removed `registerThinkingModeModule()` call
+   - kept hydration buffering + replay and timeline snapshot decode
+2. Added HTTP helpers in `packages/engine/src/chat/runtime/http.ts`:
+   - `submitPrompt(prompt, convId, basePrefix?)`
+   - `fetchTimelineSnapshot(convId, basePrefix?)`
+3. Added `packages/engine/src/chat/runtime/conversationManager.ts`:
+   - wraps WS connect/disconnect and HTTP submit
+   - tracks per-conversation lifecycle via internal session map
+4. Added `packages/engine/src/chat/runtime/useConversation.ts`:
+   - connects on mount, disconnects on cleanup
+   - exposes `{ send, connectionStatus, isStreaming }`
+5. Added integration tests in `packages/engine/src/chat/ws/wsManager.test.ts`:
+   - frame-to-entity dispatch path
+   - hydrate-buffer-then-replay path
+6. Exported runtime/ws modules from `packages/engine/src/chat/index.ts`
+7. Checked off tasks 2.1-2.5 in docmgr
+
+### Why
+
+Phase 2 is required to move chat orchestration out of inventory's monolithic `InventoryChatWindow` and into reusable engine runtime modules. Without this layer, renderer and component extraction in Phase 3/4 would still depend on app-local networking code.
+
+### What worked
+
+- The pinocchio WS flow ported cleanly once action targets were converted to conversation-scoped slices
+- Injected `wsFactory`/`fetchImpl` hooks made WS integration tests deterministic in Node
+- Typecheck and targeted tests passed after implementation
+
+### What didn't work
+
+- Initial typecheck surfaced strict typing issues in the new WS test and snapshot mapping:
+  - nullable map result in `applyTimelineSnapshot`
+  - `fromJson` input typing
+  - deferred resolver typing in test
+- Resolution:
+  - added explicit type guard for mapped entities
+  - cast JSON payload to `any` at the protobuf decode boundary
+  - switched deferred resolver to definite assignment style
+
+### What I learned
+
+- Keeping WS manager API injection points (`wsFactory`, `fetchImpl`, `location`) is valuable for reliable integration tests without browser globals
+- Hydration behavior needs explicit handling for `hydrate: false`; otherwise frames can remain buffered indefinitely
+
+### What was tricky to build
+
+The trickiest part was preserving hydration ordering guarantees while adapting from global app state to conversation-scoped slices. Buffered frames must replay only after snapshot apply and in seq order, while still supporting a no-hydrate mode used by tests and potential low-latency flows.
+
+### What warrants a second pair of eyes
+
+- Conversation ref-count behavior in `conversationManager.connect/disconnect` for edge cases with repeated mounts
+- Whether `registerDefaultSemHandlers()` should be called per WS connect or once at module bootstrap when extension handlers are introduced in later phases
+- Error channeling strategy (`setStreamError`) vs dedicated structured error state in future phases
+
+### What should be done in the future
+
+- Proceed to Phase 3 tasks (renderer registry + builtin renderers)
+
+### Code review instructions
+
+- Start with `packages/engine/src/chat/ws/wsManager.ts`
+- Then review `packages/engine/src/chat/runtime/conversationManager.ts`, `packages/engine/src/chat/runtime/http.ts`, and `packages/engine/src/chat/runtime/useConversation.ts`
+- Validate with:
+  - `npm run -w packages/engine test -- src/chat/ws/wsManager.test.ts`
+  - `npm run -w packages/engine typecheck`
+- Confirm task bookkeeping:
+  - `docmgr task list --ticket HC-01-EXTRACT-WEBCHAT`
+
+### Technical details
+
+- WS snapshot endpoint:
+  - `${basePrefix}/api/timeline?conv_id=${encodeURIComponent(convId)}`
+- WS live endpoint:
+  - `${protocol}://${host}${basePrefix}/ws?conv_id=${encodeURIComponent(convId)}`
+- Task updates executed:
+  - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 12,13,14,15,16`

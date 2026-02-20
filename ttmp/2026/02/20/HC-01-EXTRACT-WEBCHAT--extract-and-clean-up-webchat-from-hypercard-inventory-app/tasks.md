@@ -16,11 +16,11 @@
 
 ## Phase 2: WebSocket Manager + HTTP Client
 
-- [ ] **2.1** Copy + adapt wsManager from `pinocchio/.../ws/wsManager.ts` to `packages/engine/src/chat/ws/wsManager.ts` -- thread `convId` into SemContext, replace pinocchio appSlice refs with chatSessionSlice actions, remove `registerThinkingModeModule()` call
-- [ ] **2.2** Create HTTP helpers at `packages/engine/src/chat/runtime/http.ts` -- `submitPrompt(prompt, convId, basePrefix?)` and `fetchTimelineSnapshot(convId, basePrefix?)` with configurable base prefix
-- [ ] **2.3** Create conversationManager at `packages/engine/src/chat/runtime/conversationManager.ts` -- wraps wsManager.connect/disconnect + HTTP submit, manages per-conversation lifecycle
-- [ ] **2.4** Create `useConversation(convId)` React hook at `packages/engine/src/chat/runtime/useConversation.ts` -- calls conversationManager.connect on mount, disconnect on cleanup, returns `{ send, connectionStatus, isStreaming }`
-- [ ] **2.5** Write integration tests: create store, call wsManager.connect with mock WS, verify timeline entities appear after simulated SEM frames
+- [x] **2.1** Copy + adapt wsManager from `pinocchio/.../ws/wsManager.ts` to `packages/engine/src/chat/ws/wsManager.ts` -- thread `convId` into SemContext, replace pinocchio appSlice refs with chatSessionSlice actions, remove `registerThinkingModeModule()` call
+- [x] **2.2** Create HTTP helpers at `packages/engine/src/chat/runtime/http.ts` -- `submitPrompt(prompt, convId, basePrefix?)` and `fetchTimelineSnapshot(convId, basePrefix?)` with configurable base prefix
+- [x] **2.3** Create conversationManager at `packages/engine/src/chat/runtime/conversationManager.ts` -- wraps wsManager.connect/disconnect + HTTP submit, manages per-conversation lifecycle
+- [x] **2.4** Create `useConversation(convId)` React hook at `packages/engine/src/chat/runtime/useConversation.ts` -- calls conversationManager.connect on mount, disconnect on cleanup, returns `{ send, connectionStatus, isStreaming }`
+- [x] **2.5** Write integration tests: create store, call wsManager.connect with mock WS, verify timeline entities appear after simulated SEM frames
 
 ## Phase 3: Renderer Registry + Builtin Renderers
 

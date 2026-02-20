@@ -12,6 +12,7 @@ import {
   ChatWindow,
   type ChatWindowMessage,
   type InlineWidget,
+  renderLegacyTimelineContent,
 } from '../../widgets/ChatWindow';
 import { DataTable } from '../../widgets/DataTable';
 import { ReportView } from '../../widgets/ReportView';
@@ -424,15 +425,17 @@ function DesktopChatWindow({ stack }: { stack: CardStackDefinition }) {
 
   return (
     <ChatWindow
-      messages={messages}
+      timelineContent={renderLegacyTimelineContent(messages, {
+        onAction: handleAction,
+        renderWidget,
+      })}
+      timelineItemCount={messages.length}
       isStreaming={isStreaming}
       onSend={handleSend}
       onCancel={() => setIsStreaming(false)}
-      onAction={handleAction}
       suggestions={['Show me the inventory', 'Give me a report', 'Create a card…', 'Help']}
       title="Assistant"
       placeholder="Ask about items, reports, or create new cards…"
-      renderWidget={renderWidget}
       footer={<span>Actions open desktop windows · "Create a card" injects plugin code</span>}
     />
   );

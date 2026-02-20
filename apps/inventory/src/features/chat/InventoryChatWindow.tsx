@@ -1,4 +1,10 @@
-import { ChatWindow, registerRuntimeCard, type ChatWindowMessage, type InlineWidget } from '@hypercard/engine';
+import {
+  ChatWindow,
+  registerRuntimeCard,
+  renderLegacyTimelineContent,
+  type ChatWindowMessage,
+  type InlineWidget,
+} from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
@@ -733,10 +739,10 @@ export function InventoryChatWindow({ conversationId }: InventoryChatWindowProps
 
   return (
     <ChatWindow
-      messages={displayMessages}
+      timelineContent={renderLegacyTimelineContent(displayMessages, { renderWidget })}
+      timelineItemCount={displayMessages.length}
       isStreaming={isStreaming}
       onSend={handleSend}
-      renderWidget={renderWidget}
       title="Inventory Chat"
       subtitle={subtitle}
       placeholder="Ask about inventory..."

@@ -1,4 +1,5 @@
 import type { ChatConnectionStatus } from '../state/chatSessionSlice';
+import { emitConversationEvent } from '../debug/eventBus';
 import { fetchTimelineSnapshot, submitPrompt } from './http';
 import { WsManager } from '../ws/wsManager';
 
@@ -30,6 +31,7 @@ export class ConversationManager {
         basePrefix: args.basePrefix,
         onStatus: args.onStatus,
         hydrate: args.hydrate,
+        onEnvelope: (envelope) => emitConversationEvent(args.convId, envelope),
       });
       return;
     }
@@ -47,6 +49,7 @@ export class ConversationManager {
       basePrefix: args.basePrefix,
       onStatus: args.onStatus,
       hydrate: args.hydrate,
+      onEnvelope: (envelope) => emitConversationEvent(args.convId, envelope),
     });
   }
 

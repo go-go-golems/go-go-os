@@ -1,6 +1,11 @@
 import { fromJson } from '@bufbuild/protobuf';
 import { type TimelineSnapshotV2, TimelineSnapshotV2Schema } from '../sem/pb/proto/sem/timeline/transport_pb';
-import { handleSem, registerDefaultSemHandlers, type SemContext } from '../sem/semRegistry';
+import {
+  handleSem,
+  registerDefaultSemHandlers,
+  type SemContext,
+  type SemEnvelope,
+} from '../sem/semRegistry';
 import { timelineEntityFromProto } from '../sem/timelineMapper';
 import { chatSessionSlice, type ChatConnectionStatus } from '../state/chatSessionSlice';
 import type { TimelineEntity } from '../state/timelineSlice';
@@ -16,6 +21,7 @@ export interface ConnectArgs {
   wsFactory?: (url: string) => WebSocket;
   fetchImpl?: typeof fetch;
   location?: { protocol: string; host: string };
+  onEnvelope?: (envelope: SemEnvelope) => void;
 }
 
 type RawSemEnvelope = unknown;
@@ -61,6 +67,16 @@ function toErrorMessage(error: unknown, fallback: string): string {
     return error.message;
   }
   return fallback;
+}
+
+function toSemEnvelope(payload: unknown): SemEnvelope | null {
+  if (!isRecord(payload) || payload.sem !== true || !isRecord(payload.event)) {
+    return null;
+  }
+  if (typeof payload.event.type !== 'string' || typeof payload.event.id !== 'string') {
+    return null;
+  }
+  return payload as SemEnvelope;
 }
 
 class WsManager {
@@ -161,6 +177,10 @@ class WsManager {
 
       try {
         const payload = JSON.parse(String(message.data));
+        const envelope = toSemEnvelope(payload);
+        if (envelope) {
+          args.onEnvelope?.(envelope);
+        }
         if (!this.hydrated) {
           this.buffered.push(payload);
           return;

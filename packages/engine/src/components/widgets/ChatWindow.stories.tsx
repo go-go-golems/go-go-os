@@ -7,6 +7,7 @@ import {
   ChatWindow,
   type ChatWindowMessage,
   type InlineWidget,
+  renderLegacyTimelineContent,
 } from './ChatWindow';
 import { ListView } from './ListView';
 import { ReportView } from './ReportView';
@@ -223,13 +224,22 @@ export function StoryFrame({ children }: { children: ReactNode }) {
   );
 }
 
+function timelineFromMessages(
+  messages: ChatWindowMessage[],
+  onAction?: (action: unknown) => void,
+  renderWidget?: (widget: InlineWidget) => ReactNode
+) {
+  return renderLegacyTimelineContent(messages, { onAction, renderWidget });
+}
+
 function InteractiveDemo() {
   const { messages, isStreaming, send, cancel } = useSimulatedStream();
 
   return (
     <StoryFrame>
       <ChatWindow
-        messages={messages}
+        timelineContent={timelineFromMessages(messages)}
+        timelineItemCount={messages.length}
         isStreaming={isStreaming}
         onSend={send}
         onCancel={cancel}
@@ -251,7 +261,8 @@ export const Welcome: Story = {
   render: () => (
     <StoryFrame>
       <ChatWindow
-        messages={[]}
+        timelineContent={null}
+        timelineItemCount={0}
         isStreaming={false}
         onSend={() => {}}
         suggestions={['What is my pipeline?', 'Show low stock items', 'Help me find a contact']}
@@ -267,7 +278,8 @@ export const CustomWelcome: Story = {
   render: () => (
     <StoryFrame>
       <ChatWindow
-        messages={[]}
+        timelineContent={null}
+        timelineItemCount={0}
         isStreaming={false}
         onSend={() => {}}
         suggestions={['Dashboard', 'Inventory', 'Reports']}
@@ -287,61 +299,73 @@ export const CustomWelcome: Story = {
 };
 
 export const Thinking: Story = {
-  render: () => (
-    <StoryFrame>
-      <ChatWindow
-        messages={[
-          { id: '1', role: 'user', text: 'What items are running low on stock?', status: 'complete' },
-          { id: '2', role: 'ai', text: '', status: 'streaming' },
-        ]}
-        isStreaming
-        onSend={() => {}}
-        onCancel={() => {}}
-        title="Inventory Assistant"
-      />
-    </StoryFrame>
-  ),
+  render: () => {
+    const messages: ChatWindowMessage[] = [
+      { id: '1', role: 'user', text: 'What items are running low on stock?', status: 'complete' },
+      { id: '2', role: 'ai', text: '', status: 'streaming' },
+    ];
+    return (
+      <StoryFrame>
+        <ChatWindow
+          timelineContent={timelineFromMessages(messages)}
+          timelineItemCount={messages.length}
+          isStreaming
+          onSend={() => {}}
+          onCancel={() => {}}
+          title="Inventory Assistant"
+        />
+      </StoryFrame>
+    );
+  },
 };
 
 export const MidStream: Story = {
-  render: () => (
-    <StoryFrame>
-      <ChatWindow
-        messages={[
-          { id: '1', role: 'user', text: 'Give me a summary of open deals', status: 'complete' },
-          {
-            id: '2',
-            role: 'ai',
-            text: 'Here are your currently open deals:\n\n• Acme Enterprise License — $120,000 (Negotiation)\n• Gamma Pilot Program — $18,000 (Qualification)',
-            status: 'streaming',
-          },
-        ]}
-        isStreaming
-        onSend={() => {}}
-        onCancel={() => {}}
-        title="CRM Assistant"
-      />
-    </StoryFrame>
-  ),
+  render: () => {
+    const messages: ChatWindowMessage[] = [
+      { id: '1', role: 'user', text: 'Give me a summary of open deals', status: 'complete' },
+      {
+        id: '2',
+        role: 'ai',
+        text: 'Here are your currently open deals:\n\n• Acme Enterprise License — $120,000 (Negotiation)\n• Gamma Pilot Program — $18,000 (Qualification)',
+        status: 'streaming',
+      },
+    ];
+    return (
+      <StoryFrame>
+        <ChatWindow
+          timelineContent={timelineFromMessages(messages)}
+          timelineItemCount={messages.length}
+          isStreaming
+          onSend={() => {}}
+          onCancel={() => {}}
+          title="CRM Assistant"
+        />
+      </StoryFrame>
+    );
+  },
 };
 
 export const ErrorState: Story = {
-  render: () => (
-    <StoryFrame>
-      <ChatWindow
-        messages={[
-          { id: '1', role: 'user', text: 'Analyze last quarter revenue', status: 'complete' },
-          {
-            id: '2',
-            role: 'ai',
-            text: 'I encountered an error while processing your request. The analytics service is temporarily unavailable.',
-            status: 'error',
-          },
-        ]}
-        isStreaming={false}
-        onSend={() => {}}
-        title="Analytics Chat"
-      />
-    </StoryFrame>
-  ),
+  render: () => {
+    const messages: ChatWindowMessage[] = [
+      { id: '1', role: 'user', text: 'Analyze last quarter revenue', status: 'complete' },
+      {
+        id: '2',
+        role: 'ai',
+        text: 'I encountered an error while processing your request. The analytics service is temporarily unavailable.',
+        status: 'error',
+      },
+    ];
+    return (
+      <StoryFrame>
+        <ChatWindow
+          timelineContent={timelineFromMessages(messages)}
+          timelineItemCount={messages.length}
+          isStreaming={false}
+          onSend={() => {}}
+          title="Analytics Chat"
+        />
+      </StoryFrame>
+    );
+  },
 };

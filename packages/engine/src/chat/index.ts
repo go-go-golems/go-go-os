@@ -1,3 +1,6 @@
+export * from './components/ChatConversationWindow';
+export * from './components/StatsFooter';
+export * from './debug/eventBus';
 export * from './sem/semHelpers';
 export * from './sem/semRegistry';
 export * from './sem/timelineMapper';

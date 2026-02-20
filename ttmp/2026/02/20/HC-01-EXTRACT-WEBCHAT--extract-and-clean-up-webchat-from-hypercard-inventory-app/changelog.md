@@ -129,3 +129,12 @@ Added design doc for structured runtime error state (typed conversation-scoped e
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/design-doc/03-structured-runtime-error-state-for-chat.md — New design proposal for replacing string-only error channeling
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/tasks.md — Added end-of-plan tasks 9.1 and 9.2
 
+
+## 2026-02-20
+
+Added Phase 9 follow-up task to re-evaluate ChatWindow vs ChatConversationWindow unification after Phase 7 legacy cleanup.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/tasks.md — Added task 9.3 for post-cleanup unification decision
+

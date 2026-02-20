@@ -84,3 +84,4 @@
 
 - [ ] **9.1** Implement structured conversation-scoped runtime error state per `design-doc/03-structured-runtime-error-state-for-chat.md` -- add typed `ChatErrorRecord`, reducer actions/selectors, and migrate ws/http/runtime callsites away from string-only error channeling
 - [ ] **9.2** Move SEM/renderer registration into a formal module-bootstrap layer (beyond `registerChatModules`) -- define bootstrap module contract and route `registerDefaultSemHandlers()` / `registerHypercardTimelineModule()` through explicit bootstrap orchestration instead of ad-hoc runtime module init
+- [ ] **9.3** Re-evaluate unifying `ChatWindow` and `ChatConversationWindow` after Phase 7 legacy cleanup (`apps/inventory/src/features/chat/` deletion and `renderLegacyTimelineContent` retirement); decide whether to keep shell/container split or collapse into one component

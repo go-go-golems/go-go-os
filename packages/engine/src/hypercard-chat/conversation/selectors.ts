@@ -37,10 +37,16 @@ export function useTimelineEntity(
   return useConversationSnapshot(conversationId).timeline.byId[entityId];
 }
 
+export function useTimelineEntities(conversationId: string): TimelineEntity[] {
+  const snapshot = useConversationSnapshot(conversationId);
+  return snapshot.timeline.ids
+    .map((entityId) => snapshot.timeline.byId[entityId])
+    .filter((entity): entity is TimelineEntity => Boolean(entity));
+}
+
 export function useConversationMeta<T>(
   conversationId: string,
   select: (meta: ConversationRuntimeMeta) => T,
 ): T {
   return select(useConversationSnapshot(conversationId).meta);
 }
-

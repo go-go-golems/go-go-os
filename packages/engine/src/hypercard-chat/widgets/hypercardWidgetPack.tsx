@@ -2,9 +2,8 @@ import type { TimelineWidgetItem } from '../types';
 import { HypercardCardPanelWidget, HypercardGeneratedWidgetPanel } from './HypercardArtifactPanels';
 import { HypercardTimelineWidget, timelineItemsFromInlineWidget } from './HypercardTimelinePanel';
 import {
+  type ConversationWidgetRegistry,
   type InlineWidgetRenderContext,
-  registerInlineWidgetRenderer,
-  unregisterInlineWidgetRenderer,
 } from './inlineWidgetRegistry';
 
 export interface HypercardWidgetPackRenderContext extends InlineWidgetRenderContext {
@@ -14,6 +13,7 @@ export interface HypercardWidgetPackRenderContext extends InlineWidgetRenderCont
 }
 
 export interface RegisterHypercardWidgetPackOptions {
+  registry: ConversationWidgetRegistry;
   namespace?: string;
 }
 
@@ -22,7 +22,20 @@ export interface HypercardWidgetPackRegistration {
   unregister: () => void;
 }
 
-const registrationCounts = new Map<string, number>();
+const registrationCountsByRegistry = new WeakMap<
+  ConversationWidgetRegistry,
+  Map<string, number>
+>();
+
+function countsForRegistry(registry: ConversationWidgetRegistry): Map<string, number> {
+  const existing = registrationCountsByRegistry.get(registry);
+  if (existing) {
+    return existing;
+  }
+  const created = new Map<string, number>();
+  registrationCountsByRegistry.set(registry, created);
+  return created;
+}
 
 function asItemHandler(value: unknown): ((item: TimelineWidgetItem) => void) | undefined {
   return typeof value === 'function' ? (value as (item: TimelineWidgetItem) => void) : undefined;
@@ -37,8 +50,11 @@ function normalizeNamespace(namespace: string | undefined): string {
   return key.length > 0 ? key : 'hypercard';
 }
 
-function registerRenderersForNamespace(namespace: string): void {
-  registerInlineWidgetRenderer(`${namespace}.cards`, (widget, context) => {
+function registerRenderersForNamespace(
+  registry: ConversationWidgetRegistry,
+  namespace: string,
+): void {
+  registry.register(`${namespace}.cards`, (widget, context) => {
     const items = timelineItemsFromInlineWidget(widget);
     const ctx = asContext(context);
     return (
@@ -51,7 +67,7 @@ function registerRenderersForNamespace(namespace: string): void {
     );
   });
 
-  registerInlineWidgetRenderer(`${namespace}.widgets`, (widget, context) => {
+  registry.register(`${namespace}.widgets`, (widget, context) => {
     const items = timelineItemsFromInlineWidget(widget);
     const ctx = asContext(context);
     return (
@@ -63,35 +79,42 @@ function registerRenderersForNamespace(namespace: string): void {
     );
   });
 
-  registerInlineWidgetRenderer(`${namespace}.timeline`, (widget, context) => {
+  registry.register(`${namespace}.timeline`, (widget, context) => {
     const items = timelineItemsFromInlineWidget(widget);
     const ctx = asContext(context);
     return <HypercardTimelineWidget items={items} debug={ctx.debug === true} />;
   });
 }
 
-function unregisterRenderersForNamespace(namespace: string): void {
-  unregisterInlineWidgetRenderer(`${namespace}.cards`);
-  unregisterInlineWidgetRenderer(`${namespace}.widgets`);
-  unregisterInlineWidgetRenderer(`${namespace}.timeline`);
+function unregisterRenderersForNamespace(
+  registry: ConversationWidgetRegistry,
+  namespace: string,
+): void {
+  registry.unregister(`${namespace}.cards`);
+  registry.unregister(`${namespace}.widgets`);
+  registry.unregister(`${namespace}.timeline`);
 }
 
-export function unregisterHypercardWidgetPack(options: RegisterHypercardWidgetPackOptions = {}): void {
+export function unregisterHypercardWidgetPack(
+  options: RegisterHypercardWidgetPackOptions,
+): void {
   const namespace = normalizeNamespace(options.namespace);
-  unregisterRenderersForNamespace(namespace);
-  registrationCounts.delete(namespace);
+  unregisterRenderersForNamespace(options.registry, namespace);
+  const counts = countsForRegistry(options.registry);
+  counts.delete(namespace);
 }
 
 export function registerHypercardWidgetPack(
-  options: RegisterHypercardWidgetPackOptions = {},
+  options: RegisterHypercardWidgetPackOptions,
 ): HypercardWidgetPackRegistration {
   const namespace = normalizeNamespace(options.namespace);
-  const count = registrationCounts.get(namespace) ?? 0;
+  const counts = countsForRegistry(options.registry);
+  const count = counts.get(namespace) ?? 0;
 
   if (count === 0) {
-    registerRenderersForNamespace(namespace);
+    registerRenderersForNamespace(options.registry, namespace);
   }
-  registrationCounts.set(namespace, count + 1);
+  counts.set(namespace, count + 1);
 
   let unregistered = false;
   return {
@@ -102,14 +125,14 @@ export function registerHypercardWidgetPack(
       }
       unregistered = true;
 
-      const currentCount = registrationCounts.get(namespace) ?? 0;
+      const currentCount = counts.get(namespace) ?? 0;
       if (currentCount <= 1) {
-        unregisterRenderersForNamespace(namespace);
-        registrationCounts.delete(namespace);
+        unregisterRenderersForNamespace(options.registry, namespace);
+        counts.delete(namespace);
         return;
       }
 
-      registrationCounts.set(namespace, currentCount - 1);
+      counts.set(namespace, currentCount - 1);
     },
   };
 }

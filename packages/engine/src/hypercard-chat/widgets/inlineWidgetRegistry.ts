@@ -9,41 +9,59 @@ export type InlineWidgetRenderer = (
 
 export type InlineWidgetRendererOverrides = Record<string, InlineWidgetRenderer>;
 
-const extensionRenderers = new Map<string, InlineWidgetRenderer>();
-
-export function registerInlineWidgetRenderer(type: string, renderer: InlineWidgetRenderer): void {
-  const key = String(type || '').trim();
-  if (!key) return;
-  extensionRenderers.set(key, renderer);
+export interface ConversationWidgetRegistry {
+  register: (type: string, renderer: InlineWidgetRenderer) => void;
+  unregister: (type: string) => void;
+  clear: () => void;
+  resolve: (
+    type: string,
+    overrides?: InlineWidgetRendererOverrides,
+  ) => InlineWidgetRenderer | undefined;
+  render: (
+    widget: InlineWidget,
+    context?: InlineWidgetRenderContext,
+    overrides?: InlineWidgetRendererOverrides,
+  ) => ReactNode;
 }
 
-export function unregisterInlineWidgetRenderer(type: string): void {
-  const key = String(type || '').trim();
-  if (!key) return;
-  extensionRenderers.delete(key);
+function normalizeType(type: string): string {
+  return String(type || '').trim();
 }
 
-export function clearRegisteredInlineWidgetRenderers(): void {
-  extensionRenderers.clear();
-}
-
-export function resolveInlineWidgetRenderer(
+function resolveRenderer(
+  renderers: Map<string, InlineWidgetRenderer>,
   type: string,
   overrides?: InlineWidgetRendererOverrides,
 ): InlineWidgetRenderer | undefined {
-  const key = String(type || '').trim();
+  const key = normalizeType(type);
   if (!key) return undefined;
-  return overrides?.[key] ?? extensionRenderers.get(key);
+  return overrides?.[key] ?? renderers.get(key);
 }
 
-export function renderInlineWidget(
-  widget: InlineWidget,
-  context: InlineWidgetRenderContext = {},
-  overrides?: InlineWidgetRendererOverrides,
-): ReactNode {
-  const renderer = resolveInlineWidgetRenderer(widget.type, overrides);
-  if (!renderer) {
-    return null;
-  }
-  return renderer(widget, context);
+export function createConversationWidgetRegistry(): ConversationWidgetRegistry {
+  const renderers = new Map<string, InlineWidgetRenderer>();
+
+  return {
+    register: (type, renderer) => {
+      const key = normalizeType(type);
+      if (!key) return;
+      renderers.set(key, renderer);
+    },
+    unregister: (type) => {
+      const key = normalizeType(type);
+      if (!key) return;
+      renderers.delete(key);
+    },
+    clear: () => {
+      renderers.clear();
+    },
+    resolve: (type, overrides) => resolveRenderer(renderers, type, overrides),
+    render: (widget, context = {}, overrides) => {
+      const renderer = resolveRenderer(renderers, widget.type, overrides);
+      if (!renderer) {
+        return null;
+      }
+      return renderer(widget, context);
+    },
+  };
 }

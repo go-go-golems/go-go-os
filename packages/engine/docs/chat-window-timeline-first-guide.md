@@ -11,7 +11,8 @@ It is written for developers who need to:
 
 The examples below are based on the current implementation in:
 
-- `packages/engine/src/hypercard-chat/runtime/timelineChatRuntime.tsx`
+- `packages/engine/src/hypercard-chat/runtime/TimelineConversationView.tsx`
+- `packages/engine/src/hypercard-chat/runtime/useProjectedChatConnection.ts`
 - `packages/engine/src/hypercard-chat/runtime/projectionPipeline.ts`
 - `packages/engine/src/hypercard-chat/sem/registry.ts`
 - `packages/engine/src/hypercard-chat/timeline/timelineSlice.ts`
@@ -265,16 +266,16 @@ Inventory chat wiring in `InventoryChatWindow.tsx` follows this pattern:
 
 1. create `semRegistryRef` via `createSemRegistry()`
 2. define adapters:
-- `createChatMetaProjectionAdapter()`
 - `createInventoryArtifactProjectionAdapter()`
 3. create a host websocket client factory (`InventoryWebChatClient`) and bind host callbacks (`emitConversationEvent`, connection state/error updates, artifact/card actions)
 4. render via reusable runtime:
-- `TimelineChatRuntimeWindow` handles connection + projection and composes `TimelineChatWindow`
-- app host passes `timelineEntities`, host actions, and UX props (title/subtitle/footer)
+- app host claims connection via `useProjectedChatConnection`
+- app host renders `TimelineConversationView` from runtime selectors
+- app host passes widget context and UX props (title/subtitle/footer)
 
 Important design choice: rendering is derived entirely from timeline entities.
 
-Chat metadata state (`chatSlice`) only holds transport/UX metadata:
+Runtime metadata now lives in `ConversationRuntime.meta`:
 
 - connection status,
 - model name,
@@ -442,19 +443,19 @@ on render:
 
 Adapters let you add app behavior without forking projection core.
 
-### 8.1 Metadata adapter pattern
+### 8.1 Runtime metadata pattern
 
-Used by `createChatMetaProjectionAdapter`.
+Metadata extraction is now owned by `ConversationRuntime` (not adapters).
 
 Responsibilities:
 
 - observe semantic event types (`llm.start|delta|final`),
-- update model/tokens/stats,
-- map `ws.error` to chat error metadata.
+- update model/tokens/stats in runtime meta,
+- map `ws.error` to runtime error metadata.
 
 Rule:
 
-- adapter should not mutate canonical timeline entities directly.
+- adapters should not mutate canonical timeline entities directly.
 - timeline changes should come from registry handlers.
 
 ### 8.2 Artifact adapter pattern
@@ -539,18 +540,18 @@ Use this as a concrete checklist.
 - add app handlers with `registry.register(...)`
 
 3. Build adapter list:
-- metadata adapter,
 - app side-effect adapters,
 - optional artifact adapter.
 
 4. Build transport client handlers:
 - `onRawEnvelope` -> event bus emit,
-- `onEnvelope` -> runtime projection path (`TimelineChatRuntimeWindow` / `useProjectedChatConnection`).
+- `onEnvelope` -> runtime projection path (`useProjectedChatConnection` + `ConversationRuntime`).
 
 5. Build runtime host:
-- `selectTimelineEntities(...)`,
-- pass entities + host callbacks to `TimelineChatRuntimeWindow`,
-- keep app concerns in host callbacks (artifact open/edit, status, debug feed).
+- wire `ConversationManagerProvider`,
+- call `useProjectedChatConnection(...)`,
+- render `TimelineConversationView`,
+- keep app concerns in host callbacks (artifact open/edit, debug feed).
 
 6. Build widget renderer:
 - register a widget pack namespace explicitly via `registerHypercardWidgetPack` (runtime helper does this for you),
@@ -640,7 +641,7 @@ Fix:
 
 Fix:
 
-- all projection flows should pass through one runtime seam (`TimelineChatRuntimeWindow` or `useProjectedChatConnection` wrapper).
+- all projection flows should pass through one runtime seam (`useProjectedChatConnection` + `ConversationRuntime`).
 - avoid app-owned direct projection calls once runtime boundary is adopted.
 
 ### Pitfall: debug tools depending on projected state
@@ -664,26 +665,14 @@ Fix:
 const semRegistry = createSemRegistry();
 semRegistry.register('myapp.map.v1', myMapHandler);
 
-const adapters = [
-  createChatMetaProjectionAdapter(),
-  createMyAppProjectionAdapter(),
-];
-
-const entities = selectTimelineEntities(state, convId);
+const adapters = [createMyAppProjectionAdapter()];
 
 return (
-  <TimelineChatRuntimeWindow
+  <TimelineConversationView
     conversationId={convId}
-    dispatch={dispatch}
-    semRegistry={semRegistry}
-    adapters={adapters}
-    createClient={(handlers) => new InventoryWebChatClient(convId, handlers, { hydrate: false })}
-    hostActions={{
-      onEmitRawEnvelope: (env) => emitConversationEvent(convId, env),
-    }}
-    timelineEntities={entities}
     onSend={handleSend}
     widgetNamespace="inventory"
+    widgetRenderContext={widgetRenderContext}
   />
 );
 ```
@@ -695,7 +684,7 @@ return (
 Engine exports you will use most:
 
 - `createSemRegistry`
-- `TimelineChatRuntimeWindow`
+- `TimelineConversationView`
 - `useProjectedChatConnection`
 - `projectSemEnvelope`
 - `hydrateTimelineSnapshot`

@@ -1,12 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { InlineWidget } from '../../components/widgets';
-import {
-  clearRegisteredInlineWidgetRenderers,
-  registerInlineWidgetRenderer,
-  renderInlineWidget,
-  resolveInlineWidgetRenderer,
-  unregisterInlineWidgetRenderer,
-} from './inlineWidgetRegistry';
+import { createConversationWidgetRegistry } from './inlineWidgetRegistry';
 
 function sampleWidget(type = 'inventory.timeline'): InlineWidget {
   return {
@@ -17,32 +11,43 @@ function sampleWidget(type = 'inventory.timeline'): InlineWidget {
 }
 
 describe('inlineWidgetRegistry', () => {
-  beforeEach(() => {
-    clearRegisteredInlineWidgetRenderers();
-  });
-
   it('registers and resolves a renderer by widget type', () => {
-    registerInlineWidgetRenderer('inventory.timeline', (widget) => `rendered:${widget.id}`);
-    const renderer = resolveInlineWidgetRenderer('inventory.timeline');
+    const registry = createConversationWidgetRegistry();
+    registry.register('inventory.timeline', (widget) => `rendered:${widget.id}`);
+    const renderer = registry.resolve('inventory.timeline');
     expect(renderer).toBeDefined();
-    expect(renderInlineWidget(sampleWidget(), {})).toBe('rendered:w-1');
+    expect(registry.render(sampleWidget(), {})).toBe('rendered:w-1');
   });
 
   it('supports temporary overrides', () => {
-    registerInlineWidgetRenderer('inventory.timeline', () => 'base');
-    const rendered = renderInlineWidget(sampleWidget(), {}, {
+    const registry = createConversationWidgetRegistry();
+    registry.register('inventory.timeline', () => 'base');
+    const rendered = registry.render(sampleWidget(), {}, {
       'inventory.timeline': () => 'override',
     });
     expect(rendered).toBe('override');
   });
 
   it('returns null when no renderer is registered', () => {
-    expect(renderInlineWidget(sampleWidget('missing.widget'))).toBeNull();
+    const registry = createConversationWidgetRegistry();
+    expect(registry.render(sampleWidget('missing.widget'))).toBeNull();
   });
 
   it('can unregister renderers', () => {
-    registerInlineWidgetRenderer('inventory.timeline', () => 'base');
-    unregisterInlineWidgetRenderer('inventory.timeline');
-    expect(resolveInlineWidgetRenderer('inventory.timeline')).toBeUndefined();
+    const registry = createConversationWidgetRegistry();
+    registry.register('inventory.timeline', () => 'base');
+    registry.unregister('inventory.timeline');
+    expect(registry.resolve('inventory.timeline')).toBeUndefined();
+  });
+
+  it('supports independent per-window registries', () => {
+    const a = createConversationWidgetRegistry();
+    const b = createConversationWidgetRegistry();
+
+    a.register('inventory.timeline', () => 'a-only');
+    b.register('inventory.timeline', () => 'b-only');
+
+    expect(a.render(sampleWidget())).toBe('a-only');
+    expect(b.render(sampleWidget())).toBe('b-only');
   });
 });

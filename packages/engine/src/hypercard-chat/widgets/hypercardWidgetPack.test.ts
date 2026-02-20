@@ -1,46 +1,48 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { registerHypercardWidgetPack, unregisterHypercardWidgetPack } from './hypercardWidgetPack';
-import {
-  clearRegisteredInlineWidgetRenderers,
-  renderInlineWidget,
-  resolveInlineWidgetRenderer,
-} from './inlineWidgetRegistry';
+import { createConversationWidgetRegistry } from './inlineWidgetRegistry';
 
 describe('registerHypercardWidgetPack', () => {
-  beforeEach(() => {
-    clearRegisteredInlineWidgetRenderers();
-  });
-
   it('registers timeline/cards/widgets renderers for a namespace', () => {
-    const registration = registerHypercardWidgetPack({ namespace: 'inventory' });
-    expect(resolveInlineWidgetRenderer('inventory.timeline')).toBeDefined();
-    expect(resolveInlineWidgetRenderer('inventory.cards')).toBeDefined();
-    expect(resolveInlineWidgetRenderer('inventory.widgets')).toBeDefined();
+    const registry = createConversationWidgetRegistry();
+    const registration = registerHypercardWidgetPack({
+      registry,
+      namespace: 'inventory',
+    });
+    expect(registry.resolve('inventory.timeline')).toBeDefined();
+    expect(registry.resolve('inventory.cards')).toBeDefined();
+    expect(registry.resolve('inventory.widgets')).toBeDefined();
     registration.unregister();
   });
 
   it('keeps renderers active until the final registration is unregistered', () => {
-    const first = registerHypercardWidgetPack({ namespace: 'inventory' });
-    const second = registerHypercardWidgetPack({ namespace: 'inventory' });
+    const registry = createConversationWidgetRegistry();
+    const first = registerHypercardWidgetPack({ registry, namespace: 'inventory' });
+    const second = registerHypercardWidgetPack({ registry, namespace: 'inventory' });
 
     first.unregister();
-    expect(resolveInlineWidgetRenderer('inventory.timeline')).toBeDefined();
+    expect(registry.resolve('inventory.timeline')).toBeDefined();
 
     second.unregister();
-    expect(resolveInlineWidgetRenderer('inventory.timeline')).toBeUndefined();
+    expect(registry.resolve('inventory.timeline')).toBeUndefined();
   });
 
   it('supports explicit namespace-level unregistration', () => {
-    registerHypercardWidgetPack({ namespace: 'inventory' });
-    unregisterHypercardWidgetPack({ namespace: 'inventory' });
-    expect(resolveInlineWidgetRenderer('inventory.timeline')).toBeUndefined();
+    const registry = createConversationWidgetRegistry();
+    registerHypercardWidgetPack({ registry, namespace: 'inventory' });
+    unregisterHypercardWidgetPack({ registry, namespace: 'inventory' });
+    expect(registry.resolve('inventory.timeline')).toBeUndefined();
   });
 
   it('renders a card panel with host callbacks from context', () => {
-    const registration = registerHypercardWidgetPack({ namespace: 'inventory' });
+    const registry = createConversationWidgetRegistry();
+    const registration = registerHypercardWidgetPack({
+      registry,
+      namespace: 'inventory',
+    });
     const onOpenArtifact = vi.fn();
     const onEditCard = vi.fn();
-    const rendered = renderInlineWidget(
+    const rendered = registry.render(
       {
         id: 'w-card',
         type: 'inventory.cards',

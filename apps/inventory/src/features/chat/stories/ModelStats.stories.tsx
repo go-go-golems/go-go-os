@@ -1,5 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { TurnStats } from '../chatSlice';
+
+interface TurnStats {
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedTokens?: number;
+  cacheCreationInputTokens?: number;
+  cacheReadInputTokens?: number;
+  durationMs?: number;
+  tps?: number;
+}
 
 /**
  * Standalone StatsFooter story component — mirrors the logic from

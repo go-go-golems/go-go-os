@@ -1,7 +1,6 @@
 import { createAppStore } from '@hypercard/engine';
 import { artifactsReducer } from '@hypercard/engine';
 import { timelineReducer } from '@hypercard/engine';
-import { chatReducer } from '../features/chat/chatSlice';
 import { inventoryReducer } from '../features/inventory/inventorySlice';
 import { salesReducer } from '../features/sales/salesSlice';
 
@@ -11,7 +10,6 @@ export const { store, createStore: createInventoryStore } = createAppStore(
     sales: salesReducer,
     artifacts: artifactsReducer,
     timeline: timelineReducer,
-    chat: chatReducer,
   },
   {
     enableReduxDiagnostics: import.meta.env.DEV,

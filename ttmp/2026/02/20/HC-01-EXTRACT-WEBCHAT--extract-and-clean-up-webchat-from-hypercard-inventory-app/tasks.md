@@ -57,9 +57,9 @@
 
 ## Phase 6: Debug + Editor Windows
 
-- [ ] **6.1** Move EventViewerWindow from inventory to `packages/engine/src/chat/debug/EventViewerWindow.tsx` -- update imports to engine-local paths
-- [ ] **6.2** Move SyntaxHighlight from inventory to `packages/engine/src/chat/debug/SyntaxHighlight.tsx` -- ensure CodeMirror lang deps are in engine's package.json
-- [ ] **6.3** Move yamlFormat from inventory to `packages/engine/src/chat/debug/yamlFormat.ts`
+- [x] **6.1** Move EventViewerWindow from inventory to `packages/engine/src/chat/debug/EventViewerWindow.tsx` -- update imports to engine-local paths
+- [x] **6.2** Move SyntaxHighlight from inventory to `packages/engine/src/chat/debug/SyntaxHighlight.tsx` -- ensure CodeMirror lang deps are in engine's package.json
+- [x] **6.3** Move yamlFormat from inventory to `packages/engine/src/chat/debug/yamlFormat.ts`
 - [ ] **6.4** Move CodeEditorWindow from inventory to `packages/engine/src/hypercard/editor/CodeEditorWindow.tsx` -- update imports
 - [ ] **6.5** Move editorLaunch from inventory to `packages/engine/src/hypercard/editor/editorLaunch.ts`
 - [ ] **6.6** Move RuntimeCardDebugWindow from inventory to `packages/engine/src/hypercard/debug/RuntimeCardDebugWindow.tsx` -- remove direct STACK import, accept `stacks?: CardStackDefinition[]` prop

@@ -16,14 +16,22 @@ RelatedFiles:
     - Path: apps/inventory/src/features/chat/chatSlice.ts
     - Path: apps/inventory/src/features/chat/timelineProjection.ts
     - Path: apps/inventory/src/features/chat/webchatClient.ts
+    - Path: packages/engine/package.json
+      Note: Added CodeMirror/Lezer deps for debug syntax rendering in engine
     - Path: packages/engine/src/chat/chatApi.ts
       Note: Resolved pre-existing typecheck gap for StreamHandlers
     - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
       Note: Phase 4 connected conversation window
     - Path: packages/engine/src/chat/components/StatsFooter.tsx
       Note: Phase 4 extracted stats footer
+    - Path: packages/engine/src/chat/debug/EventViewerWindow.tsx
+      Note: Phase 6.1 migration of event viewer into engine debug module (commit e8fbc61)
+    - Path: packages/engine/src/chat/debug/SyntaxHighlight.tsx
+      Note: Phase 6.2 migration of syntax highlighter utility to engine (commit e8fbc61)
     - Path: packages/engine/src/chat/debug/eventBus.ts
       Note: Phase 4 event bus relocation to engine
+    - Path: packages/engine/src/chat/debug/yamlFormat.ts
+      Note: Phase 6.3 migration of YAML formatter utility to engine (commit e8fbc61)
     - Path: packages/engine/src/chat/renderers/builtin/GenericRenderer.tsx
       Note: Phase 3 fallback renderer
     - Path: packages/engine/src/chat/renderers/builtin/LogRenderer.tsx
@@ -93,6 +101,7 @@ LastUpdated: 2026-02-20T00:00:00Z
 WhatFor: Track exploration, decisions, and implementation progress
 WhenToUse: Reference during implementation and code review
 ---
+
 
 
 
@@ -881,3 +890,103 @@ The tricky part was preserving deterministic test setup after moving to one-time
   - `docmgr task add --ticket HC-01-EXTRACT-WEBCHAT --text "...5.13..."`
   - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 40`
   - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 28,29,30,31,32,33,34,35,36,37,38,39`
+
+---
+
+## Step 9: Phase 6.1-6.3 Implementation (Debug Viewer + Syntax/YAML Utilities)
+
+Resumed implementation and completed the first debug/editor extraction tasks in Phase 6 by moving debug-viewer UI and formatting utilities from inventory into engine chat debug modules. This establishes engine-local ownership of event-log visualization primitives before app-level wiring cleanup in later phases.
+
+The migrated components compile and run under engine build/test workflows, and the chat barrel now exports these debug modules for downstream use in Phase 7 app shell migration.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue now"
+
+**Assistant interpretation:** Continue executing the next open ticket tasks immediately rather than pausing at analysis/docs.
+
+**Inferred user intent:** Maintain forward implementation momentum and keep checking off plan phases with commits and diary traceability.
+
+**Commit (code):** e8fbc61 — "feat(engine): migrate chat debug viewer and syntax utilities"
+
+### What I did
+
+1. Migrated debug event viewer component:
+   - copied `apps/inventory/src/features/chat/EventViewerWindow.tsx`
+   - target: `packages/engine/src/chat/debug/EventViewerWindow.tsx`
+   - updated imports to engine-local debug utilities (`./SyntaxHighlight`, `./yamlFormat`)
+2. Migrated syntax highlighting utility:
+   - copied `apps/inventory/src/features/chat/utils/SyntaxHighlight.tsx`
+   - target: `packages/engine/src/chat/debug/SyntaxHighlight.tsx`
+3. Migrated YAML formatter utility:
+   - copied `apps/inventory/src/features/chat/utils/yamlFormat.ts`
+   - target: `packages/engine/src/chat/debug/yamlFormat.ts`
+4. Exported new debug modules from chat barrel:
+   - updated `packages/engine/src/chat/index.ts` to export `EventViewerWindow`, `SyntaxHighlight`, `yamlFormat`
+5. Added highlighting dependencies to engine package:
+   - `@codemirror/lang-javascript`
+   - `@codemirror/lang-yaml`
+   - `@lezer/highlight`
+   - files updated: `packages/engine/package.json`, `package-lock.json`
+6. Ran validation:
+   - `npm run -w packages/engine typecheck`
+   - `npm run -w packages/engine test -- src/chat/ws/wsManager.test.ts src/chat/sem/semRegistry.test.ts src/hypercard/timeline/hypercardWidget.test.ts src/hypercard/timeline/hypercardCard.test.ts`
+7. Checked off tasks:
+   - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 41,42,43`
+
+### Why
+
+Phase 6 requires engine-owned debug/editor components so the inventory app can become a thin shell in Phase 7. Moving EventViewer/Syntax/YAML utilities first isolates foundational tooling used by debug windows and keeps migration incremental.
+
+### What worked
+
+- File migrations were direct with only import-path adaptation needed for EventViewerWindow.
+- Engine typecheck passed after migration.
+- Existing focused chat/hypercard tests remained green after dependency/export updates.
+
+### What didn't work
+
+- No functional blockers occurred in this step.
+- `npm install -w packages/engine ...` reported "up to date", which indicates dependency versions were already resolvable in workspace lock context; package and lock still updated for explicit engine ownership.
+
+### What I learned
+
+- Event viewer is already mostly engine-ready because Phase 4 moved `eventBus` earlier.
+- Keeping SyntaxHighlight and yamlFormat standalone in `chat/debug` makes future reuse by additional debug windows straightforward.
+
+### What was tricky to build
+
+The main edge was ensuring migration stayed strictly engine-local without accidentally preserving inventory-relative utility paths. This was handled by immediate import rewiring in `EventViewerWindow.tsx` and validating via engine typecheck instead of relying on app-level builds.
+
+### What warrants a second pair of eyes
+
+1. `EventViewerWindow` inline styles and family-label assumptions may need UI/theming pass once integrated in final desktop routing.
+2. Validate whether debug utilities should remain exported from `chat/index.ts` or via a narrower debug-specific barrel to control public API surface.
+3. Confirm whether legacy inventory copies should be deleted in Phase 7 or earlier once no imports remain.
+
+### What should be done in the future
+
+- Proceed to Phase 6.4-6.6 (CodeEditorWindow, editorLaunch, RuntimeCardDebugWindow) before app-shell rewiring.
+
+### Code review instructions
+
+- Start with:
+  - `packages/engine/src/chat/debug/EventViewerWindow.tsx`
+  - `packages/engine/src/chat/debug/SyntaxHighlight.tsx`
+  - `packages/engine/src/chat/debug/yamlFormat.ts`
+- Then review export/dependency wiring:
+  - `packages/engine/src/chat/index.ts`
+  - `packages/engine/package.json`
+  - `package-lock.json`
+- Validate with:
+  - `npm run -w packages/engine typecheck`
+  - `npm run -w packages/engine test -- src/chat/ws/wsManager.test.ts src/chat/sem/semRegistry.test.ts src/hypercard/timeline/hypercardWidget.test.ts src/hypercard/timeline/hypercardCard.test.ts`
+
+### Technical details
+
+- Phase 6 tasks completed:
+  - `6.1` EventViewerWindow move
+  - `6.2` SyntaxHighlight move + dependency check
+  - `6.3` yamlFormat move
+- Task update command:
+  - `docmgr task check --ticket HC-01-EXTRACT-WEBCHAT --id 41,42,43`

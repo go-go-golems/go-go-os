@@ -146,3 +146,16 @@ Added explicit Phase 8 story-cleanup task to remove legacy adapter-based story u
 ### Related Files
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/tasks.md — Added task 8.6 for legacy story cleanup
+
+## 2026-02-20
+
+Phase 6.1-6.3 complete (commit e8fbc61): migrated EventViewerWindow, SyntaxHighlight, and yamlFormat into engine chat debug module and exported them through chat barrel.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/package.json — Added CodeMirror/Lezer highlighting deps for debug syntax renderer
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/debug/EventViewerWindow.tsx — Moved debug event viewer to engine with engine-local imports
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/debug/SyntaxHighlight.tsx — Moved syntax highlighting utility to engine debug module
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/debug/yamlFormat.ts — Moved YAML formatter utility to engine debug module
+- /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/index.ts — Exported debug viewer/highlighter/formatter from chat barrel
+

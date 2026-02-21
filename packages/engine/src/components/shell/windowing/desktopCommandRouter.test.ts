@@ -19,7 +19,7 @@ describe('routeDesktopCommand', () => {
     const handled = routeDesktopCommand('window.open.home', ctx);
 
     expect(handled).toBe(true);
-    expect(ctx.openCardWindow).toHaveBeenCalledWith('home');
+    expect(ctx.openCardWindow).toHaveBeenCalledWith('home', { dedupe: false });
   });
 
   it('closes focused window for window.close-focused when focus exists', () => {
@@ -43,7 +43,7 @@ describe('routeDesktopCommand', () => {
     const handled = routeDesktopCommand('window.open.card.report', ctx);
 
     expect(handled).toBe(true);
-    expect(ctx.openCardWindow).toHaveBeenCalledWith('report');
+    expect(ctx.openCardWindow).toHaveBeenCalledWith('report', { dedupe: false });
   });
 
   it('routes tile and cascade commands', () => {

@@ -321,7 +321,7 @@ export function useDesktopShellController({
   }, [windows]);
 
   const openCardWindow = useCallback(
-    (cardId: string) => {
+    (cardId: string, options?: { dedupe?: boolean }) => {
       const cardDef = stack.cards[cardId];
       if (!cardDef) return;
       const sid = nextSessionId();
@@ -335,7 +335,7 @@ export function useDesktopShellController({
             kind: 'card',
             card: { stackId: stack.id, cardId, cardSessionId: sid },
           },
-          dedupeKey: cardId,
+          dedupeKey: options?.dedupe ? cardId : undefined,
         }),
       );
     },

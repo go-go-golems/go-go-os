@@ -26,3 +26,4 @@
 - [x] Restore chat-window header actions (Event Viewer launch + debug mode toggle) in inventory assistant window with per-conversation behavior
 - [x] Add chat timeline renderer debug mode toggle in header and extend renderer API with context; implement full-content debug rendering for hypercard widget/card entities
 - [x] Fix artifact open/edit for remapped tool_result hypercard widgets/cards: ensure artifact store upsert on customKind remap path and normalize quoted artifact IDs before window param lookup
+- [ ] F10: Restore chat runtime stats UI by showing model name + live TPS/token counts in footer and conversation total token count in header

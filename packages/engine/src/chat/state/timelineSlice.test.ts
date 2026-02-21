@@ -237,4 +237,44 @@ describe('timelineSlice', () => {
       consumedAt: 123,
     });
   });
+
+  it('clears consumed suggestions when a new suggestion block is upserted', () => {
+    const store = createStore();
+
+    store.dispatch(
+      timelineSlice.actions.upsertSuggestions({
+        convId: 'conv-refresh',
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: ['old suggestion'],
+        replace: true,
+        version: 1,
+      })
+    );
+
+    store.dispatch(
+      timelineSlice.actions.consumeSuggestions({
+        convId: 'conv-refresh',
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        consumedAt: 321,
+      })
+    );
+
+    store.dispatch(
+      timelineSlice.actions.upsertSuggestions({
+        convId: 'conv-refresh',
+        entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
+        source: 'assistant',
+        suggestions: ['new suggestion'],
+        replace: true,
+        version: 2,
+      })
+    );
+
+    const assistant = store.getState().timeline.byConvId['conv-refresh'].byId[ASSISTANT_SUGGESTIONS_ENTITY_ID];
+    expect(assistant.props).toEqual({
+      source: 'assistant',
+      items: ['new suggestion'],
+    });
+  });
 });

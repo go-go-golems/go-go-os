@@ -200,6 +200,7 @@ export const timelineSlice = createSlice({
         ? normalized
         : normalizeSuggestionList([...(existingProps?.items ?? []), ...normalized]);
       const nextAt = updatedAt ?? Date.now();
+      const { consumedAt: _consumedAt, ...baseProps } = asRecord(existing?.props);
 
       const entity: TimelineEntity = {
         id: entityId,
@@ -208,7 +209,7 @@ export const timelineSlice = createSlice({
         updatedAt: nextAt,
         version: incomingVersion > 0 ? incomingVersion : existing?.version,
         props: {
-          ...asRecord(existing?.props),
+          ...baseProps,
           source,
           items: nextItems,
         },

@@ -44,9 +44,11 @@ export interface SemContext {
 type Handler = (ev: SemEvent, ctx: SemContext) => void;
 type LlmStreamKind = 'llm' | 'thinking';
 type LlmStreamState = { role: string; emitted: boolean };
+type TimelineMessageState = { emitted: boolean };
 
 const handlers = new Map<string, Handler>();
 const llmStreamStates = new Map<string, LlmStreamState>();
+const timelineMessageStates = new Map<string, TimelineMessageState>();
 
 export function registerSem(type: string, handler: Handler) {
   handlers.set(type, handler);
@@ -55,6 +57,7 @@ export function registerSem(type: string, handler: Handler) {
 export function clearSemHandlers() {
   handlers.clear();
   llmStreamStates.clear();
+  timelineMessageStates.clear();
 }
 
 export function handleSem(envelope: unknown, ctx: SemContext) {
@@ -86,6 +89,13 @@ function decodeProto<T extends Message>(schema: GenMessage<T>, raw: unknown): T 
   } catch {
     return null;
   }
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
 }
 
 function defaultRoleForStream(kind: LlmStreamKind): string {
@@ -172,6 +182,47 @@ function closeLlmStream(ctx: SemContext, ev: SemEvent, kind: LlmStreamKind) {
   llmStreamStates.delete(key);
 }
 
+function timelineMessageStateKey(convId: string, entityId: string): string {
+  return `${convId}:${entityId}`;
+}
+
+function pruneEmptyTimelineMessageUpsert(
+  ctx: SemContext,
+  entity: TimelineEntity,
+): TimelineEntity | null {
+  if (entity.kind !== 'message') return entity;
+  const props = asRecord(entity.props);
+  const content = props.content;
+  const hasText = typeof content === 'string' && content.trim().length > 0;
+  const streaming = props.streaming === true;
+  const stateKey = timelineMessageStateKey(ctx.convId, entity.id);
+  const state = timelineMessageStates.get(stateKey);
+
+  if (hasText) {
+    timelineMessageStates.set(stateKey, { emitted: true });
+    return entity;
+  }
+
+  if (!state?.emitted) {
+    if (!streaming) {
+      timelineMessageStates.delete(stateKey);
+    }
+    return null;
+  }
+
+  const nextProps = { ...props };
+  delete nextProps.content;
+
+  if (!streaming) {
+    timelineMessageStates.delete(stateKey);
+  }
+
+  return {
+    ...entity,
+    props: nextProps,
+  };
+}
+
 export function registerDefaultSemHandlers() {
   // Intentionally additive: callers that need a clean slate must call
   // clearSemHandlers() explicitly (tests do this in beforeEach).
@@ -183,7 +234,9 @@ export function registerDefaultSemHandlers() {
     if (!entity) return;
     const mapped = timelineEntityFromProto(entity, data?.version);
     if (!mapped) return;
-    upsertEntity(ctx, mapped);
+    const normalized = pruneEmptyTimelineMessageUpsert(ctx, mapped);
+    if (!normalized) return;
+    upsertEntity(ctx, normalized);
   });
 
   registerSem('llm.start', (ev, ctx) => {

@@ -164,4 +164,96 @@ describe('semRegistry', () => {
 
     expect(extensionHandler).toHaveBeenCalledTimes(1);
   });
+
+  it('suppresses empty timeline.upsert message placeholders until text exists', () => {
+    const store = createStore();
+    registerDefaultSemHandlers();
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'timeline.upsert',
+          id: 'msg-upsert',
+          data: {
+            convId: 'conv-upsert',
+            version: '1',
+            entity: {
+              id: 'msg-upsert',
+              kind: 'message',
+              createdAtMs: '1',
+              updatedAtMs: '1',
+              props: {
+                role: 'assistant',
+                content: '',
+                streaming: true,
+              },
+            },
+          },
+        },
+      },
+      { convId: 'conv-upsert', dispatch: store.dispatch }
+    );
+
+    expect(store.getState().timeline.byConvId['conv-upsert']).toBeUndefined();
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'timeline.upsert',
+          id: 'msg-upsert',
+          data: {
+            convId: 'conv-upsert',
+            version: '2',
+            entity: {
+              id: 'msg-upsert',
+              kind: 'message',
+              createdAtMs: '1',
+              updatedAtMs: '2',
+              props: {
+                role: 'assistant',
+                content: 'hello',
+                streaming: true,
+              },
+            },
+          },
+        },
+      },
+      { convId: 'conv-upsert', dispatch: store.dispatch }
+    );
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'timeline.upsert',
+          id: 'msg-upsert',
+          data: {
+            convId: 'conv-upsert',
+            version: '3',
+            entity: {
+              id: 'msg-upsert',
+              kind: 'message',
+              createdAtMs: '1',
+              updatedAtMs: '3',
+              props: {
+                role: 'assistant',
+                content: '',
+                streaming: false,
+              },
+            },
+          },
+        },
+      },
+      { convId: 'conv-upsert', dispatch: store.dispatch }
+    );
+
+    const entity = store.getState().timeline.byConvId['conv-upsert'].byId['msg-upsert'];
+    expect(entity.props).toEqual({
+      role: 'assistant',
+      content: 'hello',
+      streaming: false,
+    });
+  });
 });

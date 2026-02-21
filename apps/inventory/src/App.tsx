@@ -1,12 +1,12 @@
 import {
   ChatConversationWindow,
   CodeEditorWindow,
-  ensureChatModulesRegistered,
   EventViewerWindow,
+  ensureChatModulesRegistered,
   getEditorInitialCode,
+  RuntimeCardDebugWindow,
   registerChatRuntimeModule,
   registerHypercardTimelineModule,
-  RuntimeCardDebugWindow,
 } from '@hypercard/engine';
 import { type OpenWindowPayload, openWindow } from '@hypercard/engine/desktop-core';
 import { type DesktopContribution, DesktopShell } from '@hypercard/engine/desktop-react';
@@ -26,6 +26,14 @@ ensureChatModulesRegistered();
 
 function newConversationId(): string {
   return typeof window.crypto?.randomUUID === 'function' ? window.crypto.randomUUID() : `inv-${Date.now()}`;
+}
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  throw new Error('clipboard unavailable');
 }
 
 function buildChatWindowPayload(options?: { dedupeKey?: string }): OpenWindowPayload {
@@ -125,10 +133,24 @@ function buildRuntimeDebugWindowPayload(): OpenWindowPayload {
 function InventoryChatAssistantWindow({ convId }: { convId: string }) {
   const dispatch = useDispatch();
   const [renderMode, setRenderMode] = useState<'normal' | 'debug'>('normal');
+  const [copyConvStatus, setCopyConvStatus] = useState<'idle' | 'copied' | 'error'>('idle');
 
   const openEventViewer = useCallback(() => {
     dispatch(openWindow(buildEventViewerWindowPayload(convId)));
   }, [convId, dispatch]);
+
+  const copyConversationId = useCallback(() => {
+    copyTextToClipboard(convId)
+      .then(() => {
+        setCopyConvStatus('copied');
+      })
+      .catch(() => {
+        setCopyConvStatus('error');
+      })
+      .finally(() => {
+        setTimeout(() => setCopyConvStatus('idle'), 1300);
+      });
+  }, [convId]);
 
   return (
     <ChatConversationWindow
@@ -139,6 +161,19 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
         <>
           <button type="button" data-part="btn" onClick={openEventViewer} style={{ fontSize: 10, padding: '1px 6px' }}>
             🧭 Events
+          </button>
+          <button
+            type="button"
+            data-part="btn"
+            onClick={copyConversationId}
+            title={convId}
+            style={{ fontSize: 10, padding: '1px 6px' }}
+          >
+            {copyConvStatus === 'copied'
+              ? '✅ Copied'
+              : copyConvStatus === 'error'
+                ? '⚠ Copy failed'
+                : '📋 Copy Conv ID'}
           </button>
           <button
             type="button"

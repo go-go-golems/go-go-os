@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChatWindow } from '../../components/widgets/ChatWindow';
 import {
@@ -52,6 +52,26 @@ function toRenderEntity(entity: {
   };
 }
 
+function isInboundResponseEntity(
+  entity: { kind: string; createdAt: number; props: unknown },
+  awaitingSinceMs: number
+): boolean {
+  if (entity.createdAt < awaitingSinceMs) {
+    return false;
+  }
+  if (entity.kind !== 'message') {
+    return true;
+  }
+  const props = isRecord(entity.props) ? entity.props : {};
+  const role = typeof props.role === 'string' ? props.role : 'assistant';
+  if (role === 'user') {
+    return false;
+  }
+  const content = typeof props.content === 'string' ? props.content.trim() : '';
+  const streaming = props.streaming === true;
+  return content.length > 0 || streaming;
+}
+
 export function ChatConversationWindow({
   convId,
   basePrefix = '',
@@ -62,6 +82,7 @@ export function ChatConversationWindow({
 }: ChatConversationWindowProps) {
   const dispatch = useDispatch();
   const { send, connectionStatus, isStreaming } = useConversation(convId, basePrefix);
+  const [awaitingResponseSinceMs, setAwaitingResponseSinceMs] = useState<number | null>(null);
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectRenderableTimelineEntities(state, convId)
@@ -103,8 +124,30 @@ export function ChatConversationWindow({
     );
   }, [convId, dispatch, entities.length, starterSuggestionsEntity]);
 
+  useEffect(() => {
+    setAwaitingResponseSinceMs(null);
+  }, [convId]);
+
+  useEffect(() => {
+    if (awaitingResponseSinceMs === null) {
+      return;
+    }
+    if (connectionStatus === 'error') {
+      setAwaitingResponseSinceMs(null);
+      return;
+    }
+    if (
+      entities.some((entity) =>
+        isInboundResponseEntity(entity, awaitingResponseSinceMs)
+      )
+    ) {
+      setAwaitingResponseSinceMs(null);
+    }
+  }, [awaitingResponseSinceMs, connectionStatus, entities]);
+
   const sendWithSuggestionLifecycle = useCallback(
     async (prompt: string) => {
+      setAwaitingResponseSinceMs(Date.now());
       dispatch(
         timelineSlice.actions.upsertSuggestions({
           convId,
@@ -120,7 +163,12 @@ export function ChatConversationWindow({
           entityId: STARTER_SUGGESTIONS_ENTITY_ID,
         })
       );
-      await send(prompt);
+      try {
+        await send(prompt);
+      } catch (error) {
+        setAwaitingResponseSinceMs(null);
+        throw error;
+      }
     },
     [convId, dispatch, send]
   );
@@ -157,6 +205,7 @@ export function ChatConversationWindow({
       timelineContent={timelineContent}
       timelineItemCount={entities.length}
       isStreaming={isStreaming}
+      showPendingResponseSpinner={awaitingResponseSinceMs !== null}
       onSend={sendWithSuggestionLifecycle}
       suggestions={suggestions}
       showSuggestionsAlways

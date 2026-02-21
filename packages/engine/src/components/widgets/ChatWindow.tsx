@@ -6,6 +6,7 @@ export interface ChatWindowProps {
   timelineContent: ReactNode;
   timelineItemCount?: number;
   isStreaming: boolean;
+  showPendingResponseSpinner?: boolean;
   onSend: (text: string) => Promise<void> | void;
   onCancel?: () => void;
   suggestions?: string[];
@@ -38,6 +39,7 @@ export function ChatWindow({
   timelineContent,
   timelineItemCount = 0,
   isStreaming,
+  showPendingResponseSpinner = false,
   onSend,
   onCancel,
   suggestions,
@@ -95,6 +97,14 @@ export function ChatWindow({
       <div data-part="chat-timeline">
         {isEmpty && <WelcomeScreen>{welcomeContent}</WelcomeScreen>}
         {timelineContent}
+        {showPendingResponseSpinner && (
+          <div data-part="chat-message" data-role="assistant">
+            <div data-part="chat-role">AI:</div>
+            <div data-part="chat-window-thinking">
+              <span style={{ animation: 'hc-pulse 1.2s ease-in-out infinite' }}>...</span>
+            </div>
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 

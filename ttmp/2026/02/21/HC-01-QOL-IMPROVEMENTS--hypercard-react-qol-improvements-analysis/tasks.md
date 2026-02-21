@@ -147,17 +147,17 @@
 
 ### Implementation
 
-- [ ] Add retained per-conversation event history in event bus with bounded cap
-- [ ] Ensure event history is recorded even with zero active listeners
-- [ ] Add replay API (`getConversationEvents` and/or replay subscription option)
-- [ ] Initialize viewer from retained history when opening late
-- [ ] Decide and implement clear semantics (local-only vs shared history clear)
+- [x] Add retained per-conversation event history in event bus with bounded cap
+- [x] Ensure event history is recorded even with zero active listeners
+- [x] Add replay API (`getConversationEvents` and/or replay subscription option)
+- [x] Initialize viewer from retained history when opening late
+- [x] Decide and implement clear semantics (local-only vs shared history clear)
 
 ### Tests
 
-- [ ] Add tests for replay-on-subscribe behavior
-- [ ] Add tests for bounded-history pruning
-- [ ] Add tests for clear-history behavior
+- [x] Add tests for replay-on-subscribe behavior
+- [x] Add tests for bounded-history pruning
+- [x] Add tests for clear-history behavior
 
 ### Validation
 
@@ -166,7 +166,7 @@
 
 ### Docs and Commit
 
-- [ ] Append detailed diary step for Issue 6
+- [x] Append detailed diary step for Issue 6
 - [ ] Check off Issue 6 tasks and commit
 
 ## Issue 7: Copy Conversation ID from Chat Header

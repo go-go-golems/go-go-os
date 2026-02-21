@@ -96,3 +96,15 @@ Completed Issue 5 code slice: removed duplicate emoji title prefixes via app-tit
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/WindowTitleBar.tsx — Defensive icon prefix guard
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 5 implementation diary
 
+
+## 2026-02-21
+
+Completed Issue 6 code slice: event bus now retains bounded per-conversation history, viewer initializes from retained history, and clear semantics are implemented (commit 871e084); debug event tests pass.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/debug/EventViewerWindow.tsx — Viewer initialization from history and clear wiring
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/debug/eventBus.test.ts — History retention/clear/cap tests
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/debug/eventBus.ts — Retained history + replay/clear APIs
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 6 implementation diary
+

@@ -745,3 +745,78 @@ This keeps title rendering robust against both current and future data-shape inc
 ### Technical details
 
 - Guard logic: prefix icon only if `title.trimStart()` does not already start with the same icon string.
+
+## Step 10: Implement Issue 6 (retained event history for late-open event viewer)
+
+I implemented retained per-conversation event history in the chat debug event bus, then wired the event viewer to initialize from that retained history when it opens. This closes the gap where late-open viewers missed earlier events.
+
+The implementation keeps history bounded and includes explicit clear behavior per conversation.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Continue the issue-by-issue execution loop and implement event replay for late-open viewers based on clarified buffering expectations.
+
+**Inferred user intent:** Event viewer should show already-seen conversation events, not only events received after viewer mount.
+
+**Commit (code):** `871e084` — "feat(event-bus): retain conversation history for late viewers"
+
+### What I did
+
+- Extended event bus with bounded retained history:
+  - `packages/engine/src/chat/debug/eventBus.ts`
+  - Added `historyMap`, cap (`MAX_EVENT_HISTORY = 1000`), and write-on-emit even with no listeners.
+  - Added `getConversationEvents(convId)` and `clearConversationEventHistory(convId)` APIs.
+- Updated event viewer initialization and clear behavior:
+  - `packages/engine/src/chat/debug/EventViewerWindow.tsx`
+  - Initial state now hydrates from `getConversationEvents(conversationId)` when no `initialEntries` are passed.
+  - Conversation changes reset local viewer state from retained history.
+  - Clear button clears local state and shared conversation history (for runtime mode).
+- Expanded tests:
+  - `packages/engine/src/chat/debug/eventBus.test.ts`
+  - Added retained-history, clear-history, and bounded-cap tests.
+- Ran targeted tests:
+  - `npm run test -w packages/engine -- src/chat/debug/eventBus.test.ts src/chat/debug/EventViewerWindow.test.ts src/chat/debug/clipboard.test.ts`
+
+### Why
+
+- `WsManager` pre-hydrate buffering and diagnostics ring buffers do not provide reusable late-subscriber event history for the debug viewer.
+- Event bus is the correct boundary for retained debug event replay.
+
+### What worked
+
+- All targeted debug tests passed.
+- History is bounded and deterministic in tests (cap pruning verified).
+
+### What didn't work
+
+- No blocking failures in this step.
+
+### What I learned
+
+- Retaining events at bus level is simpler and more robust for viewer replay than trying to reconstruct from timeline entities, which can omit raw envelope details.
+
+### What was tricky to build
+
+- The subtle design decision was clear semantics: runtime clear now removes shared conversation history (except Storybook-provided `initialEntries` mode, where we avoid mutating external fixture state).
+
+### What warrants a second pair of eyes
+
+- Confirm whether clear should remain shared-history clear by default, or be split into separate `Clear View` and `Clear History` controls.
+
+### What should be done in the future
+
+- If multiple debug viewers are expected concurrently, consider adding explicit visual indicator that clear affects shared conversation history.
+
+### Code review instructions
+
+- Review history retention in `packages/engine/src/chat/debug/eventBus.ts`.
+- Review viewer initialization/clear integration in `packages/engine/src/chat/debug/EventViewerWindow.tsx`.
+- Re-run targeted tests listed above.
+
+### Technical details
+
+- History cap is currently 1000 events per conversation.
+- Local viewer display cap remains `MAX_ENTRIES = 500`.
+- Shared history is conversation-scoped and independent from listener lifecycle.

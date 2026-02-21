@@ -529,3 +529,75 @@ The implementation was committed as a focused code slice with targeted tests for
 
 - Copy feedback states are stored per entry ID and auto-cleared after ~1.4s.
 - Primary copy format is YAML payload text already rendered in the expanded pane.
+
+## Step 7: Implement Issue 3 (token semantics: header totals + footer cache detail)
+
+I updated token-display semantics so the header total now includes cached totals, while the footer remains message/turn-level diagnostics and now also shows cache-read values when available. This aligns implementation with the clarified UX requirement.
+
+The change was implemented as a focused code commit with selector and SEM-related regression checks.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Continue issue-by-issue execution and deliver the token-display behavior requested in follow-up clarifications.
+
+**Inferred user intent:** Ensure token metrics are semantically correct by scope: header for full totals, footer for last-message detail.
+
+**Commit (code):** `90e0041` — "feat(chat): include cached tokens in header totals"
+
+### What I did
+
+- Updated selectors:
+  - `packages/engine/src/chat/state/selectors.ts`
+  - Added `selectConversationCachedTokens(...)`.
+  - Updated `selectConversationTotalTokens(...)` to include cached totals (`input + output + cached`).
+- Updated footer diagnostics:
+  - `packages/engine/src/chat/components/StatsFooter.tsx`
+  - Added `CacheRead:<n>` output when `cacheReadInputTokens` is present.
+- Updated selector tests:
+  - `packages/engine/src/chat/state/selectors.test.ts`
+  - Verified cached selector and total-token semantics.
+- Ran targeted tests:
+  - `npm run test -w packages/engine -- src/chat/state/selectors.test.ts src/chat/sem/semRegistry.test.ts src/chat/debug/clipboard.test.ts src/chat/debug/EventViewerWindow.test.ts`
+
+### Why
+
+- Header should represent full conversation total usage, including cache contributions.
+- Footer should remain detailed turn-level diagnostics, which includes cache read/write details.
+
+### What worked
+
+- All targeted tests passed.
+- SEM registry tests remained green, indicating no regression in metadata/usage handling path.
+
+### What didn't work
+
+- No blocking failures in this step.
+
+### What I learned
+
+- This behavior change is primarily selector semantics; no transport/runtime protocol changes were required.
+
+### What was tricky to build
+
+- The key precision point was changing aggregate semantics without unintentionally altering the purpose of footer diagnostics.
+
+### What warrants a second pair of eyes
+
+- Confirm whether explicit header label wording should stay `tok` or become `total tok` in UI copy.
+
+### What should be done in the future
+
+- Add a dedicated footer rendering test layer if/when we introduce component tests under jsdom.
+
+### Code review instructions
+
+- Check selector changes in `packages/engine/src/chat/state/selectors.ts`.
+- Check updated expectations in `packages/engine/src/chat/state/selectors.test.ts`.
+- Check footer cache-read output in `packages/engine/src/chat/components/StatsFooter.tsx`.
+
+### Technical details
+
+- Updated total formula: `conversationInputTokens + conversationOutputTokens + conversationCachedTokens`.
+- Footer token parts now may include: `In`, `Out`, `Cache`, `CacheWrite`, `CacheRead`.

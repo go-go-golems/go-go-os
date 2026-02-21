@@ -76,15 +76,15 @@
 
 ### Implementation
 
-- [ ] Add selector for conversation cached tokens
-- [ ] Update header total semantics to include cached totals
-- [ ] Keep footer focused on last-message/turn stats
-- [ ] Ensure footer displays cache fields (`Cache`, `CacheWrite`, `CacheRead`) when present
-- [ ] Confirm label semantics are still clear (`tok` / `total tok` decision)
+- [x] Add selector for conversation cached tokens
+- [x] Update header total semantics to include cached totals
+- [x] Keep footer focused on last-message/turn stats
+- [x] Ensure footer displays cache fields (`Cache`, `CacheWrite`, `CacheRead`) when present
+- [x] Confirm label semantics are still clear (`tok` / `total tok` decision)
 
 ### Tests
 
-- [ ] Update selector tests for new total semantics
+- [x] Update selector tests for new total semantics
 - [ ] Add/update footer rendering tests for cache fields
 
 ### Validation
@@ -94,7 +94,7 @@
 
 ### Docs and Commit
 
-- [ ] Append detailed diary step for Issue 3
+- [x] Append detailed diary step for Issue 3
 - [ ] Check off Issue 3 tasks and commit
 
 ## Issue 4: Allow Multiple Windows for Same Top-Level Icon/Card

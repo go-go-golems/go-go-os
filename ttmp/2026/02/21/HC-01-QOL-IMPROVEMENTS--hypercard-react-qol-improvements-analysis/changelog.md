@@ -60,3 +60,15 @@ Completed Issue 2 code slice: added event payload copy action with clipboard fal
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/debug/clipboard.ts — Clipboard helper with fallback
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 2 implementation diary
 
+
+## 2026-02-21
+
+Completed Issue 3 code slice: header token totals now include cached totals and footer now includes CacheRead when available (commit 90e0041); selector and SEM-adjacent tests pass.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/components/StatsFooter.tsx — Footer cache-read token display
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/state/selectors.test.ts — Selector semantics tests updated
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/state/selectors.ts — Token selector semantics updated
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 3 implementation diary
+

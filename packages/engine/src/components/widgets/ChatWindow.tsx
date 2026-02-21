@@ -57,6 +57,8 @@ export function ChatWindow({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const isAwaitingResponse = showPendingResponseSpinner;
+  const isSendLocked = isStreaming || isSubmitting || isAwaitingResponse;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'instant' });
@@ -64,7 +66,7 @@ export function ChatWindow({
 
   async function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || isStreaming || isSubmitting) return;
+    if (!trimmed || isSendLocked) return;
     setSendError(null);
     setIsSubmitting(true);
     try {
@@ -113,7 +115,7 @@ export function ChatWindow({
 
       {suggestions &&
         suggestions.length > 0 &&
-        (showSuggestionsAlways || ((isEmpty || timelineItemCount <= 1) && !isStreaming)) && (
+        (showSuggestionsAlways || ((isEmpty || timelineItemCount <= 1) && !isSendLocked)) && (
           <div data-part="chat-suggestions">
             {suggestions.map((suggestion) => (
               <Chip key={suggestion} onClick={() => send(suggestion)}>
@@ -133,15 +135,17 @@ export function ChatWindow({
             setInput(event.target.value);
           }}
           onKeyDown={(event) => event.key === 'Enter' && send(input)}
-          placeholder={isStreaming || isSubmitting ? 'Waiting for response…' : (placeholder ?? 'Type a message…')}
-          disabled={isStreaming || isSubmitting}
+          placeholder={isSendLocked ? 'Waiting for response…' : (placeholder ?? 'Type a message…')}
+          disabled={isSendLocked}
         />
         {isStreaming ? (
           onCancel ? (
             <Btn onClick={onCancel}>⏹ Stop</Btn>
           ) : null
         ) : (
-          <Btn onClick={() => send(input)}>{isSubmitting ? 'Sending…' : 'Send'}</Btn>
+          <Btn onClick={() => send(input)} disabled={isSendLocked}>
+            {isSubmitting ? 'Sending…' : isAwaitingResponse ? 'Waiting…' : 'Send'}
+          </Btn>
         )}
       </div>
       {sendError && <div data-part="chat-composer-error">{sendError}</div>}

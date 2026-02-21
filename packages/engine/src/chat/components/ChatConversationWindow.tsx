@@ -136,7 +136,7 @@ export function ChatConversationWindow({
     if (awaitingResponseSinceMs === null) {
       return;
     }
-    if (connectionStatus === 'error') {
+    if (connectionStatus === 'error' || connectionStatus === 'closed') {
       setAwaitingResponseSinceMs(null);
       return;
     }

@@ -101,15 +101,15 @@
 
 ### Implementation
 
-- [ ] Introduce open policy for card launch path (`dedupe` vs `open new`)
-- [ ] Switch top-level icon/card opens to `open new`
-- [ ] Preserve startup-home behavior (avoid duplicate startup windows)
-- [ ] Ensure command routing remains backward-compatible
+- [x] Introduce open policy for card launch path (`dedupe` vs `open new`)
+- [x] Switch top-level icon/card opens to `open new`
+- [x] Preserve startup-home behavior (avoid duplicate startup windows)
+- [x] Ensure command routing remains backward-compatible
 
 ### Tests
 
-- [ ] Add/update tests for repeated icon/card open behavior
-- [ ] Keep reducer primitive dedupe tests passing
+- [x] Add/update tests for repeated icon/card open behavior
+- [x] Keep reducer primitive dedupe tests passing
 
 ### Validation
 
@@ -118,7 +118,7 @@
 
 ### Docs and Commit
 
-- [ ] Append detailed diary step for Issue 4
+- [x] Append detailed diary step for Issue 4
 - [ ] Check off Issue 4 tasks and commit
 
 ## Issue 5: Remove Double Emojis in Window Titles

@@ -72,3 +72,15 @@ Completed Issue 3 code slice: header token totals now include cached totals and 
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/state/selectors.ts — Token selector semantics updated
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 3 implementation diary
 
+
+## 2026-02-21
+
+Completed Issue 4 code slice: top-level card opens now default to open-new via explicit dedupe policy option (commit 60de021); windowing command and reducer tests pass.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/desktopCommandRouter.test.ts — Routing assertions for dedupe:false
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/desktopCommandRouter.ts — Built-in commands request dedupe:false
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx — Open policy implementation (dedupe optional)
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 4 implementation diary
+

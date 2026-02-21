@@ -601,3 +601,76 @@ The change was implemented as a focused code commit with selector and SEM-relate
 
 - Updated total formula: `conversationInputTokens + conversationOutputTokens + conversationCachedTokens`.
 - Footer token parts now may include: `In`, `Out`, `Cache`, `CacheWrite`, `CacheRead`.
+
+## Step 8: Implement Issue 4 (allow multiple top-level card windows)
+
+I implemented the multi-window policy for top-level card opens by moving dedupe behavior to an explicit option instead of always-on default at controller call sites. This allows repeated top-level opens to create additional windows while keeping startup behavior stable.
+
+The change is scoped to desktop windowing command/context wiring and verified with targeted windowing tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Continue sequential implementation and address the window dedupe behavior that blocks opening multiple windows for the same top-level icon/card.
+
+**Inferred user intent:** Top-level card commands/icons should open additional windows instead of focusing existing ones by default.
+
+**Commit (code):** `60de021` — "feat(windowing): allow multiple top-level card windows"
+
+### What I did
+
+- Updated command/context types to support open policy options:
+  - `packages/engine/src/components/shell/windowing/desktopContributions.ts`
+  - `packages/engine/src/components/shell/windowing/desktopCommandRouter.ts`
+- Updated built-in desktop routing to request open-new behavior:
+  - `window.open.home` and `window.open.card.*` now call `openCardWindow(..., { dedupe: false })`.
+- Updated controller open path:
+  - `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx`
+  - `openCardWindow` now accepts `options?.dedupe`; dedupe key is omitted by default, present only when explicitly requested.
+- Updated tests:
+  - `packages/engine/src/components/shell/windowing/desktopCommandRouter.test.ts`
+  - Assertions now validate `dedupe: false` routing intent.
+- Ran targeted tests:
+  - `npm run test -w packages/engine -- src/components/shell/windowing/desktopCommandRouter.test.ts src/components/shell/windowing/desktopContributions.test.ts src/__tests__/windowing.test.ts`
+
+### Why
+
+- Reducer-level dedupe remains a useful primitive.
+- Top-level UX requirement is policy-level: repeated opens should create new windows unless explicitly deduped.
+
+### What worked
+
+- All targeted windowing tests passed.
+- Existing reducer dedupe tests remained green, confirming primitive behavior was preserved.
+
+### What didn't work
+
+- No blocking failures in this step.
+
+### What I learned
+
+- The cleanest place to alter behavior was the controller/command layer, not the reducer, which keeps low-level windowing primitives reusable.
+
+### What was tricky to build
+
+- The tricky point was preserving startup-home and other dedupe-dependent flows while changing default top-level interaction policy.
+
+### What warrants a second pair of eyes
+
+- Confirm whether any custom contribution commands should still use `dedupe: true` for specific cards.
+
+### What should be done in the future
+
+- Add an explicit user-facing command variant for “focus existing” if desired (for teams that want both behaviors).
+
+### Code review instructions
+
+- Review policy change in `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx`.
+- Review routing intent in `packages/engine/src/components/shell/windowing/desktopCommandRouter.ts`.
+- Re-run targeted tests listed above.
+
+### Technical details
+
+- Default top-level behavior is now open-new (no `dedupeKey` in payload).
+- Reducer dedupe behavior remains unchanged and can still be invoked by providing `dedupeKey`.

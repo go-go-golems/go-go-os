@@ -154,6 +154,14 @@ function upsertFromHypercardEntityProps(
       stringField(rawData, 'widgetType') ?? stringField(rawData, 'type') ?? stringField(rawData, 'template'),
     );
     if (fromRaw) {
+      if (preferredSource === 'card') {
+        const payload = recordField(rawData, 'data');
+        const cardData = payload ? recordField(payload, 'card') : undefined;
+        if (cardData) {
+          fromRaw.runtimeCardId = stringField(cardData, 'id');
+          fromRaw.runtimeCardCode = stringField(cardData, 'code');
+        }
+      }
       return fromRaw;
     }
   }

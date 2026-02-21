@@ -83,12 +83,52 @@ const artifactsSlice = createSlice({
         injectionError: existing?.injectionError,
       };
     },
+    markRuntimeCardInjectionResults(
+      state,
+      action: PayloadAction<{
+        injectedCardIds?: string[];
+        failed?: Array<{ cardId: string; error?: string }>;
+        updatedAt?: number;
+      }>,
+    ) {
+      const injected = new Set(
+        (action.payload.injectedCardIds ?? [])
+          .map((id) => cleanString(id))
+          .filter((id): id is string => typeof id === 'string'),
+      );
+      const failed = new Map<string, string | undefined>();
+      for (const item of action.payload.failed ?? []) {
+        const cardId = cleanString(item.cardId);
+        if (!cardId) continue;
+        failed.set(cardId, cleanString(item.error));
+      }
+      if (injected.size === 0 && failed.size === 0) {
+        return;
+      }
+
+      const updatedAt = action.payload.updatedAt ?? Date.now();
+      for (const artifact of Object.values(state.byId)) {
+        const runtimeCardId = cleanString(artifact.runtimeCardId);
+        if (!runtimeCardId) continue;
+        if (injected.has(runtimeCardId)) {
+          artifact.injectionStatus = 'injected';
+          artifact.injectionError = undefined;
+          artifact.updatedAt = updatedAt;
+          continue;
+        }
+        if (failed.has(runtimeCardId)) {
+          artifact.injectionStatus = 'failed';
+          artifact.injectionError = failed.get(runtimeCardId);
+          artifact.updatedAt = updatedAt;
+        }
+      }
+    },
     clearArtifacts(state) {
       state.byId = {};
     },
   },
 });
 
-export const { upsertArtifact, clearArtifacts } = artifactsSlice.actions;
+export const { upsertArtifact, markRuntimeCardInjectionResults, clearArtifacts } = artifactsSlice.actions;
 export const artifactsReducer = artifactsSlice.reducer;
 export const hypercardArtifactsReducer = artifactsSlice.reducer;

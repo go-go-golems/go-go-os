@@ -151,6 +151,33 @@ describe('artifactRuntime', () => {
     });
   });
 
+  it('extracts runtime card fields from hypercard_card rawData props', () => {
+    const upsert = extractArtifactUpsertFromTimelineEntity('hypercard_card', {
+      title: 'Low Stock Drilldown',
+      rawData: {
+        title: 'Low Stock Drilldown',
+        data: {
+          artifact: {
+            id: 'low-stock-drilldown',
+            data: { threshold: 5 },
+          },
+          card: {
+            id: 'runtime-low-stock',
+            code: '({ ui }) => ({ render() { return ui.text("hi"); } })',
+          },
+        },
+      },
+    });
+
+    expect(upsert).toMatchObject({
+      id: 'low-stock-drilldown',
+      source: 'card',
+      data: { threshold: 5 },
+      runtimeCardId: 'runtime-low-stock',
+      runtimeCardCode: '({ ui }) => ({ render() { return ui.text("hi"); } })',
+    });
+  });
+
   it('normalizes mixed quoting in artifact ids', () => {
     expect(normalizeArtifactId(' "abc-123" ')).toBe('abc-123');
     expect(normalizeArtifactId("'abc-123'")).toBe('abc-123');

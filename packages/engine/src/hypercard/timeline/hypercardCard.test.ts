@@ -9,16 +9,19 @@ import {
 import { chatSessionSlice } from '../../chat/state/chatSessionSlice';
 import { timelineSlice } from '../../chat/state/timelineSlice';
 import { clearRuntimeCardRegistry, hasRuntimeCard } from '../../plugin-runtime/runtimeCardRegistry';
+import { createArtifactProjectionMiddleware } from '../artifacts/artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from '../artifacts/artifactsSlice';
 import { ASSISTANT_SUGGESTIONS_ENTITY_ID, readSuggestionsEntityProps } from '../../chat/state/suggestions';
 
 function createStore() {
+  const artifactProjection = createArtifactProjectionMiddleware();
   return configureStore({
     reducer: {
       timeline: timelineSlice.reducer,
       chatSession: chatSessionSlice.reducer,
       hypercardArtifacts: hypercardArtifactsReducer,
     },
+    middleware: (getDefault) => getDefault().concat(artifactProjection.middleware),
   });
 }
 
@@ -31,7 +34,7 @@ describe('hypercard card handlers', () => {
     ensureChatModulesRegistered();
   });
 
-  it('upserts hypercard_card entity and registers runtime card for hypercard.card.v2', () => {
+  it('upserts hypercard_card entity and registers runtime card for hypercard.card.v2', async () => {
     const store = createStore();
 
     handleSem(
@@ -58,6 +61,7 @@ describe('hypercard card handlers', () => {
       },
       { convId: 'conv-card', dispatch: store.dispatch }
     );
+    await Promise.resolve();
 
     const state = store.getState();
     const entity = state.timeline.byConvId['conv-card'].byId['card:card-123'];

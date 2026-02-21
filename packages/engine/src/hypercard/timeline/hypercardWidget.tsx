@@ -8,10 +8,8 @@ import { openWindow } from '../../desktop/core';
 import {
   buildArtifactOpenWindowPayload,
   extractArtifactUpsertFromSem,
-  extractArtifactUpsertFromTimelineEntity,
   normalizeArtifactId,
 } from '../artifacts/artifactRuntime';
-import { upsertArtifact } from '../artifacts/artifactsSlice';
 
 function asDataRecord(ev: SemEvent): Record<string, unknown> {
   if (typeof ev.data === 'object' && ev.data !== null && !Array.isArray(ev.data)) {
@@ -33,14 +31,6 @@ function upsertWidgetEntity(ctx: SemContext, ev: SemEvent, status: 'running' | '
   const itemId = stringField(data, 'itemId') ?? ev.id;
 
   const artifactUpdate = extractArtifactUpsertFromSem(ev.type, data);
-  if (artifactUpdate) {
-    ctx.dispatch(
-      upsertArtifact({
-        ...artifactUpdate,
-        updatedAt: Date.now(),
-      }),
-    );
-  }
 
   const entity: TimelineEntity = {
     id: entityId,
@@ -90,18 +80,8 @@ export function HypercardWidgetRenderer({ e, ctx }: { e: RenderEntity; ctx?: Ren
   const template = e.props.template ? String(e.props.template) : '';
 
   const openArtifact = () => {
-    const fromTimelineEntity = extractArtifactUpsertFromTimelineEntity(e.kind, e.props);
-    if (fromTimelineEntity) {
-      dispatch(
-        upsertArtifact({
-          ...fromTimelineEntity,
-          updatedAt: Date.now(),
-        }),
-      );
-    }
-
     const payload = buildArtifactOpenWindowPayload({
-      artifactId: fromTimelineEntity?.id ?? artifactId,
+      artifactId,
       template,
       title,
     });

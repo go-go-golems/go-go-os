@@ -1,18 +1,15 @@
 import { useDispatch } from 'react-redux';
 import type { RenderContext, RenderEntity } from '../../chat/renderers/types';
-import { recordField, stringField } from '../../chat/sem/semHelpers';
+import { stringField } from '../../chat/sem/semHelpers';
 import type { SemContext, SemEvent } from '../../chat/sem/semRegistry';
 import { registerSem } from '../../chat/sem/semRegistry';
 import { type TimelineEntity, timelineSlice } from '../../chat/state/timelineSlice';
 import { openWindow } from '../../desktop/core';
-import { registerRuntimeCard } from '../../plugin-runtime';
 import {
   buildArtifactOpenWindowPayload,
   extractArtifactUpsertFromSem,
-  extractArtifactUpsertFromTimelineEntity,
   normalizeArtifactId,
 } from '../artifacts/artifactRuntime';
-import { upsertArtifact } from '../artifacts/artifactsSlice';
 import { buildCodeEditorWindowPayload } from '../editor/editorLaunch';
 
 function asDataRecord(ev: SemEvent): Record<string, unknown> {
@@ -27,24 +24,6 @@ function cardEntityId(data: Record<string, unknown>, fallbackId: string): string
   return `card:${itemId}`;
 }
 
-function maybeRegisterRuntimeCard(
-  data: Record<string, unknown>,
-  artifactUpdate: { runtimeCardId?: string; runtimeCardCode?: string } | undefined,
-) {
-  if (artifactUpdate?.runtimeCardId && artifactUpdate?.runtimeCardCode) {
-    registerRuntimeCard(artifactUpdate.runtimeCardId, artifactUpdate.runtimeCardCode);
-    return;
-  }
-
-  const payload = recordField(data, 'data');
-  const cardRecord = payload ? recordField(payload, 'card') : undefined;
-  const runtimeCardId = cardRecord ? stringField(cardRecord, 'id') : undefined;
-  const runtimeCardCode = cardRecord ? stringField(cardRecord, 'code') : undefined;
-  if (runtimeCardId && runtimeCardCode) {
-    registerRuntimeCard(runtimeCardId, runtimeCardCode);
-  }
-}
-
 function upsertCardEntity(ctx: SemContext, ev: SemEvent, status: 'running' | 'success' | 'error', detail: string) {
   const data = asDataRecord(ev);
   const entityId = cardEntityId(data, ev.id);
@@ -52,18 +31,6 @@ function upsertCardEntity(ctx: SemContext, ev: SemEvent, status: 'running' | 'su
   const title = stringField(data, 'name') ?? stringField(data, 'title') ?? 'Card';
 
   const artifactUpdate = extractArtifactUpsertFromSem(ev.type, data);
-  if (artifactUpdate) {
-    ctx.dispatch(
-      upsertArtifact({
-        ...artifactUpdate,
-        updatedAt: Date.now(),
-      }),
-    );
-  }
-
-  if (ev.type === 'hypercard.card.v2') {
-    maybeRegisterRuntimeCard(data, artifactUpdate);
-  }
 
   const entity: TimelineEntity = {
     id: entityId,
@@ -113,18 +80,8 @@ export function HypercardCardRenderer({ e, ctx }: { e: RenderEntity; ctx?: Rende
   const runtimeCardId = e.props.runtimeCardId ? String(e.props.runtimeCardId) : '';
 
   const openArtifact = () => {
-    const fromTimelineEntity = extractArtifactUpsertFromTimelineEntity(e.kind, e.props);
-    if (fromTimelineEntity) {
-      dispatch(
-        upsertArtifact({
-          ...fromTimelineEntity,
-          updatedAt: Date.now(),
-        }),
-      );
-    }
-
     const payload = buildArtifactOpenWindowPayload({
-      artifactId: fromTimelineEntity?.id ?? artifactId,
+      artifactId,
       title,
       runtimeCardId,
     });

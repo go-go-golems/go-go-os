@@ -8,15 +8,18 @@ import {
 } from '../../chat/runtime/registerChatModules';
 import { chatSessionSlice } from '../../chat/state/chatSessionSlice';
 import { timelineSlice } from '../../chat/state/timelineSlice';
+import { createArtifactProjectionMiddleware } from '../artifacts/artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from '../artifacts/artifactsSlice';
 
 function createStore() {
+  const artifactProjection = createArtifactProjectionMiddleware();
   return configureStore({
     reducer: {
       timeline: timelineSlice.reducer,
       chatSession: chatSessionSlice.reducer,
       hypercardArtifacts: hypercardArtifactsReducer,
     },
+    middleware: (getDefault) => getDefault().concat(artifactProjection.middleware),
   });
 }
 
@@ -28,7 +31,7 @@ describe('hypercard widget handlers', () => {
     ensureChatModulesRegistered();
   });
 
-  it('upserts hypercard_widget entity and artifact for hypercard.widget.v1', () => {
+  it('upserts hypercard_widget entity and artifact for hypercard.widget.v1', async () => {
     const store = createStore();
 
     handleSem(
@@ -52,6 +55,7 @@ describe('hypercard widget handlers', () => {
       },
       { convId: 'conv-widget', dispatch: store.dispatch }
     );
+    await Promise.resolve();
 
     const state = store.getState();
     const entity = state.timeline.byConvId['conv-widget'].byId['widget:widget-123'];

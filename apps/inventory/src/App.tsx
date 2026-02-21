@@ -2,6 +2,7 @@ import {
   ChatConversationWindow,
   CodeEditorWindow,
   EventViewerWindow,
+  TimelineDebugWindow,
   ensureChatModulesRegistered,
   getEditorInitialCode,
   RuntimeCardDebugWindow,
@@ -119,6 +120,21 @@ function buildEventViewerWindowPayload(convId: string): OpenWindowPayload {
   };
 }
 
+function buildTimelineDebugWindowPayload(convId: string): OpenWindowPayload {
+  const shortId = convId.slice(0, 8);
+  return {
+    id: `window:timeline-debug:${convId}`,
+    title: `Timeline Debug (${shortId})`,
+    icon: '🧱',
+    bounds: { x: 820, y: 60, w: 640, h: 460 },
+    content: {
+      kind: 'app',
+      appKey: `timeline-debug:${convId}`,
+    },
+    dedupeKey: `timeline-debug:${convId}`,
+  };
+}
+
 function buildRuntimeDebugWindowPayload(): OpenWindowPayload {
   return {
     id: 'window:runtime-debug',
@@ -137,6 +153,10 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
 
   const openEventViewer = useCallback(() => {
     dispatch(openWindow(buildEventViewerWindowPayload(convId)));
+  }, [convId, dispatch]);
+
+  const openTimelineDebug = useCallback(() => {
+    dispatch(openWindow(buildTimelineDebugWindowPayload(convId)));
   }, [convId, dispatch]);
 
   const copyConversationId = useCallback(() => {
@@ -161,6 +181,9 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
         <>
           <button type="button" data-part="btn" onClick={openEventViewer} style={{ fontSize: 10, padding: '1px 6px' }}>
             🧭 Events
+          </button>
+          <button type="button" data-part="btn" onClick={openTimelineDebug} style={{ fontSize: 10, padding: '1px 6px' }}>
+            🧱 Timeline
           </button>
           <button
             type="button"
@@ -203,6 +226,10 @@ export function App() {
       const convId = appKey.slice('event-viewer:'.length);
       return <EventViewerWindow conversationId={convId} />;
     }
+    if (appKey.startsWith('timeline-debug:')) {
+      const convId = appKey.slice('timeline-debug:'.length);
+      return <TimelineDebugWindow conversationId={convId} />;
+    }
     if (appKey === 'runtime-card-debug') {
       return <RuntimeCardDebugWindow stacks={[STACK]} />;
     }
@@ -222,6 +249,7 @@ export function App() {
     const debugIcons = [
       { id: 'runtime-debug', label: 'Stacks & Cards', icon: '🔧' },
       { id: 'event-viewer', label: 'Event Viewer', icon: '🧭' },
+      { id: 'timeline-debug', label: 'Timeline Debug', icon: '🧱' },
     ];
     if (import.meta.env.DEV) {
       debugIcons.push({ id: 'redux-perf', label: 'Redux Perf', icon: '📈' });
@@ -260,6 +288,7 @@ export function App() {
             items: [
               { id: 'new-chat', label: 'New Chat', commandId: 'chat.new', shortcut: 'Ctrl+N' },
               { id: 'event-viewer', label: 'Open Event Viewer', commandId: 'debug.event-viewer' },
+              { id: 'timeline-debug', label: 'Open Timeline Debug', commandId: 'debug.timeline-debug' },
               {
                 id: 'new-home',
                 label: `New ${STACK.cards[STACK.homeCard]?.title ?? 'Home'} Window`,
@@ -293,6 +322,7 @@ export function App() {
                   items: [
                     { id: 'redux-perf', label: '📈 Redux Perf', commandId: 'debug.redux-perf' },
                     { id: 'event-viewer', label: '🧭 Event Viewer', commandId: 'debug.event-viewer' },
+                    { id: 'timeline-debug', label: '🧱 Timeline Debug', commandId: 'debug.timeline-debug' },
                     { id: 'stacks-cards', label: '🔧 Stacks & Cards', commandId: 'debug.stacks' },
                   ],
                 },
@@ -319,6 +349,19 @@ export function App() {
                 return 'pass';
               }
               ctx.dispatch(openWindow(buildEventViewerWindowPayload(convId)));
+              return 'handled';
+            },
+          },
+          {
+            id: 'inventory.debug.timeline-debug',
+            priority: 100,
+            matches: (commandId) => commandId === 'debug.timeline-debug' || commandId === 'icon.open.timeline-debug',
+            run: (_commandId, ctx) => {
+              const convId = resolveEventViewerConversationId(ctx.getState?.(), ctx.focusedWindowId);
+              if (!convId) {
+                return 'pass';
+              }
+              ctx.dispatch(openWindow(buildTimelineDebugWindowPayload(convId)));
               return 'handled';
             },
           },

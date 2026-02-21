@@ -58,33 +58,68 @@ function artifactIdFromResult(result: Record<string, unknown> | undefined): stri
   return undefined;
 }
 
-function remapCustomKind(entity: TimelineEntity): TimelineEntity {
-  if (entity.kind !== 'tool_result') {
-    return entity;
-  }
-  if (!isObject(entity.props)) {
-    return entity;
-  }
-
-  const customKind = stringField(entity.props, 'customKind');
-  if (customKind !== 'hypercard.widget.v1' && customKind !== 'hypercard.card.v2') {
-    return entity;
+function resultRecordFromProps(
+  props: Record<string, unknown>,
+  kindHint?: 'hypercard.widget.v1' | 'hypercard.card.v2',
+): Record<string, unknown> | undefined {
+  const fromResult = structuredRecordFromUnknown(props.result);
+  if (fromResult) {
+    return fromResult;
   }
 
-  const resultRecord = structuredRecordFromUnknown(entity.props.result);
-  const toolCallId = normalizedToolCallId(entity.id, entity.props);
+  const fromRaw = structuredRecordFromUnknown(props.resultRaw);
+  if (fromRaw) {
+    return fromRaw;
+  }
+
+  if (kindHint === 'hypercard.widget.v1' || kindHint === 'hypercard.card.v2') {
+    return props;
+  }
+  return undefined;
+}
+
+function runtimeCardFromResult(
+  result: Record<string, unknown> | undefined,
+): { runtimeCardId?: string; runtimeCardCode?: string } {
+  if (!result) {
+    return {};
+  }
+  const directCard = recordField(result, 'card');
+  const nestedCard = recordField(recordField(result, 'data') ?? {}, 'card');
+  const card = directCard ?? nestedCard;
+  if (!card) {
+    return {};
+  }
+  return {
+    runtimeCardId: stringField(card, 'id'),
+    runtimeCardCode: stringField(card, 'code'),
+  };
+}
+
+function remapHypercardEntity(
+  entity: TimelineEntity,
+  kind: 'hypercard.widget.v1' | 'hypercard.card.v2',
+): TimelineEntity {
+  const props = isObject(entity.props) ? entity.props : {};
+  const resultRecord = resultRecordFromProps(props, kind);
+  const toolCallId = normalizedToolCallId(entity.id, props);
   const itemId = stringField(resultRecord ?? {}, 'itemId') ?? toolCallId;
   const artifactId = artifactIdFromResult(resultRecord ?? undefined);
+  const template =
+    stringField(resultRecord ?? {}, 'widgetType') ??
+    stringField(resultRecord ?? {}, 'type') ??
+    stringField(resultRecord ?? {}, 'template');
 
-  if (customKind === 'hypercard.widget.v1') {
+  if (kind === 'hypercard.widget.v1') {
     return {
       ...entity,
       id: `widget:${itemId}`,
       kind: 'hypercard_widget',
       props: {
-        ...entity.props,
+        ...props,
         itemId,
         artifactId,
+        template,
         status: 'success',
         title: stringField(resultRecord ?? {}, 'title') ?? 'Widget',
         detail: 'ready',
@@ -92,19 +127,34 @@ function remapCustomKind(entity: TimelineEntity): TimelineEntity {
     };
   }
 
+  const { runtimeCardId, runtimeCardCode } = runtimeCardFromResult(resultRecord);
+
   return {
     ...entity,
     id: `card:${itemId}`,
     kind: 'hypercard_card',
     props: {
-      ...entity.props,
+      ...props,
       itemId,
       artifactId,
+      template,
+      runtimeCardId,
+      runtimeCardCode,
       status: 'success',
       title: stringField(resultRecord ?? {}, 'title') ?? 'Card',
       detail: 'ready',
     },
   };
+}
+
+function remapHypercardKind(entity: TimelineEntity): TimelineEntity {
+  if (entity.kind === 'hypercard.widget.v1') {
+    return remapHypercardEntity(entity, 'hypercard.widget.v1');
+  }
+  if (entity.kind === 'hypercard.card.v2') {
+    return remapHypercardEntity(entity, 'hypercard.card.v2');
+  }
+  return entity;
 }
 
 export function timelineEntityFromProto(e: TimelineEntityV2, version?: unknown): TimelineEntity | null {
@@ -120,5 +170,5 @@ export function timelineEntityFromProto(e: TimelineEntityV2, version?: unknown):
     version: typeof versionNum === 'number' ? versionNum : undefined,
     props: propsFromTimelineEntity(e),
   };
-  return remapCustomKind(mapped);
+  return remapHypercardKind(mapped);
 }

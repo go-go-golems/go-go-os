@@ -61,21 +61,22 @@ function artifactFromStructured(
 
 function artifactFromTimelineToolResult(
   toolResult: Record<string, unknown>,
+  kindHint?: 'widget' | 'card',
 ): ArtifactUpsert | undefined {
-  const customKind = stringField(toolResult, 'customKind');
+  const effectiveKind: 'widget' | 'card' | undefined = kindHint;
   const resultRecord =
     structuredRecordFromUnknown(toolResult.result) ?? structuredRecordFromUnknown(toolResult.resultRaw);
-  if (!customKind || !resultRecord) {
+  if (!effectiveKind || !resultRecord) {
     return undefined;
   }
-  if (customKind === 'hypercard.widget.v1') {
+  if (effectiveKind === 'widget') {
     const template =
       stringField(resultRecord, 'widgetType') ??
       stringField(resultRecord, 'type') ??
       stringField(resultRecord, 'template');
     return artifactFromStructured(resultRecord, 'widget', template);
   }
-  if (customKind === 'hypercard.card.v2') {
+  if (effectiveKind === 'card') {
     const upsert = artifactFromStructured(resultRecord, 'card', stringField(resultRecord, 'template'));
     if (upsert) {
       const cardData =
@@ -127,7 +128,11 @@ export function extractArtifactUpsertFromSem(
     return undefined;
   }
 
-  if (stringField(entity, 'kind') !== 'tool_result') {
+  const entityKind = stringField(entity, 'kind');
+  if (
+    entityKind !== 'hypercard.widget.v1' &&
+    entityKind !== 'hypercard.card.v2'
+  ) {
     return undefined;
   }
 
@@ -137,7 +142,8 @@ export function extractArtifactUpsertFromSem(
   if (!toolResult) {
     return undefined;
   }
-  return artifactFromTimelineToolResult(toolResult);
+  const hint = entityKind === 'hypercard.widget.v1' ? 'widget' : 'card';
+  return artifactFromTimelineToolResult(toolResult, hint);
 }
 
 function upsertFromHypercardEntityProps(
@@ -166,7 +172,7 @@ function upsertFromHypercardEntityProps(
     }
   }
 
-  const toolLike = artifactFromTimelineToolResult(props);
+  const toolLike = artifactFromTimelineToolResult(props, preferredSource);
   if (toolLike) {
     return toolLike;
   }
@@ -181,6 +187,8 @@ function upsertFromHypercardEntityProps(
     title: stringField(props, 'title'),
     template: stringField(props, 'template'),
     source: preferredSource,
+    runtimeCardId: stringField(props, 'runtimeCardId'),
+    runtimeCardCode: stringField(props, 'runtimeCardCode'),
   };
 }
 
@@ -201,8 +209,11 @@ export function extractArtifactUpsertFromTimelineEntity(
   if (kind === 'hypercard_widget' || kind === 'hypercard_card') {
     return upsertFromHypercardEntityProps(kind, record);
   }
-  if (kind === 'tool_result') {
-    return artifactFromTimelineToolResult(record);
+  if (kind === 'hypercard.widget.v1') {
+    return artifactFromTimelineToolResult(record, 'widget');
+  }
+  if (kind === 'hypercard.card.v2') {
+    return artifactFromTimelineToolResult(record, 'card');
   }
 
   return undefined;

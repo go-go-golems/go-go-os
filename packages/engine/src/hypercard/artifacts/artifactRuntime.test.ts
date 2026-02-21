@@ -78,7 +78,7 @@ describe('artifactRuntime', () => {
     });
   });
 
-  it('extracts artifact upsert from projected timeline tool_result with v2 customKind', () => {
+  it('does not extract artifact from legacy tool_result customKind timeline entity after cutover', () => {
     const projected = extractArtifactUpsertFromSem('timeline.upsert', {
       entity: {
         kind: 'tool_result',
@@ -98,15 +98,10 @@ describe('artifactRuntime', () => {
       },
     });
 
-    expect(projected).toMatchObject({
-      id: 'low-stock-drilldown',
-      title: 'Low Stock Drilldown',
-      data: { threshold: 5 },
-      source: 'card',
-    });
+    expect(projected).toBeUndefined();
   });
 
-  it('extracts artifact upsert from timeline.upsert entity.props (TimelineV2 shape)', () => {
+  it('does not extract artifact from legacy timeline.upsert entity.props tool_result shape', () => {
     const projected = extractArtifactUpsertFromSem('timeline.upsert', {
       entity: {
         kind: 'tool_result',
@@ -126,11 +121,36 @@ describe('artifactRuntime', () => {
       },
     });
 
+    expect(projected).toBeUndefined();
+  });
+
+  it('extracts artifact upsert from timeline.upsert with first-class hypercard kind', () => {
+    const projected = extractArtifactUpsertFromSem('timeline.upsert', {
+      entity: {
+        kind: 'hypercard.card.v2',
+        props: {
+          result: {
+            title: 'Low Stock Drilldown',
+            data: {
+              artifact: {
+                id: 'low-stock-drilldown',
+                data: { threshold: 5 },
+              },
+              card: {
+                id: 'runtime-low-stock',
+                code: '({ ui }) => ({ render() { return ui.text("hi"); } })',
+              },
+            },
+          },
+        },
+      },
+    });
+
     expect(projected).toMatchObject({
-      id: 'sales-summary-2026-02-20',
-      title: "Today's Sales Summary",
-      source: 'widget',
-      data: { total_value: 0 },
+      id: 'low-stock-drilldown',
+      title: 'Low Stock Drilldown',
+      source: 'card',
+      runtimeCardId: 'runtime-low-stock',
     });
   });
 
@@ -138,7 +158,6 @@ describe('artifactRuntime', () => {
     const upsert = extractArtifactUpsertFromTimelineEntity('hypercard_widget', {
       artifactId: '"sales-summary-2026-02-20"',
       title: "Today's Sales Summary",
-      customKind: 'hypercard.widget.v1',
       resultRaw:
         '{"title":"Today\\u0027s Sales Summary","widgetType":"report","data":{"artifact":{"id":"sales-summary-2026-02-20","data":{"total_transactions":0}}}}',
     });
@@ -175,6 +194,27 @@ describe('artifactRuntime', () => {
       data: { threshold: 5 },
       runtimeCardId: 'runtime-low-stock',
       runtimeCardCode: '({ ui }) => ({ render() { return ui.text("hi"); } })',
+    });
+  });
+
+  it('extracts artifact from first-class hypercard kind in timeline entity path', () => {
+    const upsert = extractArtifactUpsertFromTimelineEntity('hypercard.widget.v1', {
+      result: {
+        title: 'Inventory Snapshot',
+        widgetType: 'report',
+        data: {
+          artifact: {
+            id: 'inventory-snapshot-1',
+            data: { totalSkus: 12 },
+          },
+        },
+      },
+    });
+
+    expect(upsert).toMatchObject({
+      id: 'inventory-snapshot-1',
+      source: 'widget',
+      data: { totalSkus: 12 },
     });
   });
 

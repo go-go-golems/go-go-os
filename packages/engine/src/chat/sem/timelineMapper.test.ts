@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { timelineEntityFromProto } from './timelineMapper';
 
 describe('timelineEntityFromProto', () => {
-  it('remaps hypercard widget customKind into hypercard_widget entity', () => {
+  it('keeps legacy tool_result entities unchanged during hard cutover', () => {
     const mapped = timelineEntityFromProto(
       {
         id: 'tool-1:custom',
@@ -22,76 +22,80 @@ describe('timelineEntityFromProto', () => {
 
     expect(mapped).toEqual(
       expect.objectContaining({
-        id: 'widget:widget-123',
-        kind: 'hypercard_widget',
+        id: 'tool-1:custom',
+        kind: 'tool_result',
         version: 7,
         props: expect.objectContaining({
-          itemId: 'widget-123',
-          artifactId: 'artifact-1',
-          title: 'Low Stock Widget',
-          status: 'success',
-        }),
-      })
-    );
-  });
-
-  it('remaps hypercard card customKind into hypercard_card entity', () => {
-    const mapped = timelineEntityFromProto(
-      {
-        id: 'tool-2:custom',
-        kind: 'tool_result',
-        createdAtMs: 200,
-        props: {
-          customKind: 'hypercard.card.v2',
-          result: {
-            itemId: 'card-123',
-            title: 'Margin Card',
-            data: { artifact: { id: 'artifact-2' } },
-          },
-        },
-      } as any,
-      8
-    );
-
-    expect(mapped).toEqual(
-      expect.objectContaining({
-        id: 'card:card-123',
-        kind: 'hypercard_card',
-        version: 8,
-        props: expect.objectContaining({
-          itemId: 'card-123',
-          artifactId: 'artifact-2',
-          title: 'Margin Card',
-          status: 'success',
-        }),
-      })
-    );
-  });
-
-  it('normalizes quoted artifact ids during remap', () => {
-    const mapped = timelineEntityFromProto(
-      {
-        id: 'tool-3:custom',
-        kind: 'tool_result',
-        createdAtMs: 300,
-        props: {
           customKind: 'hypercard.widget.v1',
+        }),
+      })
+    );
+  });
+
+  it('remaps first-class hypercard.widget.v1 timeline kind into hypercard_widget entity', () => {
+    const mapped = timelineEntityFromProto(
+      {
+        id: 'tool-widget-1:result',
+        kind: 'hypercard.widget.v1',
+        createdAtMs: 400,
+        props: {
+          toolCallId: 'tool-widget-1',
           result: {
-            itemId: 'widget-quoted',
-            title: "Today's Sales Summary",
-            data: { artifact: { id: '"sales-summary-2026-02-20"' } },
+            itemId: 'widget-first-class',
+            title: 'Top Movers',
+            widgetType: 'report',
+            data: { artifact: { id: 'artifact-widget-fc' } },
           },
         },
       } as any,
-      9
+      10
     );
 
     expect(mapped).toEqual(
       expect.objectContaining({
-        id: 'widget:widget-quoted',
+        id: 'widget:widget-first-class',
         kind: 'hypercard_widget',
         props: expect.objectContaining({
-          artifactId: 'sales-summary-2026-02-20',
+          artifactId: 'artifact-widget-fc',
+          template: 'report',
+          title: 'Top Movers',
+        }),
+      })
+    );
+  });
+
+  it('remaps first-class hypercard.card.v2 timeline kind and surfaces runtime card fields', () => {
+    const mapped = timelineEntityFromProto(
+      {
+        id: 'tool-card-1:result',
+        kind: 'hypercard.card.v2',
+        createdAtMs: 500,
+        props: {
+          toolCallId: 'tool-card-1',
+          result: {
+            itemId: 'card-first-class',
+            title: 'Low Stock Drilldown',
+            data: {
+              artifact: { id: 'artifact-card-fc' },
+              card: {
+                id: 'runtime-low-stock',
+                code: '({ ui }) => ({ render() { return ui.text("hi"); } })',
+              },
+            },
+          },
+        },
+      } as any,
+      11
+    );
+
+    expect(mapped).toEqual(
+      expect.objectContaining({
+        id: 'card:card-first-class',
+        kind: 'hypercard_card',
+        props: expect.objectContaining({
+          artifactId: 'artifact-card-fc',
+          runtimeCardId: 'runtime-low-stock',
+          runtimeCardCode: '({ ui }) => ({ render() { return ui.text("hi"); } })',
         }),
       })
     );

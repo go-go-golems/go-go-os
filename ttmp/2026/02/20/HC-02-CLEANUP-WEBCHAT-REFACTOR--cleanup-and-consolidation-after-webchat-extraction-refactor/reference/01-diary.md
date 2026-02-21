@@ -1319,3 +1319,50 @@ I also wired runtime-card injection outcomes into artifact state so debug/status
 - Projection trigger coverage:
   - live events: `timeline.upsertEntity` / `timeline.addEntity`
   - hydration: `timeline.applySnapshot`
+
+## 2026-02-21
+
+Completed F10 (stats bar restoration): model name, live/final token stats in footer, and conversation token total in chat header.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, do it"
+
+**Assistant interpretation:** Implement task F10 end-to-end now, wire real metadata to chat session stats, and close the ticket task.
+
+### What I did
+- Confirmed backend emits LLM inference metadata on SEM events (`llm.start`, `llm.delta`, `llm.final`) via `pinocchio/pkg/webchat/sem_translator.go` with `event.metadata` containing `LlmInferenceMetadataV1`.
+- Extended chat session state with conversation usage counters:
+  - `conversationInputTokens`
+  - `conversationOutputTokens`
+  - `conversationCachedTokens`
+- Added reducer action `addConversationUsage` for cumulative per-conversation accounting.
+- Added selector `selectConversationTotalTokens` (input + output).
+- Wired header rendering to show conversation token total:
+  - `ChatConversationWindow` now passes `conversationTotalTokens` into `ChatWindow`.
+  - `ChatWindow` header now renders `NNN tok` next to message count.
+- Wired SEM metadata ingestion in `semRegistry`:
+  - parse `event.metadata` with `LlmInferenceMetadataV1Schema`
+  - update `modelName`
+  - update live `streamOutputTokens`
+  - set finalized `turnStats` (`In/Out/Cache`, duration, TPS)
+  - accumulate conversation usage totals on final assistant events with per-message delta dedupe
+- Added stream activity tracking in `semRegistry` to drive `chatSession.isStreaming` from llm/thinking lifecycle and timeline streaming signals.
+- Hardened websocket lifecycle to force `isStreaming=false` on close/error/disconnect.
+- Added/updated tests:
+  - `semRegistry.test.ts` metadata->session regression
+  - `chatSessionSlice.test.ts` conversation usage accumulation
+  - `selectors.test.ts` conversation token total selector
+
+### Validation
+- `npm run typecheck -w packages/engine`
+- `npm run test -w packages/engine -- src/chat/sem/semRegistry.test.ts src/chat/ws/wsManager.test.ts src/chat/runtime/registerChatModules.test.ts src/chat/state/chatSessionSlice.test.ts src/chat/state/selectors.test.ts`
+
+Both commands passed.
+
+### Commits
+- `432549d` — `feat(chat): restore model and token stats in footer/header`
+- `e6743fe` — `docs(hc-02): check off F10 stats bar task`
+
+### Follow-up
+- If we need totals to survive full page reload from historical snapshots, add snapshot-based token hydration (currently totals are accumulated from live SEM metadata during runtime).

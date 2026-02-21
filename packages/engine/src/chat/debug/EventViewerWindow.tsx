@@ -137,7 +137,14 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
   }, [autoScroll]);
 
   const togglePause = useCallback(() => setPaused((p) => !p), []);
-  const toggleAutoScroll = useCallback(() => setAutoScroll((a) => !a), []);
+  const followStream = useCallback(() => {
+    setAutoScroll(true);
+    endRef.current?.scrollIntoView({ behavior: 'instant' });
+  }, []);
+
+  const holdPosition = useCallback(() => {
+    setAutoScroll(false);
+  }, []);
   const copyPayload = useCallback((entryId: string, payloadText: string) => {
     copyTextToClipboard(payloadText)
       .then(() => {
@@ -193,9 +200,15 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
         <button onClick={clearLog} style={controlBtnStyle}>
           🗑 Clear
         </button>
-        <button onClick={toggleAutoScroll} style={controlBtnStyle}>
-          {autoScroll ? '📌 Pinned' : '📌 Free'}
-        </button>
+        {autoScroll ? (
+          <button onClick={holdPosition} style={controlBtnStyle} title="Stop auto-scrolling and hold current position">
+            ⏸ Hold
+          </button>
+        ) : (
+          <button onClick={followStream} style={controlBtnStyle} title="Resume live tailing (auto-scroll to newest event)">
+            ▶ Follow Stream
+          </button>
+        )}
         <span style={{ color: '#666', fontSize: '10px' }}>
           {visible.length}/{entries.length}
         </span>

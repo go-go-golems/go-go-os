@@ -674,3 +674,74 @@ The change is scoped to desktop windowing command/context wiring and verified wi
 
 - Default top-level behavior is now open-new (no `dedupeKey` in payload).
 - Reducer dedupe behavior remains unchanged and can still be invoked by providing `dedupeKey`.
+
+## Step 9: Implement Issue 5 (remove double emojis in window titles)
+
+I implemented a two-layer fix for duplicate emoji prefixes in window titles: payload/title cleanup at app window builders and a defensive titlebar guard that prevents duplicate icon prefix rendering even if future payloads include emoji-prefixed titles.
+
+This keeps title rendering robust against both current and future data-shape inconsistencies.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Continue sequential implementation and complete the title duplication polish item with both data and presentation safeguards.
+
+**Inferred user intent:** Ensure window title bars display one icon prefix only, with no repeated leading emoji.
+
+**Commit (code):** `7c32a61` — "fix(window-title): prevent duplicated emoji prefixes"
+
+### What I did
+
+- Normalized inventory app window titles to text-only where icon is already provided:
+  - `apps/inventory/src/App.tsx`
+  - Updated chat/event-viewer/runtime-debug/redux-perf window titles.
+- Added defensive titlebar helper and guard:
+  - `packages/engine/src/components/shell/windowing/WindowTitleBar.tsx`
+  - Added `shouldPrefixWindowIcon(title, icon)` and used it before rendering icon prefix.
+- Added unit test coverage:
+  - `packages/engine/src/components/shell/windowing/WindowTitleBar.test.ts`
+  - Covers missing icon, non-prefixed title, already-prefixed title, and whitespace-prefixed title.
+- Ran targeted tests:
+  - `npm run test -w packages/engine -- src/components/shell/windowing/WindowTitleBar.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+
+### Why
+
+- Data-only cleanup can regress later.
+- Presentation-only guard can hide payload hygiene issues.
+- Together they provide robust behavior with minimal complexity.
+
+### What worked
+
+- All targeted tests passed.
+- Existing command-router tests remained green.
+
+### What didn't work
+
+- No blocking failures in this step.
+
+### What I learned
+
+- A small pure helper (`shouldPrefixWindowIcon`) gives cheap, stable coverage for a UI glitch that would otherwise require DOM rendering tests.
+
+### What was tricky to build
+
+- The tricky edge case is titles with leading whitespace before icon; guard now trims start before prefix check.
+
+### What warrants a second pair of eyes
+
+- Confirm if there are additional external app payload builders outside inventory app that should adopt text-only title convention.
+
+### What should be done in the future
+
+- If other apps in workspace start using desktop shell, apply same title/icon convention in their payload builders.
+
+### Code review instructions
+
+- Review normalization edits in `apps/inventory/src/App.tsx`.
+- Review defensive guard in `packages/engine/src/components/shell/windowing/WindowTitleBar.tsx`.
+- Re-run targeted tests listed above.
+
+### Technical details
+
+- Guard logic: prefix icon only if `title.trimStart()` does not already start with the same icon string.

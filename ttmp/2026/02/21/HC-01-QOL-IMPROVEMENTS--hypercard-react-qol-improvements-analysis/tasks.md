@@ -125,14 +125,14 @@
 
 ### Implementation
 
-- [ ] Normalize app payload titles to text-only where icon is provided
-- [ ] Add defensive titlebar rendering guard to avoid icon duplication
-- [ ] Review other payload builders for same anti-pattern
+- [x] Normalize app payload titles to text-only where icon is provided
+- [x] Add defensive titlebar rendering guard to avoid icon duplication
+- [x] Review other payload builders for same anti-pattern
 
 ### Tests
 
-- [ ] Add titlebar test for icon/title dedupe behavior
-- [ ] Verify no regressions in window surface rendering tests/stories
+- [x] Add titlebar test for icon/title dedupe behavior
+- [x] Verify no regressions in window surface rendering tests/stories
 
 ### Validation
 
@@ -140,7 +140,7 @@
 
 ### Docs and Commit
 
-- [ ] Append detailed diary step for Issue 5
+- [x] Append detailed diary step for Issue 5
 - [ ] Check off Issue 5 tasks and commit
 
 ## Issue 6: Show Buffered/Recent Events for Late-Opened Event Viewer

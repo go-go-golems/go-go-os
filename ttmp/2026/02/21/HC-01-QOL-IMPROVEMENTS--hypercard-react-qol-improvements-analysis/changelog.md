@@ -84,3 +84,15 @@ Completed Issue 4 code slice: top-level card opens now default to open-new via e
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx — Open policy implementation (dedupe optional)
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 4 implementation diary
 
+
+## 2026-02-21
+
+Completed Issue 5 code slice: removed duplicate emoji title prefixes via app-title normalization plus defensive WindowTitleBar guard (commit 7c32a61); titlebar tests pass.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/apps/inventory/src/App.tsx — Window title text normalization
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/WindowTitleBar.test.ts — Titlebar dedupe tests
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/components/shell/windowing/WindowTitleBar.tsx — Defensive icon prefix guard
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Issue 5 implementation diary
+

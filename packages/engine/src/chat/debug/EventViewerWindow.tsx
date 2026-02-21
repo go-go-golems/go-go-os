@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import type { EventLogEntry } from './eventBus';
-import { subscribeConversationEvents } from './eventBus';
+import {
+  clearConversationEventHistory,
+  getConversationEvents,
+  subscribeConversationEvents,
+} from './eventBus';
 import { SyntaxHighlight } from './SyntaxHighlight';
 import { copyTextToClipboard } from './clipboard';
 import { toYaml } from './yamlFormat';
@@ -52,7 +56,7 @@ export function isNearBottom({
 }
 
 export function EventViewerWindow({ conversationId, initialEntries }: EventViewerWindowProps) {
-  const [entries, setEntries] = useState<EventLogEntry[]>(initialEntries ?? []);
+  const [entries, setEntries] = useState<EventLogEntry[]>(() => initialEntries ?? getConversationEvents(conversationId));
   const [filters, setFilters] = useState<Record<string, boolean>>(() => {
     const f: Record<string, boolean> = {};
     for (const family of ALL_FAMILIES) f[family] = true;
@@ -68,6 +72,12 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
   pausedRef.current = paused;
 
   // Subscribe to conversation event bus
+  useEffect(() => {
+    setEntries(initialEntries ?? getConversationEvents(conversationId));
+    setExpandedIds(new Set());
+    setCopyFeedbackById({});
+  }, [conversationId, initialEntries]);
+
   useEffect(() => {
     const unsubscribe = subscribeConversationEvents(conversationId, (entry) => {
       if (pausedRef.current) return;
@@ -111,7 +121,11 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
   const clearLog = useCallback(() => {
     setEntries([]);
     setExpandedIds(new Set());
-  }, []);
+    setCopyFeedbackById({});
+    if (!initialEntries) {
+      clearConversationEventHistory(conversationId);
+    }
+  }, [conversationId, initialEntries]);
 
   const handleLogScroll = useCallback(() => {
     if (!autoScroll || !logRef.current) {

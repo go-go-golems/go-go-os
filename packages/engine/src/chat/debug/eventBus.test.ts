@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { emitConversationEvent, subscribeConversationEvents, type EventLogEntry } from './eventBus';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  clearConversationEventHistory,
+  emitConversationEvent,
+  getConversationEvents,
+  subscribeConversationEvents,
+  type EventLogEntry,
+} from './eventBus';
 import type { SemEnvelope } from '../sem/semRegistry';
 
 function envelope(type: string, id: string, data: Record<string, unknown> = {}): SemEnvelope {
@@ -10,6 +16,16 @@ function envelope(type: string, id: string, data: Record<string, unknown> = {}):
 }
 
 describe('eventBus', () => {
+  beforeEach(() => {
+    clearConversationEventHistory('bus-test-1');
+    clearConversationEventHistory('bus-iso-1');
+    clearConversationEventHistory('bus-iso-2');
+    clearConversationEventHistory('bus-unsub');
+    clearConversationEventHistory('bus-family');
+    clearConversationEventHistory('bus-history');
+    clearConversationEventHistory('bus-clear');
+  });
+
   it('delivers events to subscribers', () => {
     const received: EventLogEntry[] = [];
     const unsub = subscribeConversationEvents('bus-test-1', (e) => received.push(e));
@@ -56,5 +72,34 @@ describe('eventBus', () => {
 
     expect(received.map((e) => e.family)).toEqual(['tool', 'hypercard', 'timeline', 'ws', 'other']);
     unsub();
+  });
+
+  it('retains emitted events for late viewers even when no subscriber is present', () => {
+    emitConversationEvent('bus-history', envelope('llm.start', 'h1'));
+    emitConversationEvent('bus-history', envelope('llm.delta', 'h2', { delta: 'abc', cumulative: 'abc' }));
+
+    const history = getConversationEvents('bus-history');
+    expect(history).toHaveLength(2);
+    expect(history[0].eventType).toBe('llm.start');
+    expect(history[1].eventType).toBe('llm.delta');
+  });
+
+  it('can clear retained event history by conversation', () => {
+    emitConversationEvent('bus-clear', envelope('tool.start', 'c1', { name: 'lookup' }));
+    expect(getConversationEvents('bus-clear')).toHaveLength(1);
+
+    clearConversationEventHistory('bus-clear');
+    expect(getConversationEvents('bus-clear')).toHaveLength(0);
+  });
+
+  it('caps retained history to bounded size', () => {
+    for (let i = 0; i < 1010; i += 1) {
+      emitConversationEvent('bus-history', envelope('llm.delta', `cap-${i}`, { delta: 'a', cumulative: 'a' }));
+    }
+
+    const history = getConversationEvents('bus-history');
+    expect(history).toHaveLength(1000);
+    expect(history[0].eventId).toBe('cap-10');
+    expect(history[999].eventId).toBe('cap-1009');
   });
 });

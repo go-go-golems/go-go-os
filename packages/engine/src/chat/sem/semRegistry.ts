@@ -42,8 +42,11 @@ export interface SemContext {
 }
 
 type Handler = (ev: SemEvent, ctx: SemContext) => void;
+type LlmStreamKind = 'llm' | 'thinking';
+type LlmStreamState = { role: string; emitted: boolean };
 
 const handlers = new Map<string, Handler>();
+const llmStreamStates = new Map<string, LlmStreamState>();
 
 export function registerSem(type: string, handler: Handler) {
   handlers.set(type, handler);
@@ -51,6 +54,7 @@ export function registerSem(type: string, handler: Handler) {
 
 export function clearSemHandlers() {
   handlers.clear();
+  llmStreamStates.clear();
 }
 
 export function handleSem(envelope: unknown, ctx: SemContext) {
@@ -84,6 +88,90 @@ function decodeProto<T extends Message>(schema: GenMessage<T>, raw: unknown): T 
   }
 }
 
+function defaultRoleForStream(kind: LlmStreamKind): string {
+  return kind === 'thinking' ? 'thinking' : 'assistant';
+}
+
+function llmStreamKey(ctx: SemContext, ev: SemEvent, kind: LlmStreamKind): string {
+  return `${ctx.convId}:${kind}:${ev.id}`;
+}
+
+function ensureLlmStreamState(ctx: SemContext, ev: SemEvent, kind: LlmStreamKind): {
+  key: string;
+  state: LlmStreamState;
+} {
+  const key = llmStreamKey(ctx, ev, kind);
+  const existing = llmStreamStates.get(key);
+  if (existing) {
+    return { key, state: existing };
+  }
+  const state: LlmStreamState = { role: defaultRoleForStream(kind), emitted: false };
+  llmStreamStates.set(key, state);
+  return { key, state };
+}
+
+function isNonEmptyText(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function setLlmStreamRole(ctx: SemContext, ev: SemEvent, kind: LlmStreamKind, role: unknown) {
+  const { state } = ensureLlmStreamState(ctx, ev, kind);
+  if (isNonEmptyText(role)) {
+    state.role = role;
+  }
+}
+
+function upsertLlmStreamText(
+  ctx: SemContext,
+  ev: SemEvent,
+  kind: LlmStreamKind,
+  text: unknown,
+  streaming: boolean
+) {
+  const { key, state } = ensureLlmStreamState(ctx, ev, kind);
+  if (!isNonEmptyText(text)) {
+    if (!streaming) {
+      if (state.emitted) {
+        upsertEntity(ctx, {
+          id: ev.id,
+          kind: 'message',
+          createdAt: createdAtFromEvent(ev),
+          updatedAt: Date.now(),
+          props: { role: state.role, streaming: false },
+        });
+      }
+      llmStreamStates.delete(key);
+    }
+    return;
+  }
+
+  upsertEntity(ctx, {
+    id: ev.id,
+    kind: 'message',
+    createdAt: createdAtFromEvent(ev),
+    updatedAt: Date.now(),
+    props: { role: state.role, content: text, streaming },
+  });
+  state.emitted = true;
+  if (!streaming) {
+    llmStreamStates.delete(key);
+  }
+}
+
+function closeLlmStream(ctx: SemContext, ev: SemEvent, kind: LlmStreamKind) {
+  const { key, state } = ensureLlmStreamState(ctx, ev, kind);
+  if (state.emitted) {
+    upsertEntity(ctx, {
+      id: ev.id,
+      kind: 'message',
+      createdAt: createdAtFromEvent(ev),
+      updatedAt: Date.now(),
+      props: { role: state.role, streaming: false },
+    });
+  }
+  llmStreamStates.delete(key);
+}
+
 export function registerDefaultSemHandlers() {
   // Intentionally additive: callers that need a clean slate must call
   // clearSemHandlers() explicitly (tests do this in beforeEach).
@@ -100,82 +188,37 @@ export function registerDefaultSemHandlers() {
 
   registerSem('llm.start', (ev, ctx) => {
     const data = decodeProto<LlmStart>(LlmStartSchema, ev.data);
-    const role = data?.role || 'assistant';
-    addEntity(ctx, {
-      id: ev.id,
-      kind: 'message',
-      createdAt: createdAtFromEvent(ev),
-      props: { role, content: '', streaming: true },
-    });
+    setLlmStreamRole(ctx, ev, 'llm', data?.role);
   });
 
   registerSem('llm.delta', (ev, ctx) => {
     const data = decodeProto<LlmDelta>(LlmDeltaSchema, ev.data);
-    const cumulative = data?.cumulative;
-    // Backend emits cumulative; prefer it to keep handlers idempotent.
-    upsertEntity(ctx, {
-      id: ev.id,
-      kind: 'message',
-      createdAt: createdAtFromEvent(ev),
-      updatedAt: Date.now(),
-      props: { content: typeof cumulative === 'string' ? cumulative : '', streaming: true },
-    });
+    upsertLlmStreamText(ctx, ev, 'llm', data?.cumulative, true);
   });
 
   registerSem('llm.final', (ev, ctx) => {
     const data = decodeProto<LlmFinal>(LlmFinalSchema, ev.data);
-    upsertEntity(ctx, {
-      id: ev.id,
-      kind: 'message',
-      createdAt: createdAtFromEvent(ev),
-      updatedAt: Date.now(),
-      props: { content: data?.text ?? '', streaming: false },
-    });
+    upsertLlmStreamText(ctx, ev, 'llm', data?.text, false);
   });
 
   registerSem('llm.thinking.start', (ev, ctx) => {
     const data = decodeProto<LlmStart>(LlmStartSchema, ev.data);
-    const role = data?.role || 'thinking';
-    addEntity(ctx, {
-      id: ev.id,
-      kind: 'message',
-      createdAt: createdAtFromEvent(ev),
-      props: { role, content: '', streaming: true },
-    });
+    setLlmStreamRole(ctx, ev, 'thinking', data?.role);
   });
 
   registerSem('llm.thinking.delta', (ev, ctx) => {
     const data = decodeProto<LlmDelta>(LlmDeltaSchema, ev.data);
-    const cumulative = data?.cumulative;
-    upsertEntity(ctx, {
-      id: ev.id,
-      kind: 'message',
-      createdAt: createdAtFromEvent(ev),
-      updatedAt: Date.now(),
-      props: { content: typeof cumulative === 'string' ? cumulative : '', streaming: true },
-    });
+    upsertLlmStreamText(ctx, ev, 'thinking', data?.cumulative, true);
   });
 
   registerSem('llm.thinking.final', (ev, ctx) => {
     const _data = decodeProto(LlmDoneSchema, ev.data);
-    upsertEntity(ctx, {
-      id: ev.id,
-      kind: 'message',
-      createdAt: createdAtFromEvent(ev),
-      updatedAt: Date.now(),
-      props: { streaming: false },
-    });
+    closeLlmStream(ctx, ev, 'thinking');
   });
 
   registerSem('llm.thinking.summary', (ev, ctx) => {
     const data = decodeProto<LlmFinal>(LlmFinalSchema, ev.data);
-    upsertEntity(ctx, {
-      id: ev.id,
-      kind: 'message',
-      createdAt: createdAtFromEvent(ev),
-      updatedAt: Date.now(),
-      props: { content: data?.text ?? '', streaming: false },
-    });
+    upsertLlmStreamText(ctx, ev, 'thinking', data?.text, false);
   });
 
   registerSem('tool.start', (ev, ctx) => {

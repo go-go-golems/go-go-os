@@ -73,11 +73,10 @@ describe('wsManager', () => {
     sockets[0].emitMessage({
       sem: true,
       event: {
-        type: 'llm.start',
+        type: 'llm.delta',
         id: 'msg-1',
         data: {
-          id: 'msg-1',
-          role: 'assistant',
+          cumulative: 'hello',
         },
       },
     });
@@ -120,11 +119,10 @@ describe('wsManager', () => {
     sockets[0].emitMessage({
       sem: true,
       event: {
-        type: 'llm.start',
+        type: 'llm.delta',
         id: 'msg-buffered',
         data: {
-          id: 'msg-buffered',
-          role: 'assistant',
+          cumulative: 'buffered',
         },
       },
     });

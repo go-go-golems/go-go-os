@@ -55,11 +55,10 @@ describe('semRegistry', () => {
       {
         sem: true,
         event: {
-          type: 'llm.start',
+          type: 'llm.delta',
           id: 'msg-1',
           data: {
-            id: 'msg-1',
-            role: 'assistant',
+            cumulative: 'Assistant text',
           },
         },
       },
@@ -70,11 +69,10 @@ describe('semRegistry', () => {
       {
         sem: true,
         event: {
-          type: 'llm.start',
+          type: 'llm.thinking.delta',
           id: 'msg-1',
           data: {
-            id: 'msg-1',
-            role: 'thinking',
+            cumulative: 'Thinking text',
           },
         },
       },
@@ -86,16 +84,66 @@ describe('semRegistry', () => {
     expect(state.byConvId['conv-1'].order).toEqual(['msg-1']);
     expect(state.byConvId['conv-1'].byId['msg-1'].props).toEqual({
       role: 'assistant',
-      content: '',
+      content: 'Assistant text',
       streaming: true,
     });
 
     expect(state.byConvId['conv-2'].order).toEqual(['msg-1']);
     expect(state.byConvId['conv-2'].byId['msg-1'].props).toEqual({
       role: 'thinking',
-      content: '',
+      content: 'Thinking text',
       streaming: true,
     });
+  });
+
+  it('does not create message rows for empty llm/thinking streams', () => {
+    const store = createStore();
+    registerDefaultSemHandlers();
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'llm.start',
+          id: 'msg-empty',
+          data: {
+            role: 'assistant',
+          },
+        },
+      },
+      { convId: 'conv-empty', dispatch: store.dispatch }
+    );
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'llm.delta',
+          id: 'msg-empty',
+          data: {
+            cumulative: '',
+          },
+        },
+      },
+      { convId: 'conv-empty', dispatch: store.dispatch }
+    );
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'llm.final',
+          id: 'msg-empty',
+          data: {
+            text: '',
+          },
+        },
+      },
+      { convId: 'conv-empty', dispatch: store.dispatch }
+    );
+
+    const state = store.getState().timeline;
+    expect(state.byConvId['conv-empty']).toBeUndefined();
   });
 
   it('does not clear extension handlers when registering defaults', () => {

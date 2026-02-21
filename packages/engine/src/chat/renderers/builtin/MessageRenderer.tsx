@@ -28,6 +28,7 @@ function ThinkingDots() {
 function roleLabel(role: string) {
   if (role === 'user') return 'You:';
   if (role === 'system') return 'System:';
+  if (role === 'thinking') return 'AI Thinking:';
   return 'AI:';
 }
 

@@ -45,10 +45,10 @@ describe('registerChatModules', () => {
       {
         sem: true,
         event: {
-          type: 'llm.start',
+          type: 'llm.delta',
           id: 'msg-1',
           data: {
-            role: 'assistant',
+            cumulative: 'hello',
           },
         },
       },

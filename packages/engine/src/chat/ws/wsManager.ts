@@ -334,4 +334,3 @@ class WsManager {
 }
 
 export { WsManager };
-export const wsManager = new WsManager();

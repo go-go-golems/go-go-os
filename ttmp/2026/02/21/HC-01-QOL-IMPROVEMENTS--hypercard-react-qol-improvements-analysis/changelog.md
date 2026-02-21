@@ -128,3 +128,13 @@ Implementation run complete for Issues 1-7 with focused commits, updated checkli
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Final implementation diary status
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/tasks.md — Execution checklist completion state
 
+
+## 2026-02-21
+
+Fixed Storybook startup regression: root shared .storybook config now has matching root Storybook dependencies, resolving addon lookup warnings and the Vite preview import error (storybook/internal/preview/runtime).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/package.json — Root Storybook dependency alignment
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-01-QOL-IMPROVEMENTS--hypercard-react-qol-improvements-analysis/reference/01-diary.md — Step 13 troubleshooting diary
+

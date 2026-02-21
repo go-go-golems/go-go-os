@@ -22,7 +22,7 @@ RelatedFiles:
       Note: Primary analysis artifact documented in this diary
 ExternalSources: []
 Summary: Chronological investigation diary for HC-01-QOL-IMPROVEMENTS.
-LastUpdated: 2026-02-21T17:31:07-05:00
+LastUpdated: 2026-02-21T17:43:29-05:00
 WhatFor: Capture exact investigation actions, findings, failures, and delivery steps for future continuation/review.
 WhenToUse: Use while implementing or reviewing the HC-01-QOL-IMPROVEMENTS analysis and follow-up changes.
 ---
@@ -978,3 +978,102 @@ This step closes the operational loop for the ticket by re-validating doc hygien
   - `HC-01-QOL-IMPROVEMENTS Analysis Update.pdf`
 - Remote directory:
   - `/ai/2026/02/21/HC-01-QOL-IMPROVEMENTS`
+
+## Step 13: Fix Storybook runtime import resolution for root config
+
+I investigated the Storybook runtime import failure you reported and reproduced it locally. The failure was caused by module resolution scope mismatch: the project uses a shared root `.storybook` config, but Storybook framework/runtime/addon packages were only declared in `apps/inventory`.
+
+I fixed this by adding the Storybook packages to root `devDependencies`, then verified Storybook boots without the `storybook/internal/preview/runtime` import error.
+
+### Prompt Context
+
+**User prompt (verbatim):** "■  Vite Internal server error: Failed to resolve import
+│  \"storybook/internal/preview/runtime\" from
+│  \"virtual:/@storybook/builder-vite/vite-app.js\". Does the file exist?
+│  Plugin: vite:import-analysis
+│  File: virtual:/@storybook/builder-vite/vite-app.js:1:24
+│  1  |  import { setup } from 'storybook/internal/preview/runtime';
+│  |                         ^
+│  2  |
+│  3  |  import 'virtual:/@storybook/builder-vite/setup-addons.js';
+│  at TransformPluginContext._formatLog
+│  (file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+│  at TransformPluginContext.error
+│  (file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+│  at normalizeUrl
+│  (file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+│  at async
+│  file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+│  at async Promise.all (index 0)
+│  at async TransformPluginContext.transform
+│  (file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+│  at async EnvironmentPluginContainer.transform
+│  (file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+│  at async loadAndTransform
+│  (file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+│  at async viteTransformMiddleware
+│  (file:///home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/node_modules/.pnpm/vite@6.4.1/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24) when running storybook?"
+
+**Assistant interpretation:** Diagnose and resolve Storybook’s runtime import failure during startup.
+
+**Inferred user intent:** Restore reliable Storybook startup so remaining validation/test work can continue.
+
+**Commit (code):** `80ec421` — "fix(storybook): add root deps for shared .storybook config"
+
+### What I did
+
+- Reproduced the failure with:
+  - `npm run storybook -w apps/inventory`
+- Confirmed two resolution symptoms:
+  - Addons in root `.storybook/main.ts` were not resolvable.
+  - Vite preview runtime import `storybook/internal/preview/runtime` failed.
+- Verified root package lacked Storybook deps while workspace package had them.
+- Added Storybook deps at root:
+  - `storybook`, `@storybook/react`, `@storybook/react-vite`,
+    `@storybook/addon-docs`, `@storybook/addon-a11y`,
+    `@storybook/addon-onboarding`, `@storybook/addon-vitest`.
+- Re-ran startup on alternate port (`6007`) and confirmed successful Storybook boot with no runtime import error.
+- Stopped the temporary validation server and cleaned stale local listener on `6006`.
+
+### Why
+
+- When `.storybook` is at repo root, Storybook resolves framework/addons/runtime from root context. Keeping these packages only in a nested workspace caused import resolution failures.
+
+### What worked
+
+- Storybook started successfully after root dependency alignment.
+- Error `Failed to resolve import "storybook/internal/preview/runtime"` no longer reproduced.
+
+### What didn't work
+
+- First validation rerun prompted for alternate port because an earlier Storybook process still held `6006`.
+- Resolution:
+  - Started on `6007` for validation and then terminated stale local processes.
+
+### What I learned
+
+- In this repository layout, Storybook dependency location must match `.storybook` location (root-level config needs root-level Storybook deps).
+
+### What was tricky to build
+
+- The error appeared to be a Vite import problem, but the decisive clue was unresolved addons, which pointed to package-resolution scope rather than Vite transform logic itself.
+
+### What warrants a second pair of eyes
+
+- Decide whether to keep duplicate Storybook deps in `apps/inventory/package.json` or centralize completely at root in a follow-up cleanup.
+
+### What should be done in the future
+
+- If Storybook remains shared across apps/packages, document dependency ownership at root to avoid regressions.
+
+### Code review instructions
+
+- Review root dependency update in `package.json`.
+- Validate startup with:
+  - `npm run storybook -w apps/inventory -- --port 6007`
+
+### Technical details
+
+- Root-level dependency alignment fixed both:
+  - addon resolution warnings
+  - preview runtime import failure from virtual builder file.

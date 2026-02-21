@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatSessionSliceState } from './chatSessionSlice';
-import { selectRenderableTimelineEntities, selectSuggestions, type ChatStateSlice } from './selectors';
+import {
+  selectConversationTotalTokens,
+  selectRenderableTimelineEntities,
+  selectSuggestions,
+  type ChatStateSlice,
+} from './selectors';
 import {
   ASSISTANT_SUGGESTIONS_ENTITY_ID,
   STARTER_SUGGESTIONS_ENTITY_ID,
@@ -108,5 +113,32 @@ describe('selectors', () => {
     });
 
     expect(selectSuggestions(state, 'conv-4')).toEqual([]);
+  });
+
+  it('returns conversation total tokens from chat session state', () => {
+    const state = createState(
+      { byConvId: {} },
+      {
+        byConvId: {
+          'conv-tokens': {
+            connectionStatus: 'connected',
+            isStreaming: false,
+            modelName: 'gpt-5-mini',
+            turnStats: null,
+            conversationInputTokens: 250,
+            conversationOutputTokens: 70,
+            conversationCachedTokens: 12,
+            streamStartTime: null,
+            streamOutputTokens: 0,
+            lastError: null,
+            currentError: null,
+            errorHistory: [],
+          },
+        },
+      }
+    );
+
+    expect(selectConversationTotalTokens(state, 'conv-tokens')).toBe(320);
+    expect(selectConversationTotalTokens(state, 'conv-missing')).toBe(0);
   });
 });

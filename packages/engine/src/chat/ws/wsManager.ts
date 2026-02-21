@@ -154,6 +154,12 @@ class WsManager {
           status: 'closed',
         })
       );
+      args.dispatch(
+        chatSessionSlice.actions.setIsStreaming({
+          convId: args.convId,
+          isStreaming: false,
+        })
+      );
       args.onStatus?.('closed');
     };
 
@@ -164,6 +170,12 @@ class WsManager {
         chatSessionSlice.actions.setConnectionStatus({
           convId: args.convId,
           status: 'error',
+        })
+      );
+      args.dispatch(
+        chatSessionSlice.actions.setIsStreaming({
+          convId: args.convId,
+          isStreaming: false,
         })
       );
       args.dispatch(
@@ -234,6 +246,12 @@ class WsManager {
         chatSessionSlice.actions.setConnectionStatus({
           convId: this.convId,
           status: 'closed',
+        })
+      );
+      this.lastDispatch(
+        chatSessionSlice.actions.setIsStreaming({
+          convId: this.convId,
+          isStreaming: false,
         })
       );
     }

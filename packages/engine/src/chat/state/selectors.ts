@@ -116,6 +116,12 @@ export const selectStreamStartTime = (state: ChatStateSlice, convId: string): nu
 export const selectStreamOutputTokens = (state: ChatStateSlice, convId: string): number =>
   getChatSession(state, convId)?.streamOutputTokens ?? 0;
 
+export const selectConversationTotalTokens = (state: ChatStateSlice, convId: string): number => {
+  const session = getChatSession(state, convId);
+  if (!session) return 0;
+  return Math.max(0, session.conversationInputTokens + session.conversationOutputTokens);
+};
+
 export const selectConversationIds = (state: ChatStateSlice): string[] => {
   const timelineIds = Object.keys(state.timeline.byConvId);
   const sessionIds = Object.keys(state.chatSession.byConvId);

@@ -5,6 +5,7 @@ import { Chip } from './Chip';
 export interface ChatWindowProps {
   timelineContent: ReactNode;
   timelineItemCount?: number;
+  conversationTotalTokens?: number;
   isStreaming: boolean;
   showPendingResponseSpinner?: boolean;
   onSend: (text: string) => Promise<void> | void;
@@ -38,6 +39,7 @@ function WelcomeScreen({ children }: { children?: ReactNode }) {
 export function ChatWindow({
   timelineContent,
   timelineItemCount = 0,
+  conversationTotalTokens = 0,
   isStreaming,
   showPendingResponseSpinner = false,
   onSend,
@@ -90,6 +92,7 @@ export function ChatWindow({
           <span data-part="chat-window-msg-count">
             {timelineItemCount} message{timelineItemCount !== 1 ? 's' : ''}
           </span>
+          <span data-part="chat-window-token-count">{conversationTotalTokens.toLocaleString('en-US')} tok</span>
           {isStreaming && onCancel && <Btn onClick={onCancel}>⏹ Stop</Btn>}
         </div>
       </div>

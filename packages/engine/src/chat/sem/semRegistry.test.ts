@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { chatSessionSlice } from '../state/chatSessionSlice';
 import { timelineSlice } from '../state/timelineSlice';
 import {
   clearSemHandlers,
@@ -13,6 +14,7 @@ function createStore() {
   return configureStore({
     reducer: {
       timeline: timelineSlice.reducer,
+      chatSession: chatSessionSlice.reducer,
     },
   });
 }
@@ -255,5 +257,89 @@ describe('semRegistry', () => {
       content: 'hello',
       streaming: false,
     });
+  });
+
+  it('updates model/streaming stats and conversation token totals from llm metadata', () => {
+    const store = createStore();
+    registerDefaultSemHandlers();
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'llm.start',
+          id: 'msg-meta',
+          data: {
+            id: 'msg-meta',
+            role: 'assistant',
+          },
+          metadata: {
+            model: 'gpt-5-mini',
+          },
+        },
+      },
+      { convId: 'conv-meta', dispatch: store.dispatch }
+    );
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'llm.delta',
+          id: 'msg-meta',
+          data: {
+            id: 'msg-meta',
+            cumulative: 'hello world',
+          },
+          metadata: {
+            model: 'gpt-5-mini',
+            usage: {
+              outputTokens: 3,
+            },
+          },
+        },
+      },
+      { convId: 'conv-meta', dispatch: store.dispatch }
+    );
+
+    handleSem(
+      {
+        sem: true,
+        event: {
+          type: 'llm.final',
+          id: 'msg-meta',
+          data: {
+            id: 'msg-meta',
+            text: 'hello world',
+          },
+          metadata: {
+            model: 'gpt-5-mini',
+            durationMs: '2500',
+            usage: {
+              inputTokens: 11,
+              outputTokens: 5,
+              cachedTokens: 2,
+            },
+          },
+        },
+      },
+      { convId: 'conv-meta', dispatch: store.dispatch }
+    );
+
+    const session = store.getState().chatSession.byConvId['conv-meta'];
+    expect(session?.modelName).toBe('gpt-5-mini');
+    expect(session?.isStreaming).toBe(false);
+    expect(session?.streamOutputTokens).toBe(5);
+    expect(session?.conversationInputTokens).toBe(11);
+    expect(session?.conversationOutputTokens).toBe(5);
+    expect(session?.turnStats).toEqual(
+      expect.objectContaining({
+        inputTokens: 11,
+        outputTokens: 5,
+        cachedTokens: 2,
+        durationMs: 2500,
+        tps: 2,
+      })
+    );
   });
 });

@@ -44,12 +44,24 @@ describe('chatSessionSlice', () => {
   it('resets and clears a conversation session', () => {
     const state = reduce([
       actions.setModelName({ convId: 'r1', modelName: 'gpt-test' }),
+      actions.addConversationUsage({ convId: 'r1', inputTokens: 120, outputTokens: 45 }),
       actions.setConnectionStatus({ convId: 'r1', status: 'connected' }),
       actions.resetSession({ convId: 'r1' }),
       actions.clearConversationSession({ convId: 'r1' }),
     ]);
 
     expect(state.byConvId.r1).toBeUndefined();
+  });
+
+  it('accumulates conversation usage totals', () => {
+    const state = reduce([
+      actions.addConversationUsage({ convId: 'u1', inputTokens: 100.7, outputTokens: 12.2, cachedTokens: 9 }),
+      actions.addConversationUsage({ convId: 'u1', inputTokens: -5, outputTokens: 8, cachedTokens: 1 }),
+    ]);
+
+    expect(state.byConvId.u1?.conversationInputTokens).toBe(100);
+    expect(state.byConvId.u1?.conversationOutputTokens).toBe(20);
+    expect(state.byConvId.u1?.conversationCachedTokens).toBe(10);
   });
 
   it('supports structured error current/history state', () => {

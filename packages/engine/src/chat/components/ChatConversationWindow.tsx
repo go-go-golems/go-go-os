@@ -10,6 +10,7 @@ import type { RenderEntity, RenderMode } from '../renderers/types';
 import {
   type ChatStateSlice,
   selectCurrentTurnStats,
+  selectConversationTotalTokens,
   selectModelName,
   selectRenderableTimelineEntities,
   selectTimelineEntityById,
@@ -104,6 +105,9 @@ export function ChatConversationWindow({
   );
   const streamOutputTokens = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectStreamOutputTokens(state, convId)
+  );
+  const conversationTotalTokens = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
+    selectConversationTotalTokens(state, convId)
   );
 
   useEffect(() => {
@@ -204,6 +208,7 @@ export function ChatConversationWindow({
     <ChatWindow
       timelineContent={timelineContent}
       timelineItemCount={entities.length}
+      conversationTotalTokens={conversationTotalTokens}
       isStreaming={isStreaming}
       showPendingResponseSpinner={awaitingResponseSinceMs !== null}
       onSend={sendWithSuggestionLifecycle}

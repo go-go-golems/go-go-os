@@ -61,6 +61,9 @@ export interface ChatSessionState {
   isStreaming: boolean;
   modelName: string | null;
   turnStats: TurnStats | null;
+  conversationInputTokens: number;
+  conversationOutputTokens: number;
+  conversationCachedTokens: number;
   streamStartTime: number | null;
   streamOutputTokens: number;
   lastError: string | null;
@@ -118,6 +121,9 @@ function createInitialChatSessionState(): ChatSessionState {
     isStreaming: false,
     modelName: null,
     turnStats: null,
+    conversationInputTokens: 0,
+    conversationOutputTokens: 0,
+    conversationCachedTokens: 0,
     streamStartTime: null,
     streamOutputTokens: 0,
     lastError: null,
@@ -167,6 +173,27 @@ export const chatSessionSlice = createSlice({
 
     setTurnStats(state, action: PayloadAction<{ convId: string; turnStats: TurnStats | null }>) {
       getSession(state, action.payload.convId).turnStats = action.payload.turnStats;
+    },
+
+    addConversationUsage(
+      state,
+      action: PayloadAction<{
+        convId: string;
+        inputTokens?: number;
+        outputTokens?: number;
+        cachedTokens?: number;
+      }>
+    ) {
+      const session = getSession(state, action.payload.convId);
+      if (typeof action.payload.inputTokens === 'number' && Number.isFinite(action.payload.inputTokens)) {
+        session.conversationInputTokens += Math.max(0, Math.trunc(action.payload.inputTokens));
+      }
+      if (typeof action.payload.outputTokens === 'number' && Number.isFinite(action.payload.outputTokens)) {
+        session.conversationOutputTokens += Math.max(0, Math.trunc(action.payload.outputTokens));
+      }
+      if (typeof action.payload.cachedTokens === 'number' && Number.isFinite(action.payload.cachedTokens)) {
+        session.conversationCachedTokens += Math.max(0, Math.trunc(action.payload.cachedTokens));
+      }
     },
 
     markStreamStart(state, action: PayloadAction<{ convId: string; streamStartTime?: number }>) {

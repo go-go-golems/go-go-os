@@ -2,17 +2,17 @@
 
 ## TODO
 
-- [ ] Confirm whether focus causes a true chat subtree remount or only a rerender
-- [ ] Capture lifecycle trace proving exact reconnect trigger path (`mount -> connect -> disconnect -> reconnect -> hydrate`)
-- [ ] Decide canonical timeline ordering contract (first-seen order vs last-update order)
-- [ ] Align backend snapshot order and frontend order semantics to chosen contract
-- [ ] Decide suggestions contract: persisted in backend timeline vs explicitly ephemeral frontend-only
-- [ ] If suggestions should persist, add `hypercard.suggestions.*` timeline handlers on Go side
-- [ ] Reduce dual-projection ambiguity: define when frontend direct SEM handlers are allowed vs backend `timeline.upsert`
-- [ ] Evaluate adding per-entity version in timeline snapshot payload (proto/store/frontend impact)
-- [ ] Add regression tests covering focus/reconnect/hydrate order stability in dev and production-like modes
+- [ ] Implement canonical timeline order as chronological first-seen on backend snapshots (SQLite + in-memory)
+- [ ] Add backend projection handlers for `hypercard.suggestions.*` so persisted timeline includes assistant suggestions
+- [ ] Enforce backend `timeline.upsert` as source-of-truth for persisted timeline entities on frontend
+- [ ] Ensure only the latest suggestions block is shown in UI across reconnect/hydration
+- [ ] Add/adjust regression tests for ordering and suggestion projection semantics
+- [ ] Instrument and verify focus path (`mount -> connect -> disconnect -> reconnect -> hydrate`) after semantic changes
 
 ## DONE
 
 - [x] Added deep Go and frontend timeline path analysis to HC-55 bug report
 - [x] Documented ring buffer behavior and clarified that hydration reads timeline store, not sem buffer
+- [x] Chose canonical ordering contract: chronological first-seen
+- [x] Chose source-of-truth contract: backend projected timeline (`timeline.upsert`) for persisted entities
+- [x] Chose suggestion visibility contract: show only latest suggestion block in UI

@@ -201,3 +201,77 @@ The step was intentionally narrow: upload updated docs, record it in changelog, 
   - `remarquee upload bundle 2026-02-12--hypercard-react/ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/analysis/01-bug-report-focus-triggered-reconnect-and-timeline-hydration-instability.md 2026-02-12--hypercard-react/ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/reference/01-diary.md --name HC-55-CHAT-HYDRATION-ROOTCAUSE-update --remote-dir /ai/2026/02/22/HC-55-CHAT-HYDRATION-ROOTCAUSE`
 - Output:
   - `OK: uploaded HC-55-CHAT-HYDRATION-ROOTCAUSE-update.pdf -> /ai/2026/02/22/HC-55-CHAT-HYDRATION-ROOTCAUSE`
+
+## Step 3: Lock Contracts and Break Work into Executable Tasks
+
+This step converted the analysis recommendations into fixed implementation contracts based on explicit user decisions. The goal was to remove ambiguity before touching runtime behavior.
+
+I translated the decisions into task ordering so implementation can proceed with one clear invariant at a time instead of mixing policy and code changes in a single pass.
+
+### Prompt Context
+
+**User prompt (verbatim):** "11.1 canonical -> chronological first -seen. 
+11.2 yes
+11.3 you decide, we should only show the last one in the UI. 
+
+
+Add tasks to the ticket, the nexecute the tasks one by one , committing as you go, and keeping a detailed diary."
+
+**Assistant interpretation:** Accept architecture choices, update ticket tasks accordingly, then implement step-by-step with incremental commits and diary updates.
+
+**Inferred user intent:** Move from analysis to disciplined execution with auditable progress and handoff-quality documentation.
+
+**Commit (code):** pending (this step is included in the next docs/code commit sequence)
+
+### What I did
+
+- Updated `tasks.md` to reflect fixed contracts and concrete implementation steps.
+- Marked architecture decisions as completed tasks:
+  - canonical ordering = chronological first-seen
+  - persisted source-of-truth = backend `timeline.upsert`
+  - suggestion display policy = latest block only
+- Added changelog entry recording the contract lock.
+
+### Why
+
+- Implementation without locked contracts risks refactors that conflict later.
+- A sequential task list makes commit history and review checkpoints much clearer.
+
+### What worked
+
+- Existing HC-55 structure already had enough context; task conversion was straightforward.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Explicitly marking decision tasks as done is useful guardrail when multiple repos are involved.
+
+### What was tricky to build
+
+- The tricky part is sequencing cross-repo changes (pinocchio + app frontend) while preserving testability after each commit.
+- I resolved this by front-loading contract decisions into ticket tasks before code edits.
+
+### What warrants a second pair of eyes
+
+- Task sequencing order for cross-repo commits (backend ordering first, then suggestion projection, then frontend source-of-truth behavior).
+
+### What should be done in the future
+
+- Keep task checkboxes synchronized with commit boundaries; avoid batching multiple semantic changes in one commit.
+
+### Code review instructions
+
+- Review the updated task contract and ordering:
+  - `ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/tasks.md`
+- Review changelog entry describing the shift from analysis to execution:
+  - `ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/changelog.md`
+
+### Technical details
+
+- Decision mapping:
+  - 11.1 -> first-seen chronological ordering
+  - 11.2 -> backend-projected persisted entities
+  - 11.3 -> latest suggestions block displayed in UI

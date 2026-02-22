@@ -48,3 +48,11 @@ Uploaded refreshed HC-55 handoff bundle (updated analysis + diary) to reMarkable
 
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/analysis/01-bug-report-focus-triggered-reconnect-and-timeline-hydration-instability.md — Included in refreshed upload bundle
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/reference/01-diary.md — Included in refreshed upload bundle
+
+## 2026-02-22
+
+Locked implementation contracts from user decisions and replaced exploratory TODOs with executable tasks for sequential implementation.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/tasks.md — Updated tasks to reflect chosen architecture contracts and implementation order

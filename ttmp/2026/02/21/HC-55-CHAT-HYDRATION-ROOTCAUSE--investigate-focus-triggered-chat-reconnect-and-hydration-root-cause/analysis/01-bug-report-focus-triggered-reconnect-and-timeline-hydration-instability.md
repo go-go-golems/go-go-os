@@ -13,24 +13,48 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: apps/inventory/src/App.tsx
-      Note: App window routing and chat appKey->convId composition path
+      Note: Chat window identity and appKey to convId mapping in inventory app
     - Path: apps/inventory/src/main.tsx
-      Note: StrictMode context for dev remount interpretation
+      Note: StrictMode context for development remount interpretation
+    - Path: go-inventory-chat/cmd/hypercard-inventory-server/main.go
+      Note: Route wiring for /ws and /api/timeline in inventory app
+    - Path: go-inventory-chat/internal/pinoweb/hypercard_events.go
+      Note: Hypercard SEM mappings and timeline handler coverage gaps
+    - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
+      Note: Starter suggestions are frontend-injected entities
     - Path: packages/engine/src/chat/runtime/conversationManager.ts
-      Note: Session refcount behavior and websocket teardown boundary
+      Note: Refcount session manager for websocket lifecycle
     - Path: packages/engine/src/chat/runtime/useConversation.ts
-      Note: Effect lifecycle responsible for connect/disconnect
+      Note: Connect and disconnect lifecycle wiring on mount and cleanup
+    - Path: packages/engine/src/chat/sem/semRegistry.ts
+      Note: timeline.upsert and direct llm/tool SEM handlers on frontend
+    - Path: packages/engine/src/chat/sem/timelineMapper.ts
+      Note: Snapshot mapping assigns one version to all entities
     - Path: packages/engine/src/chat/state/timelineSlice.ts
-      Note: Snapshot merge/replace semantics and timeline order behavior
+      Note: Merge and version guard semantics that affect ordering
     - Path: packages/engine/src/chat/ws/wsManager.ts
-      Note: Hydration semantics and reconnect entry points
-    - Path: packages/engine/src/components/shell/windowing/WindowSurface.tsx
-      Note: Focus dispatch path showing no direct chat disconnect call
+      Note: Hydration fetch, buffered replay, and snapshot merge path
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/pkg/persistence/chatstore/timeline_store_memory.go
+      Note: In-memory store mirrors SQLite ordering semantics
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/pkg/persistence/chatstore/timeline_store_sqlite.go
+      Note: Snapshot ordering and per-entity version persistence semantics
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/pkg/webchat/conversation.go
+      Note: Fan-out callback sends SEM to websocket, ring buffer, and projector
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/pkg/webchat/http/api.go
+      Note: Timeline HTTP handler behavior and query params
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/pkg/webchat/sem_buffer.go
+      Note: Ring buffer stores all SEM frames up to capacity
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/pkg/webchat/timeline_projector.go
+      Note: Server-side projection from SEM frames to timeline entities
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/pkg/webchat/timeline_service.go
+      Note: Snapshot service delegates to timeline store
+    - Path: /home/manuel/workspaces/2026-02-21/hypercard-qol/pinocchio/proto/sem/timeline/transport.proto
+      Note: Timeline proto contract lacks per-entity version in snapshot
 ExternalSources: []
-Summary: Deep bug report and handoff for focus-triggered chat reconnect/hydration instability, including known evidence, mitigation already shipped, unresolved root-cause hypotheses, and a concrete investigation/test plan.
+Summary: Deep bug report and handoff for focus-triggered reconnect/hydration instability, now expanded with full Go vs frontend timeline-path analysis, ordering semantics, and discrepancy matrix.
 LastUpdated: 2026-02-22T00:00:00Z
 WhatFor: Root-cause and permanently fix unintended reconnect/hydrate behavior and timeline instability when focusing chat windows.
-WhenToUse: Use when onboarding to this bug, validating reconnect lifecycle behavior, or replacing mitigation with a root-cause fix.
+WhenToUse: Use when onboarding to this bug, validating reconnect lifecycle behavior, or aligning Go and frontend timeline semantics.
 ---
 
 
@@ -38,213 +62,251 @@ WhenToUse: Use when onboarding to this bug, validating reconnect lifecycle behav
 
 ## 1. Executive Summary
 
-The user reported that simply focusing the chat window can cause the conversation timeline to reorder and drop entities. In one concrete reproduction, a `suggestions:starter` entity disappeared and hypercard widget/status events moved earlier in order, causing visible "bouncing" in the chat timeline.
+The user observed that focusing the chat window can reorder timeline entities and make the UI appear to "bounce". The concrete before/after exports show:
 
-A mitigation has already been shipped (commit `1f63ce0679738d05e7c88074e4c1dd07caceb8c5`) that changed hydration from destructive replacement to merge semantics. This prevents visible reorder/loss in known cases, but it does not explain why focus appears to trigger reconnect/hydration in the first place. This ticket exists to root-cause that trigger and establish the correct long-term lifecycle/hydration contract.
+- `suggestions:starter` present before focus and missing after focus.
+- Hypercard status/widget entities moving earlier in timeline order after focus.
+- Several entities sharing the same version after focus.
 
-## 2. User-Facing Symptom
+The crucial finding is that there are two timeline paths feeding the frontend state:
 
-Observed by user on **2026-02-22**:
+1. Live SEM stream over websocket.
+2. Hydration snapshot from `/api/timeline`.
 
-- Before focus: timeline order included starter suggestions and stable chat progression.
-- After focus: timeline order changed; `suggestions:starter` was gone.
-- User-visible result: hypercard region appeared to jump upward in chat history.
+Those paths do not currently enforce a single canonical ordering contract. After hydrate, ordering is driven by backend snapshot semantics (entity last update version), while live rendering is effectively insertion-order on the client. That mismatch explains the reorder.
 
-Important detail from user export: after focus, several entities had aligned snapshot-like version values, consistent with a hydrate path applying a shared snapshot version.
+## 2. User Repro and Why It Is Credible
 
-## 3. Why This Matters
+The user provided full exported timeline YAML before and after focus for the same conversation (`648bf4db-b742-4f1e-9408-604f5cf1a5a9`). The export model is built directly from current Redux timeline state (`packages/engine/src/chat/debug/timelineDebugModel.ts:122`), so the diffs represent actual frontend store state transitions rather than display-only sorting.
 
-- Breaks trust in debug tools: exported timelines are no longer stable across simple UI focus changes.
-- Breaks UX continuity: message/widget/status grouping appears to shuffle.
-- Creates architectural ambiguity: reconnect/hydrate policy is not explicit (initial load vs reconnect semantics).
-- Risks hidden correctness problems: merge mitigation may retain stale entities if backend intended omission to mean deletion.
+In the after snapshot, message/widget/status entities are present but order changes to:
 
-## 4. What We Confirmed So Far
+1. user
+2. status
+3. widget
+4. thinking
+5. assistant
 
-### 4.1 Connect/Disconnect Triggers in Code
+That pattern matches backend snapshot ordering by per-entity last-write version, not initial insertion order.
 
-- Chat networking is started/stopped by `useConversation` effect lifecycle:
-  - connect on mount: `packages/engine/src/chat/runtime/useConversation.ts`
-  - disconnect on cleanup/unmount: `packages/engine/src/chat/runtime/useConversation.ts`
-- Conversation manager closes websocket when refcount reaches zero:
-  - `packages/engine/src/chat/runtime/conversationManager.ts`
-- Window focus handler itself does not call chat disconnect:
-  - focus dispatch happens in `packages/engine/src/components/shell/windowing/WindowSurface.tsx`
+## 3. End-to-End Architecture: Two Timeline Paths
 
-Interpretation: if focus causes reconnect, chat subtree is likely being remounted (or connect flow otherwise re-entered), not directly disconnected by focus handler.
+## 3.1 Transport and Route Wiring (Go Inventory Chat)
 
-### 4.2 StrictMode Context
+`go-inventory-chat` exposes both live and hydration surfaces:
 
-- App runs under React StrictMode in dev:
-  - `apps/inventory/src/main.tsx`
+- `/ws` mounted via `webhttp.NewWSHandler(...)` (`go-inventory-chat/cmd/hypercard-inventory-server/main.go:131`).
+- `/api/timeline` mounted via `webhttp.NewTimelineHandler(...)` (`go-inventory-chat/cmd/hypercard-inventory-server/main.go:136`).
 
-StrictMode causes extra mount/unmount cycle checks in development, which can produce connect/disconnect/connect patterns during mount phases. This can confuse logs but is not, by itself, proof of focus-driven remount.
+So the chat frontend can receive timeline state from both websocket SEM and timeline HTTP snapshot.
 
-### 4.3 Hydration Behavior (Before Mitigation)
+## 3.2 Path A: Live SEM Stream -> Frontend Timeline
 
-Previously, `WsManager.hydrate` did:
+### Backend fan-out behavior
 
-1. `clearConversation(convId)`
-2. fetch `/api/timeline`
-3. `applySnapshot(convId, entities)` (replace full `byId` + `order`)
+For each SEM frame in a conversation, backend callback does all three operations (`../pinocchio/pkg/webchat/conversation.go:333`, `../pinocchio/pkg/webchat/conversation.go:336`, `../pinocchio/pkg/webchat/conversation.go:339`):
 
-Location before/after edits:
-- `packages/engine/src/chat/ws/wsManager.ts`
-- `packages/engine/src/chat/state/timelineSlice.ts`
+1. Broadcast frame to websocket pool.
+2. Add frame to per-conversation ring buffer (`semBuf`).
+3. Apply frame to timeline projector (`timelineProj.ApplySemFrame`).
 
-This explains why local-only entities (ex: starter suggestions) were dropped and ordering reset.
+This means projection is happening continuously on backend while the same raw SEM frames stream live to frontend.
 
-## 5. Mitigation Already Shipped (HC-54)
+### Frontend live handling
 
-### 5.1 Code Change
+- Frontend websocket receives SEM envelopes (`packages/engine/src/chat/ws/wsManager.ts:196`).
+- `handleSem(...)` dispatches handler logic (`packages/engine/src/chat/sem/semRegistry.ts:79`).
+- Frontend processes both:
+  - raw event handlers (`llm.*`, `tool.*`, `hypercard.*`)
+  - projected `timeline.upsert` events (`packages/engine/src/chat/sem/semRegistry.ts:413`).
 
-Commit: `1f63ce0679738d05e7c88074e4c1dd07caceb8c5` (`fix(chat): preserve timeline order across hydrate reconnect`)
+So the frontend effectively sees dual projection input: direct semantic handlers plus server projection upserts.
 
-Changes:
+## 3.3 Path B: Hydration Snapshot -> Frontend Timeline
 
-- Added shared version-aware upsert helper in timeline reducer.
-- Added `mergeSnapshot` reducer (additive update; preserves existing order for existing entities).
-- Switched websocket hydrate snapshot application from `applySnapshot` to `mergeSnapshot`.
-- Removed hydrate-time `clearConversation` call.
-- Added reducer + wsManager regression tests.
+### Backend hydration read path
 
-Primary files:
+- HTTP handler parses `conv_id`, optional `since_version`, optional `limit` (`../pinocchio/pkg/webchat/http/api.go:217`, `../pinocchio/pkg/webchat/http/api.go:223`).
+- `TimelineService.Snapshot(...)` delegates directly to store (`../pinocchio/pkg/webchat/timeline_service.go:21`).
+- Store returns entities sorted by projection version semantics.
 
-- `packages/engine/src/chat/state/timelineSlice.ts`
-- `packages/engine/src/chat/ws/wsManager.ts`
-- `packages/engine/src/chat/state/timelineSlice.test.ts`
-- `packages/engine/src/chat/ws/wsManager.test.ts`
+### Frontend hydration apply path
 
-### 5.2 Validation Completed
+- `WsManager.hydrate` fetches `/api/timeline?conv_id=...` (`packages/engine/src/chat/ws/wsManager.ts:289`).
+- Snapshot entities are mapped and merged into Redux via `mergeSnapshot` (`packages/engine/src/chat/ws/wsManager.ts:53`, `packages/engine/src/chat/ws/wsManager.ts:61`).
+- Buffered websocket frames are replayed after hydrate, sorted by sequence (`packages/engine/src/chat/ws/wsManager.ts:336`).
 
-Command run:
+## 4. Ordering Semantics That Cause Reorder
 
-```bash
-pnpm vitest packages/engine/src/chat/state/timelineSlice.test.ts packages/engine/src/chat/ws/wsManager.test.ts
-```
+## 4.1 Backend entity version semantics are "last write", not "first appearance"
 
-Result at implementation time:
+SQLite upsert updates `timeline_entities.version = excluded.version` on every upsert (`../pinocchio/pkg/persistence/chatstore/timeline_store_sqlite.go:350`, `../pinocchio/pkg/persistence/chatstore/timeline_store_sqlite.go:353`).
 
-- 2 test files passed
-- 9 tests passed
+Hydration full snapshot then orders by `version ASC, entity_id ASC` (`../pinocchio/pkg/persistence/chatstore/timeline_store_sqlite.go:417`, `../pinocchio/pkg/persistence/chatstore/timeline_store_sqlite.go:422`).
 
-## 6. Why This Is Likely a Mitigation, Not Root-Cause Fix
+Implication: if a message is updated later (for example streaming finalization), it can be sorted after entities that were created later but finalized earlier.
 
-The mitigation solves timeline damage when hydrate runs, but the unresolved question is: **why is hydrate being re-entered on focus in the first place?**
+In-memory store intentionally mirrors this behavior (`../pinocchio/pkg/persistence/chatstore/timeline_store_memory.go:17`, `../pinocchio/pkg/persistence/chatstore/timeline_store_memory.go:234`).
 
-If focus is causing unexpected remount or reconnect, we still have a lifecycle bug. The current merge behavior masks the impact, but the trigger may still exist and could surface elsewhere (flicker, duplicate fetches, transient connection status changes, race windows).
+## 4.2 Frontend timeline order is insertion-order with version-gated updates
 
-## 7. Known Unknowns
+Frontend state keeps:
 
-1. Is chat component truly remounting on focus in this repro, or just re-rendering?
-2. If remounting, what is changing identity of the rendered chat subtree?
-3. Is this only dev (StrictMode) behavior, or reproducible in non-StrictMode build?
-4. Are reconnect/hydrate events tied to window z-index/focus updates, or to app-window renderer cache invalidation?
-5. Does backend snapshot order intentionally differ from client live order, and if so, what is canonical ordering contract?
-6. Should omission from snapshot imply deletion, or should client preserve unknown/local entities?
+- `byId` map
+- `order` array
 
-## 8. Technical Context Map (For New Intern)
+and only appends to `order` on first appearance (`packages/engine/src/chat/state/timelineSlice.ts:80`, `packages/engine/src/chat/state/timelineSlice.ts:82`). Existing entities are updated in place.
 
-### 8.1 Rendering/Lifecycle Path
+So live order reflects local first-seen timing, while hydrated order reflects backend version ordering. This is the core mismatch.
 
-- Root app + StrictMode: `apps/inventory/src/main.tsx`
-- App window route to chat component (`inventory-chat:<convId>`): `apps/inventory/src/App.tsx`
-- Chat widget component: `packages/engine/src/chat/components/ChatConversationWindow.tsx`
-- Connect/disconnect lifecycle hook: `packages/engine/src/chat/runtime/useConversation.ts`
-- Session/refcount manager: `packages/engine/src/chat/runtime/conversationManager.ts`
-- Websocket + hydrate path: `packages/engine/src/chat/ws/wsManager.ts`
-- Timeline reducers/snapshot semantics: `packages/engine/src/chat/state/timelineSlice.ts`
-- Window focus pointer handler: `packages/engine/src/components/shell/windowing/WindowSurface.tsx`
+## 4.3 Hydrated versions collapse to one snapshot version
 
-### 8.2 Why Focus Should Be Low-Risk (By Design)
+`TimelineSnapshotV2` carries one top-level `version` and not per-entity versions (`../pinocchio/proto/sem/timeline/transport.proto:36`, `../pinocchio/proto/sem/timeline/transport.proto:38`, `../pinocchio/proto/sem/timeline/transport.proto:40`).
 
-Focus is expected to adjust z-order/focus state only, not remount window content. If remount is occurring, it likely comes from identity/key/cache boundary behavior above the chat component, not from the focus action itself.
+Frontend mapper sets each hydrated entity version to that same snapshot version (`packages/engine/src/chat/ws/wsManager.ts:58`, `packages/engine/src/chat/sem/timelineMapper.ts:164`, `packages/engine/src/chat/sem/timelineMapper.ts:170`).
 
-## 9. Investigation Plan (Root-Cause)
+This explains the observed "all versions aligned" behavior after hydration.
 
-### Phase A: Instrumentation and Evidence Capture
+## 5. Suggestions Discrepancy (Expected with Current Contracts)
 
-Add temporary debug logs/counters (or test-only hooks) at:
+## 5.1 Starter suggestions are frontend-generated
 
-- `InventoryChatAssistantWindow` mount/unmount (`apps/inventory/src/App.tsx`)
-- `useConversation` effect enter/cleanup (`packages/engine/src/chat/runtime/useConversation.ts`)
-- `ConversationManager.connect` / `.disconnect` counts (`packages/engine/src/chat/runtime/conversationManager.ts`)
-- `WsManager.connect` / `ensureHydrated` / `hydrate` entry points (`packages/engine/src/chat/ws/wsManager.ts`)
+`ChatConversationWindow` injects `suggestions:starter` locally when timeline is empty (`packages/engine/src/chat/components/ChatConversationWindow.tsx:114`, `packages/engine/src/chat/components/ChatConversationWindow.tsx:122`).
 
-Goal: produce single timeline with timestamps proving whether focus causes remount or only re-render.
+These are not persisted by backend timeline projection by default.
 
-### Phase B: StrictMode Separation
+## 5.2 Hypercard suggestions are emitted as SEM, but not projected server-side in go-inventory-chat
 
-Run same scenario in:
+Inventory app maps suggestions into SEM events (`hypercard.suggestions.start/update/v1`) (`go-inventory-chat/internal/pinoweb/hypercard_events.go:213`, `go-inventory-chat/internal/pinoweb/hypercard_events.go:233`).
 
-1. dev + StrictMode (current)
-2. dev without StrictMode (temporary local check)
-3. production build preview
+But `registerHypercardTimelineHandlers()` only registers status and result projection handlers for widget/card families and no suggestions handler (`go-inventory-chat/internal/pinoweb/hypercard_events.go:300`, `go-inventory-chat/internal/pinoweb/hypercard_events.go:356`, `go-inventory-chat/internal/pinoweb/hypercard_events.go:372`).
 
-Goal: determine whether reconnect-on-focus is StrictMode-only artifact or production-relevant bug.
+Implication: suggestions can exist in live frontend state but be absent from `/api/timeline` hydration payload.
 
-### Phase C: Windowing/Identity Checks
+## 6. Are Go and Frontend Using Different Projections?
 
-Validate whether focus dispatch changes any identity inputs for chat app window rendering:
+Yes, in practice there are overlapping but not identical projection paths:
 
-- window ids stable?
-- appKey stable?
-- any key props changed around chat subtree?
-- any cache invalidation paths that rebuild body nodes on focus?
+1. Backend canonical projector (`TimelineProjector`) emits persisted entities and `timeline.upsert`.
+2. Frontend sem handlers also project raw `llm.*`, `tool.*`, `hypercard.*` directly.
 
-Files to inspect deeply:
+Because both can upsert the same logical timeline, arrival order and handler coverage can diverge transiently.
 
-- `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx`
-- `packages/engine/src/components/shell/windowing/defaultWindowContentAdapters.tsx`
-- `packages/engine/src/components/shell/windowing/WindowLayer.tsx`
-- `packages/engine/src/components/shell/windowing/WindowSurface.tsx`
+Example:
 
-### Phase D: Hydration Contract Decision
+- Hypercard widget raw SEM can upsert `hypercard_widget` directly on frontend (`packages/engine/src/hypercard/timeline/hypercardWidget.tsx:54`).
+- Backend also projects to timeline and emits `timeline.upsert`, which frontend consumes (`packages/engine/src/chat/sem/semRegistry.ts:413`).
 
-Define and document authoritative policy:
+This duality is useful for resilience but increases ordering and reconciliation complexity.
 
-- when hydrate is allowed (initial connect only? reconnect too?)
-- whether reconnect should hydrate incrementally only
-- semantics of missing entities in snapshot
-- canonical ordering source (server projection vs client insertion order)
+## 7. Ring Buffer Clarification (User Question #6)
 
-## 10. Test Plan to Add
+There is a ring buffer and it stores all SEM frames passed through conversation callback, not just high-frequency events:
 
-1. Component lifecycle test: focusing window does not unmount/remount chat window content.
-2. Conversation manager test: focus-only state transitions do not increase disconnect/connect counts.
-3. WsManager test: reconnect (if it occurs) does not trigger destructive data semantics (already mitigated).
-4. Optional e2e/dev harness: capture lifecycle events and assert no unexpected reconnect on focus.
+- Buffer add is unconditional in stream callback (`../pinocchio/pkg/webchat/conversation.go:336`).
+- Buffer implementation stores every frame up to max (default 1000) (`../pinocchio/pkg/webchat/sem_buffer.go:15`, `../pinocchio/pkg/webchat/sem_buffer.go:22`, `../pinocchio/pkg/webchat/sem_buffer.go:33`).
 
-## 11. Acceptance Criteria for Closing This Ticket
+But it is currently used for debug APIs, not hydration snapshot reads:
 
-1. Root trigger for focus-associated reconnect identified and documented with evidence.
-2. If trigger is real bug, fix merged with regression test.
-3. If behavior is dev-only StrictMode artifact, explicitly documented with reproducible proof and guardrails for debugging.
-4. Hydration semantics are documented as intended architecture (initial vs reconnect behavior).
-5. Manual validation confirms stable timeline and no perceptible bounce under repeated focus changes.
+- Debug route reads `conv.semBuf.Snapshot()` (`../pinocchio/pkg/webchat/router_debug_routes.go:299`, `../pinocchio/pkg/webchat/router_debug_routes.go:304`).
+- Hydration path reads timeline store via `/api/timeline`, not this ring buffer.
 
-## 12. Risks and Review Focus
+## 8. Why Focus Can Trigger Visible Reorder
 
-- Overfitting to current repro: must test both dev and production-like paths.
-- Masked bug due to mitigation: merge semantics may hide reconnect churn.
-- State retention risk: if merge semantics remain default, confirm no stale zombie entities accumulate.
+Focus handler itself only dispatches window focus (`packages/engine/src/components/shell/windowing/WindowSurface.tsx:47`, `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx:247`), and window surfaces are keyed by stable `window.id` (`packages/engine/src/components/shell/windowing/WindowLayer.tsx:27`).
 
-Code review should focus on lifecycle invariants first, then timeline data semantics.
+If focus leads to a reconnect in a repro, likely sequence is:
 
-## 13. Immediate Next Actions for Intern (Day 1 Checklist)
+1. Chat subtree remount or session teardown occurs (root cause still under investigation).
+2. `useConversation` cleanup calls disconnect (`packages/engine/src/chat/runtime/useConversation.ts:54`, `packages/engine/src/chat/runtime/useConversation.ts:56`).
+3. Reconnect runs hydrate path (`packages/engine/src/chat/runtime/useConversation.ts:32`, `packages/engine/src/chat/ws/wsManager.ts:238`).
+4. Hydration snapshot re-applies backend ordering semantics.
 
-1. Reproduce with current branch and capture console traces for mount/connect/hydrate/disconnect.
-2. Determine if reconnect occurs in production build.
-3. If reconnect is real, isolate source of remount/identity churn.
-4. Draft proposed final hydration policy and circulate before coding.
-5. Only then implement final fix and add tests.
+Current merge mitigation prevents destructive clear, but ordering differences can still surface when entities are first introduced from snapshot ordering.
 
-## 14. Related Prior Ticket
+## 9. Concrete Interpretation of User Before/After Export
 
-Mitigation ticket (already complete):
+Given the sample timestamps/versions:
+
+- status updated around `1771721162083...`
+- widget around `1771721162086...`
+- thinking around `1771721162226...`
+- assistant around `1771721162227...`
+
+The post-focus order `status -> widget -> thinking -> assistant` matches backend `ORDER BY version ASC` semantics for current entity versions, which supports the hydration-order explanation.
+
+## 10. Contract Gaps to Resolve
+
+1. Canonical timeline ordering contract is not explicit.
+2. Suggestions persistence contract is split (frontend local vs backend projected).
+3. Snapshot payload has no per-entity version field.
+4. Frontend runs dual projection sources concurrently.
+
+Without explicit contract, intermittent reorder and entity-shape drift are expected under reconnect/hydrate scenarios.
+
+## 11. Recommended Fix Strategy (Intern-Ready)
+
+## 11.1 Decide canonical ordering first
+
+Choose one:
+
+- A. Chronological first-seen order (stable for UX), or
+- B. Last-update order (backend version order).
+
+If A: backend needs persistent first-seen ordering key in snapshot entities and frontend should respect it.
+If B: frontend should converge fully to backend-projected `timeline.upsert` and minimize direct-sem projection side effects.
+
+## 11.2 Unify projection source-of-truth
+
+Prefer server projection as source-of-truth for persisted timeline, and keep direct frontend handlers only for explicitly ephemeral UI states.
+
+## 11.3 Resolve suggestions contract
+
+Choose one:
+
+- Persist suggestions in backend projection (add timeline handlers for `hypercard.suggestions.*`), or
+- Mark suggestions as intentionally local/ephemeral and explicitly exclude from persisted timeline/debug expectations.
+
+## 11.4 Improve snapshot version fidelity
+
+If feasible, extend snapshot entity model to include per-entity projected version so frontend does not flatten all hydrated entities to one version.
+
+## 12. Investigation Plan (Root Cause of Focus-Reconnect Trigger)
+
+1. Instrument mount/unmount/connect/disconnect/hydrate counts in:
+   - `apps/inventory/src/App.tsx`
+   - `packages/engine/src/chat/runtime/useConversation.ts`
+   - `packages/engine/src/chat/runtime/conversationManager.ts`
+   - `packages/engine/src/chat/ws/wsManager.ts`
+2. Repro in:
+   - dev with StrictMode
+   - dev without StrictMode
+   - production build preview
+3. Confirm whether focus causes remount or if another lifecycle event triggers reconnect.
+4. After lifecycle root cause is fixed, validate ordering remains stable across focus cycles.
+
+## 13. Acceptance Criteria to Close HC-55
+
+1. Root cause of focus-associated reconnect confirmed with instrumentation evidence.
+2. Canonical ordering contract documented and implemented consistently.
+3. Suggestions contract documented (persisted vs ephemeral) and implemented consistently.
+4. Hydration no longer causes reorder surprises for canonical UX entities.
+5. Regression tests cover reconnect/hydrate and timeline-order stability.
+
+## 14. Immediate Intern Checklist
+
+1. Reproduce with logs and collect sequence: focus -> lifecycle -> hydrate -> order delta.
+2. Compare live timeline.upsert order vs `/api/timeline` order for same conversation/version.
+3. Decide and document canonical ordering contract before code changes.
+4. Implement projection contract updates with tests.
+5. Re-export before/after YAML and verify no unexpected reorder under repeated focus changes.
+
+## 15. Related Prior Work
+
+Mitigation ticket:
 
 - `HC-54-CHAT-FOCUS-TIMELINE-ORDER`
 - code commit: `1f63ce0679738d05e7c88074e4c1dd07caceb8c5`
 - docs commit: `83a6df1e456a4ec22372250b83cc753854b76275`
 
-This ticket (`HC-55`) supersedes that work for root-cause completeness.
+This HC-55 document now includes backend and frontend timeline-path specifics needed for the true root-cause fix rather than mitigation-only behavior.

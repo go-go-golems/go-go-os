@@ -9,7 +9,9 @@ import {
   buildArtifactOpenWindowPayload,
   extractArtifactUpsertFromSem,
   normalizeArtifactId,
+  templateToCardId,
 } from '../artifacts/artifactRuntime';
+import { buildCodeEditorWindowPayload } from '../editor/editorLaunch';
 
 function asDataRecord(ev: SemEvent): Record<string, unknown> {
   if (typeof ev.data === 'object' && ev.data !== null && !Array.isArray(ev.data)) {
@@ -78,6 +80,7 @@ export function HypercardWidgetRenderer({ e, ctx }: { e: RenderEntity; ctx?: Ren
   const detail = String(e.props.detail ?? '');
   const artifactId = e.props.artifactId ? String(e.props.artifactId) : '';
   const template = e.props.template ? String(e.props.template) : '';
+  const hasArtifact = Boolean(normalizeArtifactId(artifactId));
 
   const openArtifact = () => {
     const payload = buildArtifactOpenWindowPayload({
@@ -89,6 +92,11 @@ export function HypercardWidgetRenderer({ e, ctx }: { e: RenderEntity; ctx?: Ren
       return;
     }
     dispatch(openWindow(payload));
+  };
+
+  const editTemplate = () => {
+    const cardId = templateToCardId(template);
+    dispatch(openWindow(buildCodeEditorWindowPayload(cardId)));
   };
 
   return (
@@ -110,12 +118,14 @@ export function HypercardWidgetRenderer({ e, ctx }: { e: RenderEntity; ctx?: Ren
           {JSON.stringify(e.props, null, 2)}
         </pre>
       )}
-      {normalizeArtifactId(artifactId) && (
+      {(hasArtifact || template.trim().length > 0) && (
         <div style={{ marginTop: 4, display: 'flex', gap: 6 }}>
-          <button type="button" data-part="btn" onClick={openArtifact}>
-            Open
-          </button>
-          <button type="button" data-part="btn" onClick={openArtifact}>
+          {hasArtifact && (
+            <button type="button" data-part="btn" onClick={openArtifact}>
+              Open
+            </button>
+          )}
+          <button type="button" data-part="btn" onClick={editTemplate}>
             Edit
           </button>
         </div>

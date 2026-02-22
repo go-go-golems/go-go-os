@@ -141,7 +141,7 @@ export function TimelineDebugWindow({ conversationId, initialSnapshot }: Timelin
         {/* Entity list (left) */}
         <div data-part="timeline-debug-list" style={listPaneStyle}>
           {snapshot.timeline.entities.length === 0 && (
-            <div style={{ color: '#555', textAlign: 'center', padding: 24, fontSize: 12 }}>Empty timeline</div>
+            <div style={{ color: '#999', textAlign: 'center', padding: 24, fontSize: 12 }}>Empty timeline</div>
           )}
           {snapshot.timeline.entities.map((entity) => (
             <EntityRow
@@ -160,7 +160,7 @@ export function TimelineDebugWindow({ conversationId, initialSnapshot }: Timelin
           {selectedEntity ? (
             <EntityDetail entity={selectedEntity} viewMode={viewMode} conversationId={conversationId} />
           ) : (
-            <div style={{ color: '#555', textAlign: 'center', padding: 24, fontSize: 12 }}>
+            <div style={{ color: '#999', textAlign: 'center', padding: 24, fontSize: 12 }}>
               Select an entity to inspect
             </div>
           )}
@@ -198,21 +198,21 @@ function EntityRow({
         gap: 6,
         padding: '3px 8px',
         cursor: 'pointer',
-        borderBottom: '1px solid #222',
-        background: selected ? '#ffffff0f' : 'transparent',
+        borderBottom: '1px solid #e5e5e5',
+        background: selected ? '#0000000a' : 'transparent',
       }}
       onMouseOver={(e) => {
-        if (!selected) (e.currentTarget as HTMLElement).style.background = '#ffffff08';
+        if (!selected) (e.currentTarget as HTMLElement).style.background = '#00000006';
       }}
       onMouseOut={(e) => {
-        (e.currentTarget as HTMLElement).style.background = selected ? '#ffffff0f' : 'transparent';
+        (e.currentTarget as HTMLElement).style.background = selected ? '#0000000a' : 'transparent';
       }}
     >
-      <span style={{ color: '#555', fontSize: 10, minWidth: 24, textAlign: 'right' }}>{entity.orderIndex}</span>
+      <span style={{ color: '#999', fontSize: 10, minWidth: 24, textAlign: 'right' }}>{entity.orderIndex}</span>
       <span style={{ color: kindColor(entity.kind), fontWeight: 600, minWidth: 100, fontSize: 11 }}>{entity.kind}</span>
       <span
         style={{
-          color: '#888',
+          color: '#666',
           flex: 1,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -222,7 +222,7 @@ function EntityRow({
       >
         {entity.id}
       </span>
-      <span style={{ color: '#555', fontSize: 9, minWidth: 70 }}>{formatTimestamp(entity.createdAt)}</span>
+      <span style={{ color: '#999', fontSize: 9, minWidth: 70 }}>{formatTimestamp(entity.createdAt)}</span>
       <button
         type="button"
         onClick={(e) => {
@@ -257,7 +257,7 @@ function EntityDetail({
         <SyntaxHighlight
           code={yaml}
           language="yaml"
-          variant="dark"
+          variant="light"
           style={{ fontSize: 11, maxHeight: 'none', userSelect: 'text' }}
         />
       </div>
@@ -268,17 +268,17 @@ function EntityDetail({
     <div style={{ padding: '4px 8px', overflow: 'auto', height: '100%' }}>
       <div style={{ marginBottom: 8, display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
         <span>
-          <b style={{ color: '#d2a8ff' }}>id:</b> <span style={{ color: '#a5d6ff' }}>{entity.id}</span>
+          <b style={{ color: '#7c3aed' }}>id:</b> <span style={{ color: '#0550ae' }}>{entity.id}</span>
         </span>
         <span>
-          <b style={{ color: '#d2a8ff' }}>kind:</b> <span style={{ color: kindColor(entity.kind) }}>{entity.kind}</span>
+          <b style={{ color: '#7c3aed' }}>kind:</b> <span style={{ color: kindColor(entity.kind) }}>{entity.kind}</span>
         </span>
         <span>
-          <b style={{ color: '#d2a8ff' }}>index:</b> <span style={{ color: '#79c0ff' }}>{entity.orderIndex}</span>
+          <b style={{ color: '#7c3aed' }}>index:</b> <span style={{ color: '#0969da' }}>{entity.orderIndex}</span>
         </span>
         {entity.version !== null && (
           <span>
-            <b style={{ color: '#d2a8ff' }}>v:</b> <span style={{ color: '#79c0ff' }}>{entity.version}</span>
+            <b style={{ color: '#7c3aed' }}>v:</b> <span style={{ color: '#0969da' }}>{entity.version}</span>
           </span>
         )}
       </div>
@@ -321,15 +321,15 @@ const rootStyle: React.CSSProperties = {
   height: '100%',
   fontFamily: 'monospace',
   fontSize: 12,
-  color: '#ccc',
+  color: '#333',
 };
 
 const toolbarStyle: React.CSSProperties = {
   display: 'flex',
   gap: 4,
   padding: '4px 8px',
-  borderBottom: '1px solid #333',
-  background: '#1a1a2e',
+  borderBottom: '1px solid #ddd',
+  background: '#f8f9fa',
   flexWrap: 'wrap',
   alignItems: 'center',
 };
@@ -345,7 +345,7 @@ const listPaneStyle: React.CSSProperties = {
   minWidth: 200,
   maxWidth: 400,
   overflow: 'auto',
-  borderRight: '1px solid #333',
+  borderRight: '1px solid #ddd',
 };
 
 const detailPaneStyle: React.CSSProperties = {
@@ -357,9 +357,9 @@ const controlBtnStyle: React.CSSProperties = {
   padding: '2px 8px',
   fontSize: 11,
   borderRadius: 3,
-  border: '1px solid #444',
-  background: '#222',
-  color: '#aaa',
+  border: '1px solid #ccc',
+  background: '#f0f0f0',
+  color: '#555',
   cursor: 'pointer',
 };
 
@@ -367,13 +367,13 @@ const copyBtnStyle: React.CSSProperties = {
   padding: '1px 5px',
   fontSize: 10,
   borderRadius: 3,
-  border: '1px solid #4b5563',
-  background: '#1f2937',
-  color: '#e5e7eb',
+  border: '1px solid #ccc',
+  background: '#f0f0f0',
+  color: '#333',
   cursor: 'pointer',
   lineHeight: 1,
 };
 
-const feedbackOkStyle: React.CSSProperties = { color: '#10b981', fontSize: 10 };
-const feedbackErrorStyle: React.CSSProperties = { color: '#ef4444', fontSize: 10 };
-const summaryStyle: React.CSSProperties = { color: '#666', fontSize: 10 };
+const feedbackOkStyle: React.CSSProperties = { color: '#16a34a', fontSize: 10 };
+const feedbackErrorStyle: React.CSSProperties = { color: '#dc2626', fontSize: 10 };
+const summaryStyle: React.CSSProperties = { color: '#888', fontSize: 10 };

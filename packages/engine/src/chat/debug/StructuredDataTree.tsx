@@ -51,19 +51,19 @@ function TreeNode({ value, path, depth, maxDepth, defaultCollapsed }: TreeNodePr
   }
 
   // null / undefined
-  if (value === null) return <ScalarLine label={path} value="null" color="#ef4444" />;
-  if (value === undefined) return <ScalarLine label={path} value="undefined" color="#ef4444" />;
+  if (value === null) return <ScalarLine label={path} value="null" color="#cf222e" />;
+  if (value === undefined) return <ScalarLine label={path} value="undefined" color="#cf222e" />;
 
   // primitives
   if (typeof value === 'string') {
     return <StringLine label={path} rawValue={value} />;
   }
-  if (typeof value === 'number') return <ScalarLine label={path} value={String(value)} color="#79c0ff" />;
-  if (typeof value === 'boolean') return <ScalarLine label={path} value={String(value)} color="#ff7b72" />;
+  if (typeof value === 'number') return <ScalarLine label={path} value={String(value)} color="#0969da" />;
+  if (typeof value === 'boolean') return <ScalarLine label={path} value={String(value)} color="#cf222e" />;
 
   // non-object fallback
   if (typeof value !== 'object') {
-    return <ScalarLine label={path} value={String(value)} color="#d2a8ff" />;
+    return <ScalarLine label={path} value={String(value)} color="#7c3aed" />;
   }
 
   // array
@@ -147,7 +147,7 @@ function StringLine({ label, rawValue }: { label: string; rawValue: string }) {
   return (
     <div style={{ paddingLeft: 4 }}>
       <span style={keyStyle}>{label}: </span>
-      <span style={{ ...scalarStyle, color: '#a5d6ff' }}>{display}</span>
+      <span style={{ ...scalarStyle, color: '#0550ae' }}>{display}</span>
       {isLong && (
         <button type="button" onClick={() => setExpanded((e) => !e)} style={expandBtnStyle}>
           {expanded ? '▲ less' : `▼ ${rawValue.length} chars`}
@@ -187,17 +187,17 @@ function CollapsibleNode({
           userSelect: 'none',
         }}
         onMouseOver={(e) => {
-          (e.currentTarget as HTMLElement).style.background = '#ffffff0a';
+          (e.currentTarget as HTMLElement).style.background = '#0000000a';
         }}
         onMouseOut={(e) => {
           (e.currentTarget as HTMLElement).style.background = 'transparent';
         }}
       >
-        <span style={{ color: '#555', fontSize: 10, marginRight: 4 }}>{collapsed ? '▶' : '▼'}</span>
+        <span style={{ color: '#999', fontSize: 10, marginRight: 4 }}>{collapsed ? '▶' : '▼'}</span>
         <span style={keyStyle}>{label}</span>
-        {collapsed && <span style={{ color: '#666', marginLeft: 6, fontSize: 10 }}>{summary}</span>}
+        {collapsed && <span style={{ color: '#888', marginLeft: 6, fontSize: 10 }}>{summary}</span>}
       </div>
-      {!collapsed && <div style={{ paddingLeft: 8, borderLeft: '1px solid #333' }}>{children}</div>}
+      {!collapsed && <div style={{ paddingLeft: 8, borderLeft: '1px solid #ddd' }}>{children}</div>}
     </div>
   );
 }
@@ -207,7 +207,7 @@ function CollapsibleNode({
 // ---------------------------------------------------------------------------
 
 const keyStyle: React.CSSProperties = {
-  color: '#d2a8ff',
+  color: '#7c3aed',
   fontWeight: 600,
 };
 

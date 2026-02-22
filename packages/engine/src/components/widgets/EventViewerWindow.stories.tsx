@@ -8,7 +8,7 @@ const meta: Meta<typeof EventViewerWindow> = {
   parameters: { layout: 'fullscreen' },
   decorators: [
     (Story) => (
-      <div style={{ width: 760, height: 520, background: '#111', color: '#ccc' }}>
+      <div style={{ width: 760, height: 520, background: '#fff', color: '#333' }}>
         <Story />
       </div>
     ),

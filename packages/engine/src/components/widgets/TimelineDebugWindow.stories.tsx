@@ -61,7 +61,7 @@ const meta: Meta<typeof TimelineDebugWindow> = {
   decorators: [
     (Story) => (
       <Provider store={makeMinimalStore()}>
-        <div style={{ width: 860, height: 520, background: '#111', color: '#ccc' }}>
+        <div style={{ width: 860, height: 520, background: '#fff', color: '#333' }}>
           <Story />
         </div>
       </Provider>

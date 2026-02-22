@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] Instrument and verify focus path (`mount -> connect -> disconnect -> reconnect -> hydrate`) after semantic changes
+- [x] Instrument and verify focus path (`mount -> connect -> disconnect -> reconnect -> hydrate`) after semantic changes
 
 ## DONE
 

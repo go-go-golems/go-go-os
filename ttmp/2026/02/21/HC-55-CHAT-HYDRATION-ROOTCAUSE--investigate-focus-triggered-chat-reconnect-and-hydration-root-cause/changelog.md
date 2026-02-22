@@ -89,3 +89,13 @@ Made frontend persisted timeline entities backend-authoritative by relying on `t
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/runtime/registerChatModules.test.ts — Updated module test expectations for backend-driven suggestions
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/hypercard/timeline/hypercardWidget.test.ts — Updated to assert timeline.upsert mapping path
 - /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/hypercard/timeline/hypercardCard.test.ts — Updated to assert timeline.upsert mapping path
+
+## 2026-02-22
+
+Added explicit websocket lifecycle instrumentation hooks and regression coverage for the StrictMode-style remount path (`connect -> disconnect -> reconnect -> hydrate`) to verify post-contract behavior and buffered replay ordering.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/ws/wsManager.ts — Added `onLifecycle` tracing hooks for connect/hydrate/replay/disconnect phases
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/packages/engine/src/chat/ws/wsManager.test.ts — Added remount lifecycle regression test and aligned live/buffered frame tests with backend-authoritative `timeline.upsert`
+- /home/manuel/workspaces/2026-02-21/hypercard-qol/2026-02-12--hypercard-react/ttmp/2026/02/21/HC-55-CHAT-HYDRATION-ROOTCAUSE--investigate-focus-triggered-chat-reconnect-and-hydration-root-cause/tasks.md — Marked final instrumentation task complete

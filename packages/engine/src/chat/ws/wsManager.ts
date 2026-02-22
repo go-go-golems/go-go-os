@@ -16,11 +16,35 @@ export interface ConnectArgs {
   dispatch: SemContext['dispatch'];
   basePrefix?: string;
   onStatus?: (status: ChatConnectionStatus) => void;
+  onLifecycle?: (event: WsLifecycleEvent) => void;
   hydrate?: boolean;
   wsFactory?: (url: string) => WebSocket;
   fetchImpl?: typeof fetch;
   location?: { protocol: string; host: string };
   onEnvelope?: (envelope: SemEnvelope) => void;
+}
+
+export type WsLifecyclePhase =
+  | 'connect.begin'
+  | 'connect.reuse'
+  | 'disconnect'
+  | 'ws.open'
+  | 'ws.close'
+  | 'ws.error'
+  | 'hydrate.start'
+  | 'hydrate.snapshot.applied'
+  | 'hydrate.fetch.failed'
+  | 'hydrate.fetch.error'
+  | 'frame.buffered'
+  | 'replay.begin'
+  | 'replay.complete'
+  | 'hydrate.complete';
+
+export interface WsLifecycleEvent {
+  phase: WsLifecyclePhase;
+  convId: string;
+  nonce: number;
+  details?: Record<string, unknown>;
 }
 
 type RawSemEnvelope = unknown;
@@ -90,10 +114,21 @@ class WsManager {
   private hydrated = false;
   private buffered: RawSemEnvelope[] = [];
   private lastOnStatus: ((status: ChatConnectionStatus) => void) | null = null;
+  private lastOnLifecycle: ((event: WsLifecycleEvent) => void) | null = null;
   private lastDispatch: SemContext['dispatch'] | null = null;
+
+  private emitLifecycle(phase: WsLifecyclePhase, nonce: number, details?: Record<string, unknown>) {
+    if (!this.convId || !this.lastOnLifecycle) return;
+    this.lastOnLifecycle({ phase, convId: this.convId, nonce, details });
+  }
 
   async connect(args: ConnectArgs) {
     if (this.ws && this.convId === args.convId) {
+      this.lastOnLifecycle = args.onLifecycle ?? this.lastOnLifecycle;
+      this.emitLifecycle('connect.reuse', this.connectNonce, {
+        hydrated: this.hydrated,
+        hydrateRequested: args.hydrate !== false,
+      });
       if (args.hydrate !== false) {
         await this.ensureHydrated(args);
       }
@@ -108,7 +143,11 @@ class WsManager {
     this.hydrated = false;
     this.buffered = [];
     this.lastOnStatus = args.onStatus ?? null;
+    this.lastOnLifecycle = args.onLifecycle ?? null;
     this.lastDispatch = args.dispatch;
+    this.emitLifecycle('connect.begin', nonce, {
+      hydrateRequested: args.hydrate !== false,
+    });
 
     args.dispatch(
       chatSessionSlice.actions.setConnectionStatus({
@@ -136,6 +175,7 @@ class WsManager {
     ws.onopen = () => {
       settleOpen?.();
       if (nonce !== this.connectNonce) return;
+      this.emitLifecycle('ws.open', nonce);
       args.dispatch(
         chatSessionSlice.actions.setConnectionStatus({
           convId: args.convId,
@@ -148,6 +188,7 @@ class WsManager {
     ws.onclose = () => {
       settleOpen?.();
       if (nonce !== this.connectNonce) return;
+      this.emitLifecycle('ws.close', nonce);
       args.dispatch(
         chatSessionSlice.actions.setConnectionStatus({
           convId: args.convId,
@@ -166,6 +207,7 @@ class WsManager {
     ws.onerror = () => {
       settleOpen?.();
       if (nonce !== this.connectNonce) return;
+      this.emitLifecycle('ws.error', nonce);
       args.dispatch(
         chatSessionSlice.actions.setConnectionStatus({
           convId: args.convId,
@@ -204,6 +246,10 @@ class WsManager {
         }
         if (!this.hydrated) {
           this.buffered.push(payload);
+          this.emitLifecycle('frame.buffered', nonce, {
+            bufferedCount: this.buffered.length,
+            seq: seqFromEnvelope(payload),
+          });
           return;
         }
 
@@ -239,6 +285,8 @@ class WsManager {
   }
 
   disconnect() {
+    const closingNonce = this.connectNonce;
+    this.emitLifecycle('disconnect', closingNonce);
     this.connectNonce += 1;
 
     if (this.convId && this.lastDispatch) {
@@ -269,6 +317,7 @@ class WsManager {
     this.hydrated = false;
     this.buffered = [];
     this.lastOnStatus = null;
+    this.lastOnLifecycle = null;
     this.lastDispatch = null;
   }
 
@@ -283,6 +332,7 @@ class WsManager {
   private async hydrate(args: ConnectArgs, nonce: number) {
     if (this.hydrated) return;
     if (nonce !== this.connectNonce) return;
+    this.emitLifecycle('hydrate.start', nonce);
 
     const fetchImpl = args.fetchImpl ?? fetch;
     try {
@@ -295,8 +345,15 @@ class WsManager {
             ignoreUnknownFields: true,
           });
           applyTimelineSnapshot(args.convId, snapshot, args.dispatch);
+          this.emitLifecycle('hydrate.snapshot.applied', nonce, {
+            entityCount: snapshot.entities.length,
+            version: snapshot.version.toString(),
+          });
         }
       } else {
+        this.emitLifecycle('hydrate.fetch.failed', nonce, {
+          status: response.status,
+        });
         const body = await response.text();
         args.dispatch(
           chatSessionSlice.actions.pushError({
@@ -313,6 +370,9 @@ class WsManager {
         );
       }
     } catch (error) {
+      this.emitLifecycle('hydrate.fetch.error', nonce, {
+        message: toErrorMessage(error, 'timeline hydrate failed'),
+      });
       args.dispatch(
         chatSessionSlice.actions.pushError({
           convId: args.convId,
@@ -332,9 +392,13 @@ class WsManager {
     this.hydrated = true;
     const buffered = this.buffered;
     this.buffered = [];
+    this.emitLifecycle('replay.begin', nonce, {
+      bufferedCount: buffered.length,
+    });
 
     buffered.sort((a, b) => (seqFromEnvelope(a) ?? 0) - (seqFromEnvelope(b) ?? 0));
     let lastSeq = 0;
+    let replayedCount = 0;
     for (const frame of buffered) {
       const seq = seqFromEnvelope(frame);
       if (seq && lastSeq && seq <= lastSeq) continue;
@@ -345,7 +409,14 @@ class WsManager {
         dispatch: args.dispatch,
         convId: args.convId,
       });
+      replayedCount += 1;
     }
+    this.emitLifecycle('replay.complete', nonce, {
+      replayedCount,
+    });
+    this.emitLifecycle('hydrate.complete', nonce, {
+      replayedCount,
+    });
   }
 }
 

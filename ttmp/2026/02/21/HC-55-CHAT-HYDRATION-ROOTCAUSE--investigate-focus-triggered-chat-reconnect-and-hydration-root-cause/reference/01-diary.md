@@ -501,3 +501,94 @@ I also updated tests to validate the new projection contract and added a regress
 
 - Persisted timeline entities now enter frontend state via `timeline.upsert`.
 - Direct llm/tool handlers remain for stream/session metadata only.
+
+## Step 7: Instrument and Verify Focus Remount Lifecycle After Projection Contract Changes
+
+This step closes the final HC-55 execution task by adding deterministic lifecycle tracing to the websocket manager and validating the strict-mode remount path with a dedicated regression test.
+
+The test target is the exact sequence we care about after the architecture decisions: mount/connect, teardown/disconnect, reconnect, hydrate snapshot, then replay buffered frames without timeline loss.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 3)
+
+**Assistant interpretation:** Complete the remaining HC-55 task by instrumenting and verifying reconnect/hydrate behavior with explicit evidence.
+
+**Inferred user intent:** Ensure the focus-triggered remount path is observable and regression-tested, not only inferred from code reading.
+
+**Commit (code):** pending in current working commit
+
+### What I did
+
+- Added an optional `onLifecycle` hook to `WsManager` connect args.
+- Added lifecycle phase emissions for:
+  - `connect.begin`, `connect.reuse`, `disconnect`
+  - `ws.open`, `ws.close`, `ws.error`
+  - `hydrate.start`, `hydrate.snapshot.applied`, `hydrate.fetch.failed`, `hydrate.fetch.error`, `hydrate.complete`
+  - `frame.buffered`, `replay.begin`, `replay.complete`
+- Added a new regression test in `wsManager.test.ts` that simulates strict-mode style remount:
+  - first connect with `hydrate: false`
+  - disconnect
+  - reconnect with hydrate enabled
+  - inject message while hydrate fetch is pending
+  - assert timeline includes replayed event and lifecycle phases progress in the expected order constraints
+- Updated existing `wsManager` tests to use `timeline.upsert` SEM frames (matching backend-authoritative projection contract).
+- Ran targeted tests:
+  - `pnpm vitest packages/engine/src/chat/ws/wsManager.test.ts`
+  - `pnpm vitest packages/engine/src/chat/ws/wsManager.test.ts packages/engine/src/chat/sem/semRegistry.test.ts`
+
+### Why
+
+- HC-55 still had one unchecked task requiring explicit instrumentation and verification of the remount/hydrate path.
+- Prior tests covered hydration merge behavior but did not capture the full lifecycle trace for remount sequencing.
+
+### What worked
+
+- Lifecycle tracing provided direct evidence of the reconnect/hydrate path.
+- Regression test confirms buffered frame replay still materializes timeline entities after reconnect/hydrate.
+- Updated test payloads (`timeline.upsert`) now align with the backend-authoritative timeline contract from Step 6.
+
+### What didn't work
+
+- Initial test command failed due incorrect invocation:
+  - `pnpm --dir /path vitest ...` produced `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL ... EACCES`
+- Resolved by running:
+  - `cd /path && pnpm vitest ...`
+- Initial lifecycle assertion expected strict ordering of `hydrate.start` before `frame.buffered`; async scheduling allowed the inverse order in one run.
+- Resolved by asserting ordering constraints (both occur after reconnect open and before snapshot/replay completion) instead of a brittle exact list position.
+
+### What I learned
+
+- With promise scheduling around open/hydrate startup, buffered-frame callbacks can race with lifecycle marker callback ordering while still representing correct behavior.
+- Tests for this path should assert causal ordering boundaries rather than over-constraining adjacent async events.
+
+### What was tricky to build
+
+- The strict-mode remount simulation had to preserve realism while staying deterministic; delaying hydrate fetch and sending a buffered event during that delay provided a stable test harness.
+
+### What warrants a second pair of eyes
+
+- Whether to surface lifecycle events directly in higher-level debug UI (currently the hook is available at websocket manager boundary and used by tests).
+
+### What should be done in the future
+
+- Add one conversation-manager-level test around ref-counted mount/unmount behavior if focus diagnostics need to include multi-subscriber attach/detach paths.
+
+### Code review instructions
+
+- Review instrumentation hook and lifecycle emission points:
+  - `packages/engine/src/chat/ws/wsManager.ts`
+- Review lifecycle regression and updated payload contract tests:
+  - `packages/engine/src/chat/ws/wsManager.test.ts`
+- Re-run targeted checks:
+  - `pnpm vitest packages/engine/src/chat/ws/wsManager.test.ts packages/engine/src/chat/sem/semRegistry.test.ts`
+
+### Technical details
+
+- Lifecycle emission is intentionally optional and side-effect-free when no `onLifecycle` callback is provided.
+- Regression flow verifies:
+  - first connect without hydrate
+  - explicit disconnect
+  - reconnect with hydrate fetch
+  - in-flight buffered `timeline.upsert` frame
+  - replay completion and timeline state containing `msg-remount`.

@@ -7,7 +7,7 @@ export interface DesktopCommandContext {
   dispatch: (action: any) => unknown;
   getState?: () => unknown;
   focusedWindowId: string | null;
-  openCardWindow: (cardId: string) => void;
+  openCardWindow: (cardId: string, options?: { dedupe?: boolean }) => void;
   closeWindow: (windowId: string) => void;
 }
 

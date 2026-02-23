@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import type { EventLogEntry } from './eventBus';
-import { subscribeConversationEvents } from './eventBus';
+import { clearConversationEventHistory, getConversationEvents, subscribeConversationEvents } from './eventBus';
 import { SyntaxHighlight } from './SyntaxHighlight';
+import { copyTextToClipboard } from './clipboard';
 import { toYaml } from './yamlFormat';
 
 const MAX_ENTRIES = 500;
+const AUTO_SCROLL_THRESHOLD_PX = 32;
 const ALL_FAMILIES = ['llm', 'tool', 'hypercard', 'timeline', 'ws', 'other'] as const;
 type Family = (typeof ALL_FAMILIES)[number];
 
@@ -32,8 +34,87 @@ export interface EventViewerWindowProps {
   initialEntries?: EventLogEntry[];
 }
 
+export interface AutoScrollMetrics {
+  scrollTop: number;
+  clientHeight: number;
+  scrollHeight: number;
+  thresholdPx?: number;
+}
+
+export function isNearBottom({
+  scrollTop,
+  clientHeight,
+  scrollHeight,
+  thresholdPx = AUTO_SCROLL_THRESHOLD_PX,
+}: AutoScrollMetrics): boolean {
+  const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+  return distanceFromBottom <= thresholdPx;
+}
+
+export interface EventTypeVisibilityOptions {
+  hideLlmDelta: boolean;
+  hideThinkingDelta: boolean;
+}
+
+export function isEntryHiddenByEventType(eventType: string, options: EventTypeVisibilityOptions): boolean {
+  if (options.hideLlmDelta && eventType === 'llm.delta') return true;
+  if (options.hideThinkingDelta && eventType === 'llm.thinking.delta') return true;
+  return false;
+}
+
+export function filterVisibleEntries(
+  entries: EventLogEntry[],
+  filters: Record<string, boolean>,
+  options: EventTypeVisibilityOptions,
+): EventLogEntry[] {
+  return entries.filter((entry) => {
+    if (filters[entry.family] === false) return false;
+    return !isEntryHiddenByEventType(entry.eventType, options);
+  });
+}
+
+export interface VisibleEventsYamlExport {
+  fileName: string;
+  yaml: string;
+}
+
+function toFileSafeSegment(value: string): string {
+  const normalized = value
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || 'conversation';
+}
+
+export function buildVisibleEventsYamlExport(
+  conversationId: string,
+  visibleEntries: EventLogEntry[],
+  exportedAtMs = Date.now(),
+): VisibleEventsYamlExport {
+  const exportedAt = new Date(exportedAtMs).toISOString();
+  const timestamp = exportedAt.replace(/[:.]/g, '-');
+  const fileName = `events-${toFileSafeSegment(conversationId)}-${timestamp}.yaml`;
+  const yaml = toYaml({
+    conversationId,
+    exportedAt,
+    eventCount: visibleEntries.length,
+    events: visibleEntries.map((entry) => ({
+      timestamp: new Date(entry.timestamp).toISOString(),
+      eventType: entry.eventType,
+      eventId: entry.eventId,
+      family: entry.family,
+      summary: entry.summary,
+      payload: entry.rawPayload,
+    })),
+  } as Record<string, unknown>);
+
+  return { fileName, yaml };
+}
+
 export function EventViewerWindow({ conversationId, initialEntries }: EventViewerWindowProps) {
-  const [entries, setEntries] = useState<EventLogEntry[]>(initialEntries ?? []);
+  const [entries, setEntries] = useState<EventLogEntry[]>(
+    () => initialEntries ?? getConversationEvents(conversationId),
+  );
   const [filters, setFilters] = useState<Record<string, boolean>>(() => {
     const f: Record<string, boolean> = {};
     for (const family of ALL_FAMILIES) f[family] = true;
@@ -41,13 +122,24 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
   });
   const [paused, setPaused] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [hideLlmDelta, setHideLlmDelta] = useState(false);
+  const [hideThinkingDelta, setHideThinkingDelta] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [copyFeedbackById, setCopyFeedbackById] = useState<Record<string, 'copied' | 'error'>>({});
+  const [exportFeedback, setExportFeedback] = useState<'ok' | 'error' | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
 
   // Subscribe to conversation event bus
+  useEffect(() => {
+    setEntries(initialEntries ?? getConversationEvents(conversationId));
+    setExpandedIds(new Set());
+    setCopyFeedbackById({});
+    setExportFeedback(null);
+  }, [conversationId, initialEntries]);
+
   useEffect(() => {
     const unsubscribe = subscribeConversationEvents(conversationId, (entry) => {
       if (pausedRef.current) return;
@@ -67,9 +159,14 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
     }
   }, [entryCount, autoScroll]);
 
+  const visibilityOptions = useMemo<EventTypeVisibilityOptions>(
+    () => ({ hideLlmDelta, hideThinkingDelta }),
+    [hideLlmDelta, hideThinkingDelta],
+  );
+
   const visible = useMemo(
-    () => entries.filter((e) => filters[e.family] !== false),
-    [entries, filters],
+    () => filterVisibleEntries(entries, filters, visibilityOptions),
+    [entries, filters, visibilityOptions],
   );
 
   const toggleFilter = useCallback((family: string) => {
@@ -91,18 +188,97 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
   const clearLog = useCallback(() => {
     setEntries([]);
     setExpandedIds(new Set());
-  }, []);
+    setCopyFeedbackById({});
+    if (!initialEntries) {
+      clearConversationEventHistory(conversationId);
+    }
+  }, [conversationId, initialEntries]);
+
+  const handleLogScroll = useCallback(() => {
+    if (!autoScroll || !logRef.current) {
+      return;
+    }
+    if (!isNearBottom(logRef.current)) {
+      setAutoScroll(false);
+    }
+  }, [autoScroll]);
 
   const togglePause = useCallback(() => setPaused((p) => !p), []);
-  const toggleAutoScroll = useCallback(() => setAutoScroll((a) => !a), []);
+  const followStream = useCallback(() => {
+    setAutoScroll(true);
+    endRef.current?.scrollIntoView({ behavior: 'instant' });
+  }, []);
+
+  const holdPosition = useCallback(() => {
+    setAutoScroll(false);
+  }, []);
+  const copyPayload = useCallback((entryId: string, payloadText: string) => {
+    copyTextToClipboard(payloadText)
+      .then(() => {
+        setCopyFeedbackById((prev) => ({ ...prev, [entryId]: 'copied' }));
+      })
+      .catch(() => {
+        setCopyFeedbackById((prev) => ({ ...prev, [entryId]: 'error' }));
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setCopyFeedbackById((prev) => {
+            const current = prev[entryId];
+            if (!current) {
+              return prev;
+            }
+            const next = { ...prev };
+            delete next[entryId];
+            return next;
+          });
+        }, 1400);
+      });
+  }, []);
+  const exportVisibleToYaml = useCallback(() => {
+    try {
+      const { fileName, yaml } = buildVisibleEventsYamlExport(conversationId, visible);
+      const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      setExportFeedback('ok');
+    } catch {
+      setExportFeedback('error');
+    } finally {
+      setTimeout(() => setExportFeedback(null), 1400);
+    }
+  }, [conversationId, visible]);
 
   return (
-    <div data-part="event-viewer" style={{ display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'monospace', fontSize: '12px' }}>
+    <div
+      data-part="event-viewer"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#333',
+      }}
+    >
       {/* Filter bar */}
-      <div data-part="event-viewer-toolbar" style={{
-        display: 'flex', gap: '4px', padding: '4px 8px', borderBottom: '1px solid #333',
-        background: '#1a1a2e', flexWrap: 'wrap', alignItems: 'center',
-      }}>
+      <div
+        data-part="event-viewer-toolbar"
+        style={{
+          display: 'flex',
+          gap: '4px',
+          padding: '4px 8px',
+          borderBottom: '1px solid #ddd',
+          background: '#f8f9fa',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
         {ALL_FAMILIES.map((family) => (
           <button
             key={family}
@@ -113,25 +289,63 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
               fontSize: '11px',
               borderRadius: '3px',
               border: `1px solid ${FAMILY_COLORS[family]}`,
-              background: filters[family] ? FAMILY_COLORS[family] + '30' : 'transparent',
-              color: filters[family] ? FAMILY_COLORS[family] : '#666',
+              background: filters[family] ? FAMILY_COLORS[family] + '18' : 'transparent',
+              color: filters[family] ? FAMILY_COLORS[family] : '#999',
               cursor: 'pointer',
             }}
           >
             {FAMILY_LABELS[family]}
           </button>
         ))}
+        <label style={toggleLabelStyle} title="Hide llm.delta events">
+          <input type="checkbox" checked={hideLlmDelta} onChange={(event) => setHideLlmDelta(event.target.checked)} />
+          hide llm.delta
+        </label>
+        <label style={toggleLabelStyle} title="Hide llm.thinking.delta events">
+          <input
+            type="checkbox"
+            checked={hideThinkingDelta}
+            onChange={(event) => setHideThinkingDelta(event.target.checked)}
+          />
+          hide llm.thinking.delta
+        </label>
         <span style={{ flex: 1 }} />
-        <button onClick={togglePause} style={controlBtnStyle}>
+        <button
+          type="button"
+          onClick={exportVisibleToYaml}
+          style={controlBtnStyle}
+          title="Download currently visible events as YAML"
+        >
+          ⬇ Export YAML
+        </button>
+        {exportFeedback === 'ok' && <span style={copyFeedbackOkStyle}>Exported</span>}
+        {exportFeedback === 'error' && <span style={copyFeedbackErrorStyle}>Export failed</span>}
+        <button type="button" onClick={togglePause} style={controlBtnStyle}>
           {paused ? '▶ Resume' : '⏸ Pause'}
         </button>
-        <button onClick={clearLog} style={controlBtnStyle}>
+        <button type="button" onClick={clearLog} style={controlBtnStyle}>
           🗑 Clear
         </button>
-        <button onClick={toggleAutoScroll} style={controlBtnStyle}>
-          {autoScroll ? '📌 Pinned' : '📌 Free'}
-        </button>
-        <span style={{ color: '#666', fontSize: '10px' }}>
+        {autoScroll ? (
+          <button
+            type="button"
+            onClick={holdPosition}
+            style={controlBtnStyle}
+            title="Stop auto-scrolling and hold current position"
+          >
+            ⏸ Hold
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={followStream}
+            style={controlBtnStyle}
+            title="Resume live tailing (auto-scroll to newest event)"
+          >
+            ▶ Follow Stream
+          </button>
+        )}
+        <span style={{ color: '#888', fontSize: '10px' }}>
           {visible.length}/{entries.length}
         </span>
       </div>
@@ -140,66 +354,85 @@ export function EventViewerWindow({ conversationId, initialEntries }: EventViewe
       <div
         ref={logRef}
         data-part="event-viewer-log"
+        onScroll={handleLogScroll}
         style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}
       >
         {visible.length === 0 && (
-          <div style={{ color: '#555', textAlign: 'center', padding: '24px', fontSize: '13px' }}>
-            {entries.length === 0
-              ? '📡 Waiting for events…'
-              : `All ${entries.length} events are filtered out`}
+          <div style={{ color: '#999', textAlign: 'center', padding: '24px', fontSize: '13px' }}>
+            {entries.length === 0 ? '📡 Waiting for events…' : `All ${entries.length} events are filtered out`}
           </div>
         )}
-        {visible.map((entry) => (
-          <div
-            key={entry.id}
-            data-part="event-viewer-entry"
-            data-family={entry.family}
-            style={{ borderBottom: '1px solid #222' }}
-          >
+        {visible.map((entry) => {
+          const payloadYaml = toYaml(entry.rawPayload as Record<string, unknown>);
+          const copyFeedback = copyFeedbackById[entry.id];
+          return (
             <div
-              data-part="event-viewer-entry-header"
-              onClick={() => toggleExpand(entry.id)}
-              style={{
-                display: 'flex', gap: '8px', padding: '3px 8px', cursor: 'pointer',
-                alignItems: 'baseline',
-              }}
-              onMouseOver={(e) => { (e.currentTarget as HTMLElement).style.background = '#ffffff08'; }}
-              onMouseOut={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              key={entry.id}
+              data-part="event-viewer-entry"
+              data-family={entry.family}
+              style={{ borderBottom: '1px solid #e5e5e5' }}
             >
-              <span style={{ color: '#555', fontSize: '10px', minWidth: '70px' }}>
-                {formatTimestamp(entry.timestamp)}
-              </span>
-              <span style={{
-                color: FAMILY_COLORS[entry.family as Family] ?? '#6b7280',
-                minWidth: '130px',
-                fontWeight: 600,
-              }}>
-                {entry.eventType}
-              </span>
-              {entry.eventId && (
-                <span style={{ color: '#555', fontSize: '10px' }}>
-                  {entry.eventId.length > 12 ? entry.eventId.slice(0, 12) + '…' : entry.eventId}
+              <div
+                data-part="event-viewer-entry-header"
+                onClick={() => toggleExpand(entry.id)}
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                  alignItems: 'baseline',
+                }}
+                onMouseOver={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = '#0000000a';
+                }}
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }}
+              >
+                <span style={{ color: '#999', fontSize: '10px', minWidth: '70px' }}>
+                  {formatTimestamp(entry.timestamp)}
                 </span>
-              )}
-              <span style={{ color: '#888', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {entry.summary}
-              </span>
-              <span style={{ color: '#444', fontSize: '10px' }}>
-                {expandedIds.has(entry.id) ? '▼' : '▶'}
-              </span>
-            </div>
-            {expandedIds.has(entry.id) && (
-              <div style={{ margin: '0 8px 4px 86px' }}>
-                <SyntaxHighlight
-                  code={toYaml(entry.rawPayload as Record<string, unknown>)}
-                  language="yaml"
-                  variant="dark"
-                  style={{ fontSize: 11, maxHeight: 300, userSelect: 'text' }}
-                />
+                <span
+                  style={{
+                    color: FAMILY_COLORS[entry.family as Family] ?? '#6b7280',
+                    minWidth: '130px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {entry.eventType}
+                </span>
+                {entry.eventId && (
+                  <span style={{ color: '#999', fontSize: '10px' }}>
+                    {entry.eventId.length > 12 ? entry.eventId.slice(0, 12) + '…' : entry.eventId}
+                  </span>
+                )}
+                <span
+                  style={{ color: '#666', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                >
+                  {entry.summary}
+                </span>
+                <span style={{ color: '#bbb', fontSize: '10px' }}>{expandedIds.has(entry.id) ? '▼' : '▶'}</span>
               </div>
-            )}
-          </div>
-        ))}
+              {expandedIds.has(entry.id) && (
+                <div style={{ margin: '0 8px 4px 86px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0 6px' }}>
+                    <button type="button" onClick={() => copyPayload(entry.id, payloadYaml)} style={copyBtnStyle}>
+                      Copy Payload
+                    </button>
+                    {copyFeedback === 'copied' && <span style={copyFeedbackOkStyle}>Copied</span>}
+                    {copyFeedback === 'error' && <span style={copyFeedbackErrorStyle}>Copy failed</span>}
+                  </div>
+                  <SyntaxHighlight
+                    code={payloadYaml}
+                    language="yaml"
+                    variant="light"
+                    style={{ fontSize: 11, maxHeight: 300, userSelect: 'text' }}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
         <div ref={endRef} />
       </div>
     </div>
@@ -210,10 +443,38 @@ const controlBtnStyle: React.CSSProperties = {
   padding: '2px 8px',
   fontSize: '11px',
   borderRadius: '3px',
-  border: '1px solid #444',
-  background: '#222',
-  color: '#aaa',
+  border: '1px solid #ccc',
+  background: '#f0f0f0',
+  color: '#555',
   cursor: 'pointer',
+};
+
+const toggleLabelStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  color: '#6b7280',
+  fontSize: '10px',
+};
+
+const copyBtnStyle: React.CSSProperties = {
+  padding: '1px 7px',
+  fontSize: '10px',
+  borderRadius: '3px',
+  border: '1px solid #ccc',
+  background: '#f0f0f0',
+  color: '#333',
+  cursor: 'pointer',
+};
+
+const copyFeedbackOkStyle: React.CSSProperties = {
+  color: '#10b981',
+  fontSize: '10px',
+};
+
+const copyFeedbackErrorStyle: React.CSSProperties = {
+  color: '#ef4444',
+  fontSize: '10px',
 };
 
 function formatTimestamp(ts: number): string {

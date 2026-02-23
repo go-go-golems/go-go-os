@@ -19,6 +19,7 @@ import {
   selectSuggestions,
 } from '../state/selectors';
 import {
+  ASSISTANT_SUGGESTIONS_ENTITY_ID,
   DEFAULT_CHAT_SUGGESTIONS,
   readSuggestionsEntityProps,
   STARTER_SUGGESTIONS_ENTITY_ID,
@@ -165,6 +166,12 @@ export function ChatConversationWindow({
         timelineSlice.actions.consumeSuggestions({
           convId,
           entityId: STARTER_SUGGESTIONS_ENTITY_ID,
+        })
+      );
+      dispatch(
+        timelineSlice.actions.consumeSuggestions({
+          convId,
+          entityId: ASSISTANT_SUGGESTIONS_ENTITY_ID,
         })
       );
       try {

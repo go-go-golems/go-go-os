@@ -40,7 +40,7 @@ export function createArtifactProjectionMiddleware() {
   });
 
   listener.startListening({
-    actionCreator: timelineSlice.actions.applySnapshot,
+    matcher: isAnyOf(timelineSlice.actions.applySnapshot, timelineSlice.actions.mergeSnapshot),
     effect: (action: SnapshotPayload, api) => {
       for (const entity of action.payload.entities) {
         projectArtifactFromEntity(api.dispatch, entity);

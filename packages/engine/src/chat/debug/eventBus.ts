@@ -13,6 +13,8 @@ export interface EventLogEntry {
 type Listener = (entry: EventLogEntry) => void;
 
 const busMap = new Map<string, Set<Listener>>();
+const historyMap = new Map<string, EventLogEntry[]>();
+const MAX_EVENT_HISTORY = 1000;
 let seqCounter = 0;
 
 function nextSeq() {
@@ -59,9 +61,6 @@ function summarize(type: string, data: Record<string, unknown>): string {
 }
 
 export function emitConversationEvent(convId: string, envelope: SemEnvelope): void {
-  const listeners = busMap.get(convId);
-  if (!listeners || listeners.size === 0) return;
-
   const type = envelope.event?.type ?? 'unknown';
   const eventId = envelope.event?.id ?? '';
   const data = envelope.event?.data;
@@ -80,6 +79,16 @@ export function emitConversationEvent(convId: string, envelope: SemEnvelope): vo
     rawPayload: envelope,
   };
 
+  const history = historyMap.get(convId) ?? [];
+  history.push(entry);
+  if (history.length > MAX_EVENT_HISTORY) {
+    history.splice(0, history.length - MAX_EVENT_HISTORY);
+  }
+  historyMap.set(convId, history);
+
+  const listeners = busMap.get(convId);
+  if (!listeners || listeners.size === 0) return;
+
   for (const listener of listeners) {
     listener(entry);
   }
@@ -97,4 +106,12 @@ export function subscribeConversationEvents(convId: string, callback: Listener):
       busMap.delete(convId);
     }
   };
+}
+
+export function getConversationEvents(convId: string): EventLogEntry[] {
+  return [...(historyMap.get(convId) ?? [])];
+}
+
+export function clearConversationEventHistory(convId: string): void {
+  historyMap.delete(convId);
 }

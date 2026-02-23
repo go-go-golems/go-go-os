@@ -64,6 +64,37 @@ describe('timelineEntityFromProto', () => {
     );
   });
 
+  it('remaps hypercard.widget.v1 error payloads into hypercard_widget error state', () => {
+    const mapped = timelineEntityFromProto(
+      {
+        id: 'tool-widget-err-1:result',
+        kind: 'hypercard.widget.v1',
+        createdAtMs: 410,
+        props: {
+          toolCallId: 'tool-widget-err-1',
+          error: 'yaml: unmarshal errors: mapping key artifact already defined',
+          result: {
+            itemId: 'widget-error',
+            error: 'yaml: unmarshal errors: mapping key artifact already defined',
+          },
+        },
+      } as any,
+      12
+    );
+
+    expect(mapped).toEqual(
+      expect.objectContaining({
+        id: 'widget:widget-error',
+        kind: 'hypercard_widget',
+        props: expect.objectContaining({
+          status: 'error',
+          detail: 'yaml: unmarshal errors: mapping key artifact already defined',
+          itemId: 'widget-error',
+        }),
+      })
+    );
+  });
+
   it('remaps first-class hypercard.card.v2 timeline kind and surfaces runtime card fields', () => {
     const mapped = timelineEntityFromProto(
       {

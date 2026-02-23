@@ -91,4 +91,29 @@ describe('artifactProjectionMiddleware', () => {
     expect(artifact.injectionStatus).toBe('pending');
     expect(hasRuntimeCard('runtime-low-stock')).toBe(true);
   });
+
+  it('projects artifacts from mergeSnapshot entities', async () => {
+    const store = createStore();
+    const entities: TimelineEntity[] = [
+      {
+        id: 'widget:inventory-status',
+        kind: 'hypercard_widget',
+        createdAt: 3,
+        props: {
+          title: 'Current Inventory Status',
+          template: 'report',
+          artifactId: 'inventory-status-current',
+        },
+      },
+    ];
+
+    store.dispatch(timelineSlice.actions.mergeSnapshot({ convId: 'conv-2', entities }));
+    await flushListeners();
+
+    const artifact = store.getState().hypercardArtifacts.byId['inventory-status-current'];
+    expect(artifact).toBeDefined();
+    expect(artifact.title).toBe('Current Inventory Status');
+    expect(artifact.template).toBe('report');
+    expect(artifact.source).toBe('widget');
+  });
 });

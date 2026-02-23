@@ -109,6 +109,8 @@ function remapHypercardEntity(
     stringField(resultRecord ?? {}, 'widgetType') ??
     stringField(resultRecord ?? {}, 'type') ??
     stringField(resultRecord ?? {}, 'template');
+  const errorDetail = stringField(props, 'error') ?? stringField(resultRecord ?? {}, 'error');
+  const hasError = typeof errorDetail === 'string' && errorDetail.trim().length > 0;
 
   if (kind === 'hypercard.widget.v1') {
     return {
@@ -120,9 +122,9 @@ function remapHypercardEntity(
         itemId,
         artifactId,
         template,
-        status: 'success',
+        status: hasError ? 'error' : 'success',
         title: stringField(resultRecord ?? {}, 'title') ?? 'Widget',
-        detail: 'ready',
+        detail: hasError ? errorDetail : 'ready',
       },
     };
   }
@@ -140,9 +142,9 @@ function remapHypercardEntity(
       template,
       runtimeCardId,
       runtimeCardCode,
-      status: 'success',
+      status: hasError ? 'error' : 'success',
       title: stringField(resultRecord ?? {}, 'title') ?? 'Card',
-      detail: 'ready',
+      detail: hasError ? errorDetail : 'ready',
     },
   };
 }

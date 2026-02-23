@@ -1,4 +1,4 @@
-import { chatSessionReducer, createAppStore, timelineReducer } from '@hypercard/engine';
+import { chatProfilesReducer, chatSessionReducer, createAppStore, timelineReducer } from '@hypercard/engine';
 import { confirmRuntimeReducer } from '@hypercard/confirm-runtime';
 import { inventoryReducer } from '../features/inventory/inventorySlice';
 import { salesReducer } from '../features/sales/salesSlice';
@@ -10,6 +10,7 @@ export const { store, createStore: createInventoryStore } = createAppStore(
     timeline: timelineReducer,
     chatSession: chatSessionReducer,
     confirmRuntime: confirmRuntimeReducer,
+    chatProfiles: chatProfilesReducer,
   },
   {
     enableReduxDiagnostics: import.meta.env.DEV,

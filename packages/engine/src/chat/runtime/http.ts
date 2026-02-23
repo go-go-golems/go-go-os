@@ -1,4 +1,5 @@
 import { stripTrailingWhitespace } from '../sem/semHelpers';
+import type { ChatProfileSelection } from './profileTypes';
 
 function resolveBasePrefix(basePrefix?: string): string {
   return typeof basePrefix === 'string' ? basePrefix.replace(/\/$/, '') : '';
@@ -25,22 +26,48 @@ export class ChatHttpError extends Error {
   }
 }
 
+export interface SubmitPromptOptions {
+  fetchImpl?: typeof fetch;
+  profileSelection?: ChatProfileSelection;
+}
+
+function applyProfileSelection(
+  payload: Record<string, unknown>,
+  profileSelection?: ChatProfileSelection
+) {
+  if (!profileSelection) {
+    return;
+  }
+  const profile = String(profileSelection.profile ?? '').trim();
+  const registry = String(profileSelection.registry ?? '').trim();
+  if (profile.length > 0) {
+    payload.profile = profile;
+  }
+  if (registry.length > 0) {
+    payload.registry = registry;
+  }
+}
+
 export async function submitPrompt(
   prompt: string,
   convId: string,
   basePrefix = '',
-  fetchImpl: typeof fetch = fetch
+  options: SubmitPromptOptions | typeof fetch = fetch
 ): Promise<void> {
+  const fetchImpl = typeof options === 'function' ? options : (options.fetchImpl ?? fetch);
+  const profileSelection = typeof options === 'function' ? undefined : options.profileSelection;
   const url = `${resolveBasePrefix(basePrefix)}/chat`;
+  const payload: Record<string, unknown> = {
+    prompt,
+    conv_id: convId,
+  };
+  applyProfileSelection(payload, profileSelection);
   const response = await fetchImpl(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      prompt,
-      conv_id: convId,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {

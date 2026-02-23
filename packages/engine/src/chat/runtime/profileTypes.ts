@@ -1,0 +1,29 @@
+export interface ChatProfileSelection {
+  profile?: string;
+  registry?: string;
+}
+
+export interface ChatProfileListItem {
+  slug: string;
+  display_name?: string;
+  description?: string;
+  default_prompt?: string;
+  is_default?: boolean;
+  version?: number;
+}
+
+export interface ChatProfileDocument {
+  registry: string;
+  slug: string;
+  display_name?: string;
+  description?: string;
+  runtime?: Record<string, unknown>;
+  policy?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  is_default: boolean;
+}
+
+export interface ChatCurrentProfilePayload {
+  slug: string;
+  profile?: string;
+}

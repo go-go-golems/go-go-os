@@ -237,6 +237,8 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
     <ChatConversationWindow
       convId={convId}
       title="Inventory Chat"
+      enableProfileSelector
+      profileRegistry="default"
       renderMode={renderMode}
       headerActions={
         <>

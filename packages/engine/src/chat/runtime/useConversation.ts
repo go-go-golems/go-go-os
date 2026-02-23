@@ -4,6 +4,7 @@ import { chatSessionSlice, createChatError } from '../state/chatSessionSlice';
 import {
   type ChatStateSlice,
   selectConnectionStatus,
+  selectCurrentProfileSelection,
   selectIsStreaming,
 } from '../state/selectors';
 import { conversationManager } from './conversationManager';
@@ -25,6 +26,11 @@ export function useConversation(convId: string, basePrefix = ''): UseConversatio
   const isStreaming = useSelector((state: ConversationStoreState) =>
     selectIsStreaming(state, convId)
   );
+  const profileSelection = useSelector((state: ConversationStoreState) =>
+    selectCurrentProfileSelection(state)
+  );
+  const selectedProfile = profileSelection.profile;
+  const selectedRegistry = profileSelection.registry;
 
   useEffect(() => {
     let disposed = false;
@@ -33,6 +39,10 @@ export function useConversation(convId: string, basePrefix = ''): UseConversatio
       .connect({
         convId,
         basePrefix,
+        profileSelection: {
+          profile: selectedProfile,
+          registry: selectedRegistry,
+        },
         dispatch: dispatch as (action: unknown) => unknown,
       })
       .catch((error) => {
@@ -55,12 +65,15 @@ export function useConversation(convId: string, basePrefix = ''): UseConversatio
       disposed = true;
       conversationManager.disconnect(convId);
     };
-  }, [basePrefix, convId, dispatch]);
+  }, [basePrefix, convId, dispatch, selectedProfile, selectedRegistry]);
 
   const send = useCallback(
     async (prompt: string) => {
       try {
-        await conversationManager.send(prompt, convId, basePrefix);
+        await conversationManager.send(prompt, convId, basePrefix, {
+          profile: selectedProfile,
+          registry: selectedRegistry,
+        });
       } catch (error) {
         const mapped =
           error instanceof ChatHttpError
@@ -89,7 +102,7 @@ export function useConversation(convId: string, basePrefix = ''): UseConversatio
         throw error;
       }
     },
-    [basePrefix, convId, dispatch]
+    [basePrefix, convId, dispatch, selectedProfile, selectedRegistry]
   );
 
   return {

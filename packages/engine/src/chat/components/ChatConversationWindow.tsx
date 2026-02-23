@@ -27,6 +27,9 @@ import {
 import { timelineSlice } from '../state/timelineSlice';
 import { isRecord } from '../utils/guards';
 import { useConversation } from '../runtime/useConversation';
+import { useCurrentProfile } from '../runtime/useCurrentProfile';
+import { useProfiles } from '../runtime/useProfiles';
+import { useSetProfile } from '../runtime/useSetProfile';
 import { StatsFooter } from './StatsFooter';
 
 export interface ChatConversationWindowProps {
@@ -35,6 +38,8 @@ export interface ChatConversationWindowProps {
   title?: string;
   placeholder?: string;
   headerActions?: ReactNode;
+  enableProfileSelector?: boolean;
+  profileRegistry?: string;
   renderMode?: RenderMode;
 }
 
@@ -80,10 +85,19 @@ export function ChatConversationWindow({
   title = 'Chat',
   placeholder,
   headerActions,
+  enableProfileSelector = false,
+  profileRegistry,
   renderMode = 'normal',
 }: ChatConversationWindowProps) {
   const dispatch = useDispatch();
   const { send, connectionStatus, isStreaming } = useConversation(convId, basePrefix);
+  const { profiles, loading: profilesLoading, error: profileError } = useProfiles(
+    basePrefix,
+    profileRegistry,
+    { enabled: enableProfileSelector }
+  );
+  const currentProfile = useCurrentProfile();
+  const setProfile = useSetProfile();
   const [awaitingResponseSinceMs, setAwaitingResponseSinceMs] = useState<number | null>(null);
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
@@ -211,6 +225,48 @@ export function ChatConversationWindow({
         ? 'connecting…'
         : connectionStatus;
 
+  const profileSelector = enableProfileSelector ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <label htmlFor={`chat-profile-${convId}`} style={{ fontSize: 11, opacity: 0.8 }}>
+        Profile
+      </label>
+      <select
+        id={`chat-profile-${convId}`}
+        value={currentProfile.profile ?? ''}
+        onChange={(event) => {
+          const nextProfile = event.target.value.trim();
+          setProfile(nextProfile.length > 0 ? nextProfile : null, profileRegistry ?? currentProfile.registry ?? null);
+        }}
+        disabled={profilesLoading}
+        style={{ fontSize: 11, padding: '1px 4px', maxWidth: 180 }}
+      >
+        <option value="">
+          {profilesLoading ? 'Loading…' : 'Default'}
+        </option>
+        {profiles.map((profile) => (
+          <option key={profile.slug} value={profile.slug}>
+            {profile.display_name?.trim() || profile.slug}
+          </option>
+        ))}
+      </select>
+      {profileError ? (
+        <span style={{ fontSize: 10, color: '#b45309' }} title={profileError}>
+          profile error
+        </span>
+      ) : null}
+    </div>
+  ) : null;
+
+  const composedHeaderActions =
+    profileSelector || headerActions
+      ? (
+          <>
+            {profileSelector}
+            {headerActions}
+          </>
+        )
+      : undefined;
+
   return (
     <ChatWindow
       timelineContent={timelineContent}
@@ -224,7 +280,7 @@ export function ChatConversationWindow({
       title={title}
       subtitle={subtitle}
       placeholder={placeholder}
-      headerActions={headerActions}
+      headerActions={composedHeaderActions}
       footer={
         <StatsFooter
           modelName={modelName}

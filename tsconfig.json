@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/engine" },
+    { "path": "packages/confirm-runtime" },
     { "path": "apps/inventory" },
     { "path": "apps/book-tracker-debug" },
     { "path": "apps/todo" },

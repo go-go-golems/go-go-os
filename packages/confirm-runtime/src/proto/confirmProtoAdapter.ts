@@ -15,6 +15,14 @@ function asString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+function normalizeWidgetType(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -51,7 +59,7 @@ function mapScriptView(raw: unknown): ConfirmScriptView | undefined {
     return undefined;
   }
 
-  const widgetType = isWidgetType(view.widgetType) && view.widgetType !== 'script' ? view.widgetType : 'confirm';
+  const widgetType = normalizeWidgetType(view.widgetType) ?? 'confirm';
   const sections = Array.isArray(view.sections)
     ? view.sections
         .map((section, index) => {
@@ -59,15 +67,15 @@ function mapScriptView(raw: unknown): ConfirmScriptView | undefined {
           if (!row) {
             return null;
           }
-          const sectionWidgetType = asString(row.widgetType);
-          const kind: 'display' | 'interactive' = sectionWidgetType === 'display' ? 'display' : 'interactive';
+          const sectionWidgetType = normalizeWidgetType(row.widgetType);
+          const rawKind = normalizeWidgetType(row.kind);
+          const kind: 'display' | 'interactive' =
+            rawKind === 'display' || sectionWidgetType === 'display' ? 'display' : 'interactive';
           return {
             id: `section-${index}`,
             kind,
-            widgetType:
-              sectionWidgetType && isWidgetType(sectionWidgetType) && sectionWidgetType !== 'script'
-                ? sectionWidgetType
-                : undefined,
+            title: asString(row.title),
+            widgetType: sectionWidgetType,
             input: asRecord(row.input) ?? undefined,
           };
         })
@@ -79,6 +87,9 @@ function mapScriptView(raw: unknown): ConfirmScriptView | undefined {
 
   return {
     widgetType,
+    stepId: asString(view.stepId),
+    title: asString(view.title),
+    description: asString(view.description),
     input: asRecord(view.input) ?? {},
     sections,
     allowBack: view.allowBack === true,
@@ -120,12 +131,13 @@ export function mapUIRequestFromProto(raw: unknown): ConfirmRequest | null {
   const rawInput = asRecord(request[inputField]) ?? {};
   const title = asString(rawInput.title);
   const message = asString(rawInput.message);
+  const scriptView = mapScriptView(request.scriptView);
 
   return {
     id: requestId,
     sessionId,
     widgetType,
-    title,
+    title: title ?? scriptView?.title,
     message,
     createdAt: asString(request.createdAt),
     updatedAt: asString(request.updatedAt),
@@ -133,7 +145,7 @@ export function mapUIRequestFromProto(raw: unknown): ConfirmRequest | null {
       title,
       payload: rawInput,
     },
-    scriptView: mapScriptView(request.scriptView),
+    scriptView,
     metadata: asRecord(request.metadata) ?? undefined,
   };
 }
@@ -249,6 +261,37 @@ function mapTableResponse(output: RawRecord): RawRecord {
 }
 
 function mapImageResponse(output: RawRecord): RawRecord {
+  if (typeof output.selectedBool === 'boolean') {
+    return {
+      imageOutput: {
+        selectedBool: output.selectedBool,
+        ...commentField(output),
+      },
+    };
+  }
+
+  if (typeof output.selectedString === 'string') {
+    return {
+      imageOutput: {
+        selectedString: output.selectedString,
+        ...commentField(output),
+      },
+    };
+  }
+
+  const selectedStrings = asRecord(output.selectedStrings);
+  if (selectedStrings) {
+    const values = asStringArray(selectedStrings.values);
+    if (values.length > 0) {
+      return {
+        imageOutput: {
+          selectedStrings: { values },
+          ...commentField(output),
+        },
+      };
+    }
+  }
+
   const selected = asStringArray(output.selectedImageIds);
   if (selected.length > 1) {
     return {

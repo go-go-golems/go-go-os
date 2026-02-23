@@ -41,6 +41,33 @@ describe('confirmProtoAdapter', () => {
     expect(event?.request?.widgetType).toBe('select');
   });
 
+  it('maps script view step metadata and preserves non-core script widget types', () => {
+    const request = mapUIRequestFromProto({
+      id: 'req-script-1',
+      type: 'script',
+      sessionId: 'global',
+      scriptInput: {
+        source: 'module.exports = {}',
+      },
+      scriptView: {
+        widgetType: 'rating',
+        stepId: 'rate-step',
+        title: 'Rate this run',
+        description: 'Provide a score',
+        input: {
+          title: 'How was it?',
+          scale: 5,
+        },
+      },
+    });
+
+    expect(request).not.toBeNull();
+    expect(request?.widgetType).toBe('script');
+    expect(request?.scriptView?.widgetType).toBe('rating');
+    expect(request?.scriptView?.stepId).toBe('rate-step');
+    expect(request?.title).toBe('Rate this run');
+  });
+
   it('encodes confirm response into proto oneof payload', () => {
     const request: ConfirmRequest = {
       id: 'req-3',
@@ -78,6 +105,26 @@ describe('confirmProtoAdapter', () => {
         selectedMulti: {
           values: ['staging', 'prod'],
         },
+      },
+    });
+  });
+
+  it('encodes image confirm response into proto oneof payload', () => {
+    const request: ConfirmRequest = {
+      id: 'req-5',
+      sessionId: 'global',
+      widgetType: 'image',
+      input: { payload: {} },
+    };
+
+    const payload = mapSubmitResponseToProto(request, {
+      output: { selectedBool: true, comment: 'approved' },
+    });
+
+    expect(payload).toEqual({
+      imageOutput: {
+        selectedBool: true,
+        comment: 'approved',
       },
     });
   });

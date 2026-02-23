@@ -6,13 +6,16 @@ export interface ConfirmWidgetInput {
 }
 
 export interface ConfirmScriptView {
-  widgetType: Exclude<ConfirmWidgetType, 'script'>;
+  widgetType: string;
+  stepId?: string;
+  title?: string;
+  description?: string;
   input: Record<string, unknown>;
   sections?: Array<{
     id: string;
     kind: 'display' | 'interactive';
     title?: string;
-    widgetType?: Exclude<ConfirmWidgetType, 'script'>;
+    widgetType?: string;
     input?: Record<string, unknown>;
   }>;
   allowBack?: boolean;

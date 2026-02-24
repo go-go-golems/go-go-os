@@ -1,5 +1,5 @@
 export type ConfirmWidgetType = 'confirm' | 'select' | 'form' | 'upload' | 'table' | 'image' | 'script';
-export type ConfirmRequestStatus = 'pending' | 'completed' | 'expired' | 'unknown';
+export type ConfirmRequestStatus = 'pending' | 'completed' | 'timeout' | 'error' | 'unknown';
 
 export interface ConfirmWidgetInput {
   title?: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveSelectedTableRows } from './ConfirmRequestWindowHost';
+import { buildRequestActionBarKey, resolveSelectedTableRows } from './ConfirmRequestWindowHost';
 
 describe('ConfirmRequestWindowHost table selection helpers', () => {
   it('keeps no-id rows distinct by index when rowKey is not provided', () => {
@@ -20,5 +20,19 @@ describe('ConfirmRequestWindowHost table selection helpers', () => {
 
     const selected = resolveSelectedTableRows(rows, ['srv-2'], 'key');
     expect(selected).toEqual([{ key: 'srv-2', env: 'prod' }]);
+  });
+});
+
+describe('ConfirmRequestWindowHost action bar key helper', () => {
+  it('changes key when request changes', () => {
+    const first = buildRequestActionBarKey('req-1', '', 'confirm', 'response');
+    const second = buildRequestActionBarKey('req-2', '', 'confirm', 'response');
+    expect(first).not.toBe(second);
+  });
+
+  it('changes key when script step changes', () => {
+    const first = buildRequestActionBarKey('req-1', 'confirm', 'rating', 'script');
+    const second = buildRequestActionBarKey('req-1', 'rate', 'rating', 'script');
+    expect(first).not.toBe(second);
   });
 });

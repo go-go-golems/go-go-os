@@ -59,6 +59,21 @@ export function FieldRow({ field, value, onChange, style }: FieldRowProps) {
     );
   }
 
+  if (type === 'boolean') {
+    return (
+      <>
+        {labelEl}
+        <input
+          data-part="field-checkbox"
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => onChange(e.target.checked)}
+          style={style}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       {labelEl}

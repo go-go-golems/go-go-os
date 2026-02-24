@@ -112,6 +112,15 @@ export function resolveSelectedTableRows(
   return rows.filter((row, index) => selected.has(resolveTableRowId(row, index, rowKey)));
 }
 
+export function buildRequestActionBarKey(
+  requestId: string,
+  stepKey: string,
+  widgetType: string,
+  mode: 'response' | 'script',
+): string {
+  return `${requestId}:${mode}:${stepKey || 'root'}:${widgetType}`;
+}
+
 function parseImageItems(payload: Record<string, unknown>): Array<{ id: string; src: string; label?: string; badge?: string }> {
   const images = payload.images;
   if (!Array.isArray(images)) {
@@ -202,9 +211,12 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
   };
 
   const renderWidget = (widgetType: string, payload: Record<string, unknown>, mode: 'response' | 'script') => {
+    const actionBarKey = buildRequestActionBarKey(request.id, mode === 'script' ? scriptStepKey : '', widgetType, mode);
+
     if (widgetType === 'confirm') {
       return (
         <RequestActionBar
+          key={actionBarKey}
           primaryLabel={typeof payload.approveText === 'string' ? payload.approveText : 'Approve'}
           secondaryLabel={typeof payload.rejectText === 'string' ? payload.rejectText : 'Reject'}
           commentEnabled
@@ -237,6 +249,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
             onSelectionChange={setSelectedListIds}
           />
           <RequestActionBar
+            key={actionBarKey}
             primaryLabel="Submit"
             primaryDisabled={selectedListIds.length === 0}
             commentEnabled
@@ -304,6 +317,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
             searchable={payload.searchable !== false}
           />
           <RequestActionBar
+            key={actionBarKey}
             primaryLabel="Submit"
             primaryDisabled={selectedTableRows.length === 0}
             commentEnabled
@@ -345,6 +359,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
           />
           {isConfirmMode ? (
             <RequestActionBar
+              key={actionBarKey}
               primaryLabel={typeof payload.approveText === 'string' ? payload.approveText : 'Approve'}
               secondaryLabel={typeof payload.rejectText === 'string' ? payload.rejectText : 'Reject'}
               commentEnabled
@@ -363,6 +378,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
             />
           ) : (
             <RequestActionBar
+              key={actionBarKey}
               primaryLabel="Submit"
               primaryDisabled={selectedImageIds.length === 0}
               commentEnabled
@@ -412,6 +428,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
             onChange={setSelectedRating}
           />
           <RequestActionBar
+            key={actionBarKey}
             primaryLabel="Submit"
             commentEnabled
             onPrimary={(comment) =>
@@ -456,6 +473,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
             onSelect={setSelectedGridCell}
           />
           <RequestActionBar
+            key={actionBarKey}
             primaryLabel="Submit"
             primaryDisabled={selectedGridCell === null}
             commentEnabled
@@ -493,6 +511,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
             }}
           />
           <RequestActionBar
+            key={actionBarKey}
             primaryLabel="Submit"
             primaryDisabled={selectedUploadFiles.length === 0}
             commentEnabled

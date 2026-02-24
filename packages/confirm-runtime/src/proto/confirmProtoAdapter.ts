@@ -55,8 +55,11 @@ function isWidgetType(value: unknown): value is ConfirmWidgetType {
 }
 
 function mapRequestStatus(value: unknown): ConfirmRequestStatus {
-  if (value === 'pending' || value === 'completed' || value === 'expired') {
+  if (value === 'pending' || value === 'completed' || value === 'timeout' || value === 'error') {
     return value;
+  }
+  if (value === 'expired') {
+    return 'timeout';
   }
   return 'unknown';
 }
@@ -205,6 +208,29 @@ function mapEventType(raw: unknown): ConfirmRealtimeEvent['type'] | null {
   return null;
 }
 
+const OUTPUT_FIELDS = [
+  'confirmOutput',
+  'selectOutput',
+  'formOutput',
+  'uploadOutput',
+  'tableOutput',
+  'imageOutput',
+  'scriptOutput',
+] as const;
+
+function extractOutputPayload(requestRecord: RawRecord | null): RawRecord | undefined {
+  if (!requestRecord) {
+    return undefined;
+  }
+  for (const field of OUTPUT_FIELDS) {
+    const payload = asRecord(requestRecord[field]);
+    if (payload) {
+      return payload;
+    }
+  }
+  return undefined;
+}
+
 export function mapRealtimeEventFromProto(raw: unknown): ConfirmRealtimeEvent | null {
   const event = asRecord(raw);
   if (!event) {
@@ -217,13 +243,14 @@ export function mapRealtimeEventFromProto(raw: unknown): ConfirmRealtimeEvent | 
   }
   const request = mapUIRequestFromProto(event.request);
   const requestRecord = asRecord(event.request);
+  const output = asRecord(event.output) ?? extractOutputPayload(requestRecord);
 
   return {
     type,
     request: request ?? undefined,
     requestId: asString(event.requestId) ?? request?.id,
     completedAt: asString(event.completedAt) ?? asString(requestRecord?.completedAt),
-    output: undefined,
+    output,
   };
 }
 

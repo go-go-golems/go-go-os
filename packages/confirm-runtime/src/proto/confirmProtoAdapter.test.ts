@@ -42,6 +42,65 @@ describe('confirmProtoAdapter', () => {
     expect(event?.request?.widgetType).toBe('select');
   });
 
+  it('maps timeout and error statuses from proto request payloads', () => {
+    const timeout = mapUIRequestFromProto({
+      id: 'req-timeout',
+      type: 'confirm',
+      sessionId: 'global',
+      status: 'timeout',
+      confirmInput: { title: 't', message: 'm' },
+    });
+    const error = mapUIRequestFromProto({
+      id: 'req-error',
+      type: 'confirm',
+      sessionId: 'global',
+      status: 'error',
+      confirmInput: { title: 't', message: 'm' },
+    });
+    const legacyExpired = mapUIRequestFromProto({
+      id: 'req-expired',
+      type: 'confirm',
+      sessionId: 'global',
+      status: 'expired',
+      confirmInput: { title: 't', message: 'm' },
+    });
+
+    expect(timeout?.status).toBe('timeout');
+    expect(error?.status).toBe('error');
+    expect(legacyExpired?.status).toBe('timeout');
+  });
+
+  it('maps completion output payload from request_completed websocket events', () => {
+    const event = mapRealtimeEventFromProto({
+      type: 'request_completed',
+      request: {
+        id: 'req-complete-1',
+        type: 'confirm',
+        sessionId: 'global',
+        status: 'completed',
+        completedAt: '2026-02-24T00:00:00Z',
+        confirmInput: {
+          title: 'Deploy now?',
+          message: 'Release 1.2.3',
+        },
+        confirmOutput: {
+          approved: true,
+          timestamp: '2026-02-24T00:00:00Z',
+          comment: 'ship it',
+        },
+      },
+    });
+
+    expect(event).not.toBeNull();
+    expect(event?.type).toBe('request_completed');
+    expect(event?.requestId).toBe('req-complete-1');
+    expect(event?.output).toEqual({
+      approved: true,
+      timestamp: '2026-02-24T00:00:00Z',
+      comment: 'ship it',
+    });
+  });
+
   it('maps script view step metadata and preserves non-core script widget types', () => {
     const request = mapUIRequestFromProto({
       id: 'req-script-1',

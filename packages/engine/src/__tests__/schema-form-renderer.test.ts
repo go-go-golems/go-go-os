@@ -19,6 +19,7 @@ describe('SchemaFormRenderer helpers', () => {
     expect(fields.find((f) => f.id === 'name')?.required).toBe(true);
     expect(fields.find((f) => f.id === 'qty')?.type).toBe('number');
     expect(fields.find((f) => f.id === 'status')?.type).toBe('select');
+    expect(fields.find((f) => f.id === 'approved')?.type).toBe('boolean');
   });
 
   it('coerces number and boolean values on submit', () => {
@@ -29,5 +30,13 @@ describe('SchemaFormRenderer helpers', () => {
     });
     expect(next.qty).toBe(12);
     expect(next.approved).toBe(true);
+  });
+
+  it('keeps explicit boolean false values as boolean', () => {
+    const next = coerceSchemaValues(schema, {
+      name: 'Alpha',
+      approved: false,
+    });
+    expect(next.approved).toBe(false);
   });
 });

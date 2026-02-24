@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FieldConfig } from '../../types';
 import { FormView } from './FormView';
 
@@ -33,6 +33,9 @@ function inferFieldType(node: JsonSchemaNode): FieldConfig['type'] {
   if (node.type === 'number' || node.type === 'integer') {
     return 'number';
   }
+  if (node.type === 'boolean') {
+    return 'boolean';
+  }
   return 'text';
 }
 
@@ -54,6 +57,8 @@ export function schemaToFieldConfigs(schema: JsonSchemaNode): FieldConfig[] {
           ? String(node.default)
           : fieldType === 'number' && node.default !== undefined
             ? Number(node.default)
+            : fieldType === 'boolean' && node.default !== undefined
+              ? Boolean(node.default)
             : node.default,
       options: fieldType === 'select' ? node.enum?.map((value) => String(value)) : undefined,
     };
@@ -113,6 +118,12 @@ export function SchemaFormRenderer({
 
   const [internalValues, setInternalValues] = useState<Record<string, unknown>>(initialValue);
   const resolvedValue = value ?? internalValues;
+
+  useEffect(() => {
+    if (onValueChange === undefined) {
+      setInternalValues(initialValue);
+    }
+  }, [initialValue, onValueChange]);
 
   const updateValue = (next: Record<string, unknown>) => {
     onValueChange?.(next);

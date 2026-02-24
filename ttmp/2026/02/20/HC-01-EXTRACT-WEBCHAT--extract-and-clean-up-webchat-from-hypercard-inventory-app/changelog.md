@@ -275,3 +275,13 @@ Uploaded HC-01 technical postmortem to reMarkable as PDF: /ai/2026/02/20/HC-post
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/ttmp/2026/02/20/HC-01-EXTRACT-WEBCHAT--extract-and-clean-up-webchat-from-hypercard-inventory-app/design-doc/04-postmortem-webchat-extraction-hard-cutover.md — Source markdown uploaded to reMarkable
 
+
+## 2026-02-24
+
+Ticket closed
+
+
+## 2026-02-24
+
+Ticket closed
+

@@ -1,7 +1,7 @@
 ---
 Title: Code Editor and Syntax Highlighting for Runtime Cards
 Ticket: HC-040-CODE-EDITOR
-Status: active
+Status: complete
 Topics:
     - frontend
     - code-editor
@@ -24,10 +24,12 @@ RelatedFiles:
       Note: Theme CSS for syntax highlight token colors
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-17T07:51:42.911522064-05:00
+LastUpdated: 2026-02-24T10:20:49.088077125-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
+
 
 
 # Code Editor and Syntax Highlighting for Runtime Cards

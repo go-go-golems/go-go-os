@@ -85,3 +85,8 @@ Removed W-E entirely from the windowing codebase to enforce a single runtime mod
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/selectors.ts — Removed W-E selectors
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/features/windowing/index.ts — Removed W-E exports
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/__tests__/windowing.test.ts — Removed W-E test coverage blocks
+
+## 2026-02-24
+
+Ticket closed
+

@@ -1,7 +1,7 @@
 ---
 Title: Prevent timeline reorder on chat window focus
 Ticket: HC-54-CHAT-FOCUS-TIMELINE-ORDER
-Status: active
+Status: complete
 Topics:
     - chat
     - debugging
@@ -13,10 +13,12 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-21T19:49:46.105611713-05:00
+LastUpdated: 2026-02-24T10:20:48.738502508-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
+
 
 # Prevent timeline reorder on chat window focus
 

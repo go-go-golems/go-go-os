@@ -166,3 +166,13 @@ Fixed two post-review pending-response UX defects: blocked sends during pre-firs
 
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/components/widgets/ChatWindow.tsx — Pending state now gates send/input/button behavior
 - /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react/packages/engine/src/chat/components/ChatConversationWindow.tsx — Pending spinner cleared on `connectionStatus === closed`
+
+## 2026-02-24
+
+Ticket closed
+
+
+## 2026-02-24
+
+Ticket closed
+

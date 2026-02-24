@@ -27,6 +27,7 @@ export function createConfirmRuntime(options: CreateConfirmRuntimeOptions) {
 
   const wsManager = new ConfirmWsManager({
     wsUrl: toWsUrl(baseUrl, sessionId),
+    reconnectPolicy: options.host.resolveWsReconnectPolicy?.(),
     onOpen: () => options.dispatch(setConnectionState(true)),
     onClose: () => options.dispatch(setConnectionState(false)),
     onError: (error) => {

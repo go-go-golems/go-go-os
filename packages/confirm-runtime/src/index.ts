@@ -3,6 +3,7 @@ export * from './api/confirmApiClient';
 export * from './ws/confirmWsManager';
 export * from './host/types';
 export * from './runtime/createConfirmRuntime';
+export * from './runtime/reconcileSubmitConflict409';
 export * from './state/confirmRuntimeSlice';
 export * from './state/selectors';
 export * from './components/ConfirmRequestWindowHost';

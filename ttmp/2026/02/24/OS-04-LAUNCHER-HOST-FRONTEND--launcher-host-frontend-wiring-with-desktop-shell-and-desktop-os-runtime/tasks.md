@@ -18,7 +18,7 @@
 - [x] `OS04-14` Add negative test for registry collision boot failure.
 - [x] `OS04-15` Add interaction test: click icon opens corresponding app window.
 - [x] `OS04-16` Add test/assertion that host remains orchestration-only (no app-specific business logic).
-- [ ] `OS04-17` Validate desktop and mobile layout behavior for shell + window surfaces.
+- [x] `OS04-17` Validate desktop and mobile layout behavior for shell + window surfaces.
 - [x] `OS04-18` Run `pnpm --filter @hypercard/os-launcher test` and `build` and capture results in changelog.
 - [ ] `OS04-19` Run full frontend smoke (`npm run lint`, `npm run test`) before handoff.
 - [x] `OS04-20` Run `docmgr doctor --ticket OS-04-LAUNCHER-HOST-FRONTEND --stale-after 30`.

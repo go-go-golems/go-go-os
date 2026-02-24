@@ -43,3 +43,13 @@ Ran root frontend smoke: pnpm run test passed; pnpm run lint failed due pre-exis
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/reference/01-diary.md — Validation timeline and blocker evidence
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/tasks.md — Task blocker note for OS04-19
 
+
+## 2026-02-24
+
+Completed OS04-17 by adding jsdom-based desktop/mobile shell surface tests and app-local vitest config (commit 7ad5089).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/__tests__/launcherLayout.test.tsx — Viewport validation tests
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/vitest.config.ts — dist exclusion for stable test runs
+

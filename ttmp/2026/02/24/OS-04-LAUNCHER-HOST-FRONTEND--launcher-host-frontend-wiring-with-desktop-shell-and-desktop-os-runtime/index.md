@@ -18,10 +18,14 @@ RelatedFiles:
       Note: Launcher host composition using desktop-os runtime
     - Path: apps/os-launcher/src/__tests__/launcherHost.test.tsx
       Note: Host routing and fallback tests
+    - Path: apps/os-launcher/src/__tests__/launcherLayout.test.tsx
+      Note: Desktop/mobile layout validation for launcher shell surfaces
     - Path: apps/os-launcher/src/app/modules.tsx
       Note: Launchable module inventory used by host
     - Path: apps/os-launcher/src/app/store.ts
       Note: Single-store launcher host boot
+    - Path: apps/os-launcher/vitest.config.ts
+      Note: Ensures tests exclude dist artifacts
     - Path: packages/desktop-os
       Note: Runtime APIs consumed by launcher host
     - Path: packages/engine
@@ -32,6 +36,7 @@ LastUpdated: 2026-02-24T14:00:26.923972659-05:00
 WhatFor: Use this ticket to implement the actual launcher UI host that consumes desktop-os APIs and replaces app-by-app boot assumptions.
 WhenToUse: Use when wiring launcher shell, icon surfaces, window lifecycle orchestration, and host-level providers.
 ---
+
 
 
 

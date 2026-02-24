@@ -16,6 +16,10 @@ RelatedFiles:
       Note: Diary step references host runtime wiring
     - Path: apps/os-launcher/src/__tests__/launcherHost.test.tsx
       Note: Diary step references host behavior tests
+    - Path: apps/os-launcher/src/__tests__/launcherLayout.test.tsx
+      Note: Diary Step 4 layout validation details
+    - Path: apps/os-launcher/vitest.config.ts
+      Note: Diary Step 4 test discovery fix
     - Path: ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/design-doc/01-os-04-implementation-plan.md
       Note: Planned implementation sequence tracked by diary
     - Path: ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/tasks.md
@@ -26,6 +30,7 @@ LastUpdated: 2026-02-24T14:20:12.442404456-05:00
 WhatFor: Capture execution progress, tradeoffs, and validation evidence for OS-04.
 WhenToUse: Use while implementing or reviewing OS-04 host wiring changes.
 ---
+
 
 
 
@@ -265,3 +270,74 @@ I kept `OS04-19` open and documented the blocker explicitly instead of marking t
 
 - Root test command path:
   - `storybook:check` -> engine tests -> desktop-os tests -> os-launcher tests.
+
+## Step 4: Add explicit desktop/mobile layout validation tests
+
+I implemented `OS04-17` by adding jsdom-based layout tests that render the launcher host at desktop and mobile viewport widths and assert shell/window surface presence. This gives us a repeatable regression check for basic responsive shell rendering.
+
+I also added a local vitest config for `apps/os-launcher` to avoid accidental execution of compiled `dist/**` tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue OS-04 implementation while maintaining diaries and commit cadence.
+
+**Inferred user intent:** Keep progress moving toward OS-04 closure with concrete validation gates.
+
+**Commit (code):** `7ad5089` — "test(os-launcher): add desktop/mobile shell layout validation in jsdom"
+
+### What I did
+
+- Added `apps/os-launcher/src/__tests__/launcherLayout.test.tsx` with two tests:
+  - desktop viewport (`1366px`) shell + window surface assertion
+  - mobile viewport (`390px`) shell + window surface assertion
+- Added `apps/os-launcher/vitest.config.ts` to constrain test discovery to `src/**/*.test.*` and exclude `dist/**`.
+- Updated `apps/os-launcher/tsconfig.json` to exclude test files from build compilation.
+- Added `jsdom` dev dependency in `apps/os-launcher/package.json`.
+
+### Why
+
+- Needed a deterministic check for launcher shell rendering behavior across viewport classes.
+- Needed stable vitest behavior after build artifacts are generated.
+
+### What worked
+
+- `pnpm --filter @hypercard/os-launcher test` passes with layout tests.
+- `pnpm --filter @hypercard/os-launcher build` passes after tsconfig test exclusions.
+
+### What didn't work
+
+- Initial layout test attempts failed because `vitest` picked up `dist/**` compiled tests and because React render flushing in jsdom needed explicit `act` handling.
+- Fixed by adding `vitest.config.ts` exclusions and wrapping render/unmount paths with `act`.
+
+### What I learned
+
+- Without explicit vitest config, app-level test discovery can regress after running builds.
+
+### What was tricky to build
+
+- Managing React 19 + jsdom rendering lifecycle with windowing components that trigger multiple selector reads/warnings.
+- Approach: keep assertions narrow (shell/window presence), configure environment strictly, and treat warnings as non-fatal unless they indicate correctness issues.
+
+### What warrants a second pair of eyes
+
+- Whether to suppress/react-redux selector warning noise in test mode or leave visible as early signal.
+
+### What should be done in the future
+
+- Close remaining OS-04 gap: resolve `OS04-19` lint-baseline blocker policy.
+
+### Code review instructions
+
+- Review:
+  - `apps/os-launcher/src/__tests__/launcherLayout.test.tsx`
+  - `apps/os-launcher/vitest.config.ts`
+  - `apps/os-launcher/tsconfig.json`
+- Validate:
+  - `pnpm --filter @hypercard/os-launcher test`
+  - `pnpm --filter @hypercard/os-launcher build`
+
+### Technical details
+
+- Layout test pre-opens an app window via `openWindow(payload)` so both desktop shell and window surfaces are asserted.

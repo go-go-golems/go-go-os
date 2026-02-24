@@ -87,6 +87,13 @@ Rejected because it disconnects module wiring from app ownership.
 - Audit each app entrypoint and identify reusable root component.
 - Create a migration table: old boot files, new module files, removable files.
 
+| App ID | Current standalone boot entrypoint | New launcher module file | Status |
+| --- | --- | --- | --- |
+| `inventory` | `apps/inventory/src/main.tsx` + `apps/inventory/src/App.tsx` | `apps/inventory/src/launcher/module.tsx` | Converted |
+| `todo` | `apps/todo/src/main.tsx` + `apps/todo/src/App.tsx` | `apps/todo/src/launcher/module.tsx` | Converted |
+| `crm` | `apps/crm/src/main.tsx` + `apps/crm/src/App.tsx` | `apps/crm/src/launcher/module.tsx` | Converted |
+| `book-tracker-debug` | `apps/book-tracker-debug/src/main.tsx` + `apps/book-tracker-debug/src/App.tsx` | `apps/book-tracker-debug/src/launcher/module.tsx` | Converted |
+
 Exit criteria:
 
 - All four apps have explicit conversion targets.

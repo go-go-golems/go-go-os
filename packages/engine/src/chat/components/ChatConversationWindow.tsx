@@ -224,6 +224,12 @@ export function ChatConversationWindow({
       : connectionStatus === 'connecting'
         ? 'connecting…'
         : connectionStatus;
+  const defaultProfileSlug = profiles.find((profile) => profile.is_default)?.slug ?? '';
+  const availableProfileSlugs = new Set(profiles.map((profile) => profile.slug));
+  const selectedProfileValue =
+    currentProfile.profile && availableProfileSlugs.has(currentProfile.profile)
+      ? currentProfile.profile
+      : defaultProfileSlug;
 
   const profileSelector = enableProfileSelector ? (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -232,7 +238,7 @@ export function ChatConversationWindow({
       </label>
       <select
         id={`chat-profile-${convId}`}
-        value={currentProfile.profile ?? ''}
+        value={selectedProfileValue}
         onChange={(event) => {
           const nextProfile = event.target.value.trim();
           const resolvedRegistry = profileRegistry ?? currentProfile.registry ?? null;
@@ -240,18 +246,17 @@ export function ChatConversationWindow({
             setProfile(nextProfile, resolvedRegistry);
             return;
           }
-          const defaultProfile = profiles.find((profile) => profile.is_default)?.slug ?? null;
+          const defaultProfile = defaultProfileSlug || null;
           setProfile(defaultProfile, resolvedRegistry);
         }}
         disabled={profilesLoading}
         style={{ fontSize: 11, padding: '1px 4px', maxWidth: 180 }}
       >
-        <option value="">
-          {profilesLoading ? 'Loading…' : 'Default'}
-        </option>
+        {profilesLoading ? <option value="">Loading…</option> : null}
+        {!profilesLoading && profiles.length === 0 ? <option value="">No profiles</option> : null}
         {profiles.map((profile) => (
           <option key={profile.slug} value={profile.slug}>
-            {profile.display_name?.trim() || profile.slug}
+            {(profile.display_name?.trim() || profile.slug) + (profile.is_default ? ' (default)' : '')}
           </option>
         ))}
       </select>

@@ -1,4 +1,10 @@
-import { buildLauncherContributions, createRenderAppWindow } from '@hypercard/desktop-os';
+import {
+  buildLauncherContributions,
+  createAppRegistry,
+  createRenderAppWindow,
+  formatAppKey,
+  type LaunchableAppModule,
+} from '@hypercard/desktop-os';
 import { type DesktopCommandContext, routeContributionCommand } from '@hypercard/engine/desktop-react';
 import { describe, expect, it, vi } from 'vitest';
 import { launcherRegistry } from '../app/registry';
@@ -47,5 +53,45 @@ describe('launcher host wiring', () => {
 
     expect(render('bad-key', 'window:1')).toBe('unknown:bad-key');
     expect(render('missing-app:instance', 'window:2')).toBe('unknown:missing-app:instance');
+  });
+
+  it('renders module window content for a valid app key', () => {
+    const render = createRenderAppWindow({
+      registry: launcherRegistry,
+      hostContext: {
+        dispatch: () => undefined,
+        getState: () => ({}),
+      },
+    });
+
+    const content = render(formatAppKey('inventory', 'test-instance'), 'window:test');
+    expect(content).not.toBeNull();
+  });
+
+  it('fails registry creation when module ids collide', () => {
+    const duplicateA: LaunchableAppModule = {
+      manifest: {
+        id: 'duplicate',
+        name: 'Duplicate A',
+        icon: '📦',
+        launch: { mode: 'window' },
+      },
+      buildLaunchWindow: () => ({
+        id: 'window:dup:a',
+        title: 'Duplicate A',
+        bounds: { x: 0, y: 0, w: 300, h: 240 },
+        content: { kind: 'app', appKey: 'duplicate:a' },
+      }),
+      renderWindow: () => null,
+    };
+    const duplicateB: LaunchableAppModule = {
+      ...duplicateA,
+      manifest: {
+        ...duplicateA.manifest,
+        name: 'Duplicate B',
+      },
+    };
+
+    expect(() => createAppRegistry([duplicateA, duplicateB])).toThrow(/Duplicate app manifest id/);
   });
 });

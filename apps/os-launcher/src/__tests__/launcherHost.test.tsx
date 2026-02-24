@@ -5,9 +5,11 @@ import {
   createRenderAppWindow,
   formatAppKey,
   type LaunchableAppModule,
+  parseAppKey,
 } from '@hypercard/desktop-os';
 import { type DesktopCommandContext, routeContributionCommand } from '@hypercard/engine/desktop-react';
 import { describe, expect, it, vi } from 'vitest';
+import { launcherModules } from '../app/modules';
 import { launcherRegistry } from '../app/registry';
 
 function commandContext(): DesktopCommandContext {
@@ -20,26 +22,35 @@ function commandContext(): DesktopCommandContext {
   };
 }
 
+function createHostContext() {
+  return {
+    dispatch: () => undefined,
+    getState: () => ({}),
+    openWindow: vi.fn(),
+    closeWindow: () => undefined,
+    resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+    resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+  };
+}
+
 describe('launcher host wiring', () => {
-  it('routes icon open command to module launch window creation', () => {
-    const openWindow = vi.fn();
-    const hostContext = {
-      dispatch: () => undefined,
-      getState: () => ({}),
-      openWindow,
-      closeWindow: () => undefined,
-      resolveApiBase: (appId: string) => `/api/apps/${appId}`,
-      resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
-    };
+  it('routes icon open command to module launch window creation for every app', () => {
+    const hostContext = createHostContext();
 
     const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
-    const handled = routeContributionCommand('icon.open.inventory', handlers, commandContext());
+    const appIds = ['inventory', 'todo', 'crm', 'book-tracker-debug'];
 
-    expect(handled).toBe(true);
-    expect(openWindow).toHaveBeenCalledTimes(1);
-    const [payload] = openWindow.mock.calls[0] as [{ content: { appKey: string } }];
-    expect(payload.content.appKey).toMatch(/^inventory:/);
+    for (const appId of appIds) {
+      const handled = routeContributionCommand(`icon.open.${appId}`, handlers, commandContext());
+      expect(handled).toBe(true);
+    }
+
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(appIds.length);
+    for (const [index, appId] of appIds.entries()) {
+      const [payload] = hostContext.openWindow.mock.calls[index] as [{ content: { appKey: string } }];
+      expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
+    }
   });
 
   it('renders unknown-app fallback when registry lookup fails', () => {
@@ -94,6 +105,41 @@ describe('launcher host wiring', () => {
     };
 
     expect(() => createAppRegistry([duplicateA, duplicateB])).toThrow(/Duplicate app manifest id/);
+  });
+
+  it('keeps module list on app-owned launcher modules only', () => {
+    const source = readFileSync(new URL('../app/modules.tsx', import.meta.url), 'utf8');
+    expect(source).not.toContain('createPlaceholderModule');
+    expect(source).not.toContain('/main');
+    expect(source).not.toContain('/App');
+  });
+
+  it('builds valid launch window payloads and render content for every module', () => {
+    for (const module of launcherModules) {
+      const ctx = createHostContext();
+      const payload = module.buildLaunchWindow(ctx, 'icon');
+      const appKey = payload.content.kind === 'app' ? payload.content.appKey : '';
+      const parsed = parseAppKey(appKey);
+
+      expect(payload.content.kind).toBe('app');
+      expect(parsed).not.toBeNull();
+      expect(parsed?.appId).toBe(module.manifest.id);
+      expect(payload.id).toContain(module.manifest.id);
+
+      const rendered = module.renderWindow({
+        appId: module.manifest.id,
+        appKey,
+        instanceId: parsed?.instanceId ?? 'missing',
+        windowId: payload.id,
+        ctx: {
+          dispatch: () => undefined,
+          getState: () => ({}),
+          moduleId: module.manifest.id,
+          stateKey: module.state?.stateKey,
+        },
+      });
+      expect(rendered).not.toBeNull();
+    }
   });
 
   it('keeps host app orchestration-only (no app-specific business imports)', () => {

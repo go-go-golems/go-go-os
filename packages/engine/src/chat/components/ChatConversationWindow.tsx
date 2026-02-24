@@ -97,7 +97,7 @@ export function ChatConversationWindow({
     { enabled: enableProfileSelector }
   );
   const currentProfile = useCurrentProfile();
-  const setProfile = useSetProfile();
+  const setProfile = useSetProfile(basePrefix);
   const [awaitingResponseSinceMs, setAwaitingResponseSinceMs] = useState<number | null>(null);
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
@@ -243,11 +243,11 @@ export function ChatConversationWindow({
           const nextProfile = event.target.value.trim();
           const resolvedRegistry = profileRegistry ?? currentProfile.registry ?? null;
           if (nextProfile.length > 0) {
-            setProfile(nextProfile, resolvedRegistry);
+            void setProfile(nextProfile, resolvedRegistry);
             return;
           }
           const defaultProfile = defaultProfileSlug || null;
-          setProfile(defaultProfile, resolvedRegistry);
+          void setProfile(defaultProfile, resolvedRegistry);
         }}
         disabled={profilesLoading}
         style={{ fontSize: 11, padding: '1px 4px', maxWidth: 180 }}

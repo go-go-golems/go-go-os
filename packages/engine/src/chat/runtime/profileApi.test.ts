@@ -3,6 +3,7 @@ import {
   ChatProfileApiError,
   createProfile,
   listProfiles,
+  setCurrentProfile,
   setDefaultProfile,
   updateProfile,
 } from './profileApi';
@@ -150,5 +151,28 @@ describe('profileApi', () => {
     await expect(
       listProfiles('default', { basePrefix: '/chat', fetchImpl: fetchImpl as unknown as typeof fetch })
     ).rejects.toBeInstanceOf(ChatProfileApiError);
+  });
+
+  it('sets current profile and decodes server-selected slug', async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ slug: 'analyst' }),
+      text: async () => '',
+    } as Response));
+
+    const payload = await setCurrentProfile('agent', {
+      basePrefix: '/chat',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(payload).toEqual({ slug: 'analyst' });
+    expect(fetchImpl).toHaveBeenCalledWith('/chat/api/chat/profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ slug: 'agent' }),
+    });
   });
 });

@@ -54,3 +54,12 @@ Validation pass recorded: `pnpm --filter @hypercard/os-launcher build`, `pnpm --
 
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/package.json — Validated build/test scripts
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/package.json — Recorded repository-wide test/lint command outcomes
+
+## 2026-02-24
+
+Updated README with desktop-os launcher module authoring pattern and host aggregation example (OS05-18).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/README.md — Documented module-based extension model for launcher-first architecture
+

@@ -19,7 +19,7 @@
 - [x] `OS05-15` Add integration test that each app icon opens a valid window.
 - [x] `OS05-16` Add regression assertion that no legacy standalone entrypoint is referenced by launcher host.
 - [x] `OS05-17` Run `npm run lint test build` and record output in changelog.
-- [ ] `OS05-18` Update docs/README snippets to point to module-based extension pattern.
+- [x] `OS05-18` Update docs/README snippets to point to module-based extension pattern.
 - [x] `OS05-19` Run `docmgr doctor --ticket OS-05-APP-MODULE-HARD-CUTOVER --stale-after 30`.
 
 ## Definition of Done

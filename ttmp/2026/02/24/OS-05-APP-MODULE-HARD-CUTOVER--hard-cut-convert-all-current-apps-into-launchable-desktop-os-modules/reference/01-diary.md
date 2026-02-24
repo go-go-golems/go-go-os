@@ -12,6 +12,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: README.md
+      Note: OS05-18 documentation update for module-based launcher composition
     - Path: apps/book-tracker-debug/src/launcher/module.tsx
       Note: OS-05 book-tracker module implementation
     - Path: apps/crm/src/launcher/module.tsx
@@ -36,6 +38,7 @@ LastUpdated: 2026-02-24T14:20:12.753600202-05:00
 WhatFor: Capture migration progress and decisions for converting all apps to LaunchableAppModule implementations.
 WhenToUse: Use while implementing or reviewing OS-05 conversion work.
 ---
+
 
 
 
@@ -272,3 +275,70 @@ I then updated ticket tracking (tasks/changelog/doctor), including explicit note
 
 - Test expansion commit: `625447d`.
 - `pnpm lint` remains a repo-wide known failure baseline and is documented in changelog for OS05-17.
+
+## Step 4: Module authoring documentation updated for OS05-18
+
+I updated the root README to describe the launcher-first module composition pattern so new app modules can be authored consistently without relying on old standalone `DesktopShell` examples as the primary extension path.
+
+This step closes OS05-18 and documents both sides of composition: app-owned module contracts and host-side module aggregation.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue implementation and finish actionable remaining checklist items where feasible, including documentation and ticket hygiene.
+
+**Inferred user intent:** Make the current architecture explicit enough that a developer can continue without hidden context.
+
+**Commit (code):** N/A (documentation/ticket updates in progress)
+
+### What I did
+
+- Updated `README.md` with:
+  - `Launcher Module Pattern (desktop-os)` section
+  - `LaunchableAppModule` authoring example
+  - host aggregation example from `apps/os-launcher`
+  - architecture list updated to include `apps/os-launcher`
+- Checked task `OS05-18` with `docmgr task check`.
+- Added changelog entry tying the README change to ticket progress.
+
+### Why
+
+- OS-05 needs written guidance that reflects hard-cut launcher module composition, not only code diffs.
+
+### What worked
+
+- README now points contributors to the actual module contract and aggregation pattern used by the current host.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Documentation lag was a real risk after hard-cut code landed; adding a focused launcher module section keeps onboarding friction low.
+
+### What was tricky to build
+
+- Keeping examples concise while still showing both app-module ownership and host orchestration boundaries.
+
+### What warrants a second pair of eyes
+
+- Ensure README examples stay aligned if module import paths are later formalized from deep source imports to package subpath exports.
+
+### What should be done in the future
+
+- Complete OS05-12 and OS05-13 (remaining code cleanup tasks) before closing OS-05.
+
+### Code review instructions
+
+- Review:
+  - `README.md`
+  - `ttmp/.../OS-05-.../tasks.md`
+  - `ttmp/.../OS-05-.../changelog.md`
+- Validate:
+  - `docmgr doctor --ticket OS-05-APP-MODULE-HARD-CUTOVER --stale-after 30`
+
+### Technical details
+
+- No runtime behavior change; documentation and ticket bookkeeping only.

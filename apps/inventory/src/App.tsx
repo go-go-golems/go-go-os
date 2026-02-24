@@ -1,23 +1,37 @@
 import {
+  type ConfirmApiClient,
+  type ConfirmRequest,
+  ConfirmRequestWindowHost,
+  type ConfirmRuntimeAnyAction,
+  createConfirmRuntime,
+  reconcileSubmitConflict409,
+  selectActiveConfirmRequestById,
+  selectActiveConfirmRequests,
+  upsertRequest,
+} from '@hypercard/confirm-runtime';
+import {
   ChatConversationWindow,
   CodeEditorWindow,
   EventViewerWindow,
-  TimelineDebugWindow,
   ensureChatModulesRegistered,
   getEditorInitialCode,
   RuntimeCardDebugWindow,
   registerChatRuntimeModule,
   registerHypercardTimelineModule,
+  TimelineDebugWindow,
 } from '@hypercard/engine';
-import { type OpenWindowPayload, openWindow } from '@hypercard/engine/desktop-core';
+import { closeWindow, type OpenWindowPayload, openWindow } from '@hypercard/engine/desktop-core';
 import { type DesktopContribution, DesktopShell } from '@hypercard/engine/desktop-react';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from './app/store';
 import { STACK } from './domain/stack';
 import { ReduxPerfWindow } from './features/debug/ReduxPerfWindow';
 
 const CHAT_APP_KEY = 'inventory-chat';
 const REDUX_PERF_APP_KEY = 'redux-perf-debug';
+const CONFIRM_REQUEST_APP_KEY_PREFIX = 'confirm-request:';
+const CONFIRM_QUEUE_APP_KEY = 'confirm-queue';
 
 registerChatRuntimeModule({
   id: 'chat.hypercard-timeline',
@@ -37,6 +51,20 @@ async function copyTextToClipboard(text: string): Promise<void> {
   throw new Error('clipboard unavailable');
 }
 
+function resolveAppBasePrefix(): string {
+  const baseUrl = import.meta.env.BASE_URL ?? '/';
+  const trimmed = String(baseUrl).replace(/\/$/, '');
+  return trimmed === '' ? '' : trimmed;
+}
+
+function resolveConfirmBaseUrl(): string {
+  const prefix = resolveAppBasePrefix();
+  if (typeof window === 'undefined') {
+    return `${prefix}/confirm`;
+  }
+  return `${window.location.origin}${prefix}/confirm`;
+}
+
 function buildChatWindowPayload(options?: { dedupeKey?: string }): OpenWindowPayload {
   const convId = newConversationId();
   return {
@@ -54,6 +82,39 @@ function buildChatWindowPayload(options?: { dedupeKey?: string }): OpenWindowPay
       appKey: `${CHAT_APP_KEY}:${convId}`,
     },
     dedupeKey: options?.dedupeKey ?? `chat:${convId}`,
+  };
+}
+
+function buildConfirmRequestWindowPayload(requestId: string, title?: string): OpenWindowPayload {
+  return {
+    id: `window:confirm:${requestId}`,
+    title: title && title.trim().length > 0 ? `Confirm: ${title}` : 'Confirm Request',
+    icon: '✅',
+    bounds: {
+      x: 420 + Math.round(Math.random() * 80),
+      y: 70 + Math.round(Math.random() * 50),
+      w: 520,
+      h: 420,
+    },
+    content: {
+      kind: 'app',
+      appKey: `${CONFIRM_REQUEST_APP_KEY_PREFIX}${requestId}`,
+    },
+    dedupeKey: `confirm-request:${requestId}`,
+  };
+}
+
+function buildConfirmQueueWindowPayload(): OpenWindowPayload {
+  return {
+    id: 'window:confirm-queue',
+    title: 'Confirm Queue',
+    icon: '✅',
+    bounds: { x: 260, y: 40, w: 520, h: 400 },
+    content: {
+      kind: 'app',
+      appKey: CONFIRM_QUEUE_APP_KEY,
+    },
+    dedupeKey: CONFIRM_QUEUE_APP_KEY,
   };
 }
 
@@ -182,7 +243,12 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
           <button type="button" data-part="btn" onClick={openEventViewer} style={{ fontSize: 10, padding: '1px 6px' }}>
             🧭 Events
           </button>
-          <button type="button" data-part="btn" onClick={openTimelineDebug} style={{ fontSize: 10, padding: '1px 6px' }}>
+          <button
+            type="button"
+            data-part="btn"
+            onClick={openTimelineDebug}
+            style={{ fontSize: 10, padding: '1px 6px' }}
+          >
             🧱 Timeline
           </button>
           <button
@@ -213,32 +279,193 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
   );
 }
 
+function ConfirmQueueWindow({ onOpenRequest }: { onOpenRequest: (request: ConfirmRequest) => void }) {
+  const requests = useSelector((state: RootState) => selectActiveConfirmRequests(state));
+
+  return (
+    <div data-part="card" style={{ padding: 10, display: 'grid', gap: 8 }}>
+      <div data-part="field-value">Active requests: {requests.length}</div>
+      {requests.length === 0 ? (
+        <div data-part="table-empty">No active requests</div>
+      ) : (
+        <div style={{ display: 'grid', gap: 6 }}>
+          {requests.map((request) => (
+            <div
+              key={request.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr auto',
+                gap: 8,
+                alignItems: 'center',
+                border: '1px solid currentColor',
+                borderRadius: 3,
+                padding: 6,
+              }}
+            >
+              <div>
+                <div data-part="field-label">{request.title ?? request.widgetType}</div>
+                <div data-part="field-value">
+                  {request.widgetType} · {request.id}
+                </div>
+              </div>
+              <button type="button" data-part="btn" onClick={() => onOpenRequest(request)}>
+                Open
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConfirmRequestDesktopWindow({
+  requestId,
+  apiClient,
+}: {
+  requestId: string;
+  apiClient: ConfirmApiClient | null;
+}) {
+  const dispatch = useDispatch();
+  const request = useSelector((state: RootState) => selectActiveConfirmRequestById(state, requestId));
+
+  if (!request) {
+    return <div data-part="table-empty">Request not available (completed or not yet loaded)</div>;
+  }
+  if (!apiClient) {
+    return <div data-part="table-empty">Confirm API unavailable</div>;
+  }
+
+  return (
+    <ConfirmRequestWindowHost
+      request={request}
+      onSubmitResponse={(_id, payload) => {
+        void apiClient
+          .submitResponse(request, payload)
+          .then((updated) => {
+            if (updated) {
+              dispatch(upsertRequest(updated));
+            }
+          })
+          .catch(async (error: unknown) => {
+            const handled = await reconcileSubmitConflict409({
+              requestId: request.id,
+              error,
+              apiClient,
+              dispatch: dispatch as unknown as (action: ConfirmRuntimeAnyAction) => void,
+              closeRequestWindow: (conflictRequestId: string) => {
+                dispatch(closeWindow(`window:confirm:${conflictRequestId}`));
+              },
+            });
+            if (handled) {
+              return;
+            }
+            console.error('confirm submit failed', error);
+          });
+      }}
+      onSubmitScriptEvent={(id, payload) => {
+        void apiClient
+          .submitScriptEvent(id, payload)
+          .then((updated) => {
+            if (updated) {
+              dispatch(upsertRequest(updated));
+            }
+          })
+          .catch(async (error: unknown) => {
+            const handled = await reconcileSubmitConflict409({
+              requestId: id,
+              error,
+              apiClient,
+              dispatch: dispatch as unknown as (action: ConfirmRuntimeAnyAction) => void,
+              closeRequestWindow: (conflictRequestId: string) => {
+                dispatch(closeWindow(`window:confirm:${conflictRequestId}`));
+              },
+            });
+            if (handled) {
+              return;
+            }
+            console.error('confirm script event submit failed', error);
+          });
+      }}
+    />
+  );
+}
+
 export function App() {
-  const renderAppWindow = useCallback((appKey: string): ReactNode => {
-    if (appKey === REDUX_PERF_APP_KEY) {
-      return <ReduxPerfWindow />;
-    }
-    if (appKey.startsWith(`${CHAT_APP_KEY}:`)) {
-      const convId = appKey.slice(CHAT_APP_KEY.length + 1);
-      return <InventoryChatAssistantWindow convId={convId} />;
-    }
-    if (appKey.startsWith('event-viewer:')) {
-      const convId = appKey.slice('event-viewer:'.length);
-      return <EventViewerWindow conversationId={convId} />;
-    }
-    if (appKey.startsWith('timeline-debug:')) {
-      const convId = appKey.slice('timeline-debug:'.length);
-      return <TimelineDebugWindow conversationId={convId} />;
-    }
-    if (appKey === 'runtime-card-debug') {
-      return <RuntimeCardDebugWindow stacks={[STACK]} />;
-    }
-    if (appKey.startsWith('code-editor:')) {
-      const cardId = appKey.slice('code-editor:'.length);
-      return <CodeEditorWindow cardId={cardId} initialCode={getEditorInitialCode(cardId)} />;
-    }
-    return null;
-  }, []);
+  const dispatch = useDispatch();
+  const [confirmApiClient, setConfirmApiClient] = useState<ConfirmApiClient | null>(null);
+
+  useEffect(() => {
+    const runtime = createConfirmRuntime({
+      host: {
+        resolveBaseUrl: resolveConfirmBaseUrl,
+        resolveSessionId: () => 'global',
+        resolveWsReconnectPolicy:
+          () =>
+          ({ attempt }) => ({
+            reconnect: attempt <= 6,
+            delayMs: Math.min(15_000, 500 * 2 ** Math.max(0, attempt - 1)),
+          }),
+        openRequestWindow: ({ requestId, title }) => {
+          dispatch(openWindow(buildConfirmRequestWindowPayload(requestId, title)));
+        },
+        closeRequestWindow: (requestId) => {
+          dispatch(closeWindow(`window:confirm:${requestId}`));
+        },
+        onError: (error) => {
+          // Keep runtime errors visible during integration while leaving UX design to the handoff ticket.
+          console.error('confirm-runtime error', error);
+        },
+      },
+      dispatch: dispatch as unknown as (action: ConfirmRuntimeAnyAction) => void,
+    });
+
+    setConfirmApiClient(runtime.apiClient);
+    runtime.connect();
+    return () => runtime.disconnect();
+  }, [dispatch]);
+
+  const renderAppWindow = useCallback(
+    (appKey: string): ReactNode => {
+      if (appKey === REDUX_PERF_APP_KEY) {
+        return <ReduxPerfWindow />;
+      }
+      if (appKey === CONFIRM_QUEUE_APP_KEY) {
+        return (
+          <ConfirmQueueWindow
+            onOpenRequest={(request) =>
+              dispatch(openWindow(buildConfirmRequestWindowPayload(request.id, request.title)))
+            }
+          />
+        );
+      }
+      if (appKey.startsWith(CONFIRM_REQUEST_APP_KEY_PREFIX)) {
+        const requestId = appKey.slice(CONFIRM_REQUEST_APP_KEY_PREFIX.length);
+        return <ConfirmRequestDesktopWindow requestId={requestId} apiClient={confirmApiClient} />;
+      }
+      if (appKey.startsWith(`${CHAT_APP_KEY}:`)) {
+        const convId = appKey.slice(CHAT_APP_KEY.length + 1);
+        return <InventoryChatAssistantWindow convId={convId} />;
+      }
+      if (appKey.startsWith('event-viewer:')) {
+        const convId = appKey.slice('event-viewer:'.length);
+        return <EventViewerWindow conversationId={convId} />;
+      }
+      if (appKey.startsWith('timeline-debug:')) {
+        const convId = appKey.slice('timeline-debug:'.length);
+        return <TimelineDebugWindow conversationId={convId} />;
+      }
+      if (appKey === 'runtime-card-debug') {
+        return <RuntimeCardDebugWindow stacks={[STACK]} />;
+      }
+      if (appKey.startsWith('code-editor:')) {
+        const cardId = appKey.slice('code-editor:'.length);
+        return <CodeEditorWindow cardId={cardId} initialCode={getEditorInitialCode(cardId)} />;
+      }
+      return null;
+    },
+    [confirmApiClient, dispatch],
+  );
 
   const contributions = useMemo((): DesktopContribution[] => {
     const cardIcons = Object.keys(STACK.cards).map((cardId) => ({
@@ -280,13 +507,19 @@ export function App() {
     return [
       {
         id: 'inventory.desktop',
-        icons: [{ id: 'new-chat', label: 'New Chat', icon: '💬' }, ...debugIcons, ...cardIcons],
+        icons: [
+          { id: 'new-chat', label: 'New Chat', icon: '💬' },
+          { id: 'confirm-queue', label: 'Confirm Queue', icon: '✅' },
+          ...debugIcons,
+          ...cardIcons,
+        ],
         menus: [
           {
             id: 'file',
             label: 'File',
             items: [
               { id: 'new-chat', label: 'New Chat', commandId: 'chat.new', shortcut: 'Ctrl+N' },
+              { id: 'confirm-queue', label: 'Open Confirm Queue', commandId: 'confirm.queue' },
               { id: 'event-viewer', label: 'Open Event Viewer', commandId: 'debug.event-viewer' },
               { id: 'timeline-debug', label: 'Open Timeline Debug', commandId: 'debug.timeline-debug' },
               {
@@ -336,6 +569,15 @@ export function App() {
             matches: (commandId) => commandId === 'chat.new' || commandId === 'icon.open.new-chat',
             run: (_commandId, ctx) => {
               ctx.dispatch(openWindow(buildChatWindowPayload()));
+              return 'handled';
+            },
+          },
+          {
+            id: 'inventory.confirm.queue',
+            priority: 100,
+            matches: (commandId) => commandId === 'confirm.queue' || commandId === 'icon.open.confirm-queue',
+            run: (_commandId, ctx) => {
+              ctx.dispatch(openWindow(buildConfirmQueueWindowPayload()));
               return 'handled';
             },
           },

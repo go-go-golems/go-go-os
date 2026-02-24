@@ -13,7 +13,7 @@ export interface ColumnConfig<T = Record<string, unknown>> {
 }
 
 // ── Field definition (for forms / detail views) ──
-export type FieldType = 'readonly' | 'text' | 'number' | 'select' | 'tags' | 'label';
+export type FieldType = 'readonly' | 'text' | 'number' | 'boolean' | 'select' | 'tags' | 'label';
 
 export interface FieldConfig {
   id: string;

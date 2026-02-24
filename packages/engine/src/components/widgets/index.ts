@@ -15,6 +15,7 @@ export { DropdownMenu, type DropdownMenuProps } from './DropdownMenu';
 export { FieldRow, type FieldRowProps } from './FieldRow';
 export { FilterBar, type FilterBarProps } from './FilterBar';
 export { FormView, type FormViewProps } from './FormView';
+export { SchemaFormRenderer, type SchemaFormRendererProps, type JsonSchemaNode } from './SchemaFormRenderer';
 export {
   HaloTarget,
   type HaloTargetProps,
@@ -22,11 +23,24 @@ export {
   type HaloPosition,
 } from './HaloTarget';
 export { ListBox, type ListBoxProps } from './ListBox';
+export {
+  SelectableList,
+  type SelectableListProps,
+  type SelectableListItem,
+  type SelectableListInputItem,
+  type SelectableListSelectionMode,
+} from './SelectableList';
 export { ListView, type ListViewProps } from './ListView';
 export { MenuGrid, type MenuGridProps } from './MenuGrid';
+export { GridBoard, type GridBoardProps, type GridCell, type GridCellSize, type GridSelection } from './GridBoard';
 export { ProgressBar, type ProgressBarProps } from './ProgressBar';
 export { RadioButton, type RadioButtonProps } from './RadioButton';
+export { RatingPicker, type RatingPickerProps, type RatingStyle } from './RatingPicker';
+export { RequestActionBar, type RequestActionBarProps } from './RequestActionBar';
 export { ReportView, type ReportViewProps } from './ReportView';
+export { FilePickerDropzone, type FilePickerDropzoneProps, type RejectedFile } from './FilePickerDropzone';
+export { ImageChoiceGrid, type ImageChoiceGridProps, type ImageChoiceItem, type ImageChoiceMode } from './ImageChoiceGrid';
+export { SelectableDataTable, type SelectableDataTableProps, type SelectableTableMode } from './SelectableDataTable';
 export { StreamingChatView, type StreamingChatViewProps } from './StreamingChatView';
 export { TabControl, type TabControlProps } from './TabControl';
 export { Toast, type ToastProps } from './Toast';

@@ -11,8 +11,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hypercard/book-tracker-debug": "workspace:*",
+    "@hypercard/crm": "workspace:*",
     "@hypercard/desktop-os": "workspace:*",
     "@hypercard/engine": "workspace:*",
+    "@hypercard/inventory": "workspace:*",
+    "@hypercard/todo": "workspace:*",
     "@reduxjs/toolkit": "^2.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

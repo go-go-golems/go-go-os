@@ -1,7 +1,7 @@
 ---
 Title: launcher host frontend wiring with desktop-shell and desktop-os runtime
 Ticket: OS-04-LAUNCHER-HOST-FRONTEND
-Status: active
+Status: complete
 Topics:
     - go-go-os
     - frontend
@@ -55,7 +55,7 @@ This ticket converts architecture into a running launcher host UI by creating th
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

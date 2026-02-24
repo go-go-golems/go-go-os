@@ -20,7 +20,7 @@
 - [x] `OS04-16` Add test/assertion that host remains orchestration-only (no app-specific business logic).
 - [x] `OS04-17` Validate desktop and mobile layout behavior for shell + window surfaces.
 - [x] `OS04-18` Run `pnpm --filter @hypercard/os-launcher test` and `build` and capture results in changelog.
-- [ ] `OS04-19` Run full frontend smoke (`npm run lint`, `npm run test`) before handoff.
+- [x] `OS04-19` Run full frontend smoke (`pnpm run lint`, `pnpm run test`) before handoff.
 - [x] `OS04-20` Run `docmgr doctor --ticket OS-04-LAUNCHER-HOST-FRONTEND --stale-after 30`.
 
 ## Notes
@@ -29,6 +29,6 @@
 
 ## Definition of Done
 
-- [ ] Launcher host boots with single store and manifest-driven icons.
-- [ ] App windows are opened and rendered only through desktop-os runtime APIs.
-- [ ] Tests cover core host behavior and failure paths.
+- [x] Launcher host boots with single store and manifest-driven icons.
+- [x] App windows are opened and rendered only through desktop-os runtime APIs.
+- [x] Tests cover core host behavior and failure paths.

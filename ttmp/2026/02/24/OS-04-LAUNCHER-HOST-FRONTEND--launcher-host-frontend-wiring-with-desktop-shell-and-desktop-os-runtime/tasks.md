@@ -17,11 +17,15 @@
 - [x] `OS04-13` Add smoke test for launcher boot with valid module set.
 - [x] `OS04-14` Add negative test for registry collision boot failure.
 - [x] `OS04-15` Add interaction test: click icon opens corresponding app window.
-- [ ] `OS04-16` Add test/assertion that host remains orchestration-only (no app-specific business logic).
+- [x] `OS04-16` Add test/assertion that host remains orchestration-only (no app-specific business logic).
 - [ ] `OS04-17` Validate desktop and mobile layout behavior for shell + window surfaces.
 - [x] `OS04-18` Run `pnpm --filter @hypercard/os-launcher test` and `build` and capture results in changelog.
 - [ ] `OS04-19` Run full frontend smoke (`npm run lint`, `npm run test`) before handoff.
-- [ ] `OS04-20` Run `docmgr doctor --ticket OS-04-LAUNCHER-HOST-FRONTEND --stale-after 30`.
+- [x] `OS04-20` Run `docmgr doctor --ticket OS-04-LAUNCHER-HOST-FRONTEND --stale-after 30`.
+
+## Notes
+
+- `OS04-19` is partially blocked: `pnpm run test` passes, but `pnpm run lint` currently fails due pre-existing repository-wide lint diagnostics outside OS-04 scope.
 
 ## Definition of Done
 

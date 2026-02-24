@@ -33,3 +33,13 @@ Implemented OS-04 launcher host baseline in apps/os-launcher with desktop-os reg
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/App.tsx — Host context and render wiring
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx — Command-routing and registry failure tests
 
+
+## 2026-02-24
+
+Ran root frontend smoke: pnpm run test passed; pnpm run lint failed due pre-existing repo-wide diagnostics outside OS-04 scope. Kept OS04-19 open with blocker note.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/reference/01-diary.md — Validation timeline and blocker evidence
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/tasks.md — Task blocker note for OS04-19
+

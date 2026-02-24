@@ -198,3 +198,70 @@ I also added focused tests for command routing and fallback behavior so the host
 
 - Host uses `buildLauncherContributions` and `createRenderAppWindow` from `@hypercard/desktop-os`.
 - Command route tested via `routeContributionCommand('icon.open.inventory', ...)`.
+
+## Step 3: Run full frontend smoke and record baseline blocker
+
+I ran the requested frontend smoke checks from the repository root after the launcher host scaffold landed. Test pipelines pass, but lint fails due many pre-existing diagnostics outside this ticket’s changed files.
+
+I kept `OS04-19` open and documented the blocker explicitly instead of marking the task complete.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue with validation and keep diary/task tracking accurate.
+
+**Inferred user intent:** Ensure quality gates are run and reported honestly, including blockers.
+
+**Commit (code):** N/A (validation/documentation step pending docs commit)
+
+### What I did
+
+- Ran root smoke commands:
+  - `pnpm run lint`
+  - `pnpm run test`
+- Confirmed:
+  - `pnpm run test` passes (`packages/engine`, `packages/desktop-os`, `apps/os-launcher`).
+  - `pnpm run lint` fails with large pre-existing diagnostics across unrelated files.
+- Updated OS-04 task note to mark `OS04-19` as partially blocked.
+
+### Why
+
+- Needed objective baseline for handoff quality gate status.
+
+### What worked
+
+- Test suite validates current launcher host changes without regressions.
+
+### What didn't work
+
+- `pnpm run lint` failed due unrelated repo baseline issues (hundreds of diagnostics in existing files not touched by OS-04).
+
+### What I learned
+
+- Root lint cannot currently be used as a ticket-level completion gate without a cleanup ticket or scoped lint strategy.
+
+### What was tricky to build
+
+- Balancing strict task accountability with a noisy shared baseline; the safest path is explicit blocker tracking, not silent omission.
+
+### What warrants a second pair of eyes
+
+- Whether to open a dedicated lint-baseline cleanup ticket or introduce scoped CI lint gates per touched files/package.
+
+### What should be done in the future
+
+- Decide lint-baseline strategy before closing OS-04.
+- Complete `OS04-17` viewport validation and then revisit close criteria.
+
+### Code review instructions
+
+- Review smoke output notes in OS-04 changelog/tasks.
+- Re-run:
+  - `pnpm run test`
+  - `pnpm run lint` (expect current baseline failure)
+
+### Technical details
+
+- Root test command path:
+  - `storybook:check` -> engine tests -> desktop-os tests -> os-launcher tests.

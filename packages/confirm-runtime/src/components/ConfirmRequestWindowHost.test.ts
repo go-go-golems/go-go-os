@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRequestActionBarKey, resolveSelectedTableRows } from './ConfirmRequestWindowHost';
+import { buildRequestActionBarKey, isInteractiveScriptSection, resolveSelectedTableRows } from './ConfirmRequestWindowHost';
 
 describe('ConfirmRequestWindowHost table selection helpers', () => {
   it('keeps no-id rows distinct by index when rowKey is not provided', () => {
@@ -34,5 +34,15 @@ describe('ConfirmRequestWindowHost action bar key helper', () => {
     const first = buildRequestActionBarKey('req-1', 'confirm', 'rating', 'script');
     const second = buildRequestActionBarKey('req-1', 'rate', 'rating', 'script');
     expect(first).not.toBe(second);
+  });
+});
+
+describe('ConfirmRequestWindowHost script section helpers', () => {
+  it('treats kind=display sections without widgetType as non-interactive', () => {
+    expect(isInteractiveScriptSection({ kind: 'display' })).toBe(false);
+  });
+
+  it('treats kind=interactive sections without widgetType as interactive', () => {
+    expect(isInteractiveScriptSection({ kind: 'interactive' })).toBe(true);
   });
 });

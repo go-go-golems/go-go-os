@@ -11,7 +11,7 @@ import {
   type ColumnConfig,
 } from '@hypercard/engine';
 import { useEffect, useState } from 'react';
-import type { ConfirmRequest, SubmitResponsePayload, SubmitScriptEventPayload } from '../types';
+import type { ConfirmRequest, ConfirmScriptView, SubmitResponsePayload, SubmitScriptEventPayload } from '../types';
 import type { JsonSchemaNode } from '@hypercard/engine';
 
 export interface ConfirmRequestWindowHostProps {
@@ -119,6 +119,16 @@ export function buildRequestActionBarKey(
   mode: 'response' | 'script',
 ): string {
   return `${requestId}:${mode}:${stepKey || 'root'}:${widgetType}`;
+}
+
+type ScriptSectionKind = Pick<NonNullable<ConfirmScriptView['sections']>[number], 'kind' | 'widgetType'>;
+
+export function resolveScriptSectionType(section: ScriptSectionKind): string {
+  return normalizeWidgetType(section.widgetType ?? section.kind);
+}
+
+export function isInteractiveScriptSection(section: ScriptSectionKind): boolean {
+  return resolveScriptSectionType(section) !== 'display';
 }
 
 function parseImageItems(payload: Record<string, unknown>): Array<{ id: string; src: string; label?: string; badge?: string }> {
@@ -537,9 +547,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
 
     const sections = Array.isArray(scriptView.sections) ? scriptView.sections : [];
     const hasSections = sections.length > 0;
-    const interactiveSections = hasSections
-      ? sections.filter((section) => normalizeWidgetType(section.widgetType) !== 'display')
-      : [];
+    const interactiveSections = hasSections ? sections.filter((section) => isInteractiveScriptSection(section)) : [];
 
     const scriptProgress = scriptView.progress;
     const showProgress =
@@ -551,7 +559,7 @@ export function ConfirmRequestWindowHost({ request, onSubmitResponse, onSubmitSc
 
     const scriptContent = hasSections
       ? sections.map((section, index) => {
-          const sectionType = normalizeWidgetType(section.widgetType ?? section.kind);
+          const sectionType = resolveScriptSectionType(section);
           if (sectionType === 'display') {
             return <ScriptDisplaySection key={`${section.id}-${index}`} payload={asRecord(section.input)} />;
           }

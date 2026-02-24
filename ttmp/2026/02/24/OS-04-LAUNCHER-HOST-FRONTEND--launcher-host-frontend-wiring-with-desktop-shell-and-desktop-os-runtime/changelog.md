@@ -14,3 +14,12 @@ Added detailed implementation plan and granular execution checklist for launcher
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/design-doc/01-os-04-implementation-plan.md — Execution-ready host wiring plan
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/tasks.md — Granular implementation tasks
 
+
+## 2026-02-24
+
+Added OS-04 diary and initialized planning baseline entry.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-04-LAUNCHER-HOST-FRONTEND--launcher-host-frontend-wiring-with-desktop-shell-and-desktop-os-runtime/reference/01-diary.md — Ticket diary
+

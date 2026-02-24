@@ -27,3 +27,12 @@ Implemented packages/desktop-os foundation package (contracts, registry, runtime
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/desktop-os/src/runtime/renderAppWindow.ts — appKey-based module window resolver
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/tsconfig.json — Added desktop-os to project references
 
+
+## 2026-02-24
+
+Backfilled detailed OS-03 diary with retroactive execution timeline, failures, validation commands, and commit references.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-03-DESKTOP-OS-FOUNDATION--desktop-os-package-foundation-contracts-registry-and-single-store-host/reference/01-diary.md — Retroactive implementation history
+

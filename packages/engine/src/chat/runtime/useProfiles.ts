@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { listProfiles } from './profileApi';
+import { getCurrentProfile, listProfiles } from './profileApi';
 import type { ChatProfileListItem } from './profileTypes';
 import {
   selectAvailableProfiles,
@@ -27,11 +27,13 @@ function normalize(value: string | null | undefined): string {
 export function resolveSelectionAfterProfileRefresh(
   profiles: ChatProfileListItem[],
   selected: { profile?: string; registry?: string },
-  registryHint?: string
+  registryHint?: string,
+  persistedProfileHint?: string
 ): { profile: string | null; registry: string | null } | null {
   const selectedProfile = normalize(selected.profile);
   const selectedRegistry = normalize(selected.registry);
   const resolvedRegistry = normalize(registryHint) || selectedRegistry;
+  const persistedProfile = normalize(persistedProfileHint);
 
   if (selectedProfile) {
     const hasSelected = profiles.some((item) => normalize(item.slug) === selectedProfile);
@@ -41,6 +43,13 @@ export function resolveSelectionAfterProfileRefresh(
         return null;
       }
       return { profile: selectedProfile, registry: nextRegistry };
+    }
+  }
+
+  if (persistedProfile) {
+    const hasPersisted = profiles.some((item) => normalize(item.slug) === persistedProfile);
+    if (hasPersisted) {
+      return { profile: persistedProfile, registry: resolvedRegistry || null };
     }
   }
 
@@ -74,10 +83,20 @@ export function useProfiles(
       const nextProfiles = await listProfiles(resolvedRegistry || undefined, { basePrefix });
       dispatch(chatProfilesSlice.actions.setAvailableProfiles(nextProfiles));
       dispatch(chatProfilesSlice.actions.setProfileLoading(false));
+      let persistedProfile: string | undefined;
+      if (!normalize(selected.profile)) {
+        try {
+          const payload = await getCurrentProfile({ basePrefix });
+          persistedProfile = normalize(payload.slug || payload.profile);
+        } catch {
+          persistedProfile = undefined;
+        }
+      }
       const nextSelection = resolveSelectionAfterProfileRefresh(
         nextProfiles,
         selected,
-        resolvedRegistry
+        resolvedRegistry,
+        persistedProfile
       );
       if (nextSelection) {
         dispatch(chatProfilesSlice.actions.setSelectedProfile(nextSelection));

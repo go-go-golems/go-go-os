@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { resolveSelectionAfterProfileRefresh } from './useProfiles';
 
 describe('resolveSelectionAfterProfileRefresh', () => {
+  it('prefers persisted server profile when redux selection is empty', () => {
+    const next = resolveSelectionAfterProfileRefresh(
+      [
+        { slug: 'inventory', is_default: true },
+        { slug: 'analyst' },
+      ],
+      {},
+      'default',
+      'analyst'
+    );
+
+    expect(next).toEqual({ profile: 'analyst', registry: 'default' });
+  });
+
   it('selects default profile when no profile is currently selected', () => {
     const next = resolveSelectionAfterProfileRefresh(
       [
@@ -9,7 +23,8 @@ describe('resolveSelectionAfterProfileRefresh', () => {
         { slug: 'analyst' },
       ],
       {},
-      'default'
+      'default',
+      undefined
     );
 
     expect(next).toEqual({ profile: 'inventory', registry: 'default' });
@@ -22,7 +37,8 @@ describe('resolveSelectionAfterProfileRefresh', () => {
         { slug: 'analyst' },
       ],
       { profile: 'analyst', registry: 'default' },
-      'default'
+      'default',
+      undefined
     );
 
     expect(next).toBeNull();
@@ -35,14 +51,20 @@ describe('resolveSelectionAfterProfileRefresh', () => {
         { slug: 'planner', is_default: true },
       ],
       { profile: 'analyst', registry: 'default' },
-      'default'
+      'default',
+      undefined
     );
 
     expect(next).toEqual({ profile: 'planner', registry: 'default' });
   });
 
   it('clears selected profile when registry is empty', () => {
-    const next = resolveSelectionAfterProfileRefresh([], { profile: 'analyst', registry: 'default' }, 'default');
+    const next = resolveSelectionAfterProfileRefresh(
+      [],
+      { profile: 'analyst', registry: 'default' },
+      'default',
+      undefined
+    );
     expect(next).toEqual({ profile: null, registry: 'default' });
   });
 });

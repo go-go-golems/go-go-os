@@ -341,3 +341,66 @@ I also added a local vitest config for `apps/os-launcher` to avoid accidental ex
 ### Technical details
 
 - Layout test pre-opens an app window via `openWindow(payload)` so both desktop shell and window surfaces are asserted.
+
+## Step 5: Ticket marked complete with explicit caveat
+
+After finishing the checklist, I marked OS-04 as complete in ticket metadata and task tracking. I kept the lint-baseline caveat explicitly documented so closure does not hide repository-wide existing issues.
+
+This preserves accurate completion state while keeping risk visible for future cleanup tickets.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue to completion, keep diary and commits current.
+
+**Inferred user intent:** Close tickets only with traceable evidence and no silent caveats.
+
+**Commit (code):** `a5af5df` — "docs(ttmp): mark OS-04 complete with recorded lint-baseline caveat"
+
+### What I did
+
+- Set OS-04 index status to `complete`.
+- Marked remaining checklist/DoD entries complete.
+- Added changelog entry calling out lint-baseline caveat.
+
+### Why
+
+- Keep ticket state aligned with implemented deliverables while preserving known non-ticket blockers.
+
+### What worked
+
+- `docmgr doctor --ticket OS-04-LAUNCHER-HOST-FRONTEND --stale-after 30` passes after closure edits.
+
+### What didn't work
+
+- N/A (closure/admin step).
+
+### What I learned
+
+- Explicit caveat tracking in `tasks.md` avoids ambiguity when closure criteria include shared-baseline issues.
+
+### What was tricky to build
+
+- Balancing “complete ticket” semantics with a failing global lint baseline that predates this work.
+
+### What warrants a second pair of eyes
+
+- Whether project policy prefers “complete with caveat” or “active until global baseline fixed” for similar future tickets.
+
+### What should be done in the future
+
+- Start OS-05 implementation and continue per-commit diary updates.
+
+### Code review instructions
+
+- Verify closure state in:
+  - `ttmp/2026/02/24/OS-04-.../index.md`
+  - `ttmp/2026/02/24/OS-04-.../tasks.md`
+  - `ttmp/2026/02/24/OS-04-.../changelog.md`
+- Validate:
+  - `docmgr doctor --ticket OS-04-LAUNCHER-HOST-FRONTEND --stale-after 30`
+
+### Technical details
+
+- Status vocabulary used: `complete` (docmgr-compatible).

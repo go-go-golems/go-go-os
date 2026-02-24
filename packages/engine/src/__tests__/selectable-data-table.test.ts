@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterRows, nextTableSelection, resolveRowKey } from '../components/widgets/SelectableDataTable';
+import { filterIndexedRows, filterRows, nextTableSelection, resolveRowKey } from '../components/widgets/SelectableDataTable';
 
 describe('SelectableDataTable helpers', () => {
   const rows = [
@@ -12,6 +12,15 @@ describe('SelectableDataTable helpers', () => {
     expect(filterRows(rows, ['name'], 'alp')).toEqual([rows[0]]);
     expect(filterRows(rows, ['status'], 'open')).toEqual([rows[0], rows[2]]);
     expect(filterRows(rows, ['name'], '')).toEqual(rows);
+  });
+
+  it('preserves source indices when filtering rows', () => {
+    const noIdRows = [{ name: 'Bravo' }, { name: 'Alpha' }, { name: 'Charlie' }];
+
+    const filtered = filterIndexedRows(noIdRows, ['name'], 'alp');
+
+    expect(filtered).toEqual([{ row: noIdRows[1], sourceIndex: 1 }]);
+    expect(resolveRowKey(filtered[0].row, filtered[0].sourceIndex)).toBe('1');
   });
 
   it('resolves row keys using rowKey string, fn, and fallback', () => {

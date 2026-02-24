@@ -35,13 +35,33 @@ export function resolveRowKey<T extends Record<string, unknown>>(
 }
 
 export function filterRows<T extends Record<string, unknown>>(items: T[], fields: string[], query: string): T[] {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) {
-    return items;
+  return filterIndexedRows(items, fields, query).map((entry) => entry.row);
+}
+
+function rowMatchesFilter<T extends Record<string, unknown>>(row: T, fields: string[], normalizedQuery: string): boolean {
+  if (!normalizedQuery) {
+    return true;
   }
-  return items.filter((item) =>
-    fields.some((field) => String(item[field as keyof T] ?? '').toLowerCase().includes(normalized)),
-  );
+  return fields.some((field) => String(row[field as keyof T] ?? '').toLowerCase().includes(normalizedQuery));
+}
+
+export interface IndexedTableRow<T extends Record<string, unknown>> {
+  row: T;
+  sourceIndex: number;
+}
+
+export function filterIndexedRows<T extends Record<string, unknown>>(
+  items: T[],
+  fields: string[],
+  query: string,
+): IndexedTableRow<T>[] {
+  const normalized = query.trim().toLowerCase();
+  return items.reduce<IndexedTableRow<T>[]>((acc, row, sourceIndex) => {
+    if (rowMatchesFilter(row, fields, normalized)) {
+      acc.push({ row, sourceIndex });
+    }
+    return acc;
+  }, []);
 }
 
 export function nextTableSelection(current: string[], rowId: string, mode: SelectableTableMode): string[] {
@@ -74,8 +94,8 @@ export function SelectableDataTable<T extends Record<string, unknown>>({
     [columns, searchFields],
   );
 
-  const filteredItems = useMemo(
-    () => filterRows(items, resolvedSearchFields, resolvedSearch),
+  const filteredRows = useMemo(
+    () => filterIndexedRows(items, resolvedSearchFields, resolvedSearch),
     [items, resolvedSearchFields, resolvedSearch],
   );
 
@@ -90,8 +110,8 @@ export function SelectableDataTable<T extends Record<string, unknown>>({
     }
   };
 
-  const handleRowClick = (row: T, index: number) => {
-    const id = resolveRowKey(row, index, rowKey);
+  const handleRowClick = (row: T, sourceIndex: number) => {
+    const id = resolveRowKey(row, sourceIndex, rowKey);
     const next = nextTableSelection(selectedRowKeys, id, mode);
     onSelectionChange(next);
     onRowClick?.(row);
@@ -118,9 +138,9 @@ export function SelectableDataTable<T extends Record<string, unknown>>({
           ))}
         </div>
 
-        {filteredItems.length === 0 && <div data-part={PARTS.tableEmpty}>{emptyMessage ?? 'No items'}</div>}
-        {filteredItems.map((row, index) => {
-          const id = resolveRowKey(row, index, rowKey);
+        {filteredRows.length === 0 && <div data-part={PARTS.tableEmpty}>{emptyMessage ?? 'No items'}</div>}
+        {filteredRows.map(({ row, sourceIndex }) => {
+          const id = resolveRowKey(row, sourceIndex, rowKey);
           const selected = selectedRowKeys.includes(id);
 
           return (
@@ -129,7 +149,7 @@ export function SelectableDataTable<T extends Record<string, unknown>>({
               type="button"
               data-part={PARTS.tableRow}
               data-state={selected ? 'selected' : undefined}
-              onClick={() => handleRowClick(row, index)}
+              onClick={() => handleRowClick(row, sourceIndex)}
               style={{
                 display: 'grid',
                 gridTemplateColumns: templateColumns,

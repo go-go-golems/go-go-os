@@ -37,6 +37,14 @@ topics:
       description: Desktop and window manager architecture, behavior, and performance work
     - slug: design-system
       description: Token, parts, theming, and reusable UI styling system work
+    - slug: binary
+      description: Single-binary packaging and deployment concerns
+    - slug: launcher
+      description: Application launcher/runtime composition model
+    - slug: desktop
+      description: Desktop shell/windowing and OS-like UX architecture
+    - slug: go-go-os
+      description: go-go-os project architecture and implementation details
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

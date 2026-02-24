@@ -8,6 +8,7 @@ export interface ChatProfileListItem {
   display_name?: string;
   description?: string;
   default_prompt?: string;
+  extensions?: Record<string, unknown>;
   is_default?: boolean;
   version?: number;
 }
@@ -20,6 +21,7 @@ export interface ChatProfileDocument {
   runtime?: Record<string, unknown>;
   policy?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
+  extensions?: Record<string, unknown>;
   is_default: boolean;
 }
 

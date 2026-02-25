@@ -257,3 +257,90 @@ This step encoded hard-cut assumptions as executable checks rather than manual v
   - legacy alias 404 policy
   - required-module startup failure
   - startup duration threshold
+
+## Step 4: Launcher-first docs, runbook, and validation evidence completed
+
+I completed the documentation hard cutover for launcher-first operation by replacing stale backend command references, adding a dedicated OS-07 operator playbook, and recording final validation outcomes directly in ticket artifacts. This step made the new build/launch model executable for operators without requiring ticket archaeology.
+
+I also ran the full validation checklist and recorded one known pre-existing failure class (`npm run lint`) separately from OS-07 functional validation so release gating can remain explicit.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Finish OS-07 with cleanup, runbook, and validation records before closure.
+
+**Inferred user intent:** Ensure the launcher migration is operationally usable and auditable, not just code-complete.
+
+**Commit (code):** `2a26811` — "docs(os-07): add launcher runbook and validation records"
+
+### What I did
+
+- Updated root launcher docs:
+  - `README.md` quickstart and single-binary launcher section.
+- Rewrote backend README:
+  - `go-inventory-chat/README.md` now uses `cmd/go-go-os-launcher` and launcher-first routes.
+- Added operator runbook:
+  - `ttmp/.../playbooks/01-launcher-operations-runbook.md`.
+- Updated ticket artifacts:
+  - execution checklist and DoD progress in `tasks.md`
+  - implementation notes in `changelog.md`
+  - diary entries for implementation phases.
+- Ran and recorded validation:
+  - `npm run lint` (fails due pre-existing repo-wide diagnostics unrelated to OS-07 changes)
+  - `npm run test` (pass)
+  - `npm run build` (pass)
+  - `cd go-inventory-chat && go test ./...` (pass)
+  - `npm run launcher:smoke` (pass)
+  - `docmgr doctor --ticket OS-07-SINGLE-BINARY-STABILIZATION --stale-after 30` (pass)
+
+### Why
+
+- OS-07 DoD requires launcher-first scripts/docs and explicit stabilization evidence.
+- Operator runbook is required to make the single-binary path maintainable post-refactor.
+
+### What worked
+
+- All functional launcher validation gates passed.
+- Docmgr doctor reported all checks passing for OS-07.
+
+### What didn't work
+
+- `npm run lint` remains red due broad pre-existing codebase diagnostics (storybook ordering, a11y, format/import ordering, schema version drift), not introduced by OS-07.
+
+### What I learned
+
+- Splitting functional launcher gates from repo-wide lint debt keeps release checks precise while preserving visibility of ongoing debt.
+
+### What was tricky to build
+
+- The largest challenge was ensuring documentation and scripts describe the same launcher invocation surface after command hard-cutover. I resolved this by standardizing on one canonical flow (`launcher:binary:build` -> `go-go-os-launcher`) and reflecting that in both root and backend docs plus the runbook.
+
+### What warrants a second pair of eyes
+
+- Confirm whether `npm run lint` should be scoped in CI for launcher workflows or remediated repo-wide as separate backlog.
+
+### What should be done in the future
+
+- Create a dedicated cleanup ticket for repo-wide Biome backlog currently outside OS-07 scope.
+
+### Code review instructions
+
+- Review:
+  - `README.md`
+  - `go-inventory-chat/README.md`
+  - `ttmp/.../playbooks/01-launcher-operations-runbook.md`
+  - `ttmp/.../tasks.md`
+  - `ttmp/.../changelog.md`
+- Validate:
+  - `npm run launcher:binary:build`
+  - `npm run launcher:smoke`
+  - `cd go-inventory-chat && go test ./...`
+  - `docmgr doctor --ticket OS-07-SINGLE-BINARY-STABILIZATION --stale-after 30`
+
+### Technical details
+
+- Launcher operator command surface now standardizes on:
+  - `npm run launcher:binary:build`
+  - `./build/go-go-os-launcher go-go-os-launcher --addr :8091`
+- Policy checks are centralized in `scripts/smoke-go-go-os-launcher.sh`.

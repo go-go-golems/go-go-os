@@ -118,3 +118,19 @@ I changed workspace launch payloads from `content.kind = app` to `content.kind =
 - `npm run test -w apps/os-launcher`
 - `npm run build -w apps/os-launcher`
 - `npm run launcher:smoke`
+
+## Step 6: Remove one-icon folder layer for todo/crm/book tracker
+
+After validating flat rendering, we removed unnecessary folder windows for apps that only had one icon inside. Their top desktop icon now launches directly into each app's Home card session.
+
+Inventory remains folder-based because it has multiple launcher actions/icons.
+
+### Commit (code)
+
+- `f69ef11` - fix(os-08): launch todo crm and book tracker directly to home card
+
+### Validation
+
+- `npm run test -w apps/os-launcher`
+- `npm run build -w apps/os-launcher`
+- `npm run launcher:smoke`

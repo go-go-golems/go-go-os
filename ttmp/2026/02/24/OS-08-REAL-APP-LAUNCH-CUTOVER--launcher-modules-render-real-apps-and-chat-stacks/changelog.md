@@ -40,3 +40,12 @@ Fixed remaining nested-desktop regression for todo/crm/book-tracker: workspace l
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/crm/src/launcher/module.tsx — crm workspace window changed to card session + adapter.
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/book-tracker-debug/src/launcher/module.tsx — book tracker workspace window changed to card session + adapter.
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-08-REAL-APP-LAUNCH-CUTOVER--launcher-modules-render-real-apps-and-chat-stacks/reference/01-diary.md — diary update for regression diagnosis/fix.
+
+Removed folder windows for todo/crm/book-tracker because each had only one folder action. Top desktop icons now launch each app directly into Home card sessions.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/todo/src/launcher/module.tsx — top icon now launches directly to todo home card window.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/crm/src/launcher/module.tsx — top icon now launches directly to crm home card window.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/book-tracker-debug/src/launcher/module.tsx — top icon now launches directly to book tracker home card window.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx — launch payload assertions updated for direct card launches.

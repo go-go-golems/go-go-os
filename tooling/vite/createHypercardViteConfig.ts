@@ -10,26 +10,30 @@ export interface HypercardViteConfigOptions {
 
 function createInventoryProxy(target: string): Record<string, ProxyOptions> {
   return {
-    '/chat': {
+    '/api/apps/inventory/chat': {
       target,
       changeOrigin: true,
     },
-    '/ws': {
+    '/api/apps/inventory/ws': {
       target,
       ws: true,
       changeOrigin: true,
     },
-    '/api': {
+    '/api/apps/inventory/api': {
       target,
       changeOrigin: true,
     },
-    '/confirm': {
+    '/api/apps/inventory/confirm': {
       target,
       changeOrigin: true,
     },
-    '/confirm/ws': {
+    '/api/apps/inventory/confirm/ws': {
       target,
       ws: true,
+      changeOrigin: true,
+    },
+    '/api/os/apps': {
+      target,
       changeOrigin: true,
     },
   };

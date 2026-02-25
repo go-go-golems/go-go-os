@@ -13,12 +13,14 @@ import {
 import { openWindow, type OpenWindowPayload, type WindowInstance } from '@hypercard/engine/desktop-core';
 import { PluginCardSessionHost } from '@hypercard/engine/desktop-hypercard-adapter';
 import {
+  DesktopIconLayer,
   type DesktopCommandHandler,
   type DesktopContribution,
+  type DesktopIconDef,
   type WindowContentAdapter,
 } from '@hypercard/engine/desktop-react';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { type ReactNode, useCallback, useState } from 'react';
+import { useDispatch, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';
 import { ReduxPerfWindow } from '../features/debug/ReduxPerfWindow';
 
@@ -30,6 +32,7 @@ const TIMELINE_DEBUG_INSTANCE_PREFIX = 'timeline-debug-';
 const CODE_EDITOR_INSTANCE_PREFIX = 'code-editor-';
 const RUNTIME_DEBUG_INSTANCE = 'runtime-debug';
 const REDUX_PERF_INSTANCE = 'redux-perf';
+const FOLDER_INSTANCE = 'folder';
 
 registerChatRuntimeModule({
   id: 'chat.hypercard-timeline',
@@ -137,7 +140,13 @@ function buildReduxPerfWindowPayload(): OpenWindowPayload {
 }
 
 export function buildInventoryLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
-  return buildInventoryCardWindowPayload(STACK.homeCard, { dedupe: reason === 'startup' });
+  return buildInventoryAppWindowPayload(
+    FOLDER_INSTANCE,
+    'Inventory Folder',
+    '📦',
+    { x: 170, y: 44, w: 880, h: 560 },
+    'inventory:folder',
+  );
 }
 
 function resolveConversationIdFromWindow(win: WindowInstance | null | undefined): string | null {
@@ -213,6 +222,15 @@ function createInventoryCardAdapter(): WindowContentAdapter {
 function createInventoryCommands(hostContext: LauncherHostContext): DesktopCommandHandler[] {
   return [
     {
+      id: 'inventory.folder.open',
+      priority: 100,
+      matches: (commandId) => commandId === 'inventory.folder.open',
+      run: () => {
+        hostContext.openWindow(buildInventoryLaunchWindowPayload('command'));
+        return 'handled';
+      },
+    },
+    {
       id: 'inventory.chat.new',
       priority: 100,
       matches: (commandId) => commandId === 'inventory.chat.new' || commandId === 'icon.open.inventory.new-chat',
@@ -282,28 +300,15 @@ function createInventoryCommands(hostContext: LauncherHostContext): DesktopComma
 }
 
 export function createInventoryContributions(hostContext: LauncherHostContext): DesktopContribution[] {
-  const cardIcons = Object.keys(STACK.cards).map((cardId) => ({
-    id: `inventory.card.${cardId}`,
-    label: STACK.cards[cardId].title ?? cardId,
-    icon: STACK.cards[cardId].icon ?? '📄',
-  }));
-
   return [
     {
       id: 'inventory.launcher',
-      icons: [
-        { id: 'inventory.new-chat', label: 'New Chat', icon: '💬' },
-        { id: 'inventory.runtime-debug', label: 'Stacks & Cards', icon: '🔧' },
-        { id: 'inventory.event-viewer', label: 'Event Viewer', icon: '🧭' },
-        { id: 'inventory.timeline-debug', label: 'Timeline Debug', icon: '🧱' },
-        { id: 'inventory.redux-perf', label: 'Redux Perf', icon: '📈' },
-        ...cardIcons,
-      ],
       menus: [
         {
           id: 'file',
           label: 'File',
           items: [
+            { id: 'inventory-open-folder', label: 'Open Inventory Folder', commandId: 'inventory.folder.open' },
             { id: 'inventory-new-chat', label: 'New Inventory Chat', commandId: 'inventory.chat.new', shortcut: 'Ctrl+N' },
             {
               id: 'inventory-open-home',
@@ -337,6 +342,98 @@ export function createInventoryContributions(hostContext: LauncherHostContext): 
       windowContentAdapters: [createInventoryCardAdapter()],
     },
   ];
+}
+
+const INVENTORY_FOLDER_ICONS: DesktopIconDef[] = [
+  { id: 'inventory-folder.new-chat', label: 'New Chat', icon: '💬' },
+  { id: 'inventory-folder.runtime-debug', label: 'Stacks & Cards', icon: '🔧' },
+  { id: 'inventory-folder.event-viewer', label: 'Event Viewer', icon: '🧭' },
+  { id: 'inventory-folder.timeline-debug', label: 'Timeline Debug', icon: '🧱' },
+  { id: 'inventory-folder.redux-perf', label: 'Redux Perf', icon: '📈' },
+  ...Object.keys(STACK.cards).map((cardId) => ({
+    id: `inventory-folder.card.${cardId}`,
+    label: STACK.cards[cardId].title ?? cardId,
+    icon: STACK.cards[cardId].icon ?? '📄',
+  })),
+];
+
+function openInventoryFolderIcon(iconId: string, options: { dispatch: ReturnType<typeof useDispatch>; getState: () => unknown }) {
+  const { dispatch, getState } = options;
+  if (iconId === 'inventory-folder.new-chat') {
+    dispatch(openWindow(buildChatWindowPayload()));
+    return;
+  }
+  if (iconId === 'inventory-folder.runtime-debug') {
+    dispatch(openWindow(buildRuntimeDebugWindowPayload()));
+    return;
+  }
+  if (iconId === 'inventory-folder.redux-perf') {
+    dispatch(openWindow(buildReduxPerfWindowPayload()));
+    return;
+  }
+  if (iconId === 'inventory-folder.event-viewer' || iconId === 'inventory-folder.timeline-debug') {
+    let convId = resolveFocusedConversationId(getState(), null);
+    if (!convId) {
+      const chatPayload = buildChatWindowPayload();
+      dispatch(openWindow(chatPayload));
+      if (chatPayload.content.kind === 'app' && chatPayload.content.appKey) {
+        try {
+          const parsed = parseAppKey(chatPayload.content.appKey);
+          if (parsed.instanceId.startsWith(CHAT_INSTANCE_PREFIX)) {
+            convId = parsed.instanceId.slice(CHAT_INSTANCE_PREFIX.length);
+          }
+        } catch {
+          convId = null;
+        }
+      }
+    }
+    if (!convId) {
+      return;
+    }
+    dispatch(
+      openWindow(
+        iconId === 'inventory-folder.event-viewer'
+          ? buildEventViewerWindowPayload(convId)
+          : buildTimelineDebugWindowPayload(convId),
+      ),
+    );
+    return;
+  }
+  if (iconId.startsWith('inventory-folder.card.')) {
+    const cardId = iconId.replace('inventory-folder.card.', '').trim();
+    if (!cardId || !STACK.cards[cardId]) {
+      return;
+    }
+    dispatch(openWindow(buildInventoryCardWindowPayload(cardId)));
+  }
+}
+
+function InventoryFolderWindow() {
+  const dispatch = useDispatch();
+  const store = useStore();
+  const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
+
+  const openIcon = useCallback(
+    (iconId: string) => {
+      openInventoryFolderIcon(iconId, {
+        dispatch,
+        getState: () => store.getState(),
+      });
+    },
+    [dispatch, store],
+  );
+
+  return (
+    <section style={{ padding: 12, display: 'grid', gap: 8, height: '100%' }}>
+      <strong>Inventory</strong>
+      <DesktopIconLayer
+        icons={INVENTORY_FOLDER_ICONS}
+        selectedIconId={selectedIconId}
+        onSelectIcon={setSelectedIconId}
+        onOpenIcon={openIcon}
+      />
+    </section>
+  );
 }
 
 async function copyTextToClipboard(text: string): Promise<void> {
@@ -423,6 +520,9 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
 }
 
 export function InventoryLauncherAppWindow({ instanceId }: { instanceId: string }): ReactNode {
+  if (instanceId === FOLDER_INSTANCE) {
+    return <InventoryFolderWindow />;
+  }
   if (instanceId.startsWith(CHAT_INSTANCE_PREFIX)) {
     const convId = instanceId.slice(CHAT_INSTANCE_PREFIX.length);
     return <InventoryChatAssistantWindow convId={convId} />;

@@ -24,7 +24,11 @@ export {
   type BuildLauncherContributionsOptions,
   buildLauncherContributions,
 } from './runtime/buildLauncherContributions';
-export { buildLauncherIcons } from './runtime/buildLauncherIcons';
+export {
+  type BuildLauncherIconsOptions,
+  type LauncherFolderIconOptions,
+  buildLauncherIcons,
+} from './runtime/buildLauncherIcons';
 export {
   createRenderAppWindow,
   type RenderAppWindowOptions,

@@ -39,6 +39,7 @@ import {
   composeDesktopContributions,
   mergeActionSections,
   routeContributionCommand,
+  type DesktopCommandContext,
 } from './desktopContributions';
 import {
   createAppWindowContentAdapter,
@@ -54,6 +55,7 @@ import type {
   DesktopCommandInvocation,
   DesktopContextTargetRef,
   DesktopIconDef,
+  DesktopIconKind,
   DesktopMenuSection,
   DesktopWindowDef,
 } from './types';
@@ -111,9 +113,15 @@ function resolveWindowAppId(win: WindowInstance | undefined): string | undefined
   return appId ? appId.trim() : undefined;
 }
 
-function resolveIconAppId(iconId: string): string | undefined {
-  const normalizedIconId = String(iconId ?? '').trim();
-  if (!normalizedIconId) return undefined;
+function resolveIconKind(icon: DesktopIconDef | undefined): DesktopIconKind {
+  return icon?.kind === 'folder' ? 'folder' : 'app';
+}
+
+function resolveIconAppId(icon: DesktopIconDef | undefined): string | undefined {
+  const explicitAppId = String(icon?.appId ?? '').trim();
+  if (explicitAppId) return explicitAppId;
+  const normalizedIconId = String(icon?.id ?? '').trim();
+  if (!normalizedIconId || resolveIconKind(icon) === 'folder') return undefined;
   const [dotPrefix] = normalizedIconId.split('.');
   if (dotPrefix) return dotPrefix.trim();
   return normalizedIconId;
@@ -123,6 +131,44 @@ function getCommandSuffix(commandId: string, prefix: string): string | null {
   if (!commandId.startsWith(prefix)) return null;
   const suffix = commandId.slice(prefix.length).trim();
   return suffix.length > 0 ? suffix : null;
+}
+
+function compareIconsByLabel(a: DesktopIconDef, b: DesktopIconDef): number {
+  const aKindRank = resolveIconKind(a) === 'folder' ? 1 : 0;
+  const bKindRank = resolveIconKind(b) === 'folder' ? 1 : 0;
+  if (aKindRank !== bKindRank) return aKindRank - bKindRank;
+  const byLabel = a.label.localeCompare(b.label, 'en', { sensitivity: 'base' });
+  if (byLabel !== 0) return byLabel;
+  return a.id.localeCompare(b.id);
+}
+
+function resolveFolderMemberIconIds(
+  folderIcon: DesktopIconDef,
+  iconsById: Record<string, DesktopIconDef>,
+  iconsInOrder: DesktopIconDef[],
+): string[] {
+  const members = folderIcon.folder?.memberIconIds;
+  if (Array.isArray(members) && members.length > 0) {
+    const seen = new Set<string>();
+    const orderedMembers: string[] = [];
+    for (const rawId of members) {
+      const memberId = String(rawId ?? '').trim();
+      if (!memberId || memberId === folderIcon.id || seen.has(memberId)) {
+        continue;
+      }
+      const memberIcon = iconsById[memberId];
+      if (!memberIcon || resolveIconKind(memberIcon) === 'folder') {
+        continue;
+      }
+      seen.add(memberId);
+      orderedMembers.push(memberId);
+    }
+    return orderedMembers;
+  }
+
+  return iconsInOrder
+    .filter((icon) => icon.id !== folderIcon.id && resolveIconKind(icon) !== 'folder')
+    .map((icon) => icon.id);
 }
 
 export interface DesktopContextMenuState {
@@ -193,6 +239,7 @@ export function useDesktopShellController({
   const [windowMenuSectionsById, setWindowMenuSectionsById] = useState<Record<string, DesktopActionSection[]>>({});
   const [contextActionsByTargetKey, setContextActionsByTargetKey] = useState<ContextActionRegistryState>({});
   const [contextMenu, setContextMenu] = useState<DesktopContextMenuState | null>(null);
+  const [iconSortMode, setIconSortMode] = useState<'default' | 'label-asc'>('default');
   const composedContributions = useMemo(() => composeDesktopContributions(contributions), [contributions]);
 
   const defaultIcons = useMemo(() => {
@@ -239,10 +286,25 @@ export function useDesktopShellController({
     ];
   }, [stack.cards, stack.homeCard]);
 
-  const icons = useMemo(() => {
+  const baseIcons = useMemo(() => {
     if (iconsProp) return iconsProp;
     return composedContributions.icons.length > 0 ? composedContributions.icons : defaultIcons;
   }, [composedContributions.icons, defaultIcons, iconsProp]);
+
+  const icons = useMemo(() => {
+    if (iconSortMode === 'default') {
+      return baseIcons;
+    }
+    return [...baseIcons].sort(compareIconsByLabel);
+  }, [baseIcons, iconSortMode]);
+
+  const iconsById = useMemo(() => {
+    const byId: Record<string, DesktopIconDef> = {};
+    for (const icon of icons) {
+      byId[icon.id] = icon;
+    }
+    return byId;
+  }, [icons]);
 
   const baseMenus = useMemo((): DesktopMenuSection[] => {
     if (menusProp) return menusProp;
@@ -520,48 +582,129 @@ export function useDesktopShellController({
     [dispatch, stack.id, stack.cards],
   );
 
+  const createContributionCommandContext = useCallback(
+    (): DesktopCommandContext => ({
+      dispatch,
+      getState: () => store.getState(),
+      focusedWindowId: focusedWin?.id ?? null,
+      openCardWindow,
+      closeWindow: handleClose,
+    }),
+    [dispatch, focusedWin?.id, handleClose, openCardWindow, store],
+  );
+
+  const routeIconOpenCommand = useCallback(
+    (iconId: string, options: { newWindow: boolean; invocation: DesktopCommandInvocation }): boolean => {
+      const normalizedIconId = String(iconId ?? '').trim();
+      if (!normalizedIconId) {
+        return false;
+      }
+
+      if (stack.cards[normalizedIconId]) {
+        openCardWindow(normalizedIconId, { dedupe: false });
+        return true;
+      }
+
+      const commandContext = createContributionCommandContext();
+      if (options.newWindow) {
+        const explicitOpenNewHandled = routeContributionCommand(
+          `icon.open-new.${normalizedIconId}`,
+          composedContributions.commandHandlers,
+          commandContext,
+          options.invocation,
+        );
+        if (explicitOpenNewHandled) {
+          return true;
+        }
+      }
+
+      return routeContributionCommand(
+        `icon.open.${normalizedIconId}`,
+        composedContributions.commandHandlers,
+        commandContext,
+        options.invocation,
+      );
+    },
+    [composedContributions.commandHandlers, createContributionCommandContext, openCardWindow, stack.cards],
+  );
+
+  const resolveFolderMembers = useCallback(
+    (folderIconId: string): string[] => {
+      const folderIcon = iconsById[folderIconId];
+      if (!folderIcon || resolveIconKind(folderIcon) !== 'folder') {
+        return [];
+      }
+      return resolveFolderMemberIconIds(folderIcon, iconsById, icons);
+    },
+    [icons, iconsById],
+  );
+
+  const routeFolderCommand = useCallback(
+    (commandId: string, invocation: DesktopCommandInvocation): boolean => {
+      const folderOpenId = getCommandSuffix(commandId, 'folder.open.');
+      if (folderOpenId) {
+        const members = resolveFolderMembers(folderOpenId);
+        return members.length > 0
+          ? routeIconOpenCommand(members[0], { newWindow: false, invocation })
+          : false;
+      }
+
+      const folderOpenNewId = getCommandSuffix(commandId, 'folder.open-new.');
+      if (folderOpenNewId) {
+        const members = resolveFolderMembers(folderOpenNewId);
+        return members.length > 0
+          ? routeIconOpenCommand(members[0], { newWindow: true, invocation })
+          : false;
+      }
+
+      const folderLaunchAllId = getCommandSuffix(commandId, 'folder.launch-all.');
+      if (folderLaunchAllId) {
+        const members = resolveFolderMembers(folderLaunchAllId);
+        let launchedCount = 0;
+        for (const memberIconId of members) {
+          if (routeIconOpenCommand(memberIconId, { newWindow: true, invocation })) {
+            launchedCount += 1;
+          }
+        }
+        return launchedCount > 0;
+      }
+
+      const folderSortIconsId = getCommandSuffix(commandId, 'folder.sort-icons.');
+      if (folderSortIconsId) {
+        const folderIcon = iconsById[folderSortIconsId];
+        if (!folderIcon || resolveIconKind(folderIcon) !== 'folder') {
+          return false;
+        }
+        setIconSortMode('label-asc');
+        return true;
+      }
+
+      return false;
+    },
+    [iconsById, resolveFolderMembers, routeIconOpenCommand],
+  );
+
   const routeCommand = useCallback(
     (commandId: string, invocation: DesktopCommandInvocation = { source: 'programmatic' }) => {
       const contributionHandled = routeContributionCommand(
         commandId,
         composedContributions.commandHandlers,
-        {
-          dispatch,
-          getState: () => store.getState(),
-          focusedWindowId: focusedWin?.id ?? null,
-          openCardWindow,
-          closeWindow: handleClose,
-        },
+        createContributionCommandContext(),
         invocation,
       );
       if (contributionHandled) return;
 
+      if (routeFolderCommand(commandId, invocation)) {
+        return;
+      }
+
       const iconOpenNewId = getCommandSuffix(commandId, 'icon.open-new.');
-      if (iconOpenNewId) {
-        if (stack.cards[iconOpenNewId]) {
-          openCardWindow(iconOpenNewId, { dedupe: false });
-          return;
-        }
-        const fallbackHandled = routeContributionCommand(
-          `icon.open.${iconOpenNewId}`,
-          composedContributions.commandHandlers,
-          {
-            dispatch,
-            getState: () => store.getState(),
-            focusedWindowId: focusedWin?.id ?? null,
-            openCardWindow,
-            closeWindow: handleClose,
-          },
-          invocation,
-        );
-        if (fallbackHandled) {
-          return;
-        }
+      if (iconOpenNewId && routeIconOpenCommand(iconOpenNewId, { newWindow: true, invocation })) {
+        return;
       }
 
       const iconOpenId = getCommandSuffix(commandId, 'icon.open.');
-      if (iconOpenId && stack.cards[iconOpenId]) {
-        openCardWindow(iconOpenId, { dedupe: false });
+      if (iconOpenId && routeIconOpenCommand(iconOpenId, { newWindow: false, invocation })) {
         return;
       }
 
@@ -590,14 +733,15 @@ export function useDesktopShellController({
     },
     [
       composedContributions.commandHandlers,
+      createContributionCommandContext,
       dispatch,
       focusedWin?.id,
       handleClose,
       onCommandProp,
       openCardWindow,
-      stack.cards,
       stack.homeCard,
-      store,
+      routeFolderCommand,
+      routeIconOpenCommand,
       windows,
     ],
   );
@@ -605,13 +749,14 @@ export function useDesktopShellController({
   const handleOpenIcon = useCallback(
     (iconId: string) => {
       dispatch(setSelectedIcon(iconId));
-      if (stack.cards[iconId]) {
-        openCardWindow(iconId);
-        return;
+      const icon = iconsById[iconId];
+      if (resolveIconKind(icon) === 'folder') {
+        routeCommand(`folder.open.${iconId}`, { source: 'icon' });
+      } else {
+        routeCommand(`icon.open.${iconId}`, { source: 'icon' });
       }
-      routeCommand(`icon.open.${iconId}`, { source: 'icon' });
     },
-    [dispatch, openCardWindow, routeCommand, stack.cards],
+    [dispatch, iconsById, routeCommand],
   );
 
   const buildIconContextMenuItems = useCallback(
@@ -621,18 +766,41 @@ export function useDesktopShellController({
         return [];
       }
 
+      const icon = iconsById[iconId];
+      const iconKind = resolveIconKind(icon);
       const dynamicActions = resolveContextActions(contextActionsByTargetKey, target);
-      const defaults: DesktopActionEntry[] = [
-        { id: `icon-context.open.${iconId}`, label: 'Open', commandId: `icon.open.${iconId}` },
-        {
-          id: `icon-context.open-new.${iconId}`,
-          label: 'Open New',
-          commandId: `icon.open-new.${iconId}`,
-        },
-        { separator: true },
-        { id: `icon-context.pin.${iconId}`, label: 'Pin', commandId: `icon.pin.${iconId}` },
-        { id: `icon-context.inspect.${iconId}`, label: 'Inspect', commandId: `icon.inspect.${iconId}` },
-      ];
+      const defaults: DesktopActionEntry[] =
+        iconKind === 'folder'
+          ? [
+              { id: `folder-context.open.${iconId}`, label: 'Open', commandId: `folder.open.${iconId}` },
+              {
+                id: `folder-context.open-new.${iconId}`,
+                label: 'Open in New Window',
+                commandId: `folder.open-new.${iconId}`,
+              },
+              { separator: true },
+              {
+                id: `folder-context.launch-all.${iconId}`,
+                label: 'Launch All',
+                commandId: `folder.launch-all.${iconId}`,
+              },
+              {
+                id: `folder-context.sort-icons.${iconId}`,
+                label: 'Sort Icons',
+                commandId: `folder.sort-icons.${iconId}`,
+              },
+            ]
+          : [
+              { id: `icon-context.open.${iconId}`, label: 'Open', commandId: `icon.open.${iconId}` },
+              {
+                id: `icon-context.open-new.${iconId}`,
+                label: 'Open New',
+                commandId: `icon.open-new.${iconId}`,
+              },
+              { separator: true },
+              { id: `icon-context.pin.${iconId}`, label: 'Pin', commandId: `icon.pin.${iconId}` },
+              { id: `icon-context.inspect.${iconId}`, label: 'Inspect', commandId: `icon.inspect.${iconId}` },
+            ];
 
       if (dynamicActions.length === 0) {
         return defaults;
@@ -640,7 +808,7 @@ export function useDesktopShellController({
 
       return [...dynamicActions, { separator: true }, ...defaults];
     },
-    [contextActionsByTargetKey],
+    [contextActionsByTargetKey, iconsById],
   );
 
   const buildWindowContextMenuItems = useCallback(
@@ -710,10 +878,12 @@ export function useDesktopShellController({
 
   const handleIconContextMenu = useCallback(
     (iconId: string, event: MouseEvent<HTMLButtonElement>) => {
+      const icon = iconsById[iconId];
       const target = normalizeContextTargetRef({
         kind: 'icon',
         iconId,
-        appId: resolveIconAppId(iconId),
+        iconKind: resolveIconKind(icon),
+        appId: resolveIconAppId(icon),
       });
       const items = buildIconContextMenuItems(target);
       if (items.length === 0) {
@@ -731,7 +901,7 @@ export function useDesktopShellController({
         items,
       });
     },
-    [buildIconContextMenuItems, dispatch],
+    [buildIconContextMenuItems, dispatch, iconsById],
   );
 
   const handleContextMenuSelect = useCallback(

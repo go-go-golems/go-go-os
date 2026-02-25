@@ -12,23 +12,23 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: packages/engine/src/components/shell/windowing/DesktopIconLayer.tsx
-      Note: Icon right-click handler and context-menu trigger integration.
-    - Path: apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx
-      Note: Integration coverage for icon quick-action context menu routing.
-    - Path: packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx
-      Note: Storybook showcase for icon quick-action context menu behavior.
-    - Path: packages/engine/src/components/shell/windowing/types.ts
-      Note: Context target contracts and invocation metadata extensions.
-    - Path: packages/engine/src/components/shell/windowing/contextActionRegistry.ts
-      Note: Target-key registry and precedence resolver for context actions.
-    - Path: packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx
-      Note: Target-scoped context action registration hooks and runtime API.
     - Path: packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
-      Note: Context target resolution and invocation plumbing in shell controller.
+      Note: Target-aware context menu composition and folder/icon command routing.
+    - Path: apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx
+      Note: Integration coverage for icon and folder context menu behavior.
+    - Path: packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx
+      Note: Storybook showcase coverage for icon and folder context menu scenarios.
+    - Path: packages/engine/src/components/shell/windowing/types.ts
+      Note: Context target and icon-folder contract definitions.
+    - Path: packages/engine/src/components/shell/windowing/contextActionRegistry.ts
+      Note: Target-key registry and precedence resolver (including icon-kind fallback).
+    - Path: packages/desktop-os/src/runtime/buildLauncherIcons.ts
+      Note: Launcher icon composition with default folder icon and member mapping.
+    - Path: packages/desktop-os/src/runtime/buildLauncherContributions.ts
+      Note: Launcher contribution builder wiring for folder icon options.
 ExternalSources: []
 Summary: Implementation planning ticket for target-scoped context menu showcase scenarios (icons, folders, chat message/conversation, role-aware menus) plus plugin-extension feasibility notes.
-LastUpdated: 2026-02-25T16:40:00-05:00
+LastUpdated: 2026-02-25T16:47:00-05:00
 WhatFor: Track planning and execution for high-impact context menu showcases in desktop-os/engine.
 WhenToUse: Use when implementing or reviewing OS-level context menu UX scenarios and extension hooks.
 ---

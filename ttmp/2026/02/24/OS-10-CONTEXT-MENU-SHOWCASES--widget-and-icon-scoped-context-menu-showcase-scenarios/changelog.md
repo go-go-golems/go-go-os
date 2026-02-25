@@ -44,3 +44,24 @@ Validation:
 - `npm run typecheck -w packages/engine`
 - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
 - `npm run test -w apps/os-launcher -- src/__tests__/launcherContextMenu.test.tsx`
+
+## 2026-02-25
+
+Completed OS-10 Phase 3 (Scenario 2: folder/icon hybrid launcher): added folder icon contract, folder-aware context menu defaults/command routing, launcher folder icon contribution, integration tests, and Storybook showcase.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/types.ts — Added icon kind and folder metadata contracts (`DesktopIconKind`, `DesktopFolderIconOptions`) plus `iconKind` target metadata.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/contextActionRegistry.ts — Added `iconKind` key normalization and precedence fallback from icon-kind specific keys to generic icon keys.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx — Added folder command handling (`folder.open`, `folder.open-new`, `folder.launch-all`, `folder.sort-icons`), folder context menu defaults, and local deterministic icon sorting state.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/desktop-os/src/runtime/buildLauncherIcons.ts — Added default launcher folder icon generation with member icon mapping.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/desktop-os/src/runtime/buildLauncherContributions.ts — Wired folder icon options into launcher icon contribution composition.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx — Added folder integration tests (`Launch All`, `Sort Icons`) in launcher host.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx — Added `WithFolderHybridLauncherContextMenu` story.
+
+Validation:
+
+- `npm run typecheck -w packages/engine`
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+- `npm run test -w packages/desktop-os`
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherContextMenu.test.tsx src/__tests__/launcherHost.test.tsx`

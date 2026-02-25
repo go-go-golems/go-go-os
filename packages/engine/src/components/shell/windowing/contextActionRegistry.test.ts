@@ -90,4 +90,29 @@ describe('contextActionRegistry', () => {
       action('close-window'),
     ]);
   });
+
+  it('falls back from icon-kind specific keys to generic icon keys', () => {
+    const target = {
+      kind: 'icon' as const,
+      iconId: 'workspace',
+      iconKind: 'folder' as const,
+    };
+
+    const folderKey = buildContextTargetKey(target);
+    const genericIconKey = buildContextTargetKey({ kind: 'icon', iconId: 'workspace' });
+
+    const registry: ContextActionRegistryState = {
+      [genericIconKey]: {
+        target: { kind: 'icon', iconId: 'workspace' },
+        actions: [action('open-generic')],
+      },
+      [folderKey]: {
+        target,
+        actions: [action('open-folder')],
+      },
+    };
+
+    const resolved = resolveContextActions(registry, target);
+    expect(resolved).toEqual([action('open-folder'), action('open-generic')]);
+  });
 });

@@ -27,11 +27,21 @@ export interface DesktopActionSection {
 export type DesktopCommandSource = 'menu' | 'context-menu' | 'icon' | 'programmatic';
 
 export type ContextTargetKind = 'window' | 'icon' | 'widget' | 'message' | 'conversation';
+export type DesktopIconKind = 'app' | 'folder';
+
+export interface DesktopFolderIconOptions {
+  /**
+   * Ordered icon ids that belong to this folder.
+   * Unknown ids are ignored at runtime.
+   */
+  memberIconIds: string[];
+}
 
 export interface DesktopContextTargetRef {
   kind: ContextTargetKind;
   windowId?: string;
   iconId?: string;
+  iconKind?: DesktopIconKind;
   widgetId?: string;
   messageId?: string;
   conversationId?: string;
@@ -57,6 +67,9 @@ export interface DesktopIconDef {
   id: string;
   label: string;
   icon: string;
+  kind?: DesktopIconKind;
+  appId?: string;
+  folder?: DesktopFolderIconOptions;
   /** Explicit horizontal position. When omitted, icons auto-flow in a grid. */
   x?: number;
   /** Explicit vertical position. When omitted, icons auto-flow in a grid. */

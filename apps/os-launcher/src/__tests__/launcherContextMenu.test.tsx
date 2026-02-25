@@ -101,6 +101,12 @@ function fireContextMenu(target: Element): void {
   });
 }
 
+function getIconLabels(container: HTMLElement): string[] {
+  return Array.from(container.querySelectorAll('[data-part="windowing-icon-label"]'))
+    .map((node) => node.textContent?.trim() ?? '')
+    .filter((label): label is string => label.length > 0);
+}
+
 describe('launcher context menu behavior', () => {
   it('opens icon context menu quick actions and routes Open command', async () => {
     const { container, store } = await renderHost();
@@ -156,5 +162,59 @@ describe('launcher context menu behavior', () => {
 
     expect(initiallyUnfocused.getAttribute('data-state')).toBe('focused');
     expect(container.querySelector('[data-part="context-menu"]')).not.toBeNull();
+  });
+
+  it('opens folder context menu actions and launches all member apps', async () => {
+    const { container, store } = await renderHost();
+    const folderIcon = container.querySelector('[aria-label="Applications"]');
+    expect(folderIcon).not.toBeNull();
+
+    const windowCountBefore = Object.keys(store.getState().windowing.windows).length;
+
+    fireContextMenu(folderIcon as Element);
+
+    const contextMenu = container.querySelector('[data-part="context-menu"]');
+    expect(contextMenu).not.toBeNull();
+    expect(contextMenu?.textContent).toContain('Open');
+    expect(contextMenu?.textContent).toContain('Open in New Window');
+    expect(contextMenu?.textContent).toContain('Launch All');
+    expect(contextMenu?.textContent).toContain('Sort Icons');
+
+    const launchAllAction = Array.from(contextMenu?.querySelectorAll('button') ?? []).find(
+      (button) => button.textContent?.trim() === 'Launch All'
+    );
+    expect(launchAllAction).not.toBeUndefined();
+
+    act(() => {
+      launchAllAction?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+
+    const windowCountAfter = Object.keys(store.getState().windowing.windows).length;
+    expect(windowCountAfter).toBeGreaterThanOrEqual(windowCountBefore + launcherModules.length);
+  });
+
+  it('sorts launcher icons after folder Sort Icons action', async () => {
+    const { container } = await renderHost();
+    const folderIcon = container.querySelector('[aria-label="Applications"]');
+    expect(folderIcon).not.toBeNull();
+
+    fireContextMenu(folderIcon as Element);
+
+    const contextMenu = container.querySelector('[data-part="context-menu"]');
+    expect(contextMenu).not.toBeNull();
+    const sortIconsAction = Array.from(contextMenu?.querySelectorAll('button') ?? []).find(
+      (button) => button.textContent?.trim() === 'Sort Icons'
+    );
+    expect(sortIconsAction).not.toBeUndefined();
+
+    act(() => {
+      sortIconsAction?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+
+    const iconLabels = getIconLabels(container);
+    expect(iconLabels.at(-1)).toBe('Applications');
+    const appLabels = iconLabels.slice(0, -1);
+    const sortedAppLabels = [...appLabels].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+    expect(appLabels).toEqual(sortedAppLabels);
   });
 });

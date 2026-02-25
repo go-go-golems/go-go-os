@@ -25,10 +25,10 @@
 
 ### Phase 3: Scenario 2 - Folder/icon hybrid launcher
 
-- [ ] `OS10-30` Add folder icon type contract and launcher semantics (`Open`, `Open in New Window`, `Launch All`, `Sort Icons`).
-- [ ] `OS10-31` Implement folder-target context menu actions and command handlers.
-- [ ] `OS10-32` Add integration tests for folder menu behavior.
-- [ ] `OS10-33` Add Storybook demo for folder context menu flow.
+- [x] `OS10-30` Add folder icon type contract and launcher semantics (`Open`, `Open in New Window`, `Launch All`, `Sort Icons`).
+- [x] `OS10-31` Implement folder-target context menu actions and command handlers.
+- [x] `OS10-32` Add integration tests for folder menu behavior.
+- [x] `OS10-33` Add Storybook demo for folder context menu flow.
 
 ### Phase 4: Scenario 3 - Chat message context menu
 

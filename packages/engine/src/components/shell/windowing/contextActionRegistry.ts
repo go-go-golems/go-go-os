@@ -13,10 +13,12 @@ function normalizeValue(value: string | undefined): string | undefined {
 }
 
 export function normalizeContextTargetRef(target: DesktopContextTargetRef): DesktopContextTargetRef {
+  const normalizedIconKind = target.iconKind === 'folder' ? 'folder' : target.iconKind === 'app' ? 'app' : undefined;
   return {
     kind: target.kind,
     windowId: normalizeValue(target.windowId),
     iconId: normalizeValue(target.iconId),
+    iconKind: normalizedIconKind,
     widgetId: normalizeValue(target.widgetId),
     messageId: normalizeValue(target.messageId),
     conversationId: normalizeValue(target.conversationId),
@@ -32,6 +34,7 @@ export function buildContextTargetKey(target: DesktopContextTargetRef): string {
   if (normalized.conversationId) parts.push(`conversation=${normalized.conversationId}`);
   if (normalized.messageId) parts.push(`message=${normalized.messageId}`);
   if (normalized.iconId) parts.push(`icon=${normalized.iconId}`);
+  if (normalized.iconKind) parts.push(`iconKind=${normalized.iconKind}`);
   if (normalized.widgetId) parts.push(`widget=${normalized.widgetId}`);
   return parts.join('|');
 }
@@ -48,6 +51,16 @@ export function resolveContextActionPrecedenceKeys(target: DesktopContextTargetR
   const seen = new Set<string>();
 
   pushUniqueKey(keys, buildContextTargetKey(normalized), seen);
+  if (normalized.iconKind) {
+    pushUniqueKey(
+      keys,
+      buildContextTargetKey({
+        ...normalized,
+        iconKind: undefined,
+      }),
+      seen,
+    );
+  }
 
   if (normalized.appId) {
     pushUniqueKey(keys, buildContextTargetKey({ kind: normalized.kind, appId: normalized.appId }), seen);

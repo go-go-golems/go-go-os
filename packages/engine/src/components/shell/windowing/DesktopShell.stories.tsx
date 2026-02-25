@@ -58,6 +58,23 @@ const CUSTOM_ICONS: DesktopIconDef[] = [
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ];
 
+const FOLDER_HYBRID_ICONS: DesktopIconDef[] = [
+  { id: 'home', label: 'Home', icon: '🏠', kind: 'app' },
+  { id: 'browse', label: 'Browse', icon: '📋', kind: 'app' },
+  { id: 'report', label: 'Reports', icon: '📊', kind: 'app' },
+  { id: 'chat', label: 'Assistant', icon: '💬', kind: 'app' },
+  { id: 'settings', label: 'Settings', icon: '⚙️', kind: 'app' },
+  {
+    id: 'folder.workspace',
+    label: 'Workspace',
+    icon: '🗂️',
+    kind: 'folder',
+    folder: {
+      memberIconIds: ['home', 'browse', 'report', 'chat', 'settings'],
+    },
+  },
+];
+
 const { createStore } = createAppStore({});
 
 const RUNTIME_MENU_SECTIONS: DesktopActionSection[] = [
@@ -244,6 +261,21 @@ export const WithIconQuickActionsContextMenu: Story = {
       description: {
         story:
           'Right-click desktop icons to open quick actions (`Open`, `Open New`, `Pin`, `Inspect`) routed through desktop command handling.',
+      },
+    },
+  },
+};
+
+export const WithFolderHybridLauncherContextMenu: Story = {
+  args: {
+    stack: DEMO_STACK,
+    icons: FOLDER_HYBRID_ICONS,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Right-click the Workspace folder icon to access folder actions (`Open`, `Open in New Window`, `Launch All`, `Sort Icons`) while app icons keep their quick-action menu.',
       },
     },
   },

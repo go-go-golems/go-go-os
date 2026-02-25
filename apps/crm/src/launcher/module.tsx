@@ -1,11 +1,10 @@
-import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
+import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { PluginCardSessionHost } from '@hypercard/engine/desktop-hypercard-adapter';
-import { DesktopIconLayer, type DesktopContribution, type WindowContentAdapter } from '@hypercard/engine/desktop-react';
+import { type DesktopContribution, type WindowContentAdapter } from '@hypercard/engine/desktop-react';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { Provider } from 'react-redux';
-import { useDispatch } from 'react-redux';
 import { createCrmStore } from '../app/store';
 import { STACK } from '../domain/stack';
 import { CrmRealAppWindow } from './renderCrmApp';
@@ -24,8 +23,6 @@ const launcherStateSlice = createSlice({
   },
 });
 
-const CRM_APP_ID = 'crm';
-const CRM_FOLDER_INSTANCE_ID = 'folder';
 const CRM_WORKSPACE_INSTANCE_PREFIX = 'workspace-';
 const CRM_SESSION_PREFIX = 'crm-session:';
 
@@ -36,27 +33,7 @@ function nextInstanceId(): string {
   return `crm-${Date.now()}`;
 }
 
-function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
-  const instanceId = CRM_FOLDER_INSTANCE_ID;
-  return {
-    id: `window:crm:${instanceId}`,
-    title: 'CRM Folder',
-    icon: '📇',
-    bounds: {
-      x: 230,
-      y: 72,
-      w: 520,
-      h: 380,
-    },
-    content: {
-      kind: 'app',
-      appKey: formatAppKey(CRM_APP_ID, instanceId),
-    },
-    dedupeKey: reason === 'startup' ? 'crm:folder:startup' : 'crm:folder',
-  };
-}
-
-function buildWorkspaceWindowPayload(): OpenWindowPayload {
+function buildWorkspaceWindowPayload(reason: LaunchReason): OpenWindowPayload {
   const instanceId = `${CRM_WORKSPACE_INSTANCE_PREFIX}${nextInstanceId()}`;
   return {
     id: `window:crm:${instanceId}`,
@@ -76,6 +53,7 @@ function buildWorkspaceWindowPayload(): OpenWindowPayload {
         cardSessionId: `${CRM_SESSION_PREFIX}${instanceId}`,
       },
     },
+    dedupeKey: reason === 'startup' ? 'crm:startup' : undefined,
   };
 }
 
@@ -105,32 +83,6 @@ function CrmLauncherAppHost() {
   );
 }
 
-function CrmFolderWindow() {
-  const dispatch = useDispatch();
-  const [selectedIconId, setSelectedIconId] = useState<string | null>('crm-folder.open-workspace');
-
-  const openIcon = useCallback(
-    (iconId: string) => {
-      if (iconId !== 'crm-folder.open-workspace') {
-        return;
-      }
-      dispatch(openWindow(buildWorkspaceWindowPayload()));
-    },
-    [dispatch],
-  );
-
-  return (
-    <section style={{ height: '100%', padding: 12 }}>
-      <DesktopIconLayer
-        icons={[{ id: 'crm-folder.open-workspace', label: 'Open CRM', icon: '📇' }]}
-        selectedIconId={selectedIconId}
-        onSelectIcon={setSelectedIconId}
-        onOpenIcon={openIcon}
-      />
-    </section>
-  );
-}
-
 export const crmLauncherModule: LaunchableAppModule = {
   manifest: {
     id: 'crm',
@@ -147,7 +99,7 @@ export const crmLauncherModule: LaunchableAppModule = {
   },
   buildLaunchWindow: (ctx, reason) => {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
-    return buildLaunchWindowPayload(reason);
+    return buildWorkspaceWindowPayload(reason);
   },
   createContributions: (): DesktopContribution[] => [
     {
@@ -155,6 +107,5 @@ export const crmLauncherModule: LaunchableAppModule = {
       windowContentAdapters: [createCrmCardAdapter()],
     },
   ],
-  renderWindow: ({ instanceId, windowId }): ReactNode =>
-    instanceId === CRM_FOLDER_INSTANCE_ID ? <CrmFolderWindow /> : <CrmLauncherAppHost key={windowId} />,
+  renderWindow: ({ windowId }): ReactNode => <CrmLauncherAppHost key={windowId} />,
 };

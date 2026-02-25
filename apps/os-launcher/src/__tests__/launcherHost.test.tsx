@@ -48,12 +48,15 @@ describe('launcher host wiring', () => {
 
     expect(hostContext.openWindow).toHaveBeenCalledTimes(appIds.length);
     for (const [index, appId] of appIds.entries()) {
-      const [payload] = hostContext.openWindow.mock.calls[index] as [{ content: { kind: string; appKey?: string } }];
-      if (payload.content.kind === 'app') {
+      const [payload] = hostContext.openWindow.mock.calls[index] as [
+        { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
+      ];
+      if (appId === 'inventory') {
+        expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
         expect(payload.content.kind).toBe('card');
-        expect(appId).toBe('inventory');
+        expect(payload.content.card?.stackId).toBeTruthy();
       }
     }
   });
@@ -140,13 +143,14 @@ describe('launcher host wiring', () => {
       const ctx = createHostContext();
       const payload = module.buildLaunchWindow(ctx, 'icon');
       expect(payload.id).toContain(module.manifest.id);
-      if (payload.content.kind === 'app') {
+      if (module.manifest.id === 'inventory') {
+        expect(payload.content.kind).toBe('app');
         const parsed = parseAppKey(payload.content.appKey ?? '');
         expect(parsed).not.toBeNull();
         expect(parsed?.appId).toBe(module.manifest.id);
       } else {
         expect(payload.content.kind).toBe('card');
-        expect(payload.content.card?.stackId).toBe('inventory');
+        expect(payload.content.card?.stackId).toBeTruthy();
       }
 
       const renderInstanceId = module.manifest.id === 'inventory' ? 'chat-test-instance' : 'test-instance';

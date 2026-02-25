@@ -1,11 +1,10 @@
-import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
+import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { PluginCardSessionHost } from '@hypercard/engine/desktop-hypercard-adapter';
-import { DesktopIconLayer, type DesktopContribution, type WindowContentAdapter } from '@hypercard/engine/desktop-react';
+import { type DesktopContribution, type WindowContentAdapter } from '@hypercard/engine/desktop-react';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { Provider } from 'react-redux';
-import { useDispatch } from 'react-redux';
 import { createTodoStore } from '../app/store';
 import { STACK } from '../domain/stack';
 import { TodoRealAppWindow } from './renderTodoApp';
@@ -24,8 +23,6 @@ const launcherStateSlice = createSlice({
   },
 });
 
-const TODO_APP_ID = 'todo';
-const TODO_FOLDER_INSTANCE_ID = 'folder';
 const TODO_WORKSPACE_INSTANCE_PREFIX = 'workspace-';
 const TODO_SESSION_PREFIX = 'todo-session:';
 
@@ -36,27 +33,7 @@ function nextInstanceId(): string {
   return `todo-${Date.now()}`;
 }
 
-function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
-  const instanceId = TODO_FOLDER_INSTANCE_ID;
-  return {
-    id: `window:todo:${instanceId}`,
-    title: 'Todo Folder',
-    icon: '✅',
-    bounds: {
-      x: 210,
-      y: 72,
-      w: 520,
-      h: 380,
-    },
-    content: {
-      kind: 'app',
-      appKey: formatAppKey(TODO_APP_ID, instanceId),
-    },
-    dedupeKey: `todo:folder:${reason}`,
-  };
-}
-
-function buildWorkspaceWindowPayload(): OpenWindowPayload {
+function buildWorkspaceWindowPayload(reason: LaunchReason): OpenWindowPayload {
   const instanceId = `${TODO_WORKSPACE_INSTANCE_PREFIX}${nextInstanceId()}`;
   return {
     id: `window:todo:${instanceId}`,
@@ -76,6 +53,7 @@ function buildWorkspaceWindowPayload(): OpenWindowPayload {
         cardSessionId: `${TODO_SESSION_PREFIX}${instanceId}`,
       },
     },
+    dedupeKey: reason === 'startup' ? 'todo:startup' : undefined,
   };
 }
 
@@ -105,32 +83,6 @@ function TodoLauncherAppHost() {
   );
 }
 
-function TodoFolderWindow() {
-  const dispatch = useDispatch();
-  const [selectedIconId, setSelectedIconId] = useState<string | null>('todo-folder.open-workspace');
-
-  const openIcon = useCallback(
-    (iconId: string) => {
-      if (iconId !== 'todo-folder.open-workspace') {
-        return;
-      }
-      dispatch(openWindow(buildWorkspaceWindowPayload()));
-    },
-    [dispatch],
-  );
-
-  return (
-    <section style={{ height: '100%', padding: 12 }}>
-      <DesktopIconLayer
-        icons={[{ id: 'todo-folder.open-workspace', label: 'Open Todo', icon: '✅' }]}
-        selectedIconId={selectedIconId}
-        onSelectIcon={setSelectedIconId}
-        onOpenIcon={openIcon}
-      />
-    </section>
-  );
-}
-
 export const todoLauncherModule: LaunchableAppModule = {
   manifest: {
     id: 'todo',
@@ -147,7 +99,7 @@ export const todoLauncherModule: LaunchableAppModule = {
   },
   buildLaunchWindow: (ctx, reason) => {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
-    return buildLaunchWindowPayload(reason);
+    return buildWorkspaceWindowPayload(reason);
   },
   createContributions: (): DesktopContribution[] => [
     {
@@ -155,6 +107,5 @@ export const todoLauncherModule: LaunchableAppModule = {
       windowContentAdapters: [createTodoCardAdapter()],
     },
   ],
-  renderWindow: ({ instanceId, windowId }): ReactNode =>
-    instanceId === TODO_FOLDER_INSTANCE_ID ? <TodoFolderWindow /> : <TodoLauncherAppHost key={windowId} />,
+  renderWindow: ({ windowId }): ReactNode => <TodoLauncherAppHost key={windowId} />,
 };

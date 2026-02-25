@@ -91,3 +91,76 @@ I also created a short implementation plan that locks the UX contract before tou
 - Created docs with:
   - `docmgr doc add --ticket OS-13-CHAT-TURN-STATE --doc-type design --title "Implementation plan: per-window turn state machine"`
   - `docmgr doc add --ticket OS-13-CHAT-TURN-STATE --doc-type reference --title "Diary"`
+
+## Step 2: Implement Per-window Turn Machine And Replace Legacy Awaiting Logic
+
+I implemented the clean state-machine approach by adding a dedicated runtime module and wiring `ChatConversationWindow` to it. The old pending-spinner heuristics (timestamp/index/stream-start clear branches) were removed and replaced by deterministic phase transitions.
+
+I also added focused unit tests for the machine so the behavior is validated independent of React rendering details. This keeps future refactors safe and makes UX contract regressions obvious.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Execute implementation tasks one by one, replacing old behavior with a per-window turn lifecycle state machine and validating with tests.
+
+**Inferred user intent:** Achieve stable non-flickering pending behavior and eliminate incremental hacks.
+
+**Commit (code):** Pending at this step; recorded after staging this milestone.
+
+### What I did
+- Added new state-machine module:
+  - `/home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/chat/runtime/pendingAiTurnMachine.ts`
+- Rewired chat window behavior:
+  - `/home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/chat/components/ChatConversationWindow.tsx`
+  - replaced awaiting heuristics with machine transitions:
+    - `waiting_for_user_append`
+    - `waiting_for_ai_signal`
+    - `ai_active`
+- Added machine tests:
+  - `/home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/chat/runtime/pendingAiTurnMachine.test.ts`
+- Ran validation:
+  - `npm run typecheck -w packages/engine`
+  - `npm run test -w packages/engine -- src/chat/runtime/pendingAiTurnMachine.test.ts src/chat/runtime/conversationManager.test.ts src/chat/ws/wsManager.test.ts src/chat/sem/semRegistry.test.ts`
+
+### Why
+- Existing behavior cleared pending indicator on stream-start before timeline AI evidence, causing flicker and incorrect timing.
+- The new machine enforces the desired sequence:
+  - no placeholder before user append,
+  - placeholder visible between user append and first AI-side timeline signal.
+
+### What worked
+- Typecheck passed after refactor.
+- New and existing targeted tests passed.
+- Spinner decision path is now represented by explicit state, not spread conditional branches.
+
+### What didn't work
+- N/A in this step.
+
+### What I learned
+- Separating turn-lifecycle logic into a pure module makes testing straightforward and reduces component complexity.
+
+### What was tricky to build
+- The subtle part was defining AI-signal detection without reintroducing timestamp/order fragility.
+- I solved this by anchoring at baseline index, then requiring user-append detection before considering any post-user AI-side signals.
+
+### What warrants a second pair of eyes
+- Validate that classifying non-message post-user entities as AI-signal matches product expectations for all backends.
+- Confirm `connectionStatus === error` handling is sufficient for terminal failure paths.
+
+### What should be done in the future
+- If backend can return a turn/request correlation id, consider upgrading machine matching from index-based to id-based correlation.
+
+### Code review instructions
+- Start with:
+  - `/home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/chat/runtime/pendingAiTurnMachine.ts`
+- Then inspect integration:
+  - `/home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/chat/components/ChatConversationWindow.tsx`
+- Validate via:
+  - `npm run typecheck -w packages/engine`
+  - `npm run test -w packages/engine -- src/chat/runtime/pendingAiTurnMachine.test.ts src/chat/runtime/conversationManager.test.ts src/chat/ws/wsManager.test.ts src/chat/sem/semRegistry.test.ts`
+
+### Technical details
+- Placeholder visibility rule is now:
+  - `showPendingResponseSpinner = shouldShowPendingAiPlaceholder(state)`
+- `shouldShowPendingAiPlaceholder` returns true only in `waiting_for_ai_signal`.

@@ -28,6 +28,13 @@ import { timelineSlice } from '../state/timelineSlice';
 import { isRecord } from '../utils/guards';
 import { useConversation } from '../runtime/useConversation';
 import { useCurrentProfile } from '../runtime/useCurrentProfile';
+import {
+  advancePendingAiTurn,
+  beginPendingAiTurn,
+  createPendingAiTurnIdleState,
+  markPendingAiTurnError,
+  shouldShowPendingAiPlaceholder,
+} from '../runtime/pendingAiTurnMachine';
 import { useProfiles } from '../runtime/useProfiles';
 import { useSetProfile } from '../runtime/useSetProfile';
 import {
@@ -35,6 +42,7 @@ import {
   resolveProfileSelectorValue,
 } from './profileSelectorState';
 import { StatsFooter } from './StatsFooter';
+import { getDebugLogger } from '../debug/debugChannels';
 
 export interface ChatConversationWindowProps {
   convId: string;
@@ -47,6 +55,8 @@ export interface ChatConversationWindowProps {
   profileScopeKey?: string;
   renderMode?: RenderMode;
 }
+
+const turnLog = getDebugLogger('chat:conversation:turn');
 
 function toRenderEntity(entity: {
   id: string;
@@ -62,26 +72,6 @@ function toRenderEntity(entity: {
     updatedAt: entity.updatedAt,
     props: isRecord(entity.props) ? entity.props : {},
   };
-}
-
-function isInboundResponseEntity(
-  entity: { kind: string; createdAt: number; props: unknown },
-  awaitingSinceMs: number
-): boolean {
-  if (entity.createdAt < awaitingSinceMs) {
-    return false;
-  }
-  if (entity.kind !== 'message') {
-    return true;
-  }
-  const props = isRecord(entity.props) ? entity.props : {};
-  const role = typeof props.role === 'string' ? props.role : 'assistant';
-  if (role === 'user') {
-    return false;
-  }
-  const content = typeof props.content === 'string' ? props.content.trim() : '';
-  const streaming = props.streaming === true;
-  return content.length > 0 || streaming;
 }
 
 export function ChatConversationWindow({
@@ -104,7 +94,7 @@ export function ChatConversationWindow({
   );
   const currentProfile = useCurrentProfile(profileScopeKey);
   const setProfile = useSetProfile(basePrefix, { scopeKey: profileScopeKey });
-  const [awaitingResponseSinceMs, setAwaitingResponseSinceMs] = useState<number | null>(null);
+  const [pendingTurn, setPendingTurn] = useState(() => createPendingAiTurnIdleState('init'));
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectRenderableTimelineEntities(state, convId)
@@ -150,29 +140,45 @@ export function ChatConversationWindow({
   }, [convId, dispatch, entities.length, starterSuggestionsEntity]);
 
   useEffect(() => {
-    setAwaitingResponseSinceMs(null);
+    setPendingTurn((previous) => {
+      if (previous.phase !== 'idle') {
+        turnLog('turn:reset conv=%s prev=%o reason=conv-change', convId, previous);
+      }
+      return createPendingAiTurnIdleState('conv-change');
+    });
   }, [convId]);
 
   useEffect(() => {
-    if (awaitingResponseSinceMs === null) {
-      return;
-    }
-    if (connectionStatus === 'error' || connectionStatus === 'closed') {
-      setAwaitingResponseSinceMs(null);
-      return;
-    }
-    if (
-      entities.some((entity) =>
-        isInboundResponseEntity(entity, awaitingResponseSinceMs)
-      )
-    ) {
-      setAwaitingResponseSinceMs(null);
-    }
-  }, [awaitingResponseSinceMs, connectionStatus, entities]);
+    setPendingTurn((previous) => {
+      const next = advancePendingAiTurn(previous, {
+        entities: entities as Array<{ id: string; kind: string; props: unknown }>,
+        connectionStatus,
+      });
+      if (next !== previous) {
+        turnLog(
+          'turn:transition conv=%s status=%s entities=%d prev=%o next=%o',
+          convId,
+          connectionStatus,
+          entities.length,
+          previous,
+          next
+        );
+      }
+      return next;
+    });
+  }, [connectionStatus, convId, entities]);
 
   const sendWithSuggestionLifecycle = useCallback(
     async (prompt: string) => {
-      setAwaitingResponseSinceMs(Date.now());
+      const startState = beginPendingAiTurn(entities.length);
+      turnLog(
+        'turn:submit conv=%s promptLen=%d entities=%d state=%o',
+        convId,
+        prompt.length,
+        entities.length,
+        startState
+      );
+      setPendingTurn(startState);
       dispatch(
         timelineSlice.actions.upsertSuggestions({
           convId,
@@ -197,11 +203,13 @@ export function ChatConversationWindow({
       try {
         await send(prompt);
       } catch (error) {
-        setAwaitingResponseSinceMs(null);
+        const errorState = markPendingAiTurnError('send-error');
+        turnLog('turn:error conv=%s error=%o next=%o', convId, error, errorState);
+        setPendingTurn(errorState);
         throw error;
       }
     },
-    [convId, dispatch, send]
+    [convId, dispatch, entities.length, send]
   );
 
   const rendererRegistryVersion = useSyncExternalStore(
@@ -291,7 +299,7 @@ export function ChatConversationWindow({
       timelineItemCount={entities.length}
       conversationTotalTokens={conversationTotalTokens}
       isStreaming={isStreaming}
-      showPendingResponseSpinner={awaitingResponseSinceMs !== null}
+      showPendingResponseSpinner={shouldShowPendingAiPlaceholder(pendingTurn)}
       onSend={sendWithSuggestionLifecycle}
       suggestions={suggestions}
       showSuggestionsAlways

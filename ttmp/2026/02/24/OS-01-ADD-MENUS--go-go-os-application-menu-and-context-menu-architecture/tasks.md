@@ -40,8 +40,8 @@
 - [x] `OS01-31` Add `onContextMenu` handling in `WindowTitleBar`.
 - [x] `OS01-32` Ensure right-click focuses target window before showing context menu.
 - [x] `OS01-33` Preserve drag/resize behavior: left button only, unchanged.
-- [ ] `OS01-34` Add unit tests for title-bar right-click interaction path.
-- [ ] `OS01-35` Add unit tests for focused-window transition on right-click.
+- [x] `OS01-34` Add unit tests for title-bar right-click interaction path.
+- [x] `OS01-35` Add unit tests for focused-window transition on right-click.
 
 ### Phase 3: ContextMenu component upgrade
 

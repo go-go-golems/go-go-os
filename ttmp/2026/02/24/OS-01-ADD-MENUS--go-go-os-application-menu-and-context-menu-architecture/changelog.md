@@ -74,3 +74,13 @@ Validation for this slice:
 - `pnpm --filter @hypercard/engine typecheck`
 - `pnpm --filter @hypercard/os-launcher test -- src/__tests__/launcherHost.test.tsx`
 - `pnpm --filter @hypercard/os-launcher build`
+
+Added right-click regression tests for title-bar context-menu open behavior and focus transfer on context-menu invocation.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx — New jsdom integration tests for `OS01-34` and `OS01-35`.
+
+Validation for this slice:
+
+- `pnpm --filter @hypercard/os-launcher test -- src/__tests__/launcherContextMenu.test.tsx`

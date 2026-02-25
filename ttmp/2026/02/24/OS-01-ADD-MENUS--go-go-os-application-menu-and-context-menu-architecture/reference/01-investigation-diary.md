@@ -24,7 +24,7 @@ RelatedFiles:
       Note: Confirms context-menu styling primitives already available for shell integration.
 ExternalSources: []
 Summary: Chronological investigation log for OS-01-ADD-MENUS including commands, evidence, findings, design decisions, and delivery steps.
-LastUpdated: 2026-02-24T22:33:34-05:00
+LastUpdated: 2026-02-24T22:35:19-05:00
 WhatFor: Use this as a reproducible audit trail of how the menu/context-menu architecture analysis was performed and which files were used as evidence.
 WhenToUse: Use when reviewing the design proposal, onboarding engineers, or continuing implementation planning in this ticket.
 ---
@@ -403,3 +403,29 @@ pnpm --filter @hypercard/os-launcher build
 ### Notes
 
 1. Profile selection in this slice is still global state-backed; conversation-scoped profile selection remains tracked under `OS01-60`..`OS01-65`.
+
+## 2026-02-24 22:34 - OS-01 right-click regression tests (`OS01-34`, `OS01-35`)
+
+### Intent
+
+Add direct integration tests for:
+
+1. title-bar right-click opening a shell context menu,
+2. right-click focusing the target unfocused window before menu open.
+
+### Commands
+
+```bash
+cd /home/manuel/workspaces/2026-02-24/add-menus/go-go-os
+pnpm --filter @hypercard/os-launcher test -- src/__tests__/launcherContextMenu.test.tsx
+```
+
+### Implementation notes
+
+1. Added `apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx` with jsdom integration coverage.
+2. Test `opens shell context menu from title-bar right click` verifies context-menu DOM mount and expected default command entry text.
+3. Test `focuses unfocused window before showing title-bar context menu` verifies right-click path updates focused window state (`data-state="focused"`) on the clicked window.
+
+### Validation results
+
+1. Targeted launcher test command passed (includes existing known selector warnings emitted by unrelated plugin-card selectors).

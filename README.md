@@ -26,10 +26,29 @@ npm install
 npm run dev          # Vite dev server (apps/inventory on localhost:5173)
 npm run storybook    # Storybook dev server (all apps + engine widgets)
 npm run build        # Production build (engine + all 4 apps)
+npm run launcher:binary:build  # Build single launcher binary (embedded UI + backend modules)
+npm run launcher:smoke         # Boot binary and run route/health/policy smoke checks
 npm run typecheck    # TypeScript project-references check
 npm run lint         # Biome lint/format check
 npm run test         # Vitest runtime tests + Storybook taxonomy check
 ```
+
+## Single Binary Launcher
+
+The launcher-first production path is a single Go binary that serves:
+
+- embedded `apps/os-launcher` frontend assets at `/`
+- namespaced backend modules under `/api/apps/<app-id>/*`
+- module manifest and health at `/api/os/apps`
+
+Build and run:
+
+```bash
+npm run launcher:binary:build
+./build/go-go-os-launcher go-go-os-launcher --addr :8091
+```
+
+Hard-cut route policy: legacy aliases (`/chat`, `/ws`, `/api/timeline`) are intentionally blocked.
 
 ## Architecture
 

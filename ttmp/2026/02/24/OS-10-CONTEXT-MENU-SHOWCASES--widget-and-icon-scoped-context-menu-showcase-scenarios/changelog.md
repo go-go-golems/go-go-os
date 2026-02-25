@@ -100,3 +100,39 @@ Validation:
 - `npm run typecheck -w packages/engine`
 - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
 - `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx`
+
+## 2026-02-25
+
+Completed OS-10 Phase 6 (Scenario 10: role/profile-aware menus): added action-level role/profile predicates, centralized visibility filtering, unauthorized hide/disable behavior, and context-menu command guardrails.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/types.ts — Added `DesktopActionVisibility` and `DesktopActionVisibilityContext` contracts on `DesktopActionItem`.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/contextActionVisibility.ts — Added visibility evaluator/filter pipeline and context command guard helper.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx — Wired profile/role-aware filtering into target menu resolution and added guardrails before context-menu command routing.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/contextActionVisibility.test.ts — Added unit tests for profile/role filtering, hide/disable fallback, separator normalization, and command guard behavior.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/inventory/src/launcher/renderInventoryApp.tsx — Added visibility policies to conversation actions (`Replay Last Turn`, `Export Transcript`, `Change Profile`) for scenario coverage.
+
+Validation:
+
+- `npm run typecheck -w packages/engine`
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/contextActionVisibility.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx`
+
+## 2026-02-25
+
+Completed OS-10 Phase 7 and ticket closure: updated authoring docs for target-scoped menus, added a Storybook scenario board covering chat message/conversation/role-aware behavior, ran full frontend validation, and closed the ticket.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/docs/desktop-menu-runtime-authoring.md — Added target-scoped registration/open-menu APIs, `contextTarget` invocation metadata, and role/profile visibility guidance.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx — Added `WithChatMessageConversationAndRoleAwareContextMenu` showcase story to cover scenarios 3/4/10 in one board.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/index.ts — Exported visibility helper APIs and visibility context types from windowing surface.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/desktop/react/index.ts — Exported visibility helper APIs and visibility context types from desktop-react surface.
+
+Validation:
+
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/contextActionVisibility.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx`
+- `npm test`
+- `npm run build`

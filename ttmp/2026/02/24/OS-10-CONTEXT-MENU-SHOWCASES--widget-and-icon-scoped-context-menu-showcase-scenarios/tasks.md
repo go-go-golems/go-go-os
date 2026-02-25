@@ -46,24 +46,24 @@
 
 ### Phase 6: Scenario 10 - Role/profile-aware menus
 
-- [ ] `OS10-60` Add role/profile predicate support to context action entries.
-- [ ] `OS10-61` Wire visibility filtering against current profile/role selection state.
-- [ ] `OS10-62` Add fallback disabled/hidden policy for unauthorized actions.
-- [ ] `OS10-63` Add test coverage for role-aware menu filtering and command guardrails.
+- [x] `OS10-60` Add role/profile predicate support to context action entries.
+- [x] `OS10-61` Wire visibility filtering against current profile/role selection state.
+- [x] `OS10-62` Add fallback disabled/hidden policy for unauthorized actions.
+- [x] `OS10-63` Add test coverage for role-aware menu filtering and command guardrails.
 
 ### Phase 7: Docs, quality, and closure
 
-- [ ] `OS10-70` Add engine authoring docs for target-scoped context menu APIs.
-- [ ] `OS10-71` Add Storybook showcase board for scenarios 1/2/3/4/10.
-- [ ] `OS10-72` Run targeted tests for engine + launcher context menu suites.
-- [ ] `OS10-73` Run full frontend validation (`pnpm test`, `pnpm build`) and record results.
-- [ ] `OS10-74` Update changelog/diary and run `docmgr doctor --ticket OS-10-CONTEXT-MENU-SHOWCASES --stale-after 30`.
-- [ ] `OS10-75` Close ticket once showcases are implemented and demo-ready.
+- [x] `OS10-70` Add engine authoring docs for target-scoped context menu APIs.
+- [x] `OS10-71` Add Storybook showcase board for scenarios 1/2/3/4/10.
+- [x] `OS10-72` Run targeted tests for engine + launcher context menu suites.
+- [x] `OS10-73` Run full frontend validation (`pnpm test`, `pnpm build`) and record results.
+- [x] `OS10-74` Update changelog/diary and run `docmgr doctor --ticket OS-10-CONTEXT-MENU-SHOWCASES --stale-after 30`.
+- [x] `OS10-75` Close ticket once showcases are implemented and demo-ready.
 
 ## Definition of Done
 
-- [ ] Context menu system supports target-specific menus for icons/widgets/messages/conversations.
-- [ ] Showcase scenarios `1`, `2`, `3`, `4`, and `10` are implemented and demoed.
-- [ ] Scenario `11` extension path is documented with explicit platform prerequisites.
-- [ ] Tests cover target resolution precedence and role/profile filtering behavior.
-- [ ] Documentation and Storybook are updated for downstream app/module authors.
+- [x] Context menu system supports target-specific menus for icons/widgets/messages/conversations.
+- [x] Showcase scenarios `1`, `2`, `3`, `4`, and `10` are implemented and demoed.
+- [x] Scenario `11` extension path is documented with explicit platform prerequisites.
+- [x] Tests cover target resolution precedence and role/profile filtering behavior.
+- [x] Documentation and Storybook are updated for downstream app/module authors.

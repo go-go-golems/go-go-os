@@ -21,6 +21,16 @@ type DesktopActionEntry =
       shortcut?: string;
       disabled?: boolean;
       checked?: boolean;
+      visibility?: {
+        allowedProfiles?: string[];
+        allowedRoles?: string[];
+        when?: (context: {
+          profile?: string;
+          registry?: string;
+          roles?: string[];
+        }) => boolean;
+        unauthorized?: 'hide' | 'disable';
+      };
       payload?: Record<string, unknown>;
     }
   | { separator: true };
@@ -34,6 +44,38 @@ type DesktopActionSection = {
 ```
 
 Legacy `DesktopMenuSection` / `DesktopMenuEntry` aliases remain supported and map to the same shape.
+
+## Target-Scoped Context Actions
+
+Use target-aware hooks for non-window context menus:
+
+- `useRegisterIconContextActions(iconId, actions)`
+- `useRegisterWidgetContextActions(widgetId, actions)`
+- `useRegisterMessageContextActions(conversationId, messageId, actions)`
+- `useRegisterConversationContextActions(conversationId, actions)`
+- `useRegisterContextActions(target, actions)` for custom target wiring
+
+Use `useOpenDesktopContextMenu()` from inside a window body to open menus for explicit targets.
+
+```tsx
+const openContextMenu = useOpenDesktopContextMenu();
+
+function onMessageRightClick(event: React.MouseEvent, convId: string, messageId: string) {
+  event.preventDefault();
+  openContextMenu?.({
+    x: event.clientX,
+    y: event.clientY,
+    menuId: 'message-context',
+    target: {
+      kind: 'message',
+      conversationId: convId,
+      messageId,
+    },
+  });
+}
+```
+
+Resolution precedence is deterministic: `exact target -> kind/app fallback -> window fallback`.
 
 ## Static Contributions (Module Level)
 
@@ -132,6 +174,14 @@ type DesktopCommandInvocation = {
   menuId?: string;
   windowId?: string | null;
   widgetId?: string;
+  contextTarget?: {
+    kind: 'window' | 'icon' | 'widget' | 'message' | 'conversation';
+    windowId?: string;
+    iconId?: string;
+    messageId?: string;
+    conversationId?: string;
+    appId?: string;
+  };
   payload?: Record<string, unknown>;
 };
 ```
@@ -142,7 +192,31 @@ When a context-menu action is clicked, metadata includes:
 - `menuId: 'window-context'`
 - `windowId: <focused-window-id>`
 - `widgetId: 'title-bar'` when opened from title bar
+- `contextTarget` with normalized target metadata (`iconId`, `messageId`, `conversationId`, etc.)
 - `payload` from the selected action entry
+
+## Role/Profile-Aware Visibility
+
+Context actions can be hidden or disabled based on active profile/roles.
+
+```ts
+{
+  id: 'chat-export',
+  label: 'Export Transcript',
+  commandId: 'inventory.chat.conv-1.conversation.export-transcript',
+  visibility: {
+    allowedRoles: ['admin'],
+    unauthorized: 'hide',
+  },
+}
+```
+
+Behavior:
+
+- Visibility is evaluated when building the context menu.
+- `unauthorized: 'hide'` removes the action.
+- `unauthorized: 'disable'` keeps the action visible but disabled.
+- The shell also enforces guardrails for context-menu command execution; hidden/disabled entries are not invocable through the context-menu path.
 
 ## Profile-Scoped Menu Patterns
 

@@ -1,11 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
-import type { ReactNode } from 'react';
+import { type MouseEvent, type ReactNode, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { createAppStore } from '../../../app/createAppStore';
 import type { CardDefinition, CardStackDefinition } from '../../../cards/types';
+import { chatProfilesSlice } from '../../../chat/state/profileSlice';
 import DEMO_PLUGIN_BUNDLE from './DesktopShell.demo.vm.js?raw';
 import type { DesktopContribution } from './desktopContributions';
-import { useRegisterWindowContextActions, useRegisterWindowMenuSections } from './desktopMenuRuntime';
+import {
+  useOpenDesktopContextMenu,
+  useRegisterConversationContextActions,
+  useRegisterMessageContextActions,
+  useRegisterWindowContextActions,
+  useRegisterWindowMenuSections,
+} from './desktopMenuRuntime';
 import { DesktopShell, type DesktopShellProps } from './DesktopShell';
 import type { DesktopActionEntry, DesktopActionSection, DesktopIconDef } from './types';
 
@@ -146,6 +154,195 @@ function RuntimeToolsWindow(): ReactNode {
   );
 }
 
+const RUNTIME_CHAT_CONTEXT_STORY_CONTRIBUTIONS: DesktopContribution[] = [
+  {
+    id: 'runtime-story-chat-context-window',
+    startupWindows: [
+      {
+        id: 'runtime-story-chat-context',
+        create: () => ({
+          id: 'window:story:chat-context',
+          title: 'Chat Context Showcase',
+          icon: '💬',
+          bounds: { x: 620, y: 88, w: 560, h: 360 },
+          content: {
+            kind: 'app',
+            appKey: 'story.runtime:chat-context',
+          },
+          dedupeKey: 'story-chat-context-showcase',
+        }),
+      },
+    ],
+  },
+];
+
+function RuntimeChatContextWindow() {
+  const dispatch = useDispatch();
+  const profile = useSelector((state: { chatProfiles?: { selectedProfile?: string | null } }) =>
+    state.chatProfiles?.selectedProfile ?? null,
+  );
+  const openDesktopContextMenu = useOpenDesktopContextMenu();
+  const convId = 'story-conv-1';
+  const messageId = 'story-message-1';
+
+  useEffect(() => {
+    dispatch(
+      chatProfilesSlice.actions.setAvailableProfiles([
+        {
+          slug: 'default',
+          display_name: 'Default',
+          extensions: { roles: ['operator'] },
+        },
+        {
+          slug: 'agent',
+          display_name: 'Agent',
+          extensions: { roles: ['operator', 'analyst'] },
+        },
+        {
+          slug: 'admin',
+          display_name: 'Admin',
+          extensions: { roles: ['admin'] },
+        },
+      ]),
+    );
+    dispatch(
+      chatProfilesSlice.actions.setSelectedProfile({
+        profile: 'default',
+        registry: 'default',
+      }),
+    );
+  }, [dispatch]);
+
+  const messageActions = useMemo<DesktopActionEntry[]>(
+    () => [
+      {
+        id: 'story-chat-message-copy',
+        label: 'Copy',
+        commandId: 'story.chat.message.copy',
+      },
+      {
+        id: 'story-chat-message-create-task',
+        label: 'Create Task',
+        commandId: 'story.chat.message.create-task',
+        visibility: {
+          allowedProfiles: ['agent'],
+          unauthorized: 'disable',
+        },
+      },
+    ],
+    [],
+  );
+
+  const conversationActions = useMemo<DesktopActionEntry[]>(
+    () => [
+      {
+        id: 'story-chat-conversation-replay',
+        label: 'Replay Last Turn',
+        commandId: 'story.chat.conversation.replay',
+        visibility: {
+          allowedProfiles: ['agent'],
+          unauthorized: 'disable',
+        },
+      },
+      {
+        id: 'story-chat-conversation-timeline',
+        label: 'Open Timeline',
+        commandId: 'story.chat.conversation.timeline',
+      },
+      {
+        id: 'story-chat-conversation-export',
+        label: 'Export Transcript',
+        commandId: 'story.chat.conversation.export',
+        visibility: {
+          allowedRoles: ['admin'],
+          unauthorized: 'hide',
+        },
+      },
+    ],
+    [],
+  );
+
+  useRegisterMessageContextActions(convId, messageId, messageActions);
+  useRegisterConversationContextActions(convId, conversationActions);
+
+  const openMessageContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openDesktopContextMenu?.({
+      x: event.clientX,
+      y: event.clientY,
+      menuId: 'message-context',
+      target: {
+        kind: 'message',
+        conversationId: convId,
+        messageId,
+      },
+    });
+  };
+
+  const openConversationContextMenu = (event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    openDesktopContextMenu?.({
+      x: event.clientX,
+      y: event.clientY,
+      menuId: 'conversation-context',
+      target: {
+        kind: 'conversation',
+        conversationId: convId,
+      },
+    });
+  };
+
+  return (
+    <section
+      style={{ padding: 12, display: 'grid', gap: 10, height: '100%', alignContent: 'start' }}
+      onContextMenu={openConversationContextMenu}
+    >
+      <strong>Chat Context Showcase</strong>
+      <span>
+        Active profile: <code>{profile ?? '(none)'}</code>
+      </span>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          type="button"
+          onClick={() =>
+            dispatch(chatProfilesSlice.actions.setSelectedProfile({ profile: 'default', registry: 'default' }))
+          }
+        >
+          Use Default
+        </button>
+        <button
+          type="button"
+          onClick={() => dispatch(chatProfilesSlice.actions.setSelectedProfile({ profile: 'agent', registry: 'default' }))}
+        >
+          Use Agent
+        </button>
+        <button
+          type="button"
+          onClick={() => dispatch(chatProfilesSlice.actions.setSelectedProfile({ profile: 'admin', registry: 'default' }))}
+        >
+          Use Admin
+        </button>
+      </div>
+      <div
+        role="article"
+        onContextMenu={openMessageContextMenu}
+        style={{
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: 8,
+          padding: 10,
+          background: 'rgba(0, 0, 0, 0.18)',
+        }}
+      >
+        Assistant message bubble (right-click for message actions)
+      </div>
+      <span style={{ fontSize: 12, opacity: 0.85 }}>
+        Right-click outside the message bubble for conversation actions. Profile visibility drives hide/disable behavior.
+      </span>
+    </section>
+  );
+}
+
 function DesktopShellStory(props: DesktopShellProps) {
   const store = createStore();
   return (
@@ -276,6 +473,23 @@ export const WithFolderHybridLauncherContextMenu: Story = {
       description: {
         story:
           'Right-click the Workspace folder icon to access folder actions (`Open`, `Open in New Window`, `Launch All`, `Sort Icons`) while app icons keep their quick-action menu.',
+      },
+    },
+  },
+};
+
+export const WithChatMessageConversationAndRoleAwareContextMenu: Story = {
+  args: {
+    stack: DEMO_STACK,
+    icons: CUSTOM_ICONS,
+    contributions: RUNTIME_CHAT_CONTEXT_STORY_CONTRIBUTIONS,
+    renderAppWindow: (appKey) => (appKey === 'story.runtime:chat-context' ? <RuntimeChatContextWindow /> : null),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Scenario board for chat message (3), conversation (4), and role/profile-aware (10) context menus. Right-click message vs background and switch profile to observe hide/disable behavior.',
       },
     },
   },

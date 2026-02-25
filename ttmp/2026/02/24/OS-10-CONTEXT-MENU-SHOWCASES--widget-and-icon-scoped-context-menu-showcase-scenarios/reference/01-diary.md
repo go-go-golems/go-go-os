@@ -38,9 +38,17 @@ RelatedFiles:
       Note: Added conversation-surface context menu targeting and action registration.
     - Path: packages/engine/src/components/widgets/ChatWindow.tsx
       Note: Added timeline context-menu callback to support conversation right-click actions.
+    - Path: packages/engine/src/components/shell/windowing/contextActionVisibility.ts
+      Note: Added centralized role/profile visibility filtering and context-menu command guard helper.
+    - Path: packages/engine/src/components/shell/windowing/contextActionVisibility.test.ts
+      Note: Added Scenario 10 unit coverage for visibility policies, fallback behavior, and guardrails.
+    - Path: packages/engine/docs/desktop-menu-runtime-authoring.md
+      Note: Added authoring guidance for target-scoped APIs and visibility rules.
+    - Path: packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx
+      Note: Added scenario board story covering chat message, conversation, and role-aware context menus.
 ExternalSources: []
 Summary: Diary for OS-10 implementation work.
-LastUpdated: 2026-02-25T17:07:00-05:00
+LastUpdated: 2026-02-25T17:25:00-05:00
 WhatFor: Capture implementation progress and rationale as OS-10 moves from planning into execution.
 WhenToUse: Use when continuing OS-10 or reviewing completed showcase phases.
 ---
@@ -454,3 +462,195 @@ This step kept command ownership in inventory’s existing chat namespace: conve
   - Target kind: `conversation`
   - Menu id: `conversation-context`
   - Payload includes `conversationId`.
+
+## Step 6: Phase 6 Scenario 10 (Role/Profile-Aware Context Menus)
+
+Implemented a clean visibility pipeline for context actions so role/profile gating is declarative at the action entry level and enforced centrally in one place.
+
+This phase avoided app-specific hacks in menu rendering paths by adding a shared visibility evaluator used by all context target kinds (`icon`, `window`, `message`, `conversation`, `widget`).
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue OS-10 execution and implement scenario 10 properly, including cleanup of older ad-hoc behavior.
+
+**Inferred user intent:** Ship a robust role/profile-aware menu model that remains maintainable and does not regress command routing behavior.
+
+### What I did
+
+- Added visibility contracts to `DesktopActionItem`:
+  - `allowedProfiles`
+  - `allowedRoles`
+  - custom predicate (`when`)
+  - unauthorized policy (`hide` | `disable`)
+- Added `contextActionVisibility.ts` with:
+  - `isActionVisible`
+  - `applyActionVisibility`
+  - `isContextCommandAllowed`
+- Updated shell controller to:
+  - resolve visibility context from active chat profile state (`chatProfiles` + conversation scope),
+  - apply visibility filtering before opening any context menu,
+  - enforce guardrails in `routeCommand` for context-menu invocations so hidden/disabled entries cannot execute through the context-menu path.
+- Added Scenario 10 tests in `contextActionVisibility.test.ts`.
+- Added inventory conversation action visibility metadata:
+  - profile-gated disabled fallback for `Change Profile` and `Replay Last Turn`,
+  - role-gated hidden fallback for `Export Transcript`.
+- Exported visibility helpers/types from windowing and desktop-react public surfaces.
+
+### Why
+
+- Scenario 10 required a first-class visibility model, not per-feature conditional menu code.
+- Centralizing filtering + guardrails keeps behavior consistent across all target kinds and makes plugin/app contributions predictable.
+
+### What worked
+
+- `npm run typecheck -w packages/engine` passed.
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/contextActionVisibility.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts` passed.
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx` passed.
+
+### What didn't work
+
+- No blocking failures in this phase.
+- Existing launcher test stderr warnings (selector memoization + `act(...)`) remain unchanged and predate this work.
+
+### What I learned
+
+- Keeping visibility as action metadata scales better than target-specific conditionals in controller builders.
+- Guarding at command dispatch time is still valuable even when UI already disables/hides entries.
+
+### What was tricky to build
+
+- The tricky part was making profile/role resolution generic enough for shell-level code without hard-coding inventory-specific types.
+  - Cause: shell code operates on generic Redux root shape, while profile state originates in chat-specific slices.
+  - Symptom: visibility logic risked either tight coupling or missing scoped profile selection.
+  - Resolution: add a tolerant state reader in shell controller (`chatProfiles` + `conv:<id>` scope fallback) and keep filtering logic itself pure/tested in `contextActionVisibility.ts`.
+
+### What warrants a second pair of eyes
+
+- Whether role extraction should continue to read `profile.extensions.role(s)` or move to a stronger typed contract once role semantics are finalized.
+- Whether non-context-menu command paths should also honor Scenario 10 guardrails in future hardening.
+
+### What should be done in the future
+
+- Phase 7 (`OS10-70`..`OS10-75`): docs/storybook closure and full validation.
+
+### Code review instructions
+
+- Start with:
+  - `packages/engine/src/components/shell/windowing/contextActionVisibility.ts`
+  - `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx`
+  - `packages/engine/src/components/shell/windowing/types.ts`
+  - `apps/inventory/src/launcher/renderInventoryApp.tsx`
+- Validate with:
+  - `npm run typecheck -w packages/engine`
+  - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/contextActionVisibility.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+  - `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx`
+
+### Technical details
+
+- Visibility context fields:
+  - `profile`
+  - `registry`
+  - `roles`
+  - `target`
+- Unauthorized policies:
+  - `hide` removes entries.
+  - `disable` keeps entries rendered but disabled.
+- Guardrail behavior:
+  - context-menu command execution is denied when matching menu entry is hidden/disabled after visibility filtering.
+
+## Step 7: Phase 7 Docs, Validation, and Ticket Closure
+
+Completed closure tasks by updating authoring docs and Storybook showcase coverage, then running full workspace test/build validation and marking the ticket closed.
+
+This step intentionally kept closure explicit: all remaining checkboxes were completed, status moved to `closed`, and final validation commands were recorded.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Keep going through the remaining OS-10 work and finish the ticket end-to-end.
+
+**Inferred user intent:** Deliver the feature as done, not partial, with docs/tests/validation and bookkeeping complete.
+
+### What I did
+
+- Updated engine authoring guide with:
+  - target-scoped registration hooks,
+  - explicit `useOpenDesktopContextMenu` usage,
+  - visibility/guardrail semantics.
+- Added Storybook scenario board:
+  - `WithChatMessageConversationAndRoleAwareContextMenu`
+  - demonstrates scenarios 3/4/10 in one interactive window.
+- Ran targeted validation:
+  - engine context-action suite,
+  - launcher context-menu/host suites.
+- Ran full frontend validation:
+  - `npm test`
+  - `npm run build`
+- Updated ticket docs:
+  - checked off Phase 6/7 tasks and DoD,
+  - appended changelog entries for steps 6/7,
+  - updated index status to `closed` and refreshed related files/metadata.
+
+### Why
+
+- OS-10’s DoD explicitly requires documentation, demos, and complete validation, not only code implementation.
+- Closure bookkeeping ensures downstream contributors can trust ticket state and follow the documented APIs.
+
+### What worked
+
+- `npm test` passed across engine, desktop-os, and os-launcher suites.
+- `npm run build` passed across all workspace packages/apps.
+- Targeted and full validations matched expected behavior with no new blocking failures.
+
+### What didn't work
+
+- No closure blockers.
+- Existing non-blocking warnings in os-launcher tests persisted (selector memoization and `act(...)` notices from `PluginCardSessionHost`) and were not introduced by this ticket.
+
+### What I learned
+
+- The new scenario board is useful as a compact regression harness for target + visibility behavior without needing app backend setup.
+- Keeping closure commands in changelog/tasks reduces ambiguity when revisiting long-running tickets.
+
+### What was tricky to build
+
+- The trickiest part was keeping Storybook runtime hooks stable to avoid re-registration loops.
+  - Cause: target registration hooks react to action-array identity changes.
+  - Symptom: story components can churn registrations each render if action arrays are not memoized.
+  - Resolution: memoized message/conversation action arrays in the story component with `useMemo`.
+
+### What warrants a second pair of eyes
+
+- Optional follow-up to clean known os-launcher test warnings for overall suite hygiene.
+- Optional expansion of story controls for role/registry simulation beyond profile switching.
+
+### What should be done in the future
+
+- `N/A`
+
+### Code review instructions
+
+- Start with:
+  - `packages/engine/docs/desktop-menu-runtime-authoring.md`
+  - `packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx`
+  - `ttmp/2026/02/24/OS-10-CONTEXT-MENU-SHOWCASES--widget-and-icon-scoped-context-menu-showcase-scenarios/tasks.md`
+  - `ttmp/2026/02/24/OS-10-CONTEXT-MENU-SHOWCASES--widget-and-icon-scoped-context-menu-showcase-scenarios/index.md`
+  - `ttmp/2026/02/24/OS-10-CONTEXT-MENU-SHOWCASES--widget-and-icon-scoped-context-menu-showcase-scenarios/changelog.md`
+- Validate with:
+  - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/contextActionVisibility.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+  - `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx`
+  - `npm test`
+  - `npm run build`
+
+### Technical details
+
+- Storybook scenario id:
+  - `WithChatMessageConversationAndRoleAwareContextMenu`
+- Ticket status:
+  - moved from `active` to `closed`
+- Full validation commands completed:
+  - `npm test`
+  - `npm run build`

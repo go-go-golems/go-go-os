@@ -1,4 +1,10 @@
-import type { RenderEntity } from '../types';
+import { type MouseEvent, useMemo } from 'react';
+import {
+  useDesktopWindowId,
+  useOpenDesktopContextMenu,
+  useRegisterMessageContextActions,
+} from '../../../components/shell/windowing/desktopMenuRuntime';
+import type { RenderContext, RenderEntity } from '../types';
 
 function StreamingCursor() {
   return (
@@ -32,14 +38,58 @@ function roleLabel(role: string) {
   return 'AI:';
 }
 
-export function MessageRenderer({ e }: { e: RenderEntity }) {
+export function MessageRenderer({ e, ctx }: { e: RenderEntity; ctx?: RenderContext }) {
   const role = String(e.props.role ?? 'assistant');
   const content = String(e.props.content ?? '');
   const streaming = e.props.streaming === true;
+  const convId = String(ctx?.convId ?? '').trim();
+  const windowId = useDesktopWindowId();
+  const openContextMenu = useOpenDesktopContextMenu();
+
+  const messageContextActions = useMemo(() => {
+    if (!convId) {
+      return [];
+    }
+
+    const payload = {
+      conversationId: convId,
+      messageId: e.id,
+      role,
+      content,
+    };
+
+    return [
+      { id: `chat-message.reply.${e.id}`, label: 'Reply', commandId: 'chat.message.reply', payload },
+      { id: `chat-message.copy.${e.id}`, label: 'Copy', commandId: 'chat.message.copy', payload },
+      { id: `chat-message.create-task.${e.id}`, label: 'Create Task', commandId: 'chat.message.create-task', payload },
+      { id: `chat-message.debug-event.${e.id}`, label: 'Debug Event', commandId: 'chat.message.debug-event', payload },
+    ];
+  }, [content, convId, e.id, role]);
+
+  useRegisterMessageContextActions(convId, e.id, messageContextActions);
+
+  const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    if (!convId || !openContextMenu) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    openContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      menuId: 'message-context',
+      target: {
+        kind: 'message',
+        conversationId: convId,
+        messageId: e.id,
+        windowId: windowId ?? undefined,
+      },
+    });
+  };
 
   if (streaming && content.length === 0) {
     return (
-      <div data-part="chat-message" data-role={role}>
+      <div data-part="chat-message" data-role={role} onContextMenu={handleContextMenu}>
         <div data-part="chat-role">{roleLabel(role)}</div>
         <ThinkingDots />
       </div>
@@ -47,7 +97,7 @@ export function MessageRenderer({ e }: { e: RenderEntity }) {
   }
 
   return (
-    <div data-part="chat-message" data-role={role}>
+    <div data-part="chat-message" data-role={role} onContextMenu={handleContextMenu}>
       <div data-part="chat-role">{roleLabel(role)}</div>
       <div style={{ fontSize: 11, whiteSpace: 'pre-wrap' }}>
         {content}

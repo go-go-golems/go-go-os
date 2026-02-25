@@ -26,9 +26,17 @@ RelatedFiles:
       Note: Added default launcher folder icon composition with member icon ids.
     - Path: apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx
       Note: Added launcher integration tests for folder context menu actions.
+    - Path: packages/engine/src/chat/renderers/builtin/MessageRenderer.tsx
+      Note: Added per-message context action registration and message-target menu open behavior.
+    - Path: packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx
+      Note: Added runtime hook/API for opening target-scoped context menus from window content.
+    - Path: apps/inventory/src/launcher/renderInventoryApp.tsx
+      Note: Added inventory command handlers for chat message context actions.
+    - Path: apps/os-launcher/src/__tests__/launcherHost.test.tsx
+      Note: Added command-level tests for message action payload routing.
 ExternalSources: []
 Summary: Diary for OS-10 implementation work.
-LastUpdated: 2026-02-25T16:48:00-05:00
+LastUpdated: 2026-02-25T17:03:00-05:00
 WhatFor: Capture implementation progress and rationale as OS-10 moves from planning into execution.
 WhenToUse: Use when continuing OS-10 or reviewing completed showcase phases.
 ---
@@ -247,3 +255,102 @@ This phase focused on deterministic behavior rather than UI-only placeholders: f
 - App icon contract enhancement:
   - `kind: 'app'`
   - `appId` explicitly set by launcher icon builder.
+
+## Step 4: Phase 4 Scenario 3 (Chat Message Context Menu)
+
+Implemented message-scoped context menu behavior by allowing in-window components to open shell context menus with explicit targets, then wiring message renderer right-click events to register and invoke message actions.
+
+This step focused on target accuracy and payload determinism: each message action now carries `conversationId` and `messageId`, and inventory command handlers can consume that metadata for app-specific behavior.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue executing OS-10 phases without pausing after Phase 3 completion.
+
+**Inferred user intent:** Keep closing planned ticket phases in sequence, with concrete implementation plus tests/docs updates each time.
+
+### What I did
+
+- Extended window runtime API:
+  - Added `openContextMenu` to `DesktopWindowMenuRuntime`.
+  - Added `useOpenDesktopContextMenu()` hook so window content components can open shell context menus for arbitrary targets.
+- Extended shell controller:
+  - Added generic `openContextMenu(request)` handler to normalize targets and resolve menu items for icon/window/message/etc.
+  - Reused this path for existing icon/window right-click behavior.
+  - Added built-in `chat.message.copy` command handling with clipboard + toast fallback.
+- Implemented message renderer context actions:
+  - `MessageRenderer` now registers per-message actions with `useRegisterMessageContextActions`.
+  - Actions: `Reply`, `Copy`, `Create Task`, `Debug Event`.
+  - Payload includes `conversationId`, `messageId`, `role`, and `content`.
+  - Right-click opens `message-context` menu with target metadata (`kind: message`, `conversationId`, `messageId`, `windowId`).
+- Added inventory action handlers for message commands:
+  - `chat.message.debug-event` opens event viewer for payload conversation id.
+  - `chat.message.reply` and `chat.message.create-task` dispatch toast feedback for deterministic handling.
+- Added launcher host tests:
+  - Verified message action command routing and payload-based handling in `launcherHost.test.tsx`.
+- Added engine integration test coverage in `DesktopShell.contextMenu.test.tsx` for message target invocation metadata (note: file remains outside default engine test include pattern).
+
+### Why
+
+- Scenario 3 requires right-click behavior tied to exact message entities, not window-level surfaces.
+- Without an API for in-window components to request context menus, message-level targeting cannot be expressed cleanly.
+
+### What worked
+
+- `npm run typecheck -w packages/engine` passed.
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts` passed.
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherContextMenu.test.tsx src/__tests__/launcherHost.test.tsx` passed.
+
+### What didn't work
+
+- Running `DesktopShell.contextMenu.test.tsx` directly through the engine package test script still hangs/does not complete in this environment; the default engine test include pattern intentionally excludes `.test.tsx`, so this file is not part of the scripted suite yet.
+
+### What I learned
+
+- Message-target context menus need a runtime “open menu at coordinates with target” primitive; registration hooks alone are not enough.
+- Payload-first command handling allows app modules to implement behavior without coupling the shell to app-specific semantics.
+
+### What was tricky to build
+
+- The main complexity was avoiding target mismatch between registration and invocation.
+  - Cause: message actions are registered with window-scoped targets, while right-click events originate in nested renderer components.
+  - Symptom: if `windowId` is omitted at invocation time, exact target lookup can miss registered message actions.
+  - Resolution: message renderer now includes `windowId` via `useDesktopWindowId()` when opening message context menus.
+
+### What warrants a second pair of eyes
+
+- Confirm whether `chat.message.reply` should eventually prefill composer text rather than only dispatching an app-level handler/toast.
+- Confirm desired policy for `DesktopShell.contextMenu.test.tsx`: include `.test.tsx` in CI suite or migrate this test into currently-included `.test.ts` patterns.
+
+### What should be done in the future
+
+- Phase 5 (`OS10-50`..`OS10-53`): conversation-surface context menu with conversation-level actions and routing.
+
+### Code review instructions
+
+- Start with:
+  - `packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx`
+  - `packages/engine/src/components/shell/windowing/useDesktopShellController.tsx`
+  - `packages/engine/src/chat/renderers/builtin/MessageRenderer.tsx`
+  - `apps/inventory/src/launcher/renderInventoryApp.tsx`
+  - `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+- Validate with:
+  - `npm run typecheck -w packages/engine`
+  - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+  - `npm run test -w apps/os-launcher -- src/__tests__/launcherContextMenu.test.tsx src/__tests__/launcherHost.test.tsx`
+
+### Technical details
+
+- Message action ids:
+  - `chat.message.reply`
+  - `chat.message.copy`
+  - `chat.message.create-task`
+  - `chat.message.debug-event`
+- Message target invocation uses:
+  - `contextTarget.kind = 'message'`
+  - `contextTarget.conversationId`
+  - `contextTarget.messageId`
+  - `contextTarget.windowId`
+- Runtime API addition:
+  - `openContextMenu({ x, y, menuId, target, windowId?, widgetId? })`

@@ -24,7 +24,7 @@ function commandContext(): DesktopCommandContext {
 
 function createHostContext() {
   return {
-    dispatch: () => undefined,
+    dispatch: vi.fn(() => undefined),
     getState: () => ({}),
     openWindow: vi.fn(),
     closeWindow: () => undefined,
@@ -234,6 +234,49 @@ describe('launcher host wiring', () => {
       expect.objectContaining({
         type: 'chatProfiles/setSelectedProfile',
         payload: { profile: 'agent', registry: 'default', scopeKey: 'conv:conv-42' },
+      }),
+    );
+  });
+
+  it('routes message context actions using conversation/message payload metadata', () => {
+    const hostContext = createHostContext();
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
+
+    const invocation = {
+      source: 'context-menu' as const,
+      contextTarget: {
+        kind: 'message' as const,
+        conversationId: 'conv-42',
+        messageId: 'msg-9',
+      },
+      payload: {
+        conversationId: 'conv-42',
+        messageId: 'msg-9',
+        content: 'Need stock adjustments',
+      },
+    };
+
+    const debugHandled = routeContributionCommand('chat.message.debug-event', handlers, commandContext(), invocation);
+    expect(debugHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(1);
+    const [eventPayload] = hostContext.openWindow.mock.calls[0] as [{ id: string; title: string }];
+    expect(eventPayload.id).toContain('event-viewer-conv-42');
+    expect(eventPayload.title).toContain('Event Viewer');
+
+    const replyHandled = routeContributionCommand('chat.message.reply', handlers, commandContext(), invocation);
+    expect(replyHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
+      }),
+    );
+
+    const taskHandled = routeContributionCommand('chat.message.create-task', handlers, commandContext(), invocation);
+    expect(taskHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
       }),
     );
   });

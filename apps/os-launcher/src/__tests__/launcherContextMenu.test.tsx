@@ -217,4 +217,5 @@ describe('launcher context menu behavior', () => {
     const sortedAppLabels = [...appLabels].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
     expect(appLabels).toEqual(sortedAppLabels);
   });
+
 });

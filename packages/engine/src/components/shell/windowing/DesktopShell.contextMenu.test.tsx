@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAppStore } from '../../../app/createAppStore';
 import type { CardStackDefinition } from '../../../cards/types';
+import { MessageRenderer } from '../../../chat/renderers/builtin/MessageRenderer';
 import { focusWindow, openWindow } from '../../../desktop/core/state/windowingSlice';
 import { DesktopShell } from './DesktopShell';
 import { useRegisterWindowContextActions, useRegisterWindowMenuSections } from './desktopMenuRuntime';
@@ -62,6 +63,26 @@ function RuntimeMenuWindow() {
   return (
     <section style={{ padding: 8 }}>
       <strong>Runtime Menu Window</strong>
+    </section>
+  );
+}
+
+function RuntimeMessageWindow() {
+  return (
+    <section style={{ padding: 8 }}>
+      <MessageRenderer
+        e={{
+          id: 'msg-runtime-1',
+          kind: 'message',
+          createdAt: Date.now(),
+          props: {
+            role: 'assistant',
+            content: 'Runtime message payload',
+            streaming: false,
+          },
+        }}
+        ctx={{ mode: 'normal', convId: 'conv-runtime' }}
+      />
     </section>
   );
 }
@@ -243,5 +264,85 @@ describe('desktop shell context-menu invocation metadata', () => {
     });
     expect(menuLabels(container)).not.toContain('Chat');
     expect(menuLabels(container)).not.toContain('Profile');
+  });
+
+  it('opens message-target context menu and forwards conversation/message payload metadata', async () => {
+    const { createStore } = createAppStore({});
+    const store = createStore();
+    const onCommand = vi.fn();
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    containers.push(container);
+
+    const root = createRoot(container);
+    roots.push(root);
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <DesktopShell
+            stack={TEST_STACK}
+            renderAppWindow={(appKey) => (appKey === 'runtime-tools:message' ? <RuntimeMessageWindow /> : null)}
+            onCommand={onCommand}
+          />
+        </Provider>,
+      );
+    });
+
+    const runtimeWindowId = 'window:runtime:message';
+    await act(async () => {
+      store.dispatch(
+        openWindow({
+          id: runtimeWindowId,
+          title: 'Runtime Message Window',
+          icon: '💬',
+          bounds: { x: 200, y: 72, w: 460, h: 320 },
+          content: {
+            kind: 'app',
+            appKey: 'runtime-tools:message',
+          },
+        }),
+      );
+    });
+
+    const message = container.querySelector('[data-part="chat-message"]');
+    expect(message).not.toBeNull();
+    fireContextMenu(message as Element);
+
+    const contextMenu = container.querySelector('[data-part="context-menu"]');
+    expect(contextMenu).not.toBeNull();
+    expect(contextMenu?.textContent).toContain('Reply');
+    expect(contextMenu?.textContent).toContain('Copy');
+    expect(contextMenu?.textContent).toContain('Create Task');
+    expect(contextMenu?.textContent).toContain('Debug Event');
+
+    const debugEventAction = Array.from(contextMenu?.querySelectorAll('button') ?? []).find(
+      (button) => button.textContent?.trim() === 'Debug Event',
+    );
+    expect(debugEventAction).not.toBeUndefined();
+
+    act(() => {
+      debugEventAction?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+
+    expect(onCommand).toHaveBeenCalledWith(
+      'chat.message.debug-event',
+      expect.objectContaining({
+        source: 'context-menu',
+        menuId: 'message-context',
+        windowId: runtimeWindowId,
+        contextTarget: expect.objectContaining({
+          kind: 'message',
+          windowId: runtimeWindowId,
+          conversationId: 'conv-runtime',
+          messageId: 'msg-runtime-1',
+        }),
+        payload: expect.objectContaining({
+          conversationId: 'conv-runtime',
+          messageId: 'msg-runtime-1',
+          content: 'Runtime message payload',
+        }),
+      }),
+    );
   });
 });

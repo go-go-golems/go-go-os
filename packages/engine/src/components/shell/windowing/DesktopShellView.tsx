@@ -34,6 +34,7 @@ export function DesktopShellView({
   onContextMenuClose,
   onContextMenuSelect,
   onContextMenuAction,
+  openContextMenu,
   registerWindowMenuSections,
   unregisterWindowMenuSections,
   registerContextActions,
@@ -65,6 +66,7 @@ export function DesktopShellView({
           unregisterContextActions={unregisterContextActions}
           registerWindowContextActions={registerWindowContextActions}
           unregisterWindowContextActions={unregisterWindowContextActions}
+          openContextMenu={openContextMenu}
         >
           <WindowLayer
             windows={windows}

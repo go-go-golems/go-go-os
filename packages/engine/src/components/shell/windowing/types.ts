@@ -57,6 +57,15 @@ export interface DesktopCommandInvocation {
   payload?: Record<string, unknown>;
 }
 
+export interface DesktopContextMenuOpenRequest {
+  x: number;
+  y: number;
+  target: DesktopContextTargetRef;
+  menuId?: string;
+  windowId?: string | null;
+  widgetId?: string;
+}
+
 // Backward-compatible menu aliases used throughout existing callers.
 export type DesktopMenuItem = DesktopActionItem;
 export type DesktopMenuSeparator = DesktopActionSeparator;

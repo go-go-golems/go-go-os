@@ -65,3 +65,21 @@ Validation:
 - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
 - `npm run test -w packages/desktop-os`
 - `npm run test -w apps/os-launcher -- src/__tests__/launcherContextMenu.test.tsx src/__tests__/launcherHost.test.tsx`
+
+## 2026-02-25
+
+Completed OS-10 Phase 4 (Scenario 3: chat message context menu): added message-target context menu opening from message renderer, message action registration with payload metadata, runtime open-context-menu API, and launcher command-routing tests for message actions.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx — Added `openContextMenu` runtime API and `useOpenDesktopContextMenu` hook.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx — Added generic target menu opening, message-target menu resolution, and built-in `chat.message.copy` handling.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/chat/renderers/builtin/MessageRenderer.tsx — Added per-message context action registration (`Reply`, `Copy`, `Create Task`, `Debug Event`) and right-click target invocation with conversation/message payload.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/inventory/src/launcher/renderInventoryApp.tsx — Added inventory command handlers for message actions, including debug-event routing to event viewer.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx — Added command-level integration coverage for message context action payload routing.
+
+Validation:
+
+- `npm run typecheck -w packages/engine`
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherContextMenu.test.tsx src/__tests__/launcherHost.test.tsx`

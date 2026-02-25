@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import { clearToast } from '../../../features/notifications/notificationsSlice';
+import { clearToast, showToast } from '../../../features/notifications/notificationsSlice';
 import { type NotificationsStateSlice, selectToast } from '../../../features/notifications/selectors';
 import {
   selectActiveMenuId,
@@ -53,6 +53,7 @@ import type {
   DesktopActionEntry,
   DesktopActionSection,
   DesktopCommandInvocation,
+  DesktopContextMenuOpenRequest,
   DesktopContextTargetRef,
   DesktopIconDef,
   DesktopIconKind,
@@ -133,6 +134,14 @@ function getCommandSuffix(commandId: string, prefix: string): string | null {
   return suffix.length > 0 ? suffix : null;
 }
 
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  return false;
+}
+
 function compareIconsByLabel(a: DesktopIconDef, b: DesktopIconDef): number {
   const aKindRank = resolveIconKind(a) === 'folder' ? 1 : 0;
   const bKindRank = resolveIconKind(b) === 'folder' ? 1 : 0;
@@ -205,6 +214,7 @@ export interface DesktopShellControllerResult {
   onContextMenuClose: () => void;
   onContextMenuSelect: (item: string) => void;
   onContextMenuAction: (entry: { commandId?: string; payload?: Record<string, unknown>; id?: string }) => void;
+  openContextMenu: (request: DesktopContextMenuOpenRequest) => void;
   registerWindowMenuSections: (windowId: string, sections: DesktopActionSection[]) => void;
   unregisterWindowMenuSections: (windowId: string) => void;
   registerContextActions: (target: DesktopContextTargetRef, actions: DesktopActionEntry[]) => void;
@@ -708,6 +718,21 @@ export function useDesktopShellController({
         return;
       }
 
+      if (commandId === 'chat.message.copy') {
+        const content = String(invocation.payload?.content ?? '').trim();
+        if (!content) {
+          return;
+        }
+        void copyTextToClipboard(content)
+          .then((copied) => {
+            dispatch(showToast(copied ? 'Copied message text' : 'Clipboard unavailable'));
+          })
+          .catch(() => {
+            dispatch(showToast('Copy failed'));
+          });
+        return;
+      }
+
       const handled = routeDesktopCommand(commandId, {
         homeCardId: stack.homeCard,
         focusedWindowId: focusedWin?.id ?? null,
@@ -844,64 +869,90 @@ export function useDesktopShellController({
     [contextActionsByTargetKey, windowsById],
   );
 
+  const buildGenericContextMenuItems = useCallback(
+    (target: DesktopContextTargetRef): DesktopActionEntry[] => {
+      return resolveContextActions(contextActionsByTargetKey, target);
+    },
+    [contextActionsByTargetKey],
+  );
+
+  const openContextMenu = useCallback(
+    (request: DesktopContextMenuOpenRequest) => {
+      const normalizedTarget = normalizeContextTargetRef(request.target);
+      let items: DesktopActionEntry[] = [];
+      if (normalizedTarget.kind === 'icon') {
+        items = buildIconContextMenuItems(normalizedTarget);
+      } else if (normalizedTarget.kind === 'window') {
+        items = buildWindowContextMenuItems(normalizedTarget);
+      } else {
+        items = buildGenericContextMenuItems(normalizedTarget);
+      }
+
+      if (items.length === 0) {
+        setContextMenu(null);
+        return;
+      }
+
+      if (normalizedTarget.kind === 'window' && normalizedTarget.windowId) {
+        dispatch(focusWindow(normalizedTarget.windowId));
+      }
+      if (normalizedTarget.kind === 'icon' && normalizedTarget.iconId) {
+        dispatch(setSelectedIcon(normalizedTarget.iconId));
+      }
+
+      dispatch(setActiveMenu(null));
+      setContextMenu({
+        x: request.x,
+        y: request.y,
+        menuId: request.menuId ?? `${normalizedTarget.kind}-context`,
+        windowId: request.windowId ?? normalizedTarget.windowId ?? null,
+        widgetId: request.widgetId ?? normalizedTarget.widgetId,
+        target: normalizedTarget,
+        items,
+      });
+    },
+    [buildGenericContextMenuItems, buildIconContextMenuItems, buildWindowContextMenuItems, dispatch],
+  );
+
   const handleContextMenuClose = useCallback(() => {
     setContextMenu(null);
   }, []);
 
   const handleWindowContextMenu = useCallback(
     (windowId: string, event: MouseEvent<HTMLElement>, source: 'surface' | 'title-bar') => {
-      const target = normalizeContextTargetRef({
-        kind: 'window',
-        windowId,
-        widgetId: source === 'title-bar' ? 'title-bar' : undefined,
-        appId: resolveWindowAppId(windowsById[windowId]),
-      });
-      const items = buildWindowContextMenuItems(target);
-      if (items.length === 0) {
-        setContextMenu(null);
-        return;
-      }
-      dispatch(focusWindow(windowId));
-      dispatch(setActiveMenu(null));
-      setContextMenu({
+      openContextMenu({
         x: event.clientX,
         y: event.clientY,
         menuId: 'window-context',
         windowId,
         widgetId: source === 'title-bar' ? 'title-bar' : undefined,
-        target,
-        items,
+        target: {
+          kind: 'window',
+          windowId,
+          widgetId: source === 'title-bar' ? 'title-bar' : undefined,
+          appId: resolveWindowAppId(windowsById[windowId]),
+        },
       });
     },
-    [buildWindowContextMenuItems, dispatch, windowsById],
+    [openContextMenu, windowsById],
   );
 
   const handleIconContextMenu = useCallback(
     (iconId: string, event: MouseEvent<HTMLButtonElement>) => {
       const icon = iconsById[iconId];
-      const target = normalizeContextTargetRef({
-        kind: 'icon',
-        iconId,
-        iconKind: resolveIconKind(icon),
-        appId: resolveIconAppId(icon),
-      });
-      const items = buildIconContextMenuItems(target);
-      if (items.length === 0) {
-        setContextMenu(null);
-        return;
-      }
-      dispatch(setSelectedIcon(iconId));
-      dispatch(setActiveMenu(null));
-      setContextMenu({
+      openContextMenu({
         x: event.clientX,
         y: event.clientY,
         menuId: 'icon-context',
-        windowId: null,
-        target,
-        items,
+        target: {
+          kind: 'icon',
+          iconId,
+          iconKind: resolveIconKind(icon),
+          appId: resolveIconAppId(icon),
+        },
       });
     },
-    [buildIconContextMenuItems, dispatch, iconsById],
+    [iconsById, openContextMenu],
   );
 
   const handleContextMenuSelect = useCallback(
@@ -1044,6 +1095,7 @@ export function useDesktopShellController({
     onContextMenuClose: handleContextMenuClose,
     onContextMenuSelect: handleContextMenuSelect,
     onContextMenuAction: handleContextMenuAction,
+    openContextMenu,
     registerWindowMenuSections,
     unregisterWindowMenuSections,
     registerContextActions,

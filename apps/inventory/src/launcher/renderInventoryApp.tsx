@@ -8,6 +8,7 @@ import {
   registerChatRuntimeModule,
   registerHypercardTimelineModule,
   RuntimeCardDebugWindow,
+  showToast,
   TimelineDebugWindow,
   chatProfilesSlice,
 } from '@hypercard/engine';
@@ -17,6 +18,7 @@ import {
   DesktopIconLayer,
   type DesktopActionEntry,
   type DesktopActionSection,
+  type DesktopCommandInvocation,
   type DesktopCommandHandler,
   type DesktopContribution,
   type DesktopIconDef,
@@ -45,6 +47,12 @@ interface InventoryChatCommand {
   kind: 'debug-event-viewer' | 'debug-timeline' | 'profile-select';
   convId: string;
   profile?: string | null;
+}
+
+interface MessageContextPayload {
+  conversationId: string;
+  messageId: string;
+  content?: string;
 }
 
 interface InventoryRootState {
@@ -270,6 +278,21 @@ function parseInventoryChatCommand(commandId: string): InventoryChatCommand | nu
   return null;
 }
 
+function resolveMessageContextPayload(invocation: DesktopCommandInvocation): MessageContextPayload | null {
+  const conversationId =
+    String(invocation.payload?.conversationId ?? invocation.contextTarget?.conversationId ?? '').trim();
+  const messageId = String(invocation.payload?.messageId ?? invocation.contextTarget?.messageId ?? '').trim();
+  if (!conversationId || !messageId) {
+    return null;
+  }
+  const content = String(invocation.payload?.content ?? '').trim();
+  return {
+    conversationId,
+    messageId,
+    content: content || undefined,
+  };
+}
+
 function buildFocusedChatMenuSections(args: {
   convId: string;
   availableProfiles: Array<{ slug: string; display_name?: string; is_default?: boolean }>;
@@ -424,6 +447,37 @@ function createInventoryCommands(hostContext: LauncherHostContext): DesktopComma
           }),
         );
         return 'handled';
+      },
+    },
+    {
+      id: 'inventory.chat.message-actions',
+      priority: 140,
+      matches: (commandId) =>
+        commandId === 'chat.message.reply' ||
+        commandId === 'chat.message.create-task' ||
+        commandId === 'chat.message.debug-event',
+      run: (commandId, _ctx, invocation) => {
+        const payload = resolveMessageContextPayload(invocation);
+        if (!payload) {
+          return 'pass';
+        }
+
+        if (commandId === 'chat.message.debug-event') {
+          hostContext.openWindow(buildEventViewerWindowPayload(payload.conversationId));
+          return 'handled';
+        }
+
+        if (commandId === 'chat.message.reply') {
+          hostContext.dispatch(showToast(`Reply action selected for message ${payload.messageId}`));
+          return 'handled';
+        }
+
+        if (commandId === 'chat.message.create-task') {
+          hostContext.dispatch(showToast(`Create Task action selected for message ${payload.messageId}`));
+          return 'handled';
+        }
+
+        return 'pass';
       },
     },
     {

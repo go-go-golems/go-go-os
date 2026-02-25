@@ -32,10 +32,10 @@
 
 ### Phase 4: Scenario 3 - Chat message context menu
 
-- [ ] `OS10-40` Add per-message context target registration in chat message renderer.
-- [ ] `OS10-41` Implement message actions (`Reply`, `Copy`, `Create Task`, `Debug Event`).
-- [ ] `OS10-42` Ensure message action payload includes conversation/message ids.
-- [ ] `OS10-43` Add chat integration tests for message menu targeting.
+- [x] `OS10-40` Add per-message context target registration in chat message renderer.
+- [x] `OS10-41` Implement message actions (`Reply`, `Copy`, `Create Task`, `Debug Event`).
+- [x] `OS10-42` Ensure message action payload includes conversation/message ids.
+- [x] `OS10-43` Add chat integration tests for message menu targeting.
 
 ### Phase 5: Scenario 4 - Conversation-level menu
 

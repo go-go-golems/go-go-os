@@ -13,22 +13,28 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
-      Note: Target-aware context menu composition and folder/icon command routing.
+      Note: Target-aware context menu composition and routing across icon/window/message scopes.
     - Path: apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx
       Note: Integration coverage for icon and folder context menu behavior.
+    - Path: apps/os-launcher/src/__tests__/launcherHost.test.tsx
+      Note: Command-routing integration coverage for message-context action payloads.
     - Path: packages/engine/src/components/shell/windowing/DesktopShell.stories.tsx
       Note: Storybook showcase coverage for icon and folder context menu scenarios.
     - Path: packages/engine/src/components/shell/windowing/types.ts
       Note: Context target and icon-folder contract definitions.
     - Path: packages/engine/src/components/shell/windowing/contextActionRegistry.ts
       Note: Target-key registry and precedence resolver (including icon-kind fallback).
+    - Path: packages/engine/src/chat/renderers/builtin/MessageRenderer.tsx
+      Note: Per-message context action registration and message-target context menu invocation.
+    - Path: packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx
+      Note: Runtime hook/API surface for opening context menus from in-window components.
     - Path: packages/desktop-os/src/runtime/buildLauncherIcons.ts
       Note: Launcher icon composition with default folder icon and member mapping.
-    - Path: packages/desktop-os/src/runtime/buildLauncherContributions.ts
-      Note: Launcher contribution builder wiring for folder icon options.
+    - Path: apps/inventory/src/launcher/renderInventoryApp.tsx
+      Note: Inventory launcher command handlers for chat message context actions.
 ExternalSources: []
 Summary: Implementation planning ticket for target-scoped context menu showcase scenarios (icons, folders, chat message/conversation, role-aware menus) plus plugin-extension feasibility notes.
-LastUpdated: 2026-02-25T16:47:00-05:00
+LastUpdated: 2026-02-25T17:03:00-05:00
 WhatFor: Track planning and execution for high-impact context menu showcases in desktop-os/engine.
 WhenToUse: Use when implementing or reviewing OS-level context menu UX scenarios and extension hooks.
 ---

@@ -1,7 +1,7 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo } from 'react';
 import { normalizeContextTargetRef } from './contextActionRegistry';
 import type { DesktopActionEntry, DesktopActionSection } from './types';
-import type { DesktopContextTargetRef } from './types';
+import type { DesktopContextMenuOpenRequest, DesktopContextTargetRef } from './types';
 
 export interface DesktopWindowMenuRuntime {
   registerWindowMenuSections: (windowId: string, sections: DesktopActionSection[]) => void;
@@ -10,6 +10,7 @@ export interface DesktopWindowMenuRuntime {
   unregisterContextActions: (target: DesktopContextTargetRef) => void;
   registerWindowContextActions: (windowId: string, actions: DesktopActionEntry[]) => void;
   unregisterWindowContextActions: (windowId: string) => void;
+  openContextMenu: (request: DesktopContextMenuOpenRequest) => void;
 }
 
 const DesktopWindowMenuRuntimeContext = createContext<DesktopWindowMenuRuntime | null>(null);
@@ -27,6 +28,7 @@ export function DesktopWindowMenuRuntimeProvider({
   unregisterContextActions,
   registerWindowContextActions,
   unregisterWindowContextActions,
+  openContextMenu,
 }: DesktopWindowMenuRuntimeProviderProps) {
   const runtime = useMemo(
     () => ({
@@ -36,6 +38,7 @@ export function DesktopWindowMenuRuntimeProvider({
       unregisterContextActions,
       registerWindowContextActions,
       unregisterWindowContextActions,
+      openContextMenu,
     }),
     [
       registerWindowMenuSections,
@@ -44,6 +47,7 @@ export function DesktopWindowMenuRuntimeProvider({
       unregisterContextActions,
       registerWindowContextActions,
       unregisterWindowContextActions,
+      openContextMenu,
     ]
   );
 
@@ -65,6 +69,12 @@ export function DesktopWindowScopeProvider({ windowId, children }: DesktopWindow
 
 export function useDesktopWindowId(): string | null {
   return useContext(DesktopWindowScopeContext);
+}
+
+export function useOpenDesktopContextMenu():
+  | ((request: DesktopContextMenuOpenRequest) => void)
+  | null {
+  return useContext(DesktopWindowMenuRuntimeContext)?.openContextMenu ?? null;
 }
 
 export function useRegisterWindowMenuSections(sections: DesktopActionSection[] | null | undefined): void {

@@ -103,3 +103,18 @@ For inventory, launcher actions/icons moved into an inventory folder window and 
 - `npm run build -w apps/os-launcher`
 - `npm run launcher:smoke`
 
+## Step 5: Remove nested desktop shells from todo/crm/book tracker workspaces
+
+Users reported nested-desktop behavior remained for todo/crm/book-tracker after folder rollout. Root cause was those workspace windows still rendering `DesktopShell` inside launcher windows.
+
+I changed workspace launch payloads from `content.kind = app` to `content.kind = card` and introduced per-app window content adapters that render `PluginCardSessionHost` with each app's stack. This keeps one top-level desktop while still bootstrapping per-window card sessions and plugin navigation.
+
+### Commit (code)
+
+- `15427e0` - fix(os-08): open todo crm and book tracker as card sessions
+
+### Validation
+
+- `npm run test -w apps/os-launcher`
+- `npm run build -w apps/os-launcher`
+- `npm run launcher:smoke`

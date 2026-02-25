@@ -31,3 +31,12 @@ Rolled out folder-based opening flows for todo/crm/book-tracker and inventory so
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/book-tracker-debug/src/launcher/module.tsx — book tracker folder window and workspace launcher icon.
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/inventory/src/launcher/renderInventoryApp.tsx — inventory folder icon surface and routed launcher actions.
 - /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-08-REAL-APP-LAUNCH-CUTOVER--launcher-modules-render-real-apps-and-chat-stacks/reference/01-diary.md — per-step implementation diary.
+
+Fixed remaining nested-desktop regression for todo/crm/book-tracker: workspace launches now open card-session windows rendered via app-specific window adapters rather than nested `DesktopShell` roots.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/todo/src/launcher/module.tsx — todo workspace window changed to card session + adapter.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/crm/src/launcher/module.tsx — crm workspace window changed to card session + adapter.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/book-tracker-debug/src/launcher/module.tsx — book tracker workspace window changed to card session + adapter.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/ttmp/2026/02/24/OS-08-REAL-APP-LAUNCH-CUTOVER--launcher-modules-render-real-apps-and-chat-stacks/reference/01-diary.md — diary update for regression diagnosis/fix.

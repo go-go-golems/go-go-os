@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChatWindow } from '../../components/widgets/ChatWindow';
 import {
@@ -13,6 +13,7 @@ import {
   selectConversationTotalTokens,
   selectModelName,
   selectRenderableTimelineEntities,
+  selectShouldShowPendingAiPlaceholder,
   selectTimelineEntityById,
   selectStreamOutputTokens,
   selectStreamStartTime,
@@ -24,17 +25,11 @@ import {
   readSuggestionsEntityProps,
   STARTER_SUGGESTIONS_ENTITY_ID,
 } from '../state/suggestions';
+import { chatWindowSlice } from '../state/chatWindowSlice';
 import { timelineSlice } from '../state/timelineSlice';
 import { isRecord } from '../utils/guards';
 import { useConversation } from '../runtime/useConversation';
 import { useCurrentProfile } from '../runtime/useCurrentProfile';
-import {
-  advancePendingAiTurn,
-  beginPendingAiTurn,
-  createPendingAiTurnIdleState,
-  markPendingAiTurnError,
-  shouldShowPendingAiPlaceholder,
-} from '../runtime/pendingAiTurnMachine';
 import { useProfiles } from '../runtime/useProfiles';
 import { useSetProfile } from '../runtime/useSetProfile';
 import {
@@ -42,7 +37,6 @@ import {
   resolveProfileSelectorValue,
 } from './profileSelectorState';
 import { StatsFooter } from './StatsFooter';
-import { getDebugLogger } from '../debug/debugChannels';
 
 export interface ChatConversationWindowProps {
   convId: string;
@@ -53,10 +47,9 @@ export interface ChatConversationWindowProps {
   enableProfileSelector?: boolean;
   profileRegistry?: string;
   profileScopeKey?: string;
+  windowId?: string;
   renderMode?: RenderMode;
 }
-
-const turnLog = getDebugLogger('chat:conversation:turn');
 
 function toRenderEntity(entity: {
   id: string;
@@ -74,6 +67,14 @@ function toRenderEntity(entity: {
   };
 }
 
+function resolveWindowStateKey(windowId: string | undefined, convId: string): string {
+  const normalizedWindowId = String(windowId ?? '').trim();
+  if (normalizedWindowId) {
+    return normalizedWindowId;
+  }
+  return `chat:conv:${String(convId ?? '').trim()}`;
+}
+
 export function ChatConversationWindow({
   convId,
   basePrefix = '',
@@ -83,9 +84,11 @@ export function ChatConversationWindow({
   enableProfileSelector = false,
   profileRegistry,
   profileScopeKey,
+  windowId,
   renderMode = 'normal',
 }: ChatConversationWindowProps) {
   const dispatch = useDispatch();
+  const resolvedWindowId = useMemo(() => resolveWindowStateKey(windowId, convId), [convId, windowId]);
   const { send, connectionStatus, isStreaming } = useConversation(convId, basePrefix, profileScopeKey);
   const { profiles, loading: profilesLoading, error: profileError } = useProfiles(
     basePrefix,
@@ -94,7 +97,6 @@ export function ChatConversationWindow({
   );
   const currentProfile = useCurrentProfile(profileScopeKey);
   const setProfile = useSetProfile(basePrefix, { scopeKey: profileScopeKey });
-  const [pendingTurn, setPendingTurn] = useState(() => createPendingAiTurnIdleState('init'));
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectRenderableTimelineEntities(state, convId)
@@ -120,6 +122,9 @@ export function ChatConversationWindow({
   const conversationTotalTokens = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectConversationTotalTokens(state, convId)
   );
+  const showPendingResponseSpinner = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
+    selectShouldShowPendingAiPlaceholder(state, resolvedWindowId, convId)
+  );
 
   useEffect(() => {
     if (entities.length > 0) {
@@ -140,45 +145,30 @@ export function ChatConversationWindow({
   }, [convId, dispatch, entities.length, starterSuggestionsEntity]);
 
   useEffect(() => {
-    setPendingTurn((previous) => {
-      if (previous.phase !== 'idle') {
-        turnLog('turn:reset conv=%s prev=%o reason=conv-change', convId, previous);
-      }
-      return createPendingAiTurnIdleState('conv-change');
-    });
-  }, [convId]);
-
-  useEffect(() => {
-    setPendingTurn((previous) => {
-      const next = advancePendingAiTurn(previous, {
-        entities: entities as Array<{ id: string; kind: string; props: unknown }>,
-        connectionStatus,
-      });
-      if (next !== previous) {
-        turnLog(
-          'turn:transition conv=%s status=%s entities=%d prev=%o next=%o',
-          convId,
-          connectionStatus,
-          entities.length,
-          previous,
-          next
-        );
-      }
-      return next;
-    });
-  }, [connectionStatus, convId, entities]);
+    dispatch(
+      chatWindowSlice.actions.setWindowConversation({
+        windowId: resolvedWindowId,
+        convId,
+      })
+    );
+    return () => {
+      dispatch(
+        chatWindowSlice.actions.clearWindowState({
+          windowId: resolvedWindowId,
+        })
+      );
+    };
+  }, [convId, dispatch, resolvedWindowId]);
 
   const sendWithSuggestionLifecycle = useCallback(
     async (prompt: string) => {
-      const startState = beginPendingAiTurn(entities.length);
-      turnLog(
-        'turn:submit conv=%s promptLen=%d entities=%d state=%o',
-        convId,
-        prompt.length,
-        entities.length,
-        startState
+      dispatch(
+        chatWindowSlice.actions.beginAwaitingAi({
+          windowId: resolvedWindowId,
+          convId,
+          baselineIndex: entities.length,
+        })
       );
-      setPendingTurn(startState);
       dispatch(
         timelineSlice.actions.upsertSuggestions({
           convId,
@@ -203,13 +193,15 @@ export function ChatConversationWindow({
       try {
         await send(prompt);
       } catch (error) {
-        const errorState = markPendingAiTurnError('send-error');
-        turnLog('turn:error conv=%s error=%o next=%o', convId, error, errorState);
-        setPendingTurn(errorState);
+        dispatch(
+          chatWindowSlice.actions.clearAwaitingAi({
+            windowId: resolvedWindowId,
+          })
+        );
         throw error;
       }
     },
-    [convId, dispatch, entities.length, send]
+    [convId, dispatch, entities.length, resolvedWindowId, send]
   );
 
   const rendererRegistryVersion = useSyncExternalStore(
@@ -299,7 +291,7 @@ export function ChatConversationWindow({
       timelineItemCount={entities.length}
       conversationTotalTokens={conversationTotalTokens}
       isStreaming={isStreaming}
-      showPendingResponseSpinner={shouldShowPendingAiPlaceholder(pendingTurn)}
+      showPendingResponseSpinner={showPendingResponseSpinner}
       onSend={sendWithSuggestionLifecycle}
       suggestions={suggestions}
       showSuggestionsAlways

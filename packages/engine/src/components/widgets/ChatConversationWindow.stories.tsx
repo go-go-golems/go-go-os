@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { createAppStore } from '../../app/createAppStore';
 import {
   ChatConversationWindow,
+  chatWindowReducer,
   chatSessionReducer,
   timelineReducer,
 } from '../../chat';
@@ -102,6 +103,7 @@ function ChatConversationWindowStory() {
   const { createStore } = createAppStore({
     timeline: timelineReducer,
     chatSession: chatSessionReducer,
+    chatWindow: chatWindowReducer,
   });
   const storeRef = useRef<ReturnType<typeof createStore> | null>(null);
   if (!storeRef.current) {

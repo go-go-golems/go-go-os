@@ -1,5 +1,5 @@
 import { createLauncherStore } from '@hypercard/desktop-os';
-import { chatProfilesReducer, chatSessionReducer, timelineReducer } from '@hypercard/engine';
+import { chatProfilesReducer, chatSessionReducer, chatWindowReducer, timelineReducer } from '@hypercard/engine';
 import { booksReducer } from '@hypercard/book-tracker-debug/src/features/books/booksSlice';
 import { activitiesReducer } from '@hypercard/crm/src/features/activities/activitiesSlice';
 import { companiesReducer } from '@hypercard/crm/src/features/companies/companiesSlice';
@@ -16,6 +16,7 @@ export const { store, createStore: createLauncherAppStore } = createLauncherStor
     sales: salesReducer,
     timeline: timelineReducer,
     chatSession: chatSessionReducer,
+    chatWindow: chatWindowReducer,
     chatProfiles: chatProfilesReducer,
     tasks: tasksReducer,
     contacts: contactsReducer,

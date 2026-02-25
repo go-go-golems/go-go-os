@@ -47,13 +47,14 @@ export const inventoryLauncherModule: LaunchableAppModule = {
     return buildLaunchWindowPayload(reason);
   },
   createContributions: (ctx) => createInventoryContributions(ctx),
-  renderWindow: ({ instanceId, ctx }): ReactNode => {
+  renderWindow: ({ instanceId, windowId, ctx }): ReactNode => {
     const apiBasePrefix =
       ctx.resolveApiBase?.('inventory') ??
       ctx.resolveWsBase?.('inventory')?.replace(/\/ws$/, '') ??
       INVENTORY_API_BASE_PREFIX_FALLBACK;
     const props: InventoryLauncherAppWindowProps = {
       instanceId,
+      windowId,
       apiBasePrefix,
     };
     return <InventoryLauncherAppWindow {...props} />;

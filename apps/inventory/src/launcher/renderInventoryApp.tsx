@@ -634,9 +634,11 @@ async function copyTextToClipboard(text: string): Promise<void> {
 function InventoryChatAssistantWindow({
   convId,
   apiBasePrefix,
+  windowId,
 }: {
   convId: string;
   apiBasePrefix: string;
+  windowId: string;
 }) {
   const dispatch = useDispatch();
   const [renderMode, setRenderMode] = useState<'normal' | 'debug'>('normal');
@@ -691,6 +693,7 @@ function InventoryChatAssistantWindow({
   return (
     <ChatConversationWindow
       convId={convId}
+      windowId={windowId}
       basePrefix={apiBasePrefix}
       title="Inventory Chat"
       enableProfileSelector
@@ -740,11 +743,13 @@ function InventoryChatAssistantWindow({
 
 export interface InventoryLauncherAppWindowProps {
   instanceId: string;
+  windowId: string;
   apiBasePrefix: string;
 }
 
 export function InventoryLauncherAppWindow({
   instanceId,
+  windowId,
   apiBasePrefix,
 }: InventoryLauncherAppWindowProps): ReactNode {
   if (instanceId === FOLDER_INSTANCE) {
@@ -752,7 +757,7 @@ export function InventoryLauncherAppWindow({
   }
   if (instanceId.startsWith(CHAT_INSTANCE_PREFIX)) {
     const convId = instanceId.slice(CHAT_INSTANCE_PREFIX.length);
-    return <InventoryChatAssistantWindow convId={convId} apiBasePrefix={apiBasePrefix} />;
+    return <InventoryChatAssistantWindow convId={convId} windowId={windowId} apiBasePrefix={apiBasePrefix} />;
   }
   if (instanceId.startsWith(EVENT_VIEW_INSTANCE_PREFIX)) {
     const convId = instanceId.slice(EVENT_VIEW_INSTANCE_PREFIX.length);

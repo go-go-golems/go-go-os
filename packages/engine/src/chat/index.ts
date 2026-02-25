@@ -25,6 +25,7 @@ export * from './runtime/useConversation';
 export * from './runtime/useProfiles';
 export * from './runtime/useSetProfile';
 export * from './state/profileSlice';
+export * from './state/chatWindowSlice';
 export * from './state/chatSessionSlice';
 export * from './state/selectors';
 export * from './state/timelineSlice';

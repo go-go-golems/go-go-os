@@ -43,6 +43,20 @@ describe('createLauncherStore', () => {
     expect(selectModuleState<{ count: number }>(state, 'app_inventory')).toEqual({ count: 1 });
   });
 
+  it('includes shared reducers alongside module reducers', () => {
+    const inventoryModule = moduleWithState('inventory', 'app_inventory');
+    const sharedReducer: Reducer<{ ready: boolean }> = (state = { ready: true }) => state;
+    const launcher = createLauncherStore([inventoryModule], {
+      sharedReducers: {
+        shared_runtime: sharedReducer,
+      },
+    });
+
+    const state = launcher.store.getState() as Record<string, unknown>;
+    expect(state).toHaveProperty('shared_runtime');
+    expect(state).toHaveProperty('app_inventory');
+  });
+
   it('fails on duplicate app reducer keys', () => {
     expect(() =>
       collectModuleReducers([moduleWithState('inventory', 'app_shared'), moduleWithState('todo', 'app_shared')]),
@@ -66,5 +80,25 @@ describe('createLauncherStore', () => {
         },
       ]),
     ).toThrow(/reserved reducer key/);
+  });
+
+  it('fails when shared reducers collide with module reducers', () => {
+    expect(() =>
+      createLauncherStore([moduleWithState('inventory', 'app_inventory')], {
+        sharedReducers: {
+          app_inventory: inventoryReducer,
+        },
+      }),
+    ).toThrow(/Duplicate launcher reducer key/);
+  });
+
+  it('fails when shared reducers try to override engine core reducer keys', () => {
+    expect(() =>
+      createLauncherStore([], {
+        sharedReducers: {
+          windowing: inventoryReducer,
+        },
+      }),
+    ).toThrow(/reserved by engine core reducers/);
   });
 });

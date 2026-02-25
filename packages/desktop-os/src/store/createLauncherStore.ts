@@ -35,9 +35,44 @@ export function collectModuleReducers(modules: readonly LaunchableAppModule[]): 
   return reducers;
 }
 
-export function createLauncherStore(modules: readonly LaunchableAppModule[], options: CreateAppStoreOptions = {}) {
-  const reducers = collectModuleReducers(modules);
-  return createAppStore(reducers, options);
+export interface CreateLauncherStoreOptions extends CreateAppStoreOptions {
+  sharedReducers?: Record<string, Reducer>;
+}
+
+function assertValidReducerKey(key: string, seen: Set<string>): void {
+  if (ENGINE_CORE_REDUCER_KEYS.has(key)) {
+    throw new Error(`Launcher store reducer key "${key}" is reserved by engine core reducers.`);
+  }
+  if (seen.has(key)) {
+    throw new Error(`Duplicate launcher reducer key "${key}".`);
+  }
+  seen.add(key);
+}
+
+function mergeLauncherReducers(
+  moduleReducers: Record<string, Reducer>,
+  sharedReducers: Record<string, Reducer>,
+): Record<string, Reducer> {
+  const merged: Record<string, Reducer> = {};
+  const seen = new Set<string>();
+
+  for (const [key, reducer] of Object.entries(sharedReducers)) {
+    assertValidReducerKey(key, seen);
+    merged[key] = reducer;
+  }
+  for (const [key, reducer] of Object.entries(moduleReducers)) {
+    assertValidReducerKey(key, seen);
+    merged[key] = reducer;
+  }
+
+  return merged;
+}
+
+export function createLauncherStore(modules: readonly LaunchableAppModule[], options: CreateLauncherStoreOptions = {}) {
+  const { sharedReducers = {}, ...storeOptions } = options;
+  const moduleReducers = collectModuleReducers(modules);
+  const reducers = mergeLauncherReducers(moduleReducers, sharedReducers);
+  return createAppStore(reducers, storeOptions);
 }
 
 export function selectModuleState<TSlice = unknown>(state: unknown, stateKey: AppStateKey): TSlice | undefined {

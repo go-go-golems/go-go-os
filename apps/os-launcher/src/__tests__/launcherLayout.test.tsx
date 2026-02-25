@@ -14,6 +14,9 @@ const containers: HTMLElement[] = [];
 beforeAll(() => {
   // Required by React 19 to avoid act() environment warnings in jsdom.
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  if (typeof HTMLElement !== 'undefined' && typeof HTMLElement.prototype.scrollIntoView !== 'function') {
+    HTMLElement.prototype.scrollIntoView = () => undefined;
+  }
 });
 
 function setViewportWidth(width: number): void {

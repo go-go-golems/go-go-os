@@ -1,8 +1,10 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { ReactNode } from 'react';
-import { STACK } from '../domain/stack';
+import { type ReactNode, useRef } from 'react';
+import { Provider } from 'react-redux';
+import { createBookStore } from '../app/store';
+import { BookTrackerRealAppWindow } from './renderBookTrackerApp';
 
 const launcherStateSlice = createSlice({
   name: 'bookTrackerLauncher',
@@ -34,8 +36,8 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
     bounds: {
       x: 260,
       y: 88,
-      w: 620,
-      h: 430,
+      w: 980,
+      h: 700,
     },
     content: {
       kind: 'app',
@@ -45,24 +47,15 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
   };
 }
 
-function BookTrackerLauncherWindow({
-  appId,
-  instanceId,
-  windowId,
-}: {
-  appId: string;
-  instanceId: string;
-  windowId: string;
-}) {
+function BookTrackerLauncherAppHost() {
+  const storeRef = useRef<ReturnType<typeof createBookStore> | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createBookStore();
+  }
   return (
-    <section style={{ padding: 12, display: 'grid', gap: 8 }}>
-      <strong>Book Tracker Module</strong>
-      <span>App ID: {appId}</span>
-      <span>Instance ID: {instanceId}</span>
-      <span>Window ID: {windowId}</span>
-      <span>Stack: {STACK.name}</span>
-      <span>Cards: {Object.keys(STACK.cards).length}</span>
-    </section>
+    <Provider store={storeRef.current}>
+      <BookTrackerRealAppWindow />
+    </Provider>
   );
 }
 
@@ -84,7 +77,5 @@ export const bookTrackerLauncherModule: LaunchableAppModule = {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
     return buildLaunchWindowPayload(reason);
   },
-  renderWindow: ({ appId, instanceId, windowId }): ReactNode => (
-    <BookTrackerLauncherWindow appId={appId} instanceId={instanceId} windowId={windowId} />
-  ),
+  renderWindow: ({ windowId }): ReactNode => <BookTrackerLauncherAppHost key={windowId} />,
 };

@@ -1,8 +1,10 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { ReactNode } from 'react';
-import { STACK } from '../domain/stack';
+import { type ReactNode, useRef } from 'react';
+import { Provider } from 'react-redux';
+import { createInventoryStore } from '../app/store';
+import { InventoryRealAppWindow } from './renderInventoryApp';
 
 const launcherStateSlice = createSlice({
   name: 'inventoryLauncher',
@@ -34,8 +36,8 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
     bounds: {
       x: 140,
       y: 40,
-      w: 640,
-      h: 420,
+      w: 1120,
+      h: 760,
     },
     content: {
       kind: 'app',
@@ -45,24 +47,15 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
   };
 }
 
-function InventoryLauncherWindow({
-  appId,
-  instanceId,
-  windowId,
-}: {
-  appId: string;
-  instanceId: string;
-  windowId: string;
-}) {
+function InventoryLauncherAppHost() {
+  const storeRef = useRef<ReturnType<typeof createInventoryStore> | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createInventoryStore();
+  }
   return (
-    <section style={{ padding: 12, display: 'grid', gap: 8 }}>
-      <strong>Inventory Module</strong>
-      <span>App ID: {appId}</span>
-      <span>Instance ID: {instanceId}</span>
-      <span>Window ID: {windowId}</span>
-      <span>Stack: {STACK.name}</span>
-      <span>Cards: {Object.keys(STACK.cards).length}</span>
-    </section>
+    <Provider store={storeRef.current}>
+      <InventoryRealAppWindow />
+    </Provider>
   );
 }
 
@@ -84,7 +77,5 @@ export const inventoryLauncherModule: LaunchableAppModule = {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
     return buildLaunchWindowPayload(reason);
   },
-  renderWindow: ({ appId, instanceId, windowId }): ReactNode => (
-    <InventoryLauncherWindow appId={appId} instanceId={instanceId} windowId={windowId} />
-  ),
+  renderWindow: ({ windowId }): ReactNode => <InventoryLauncherAppHost key={windowId} />,
 };

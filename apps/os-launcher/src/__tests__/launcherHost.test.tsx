@@ -114,6 +114,22 @@ describe('launcher host wiring', () => {
     expect(source).not.toContain('/App');
   });
 
+  it('prevents placeholder module labels from being reintroduced', () => {
+    const moduleSources = [
+      readFileSync(new URL('../../../inventory/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../todo/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../crm/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../book-tracker-debug/src/launcher/module.tsx', import.meta.url), 'utf8'),
+    ];
+
+    const placeholderLabels = ['Inventory Module', 'Todo Module', 'CRM Module', 'Book Tracker Module'];
+    for (const source of moduleSources) {
+      for (const label of placeholderLabels) {
+        expect(source).not.toContain(label);
+      }
+    }
+  });
+
   it('builds valid launch window payloads and render content for every module', () => {
     for (const module of launcherModules) {
       const ctx = createHostContext();

@@ -1,8 +1,10 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { ReactNode } from 'react';
-import { STACK } from '../domain/stack';
+import { type ReactNode, useRef } from 'react';
+import { Provider } from 'react-redux';
+import { createCrmStore } from '../app/store';
+import { CrmRealAppWindow } from './renderCrmApp';
 
 const launcherStateSlice = createSlice({
   name: 'crmLauncher',
@@ -34,8 +36,8 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
     bounds: {
       x: 220,
       y: 72,
-      w: 620,
-      h: 420,
+      w: 1040,
+      h: 720,
     },
     content: {
       kind: 'app',
@@ -45,16 +47,15 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
   };
 }
 
-function CrmLauncherWindow({ appId, instanceId, windowId }: { appId: string; instanceId: string; windowId: string }) {
+function CrmLauncherAppHost() {
+  const storeRef = useRef<ReturnType<typeof createCrmStore> | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createCrmStore();
+  }
   return (
-    <section style={{ padding: 12, display: 'grid', gap: 8 }}>
-      <strong>CRM Module</strong>
-      <span>App ID: {appId}</span>
-      <span>Instance ID: {instanceId}</span>
-      <span>Window ID: {windowId}</span>
-      <span>Stack: {STACK.name}</span>
-      <span>Cards: {Object.keys(STACK.cards).length}</span>
-    </section>
+    <Provider store={storeRef.current}>
+      <CrmRealAppWindow />
+    </Provider>
   );
 }
 
@@ -76,7 +77,5 @@ export const crmLauncherModule: LaunchableAppModule = {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
     return buildLaunchWindowPayload(reason);
   },
-  renderWindow: ({ appId, instanceId, windowId }): ReactNode => (
-    <CrmLauncherWindow appId={appId} instanceId={instanceId} windowId={windowId} />
-  ),
+  renderWindow: ({ windowId }): ReactNode => <CrmLauncherAppHost key={windowId} />,
 };

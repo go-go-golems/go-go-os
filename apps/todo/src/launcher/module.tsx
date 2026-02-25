@@ -1,8 +1,10 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { ReactNode } from 'react';
-import { STACK } from '../domain/stack';
+import { type ReactNode, useRef } from 'react';
+import { Provider } from 'react-redux';
+import { createTodoStore } from '../app/store';
+import { TodoRealAppWindow } from './renderTodoApp';
 
 const launcherStateSlice = createSlice({
   name: 'todoLauncher',
@@ -34,8 +36,8 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
     bounds: {
       x: 180,
       y: 56,
-      w: 600,
-      h: 400,
+      w: 980,
+      h: 700,
     },
     content: {
       kind: 'app',
@@ -45,16 +47,15 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
   };
 }
 
-function TodoLauncherWindow({ appId, instanceId, windowId }: { appId: string; instanceId: string; windowId: string }) {
+function TodoLauncherAppHost() {
+  const storeRef = useRef<ReturnType<typeof createTodoStore> | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createTodoStore();
+  }
   return (
-    <section style={{ padding: 12, display: 'grid', gap: 8 }}>
-      <strong>Todo Module</strong>
-      <span>App ID: {appId}</span>
-      <span>Instance ID: {instanceId}</span>
-      <span>Window ID: {windowId}</span>
-      <span>Stack: {STACK.name}</span>
-      <span>Cards: {Object.keys(STACK.cards).length}</span>
-    </section>
+    <Provider store={storeRef.current}>
+      <TodoRealAppWindow />
+    </Provider>
   );
 }
 
@@ -76,7 +77,5 @@ export const todoLauncherModule: LaunchableAppModule = {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
     return buildLaunchWindowPayload(reason);
   },
-  renderWindow: ({ appId, instanceId, windowId }): ReactNode => (
-    <TodoLauncherWindow appId={appId} instanceId={instanceId} windowId={windowId} />
-  ),
+  renderWindow: ({ windowId }): ReactNode => <TodoLauncherAppHost key={windowId} />,
 };

@@ -1,11 +1,13 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
 import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import { DesktopIconLayer } from '@hypercard/engine/desktop-react';
+import { PluginCardSessionHost } from '@hypercard/engine/desktop-hypercard-adapter';
+import { DesktopIconLayer, type DesktopContribution, type WindowContentAdapter } from '@hypercard/engine/desktop-react';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { Provider } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { createTodoStore } from '../app/store';
+import { STACK } from '../domain/stack';
 import { TodoRealAppWindow } from './renderTodoApp';
 
 const launcherStateSlice = createSlice({
@@ -25,6 +27,7 @@ const launcherStateSlice = createSlice({
 const TODO_APP_ID = 'todo';
 const TODO_FOLDER_INSTANCE_ID = 'folder';
 const TODO_WORKSPACE_INSTANCE_PREFIX = 'workspace-';
+const TODO_SESSION_PREFIX = 'todo-session:';
 
 function nextInstanceId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
@@ -66,8 +69,26 @@ function buildWorkspaceWindowPayload(): OpenWindowPayload {
       h: 700,
     },
     content: {
-      kind: 'app',
-      appKey: formatAppKey(TODO_APP_ID, instanceId),
+      kind: 'card',
+      card: {
+        stackId: STACK.id,
+        cardId: STACK.homeCard,
+        cardSessionId: `${TODO_SESSION_PREFIX}${instanceId}`,
+      },
+    },
+  };
+}
+
+function createTodoCardAdapter(): WindowContentAdapter {
+  return {
+    id: 'todo.card-window',
+    canRender: (window) => window.content.kind === 'card' && window.content.card?.stackId === STACK.id,
+    render: (window) => {
+      const cardRef = window.content.card;
+      if (window.content.kind !== 'card' || !cardRef || cardRef.stackId !== STACK.id) {
+        return null;
+      }
+      return <PluginCardSessionHost windowId={window.id} sessionId={cardRef.cardSessionId} stack={STACK} />;
     },
   };
 }
@@ -128,6 +149,12 @@ export const todoLauncherModule: LaunchableAppModule = {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
     return buildLaunchWindowPayload(reason);
   },
+  createContributions: (): DesktopContribution[] => [
+    {
+      id: 'todo.window-adapters',
+      windowContentAdapters: [createTodoCardAdapter()],
+    },
+  ],
   renderWindow: ({ instanceId, windowId }): ReactNode =>
     instanceId === TODO_FOLDER_INSTANCE_ID ? <TodoFolderWindow /> : <TodoLauncherAppHost key={windowId} />,
 };

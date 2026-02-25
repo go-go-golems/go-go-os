@@ -1,11 +1,13 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
 import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import { DesktopIconLayer } from '@hypercard/engine/desktop-react';
+import { PluginCardSessionHost } from '@hypercard/engine/desktop-hypercard-adapter';
+import { DesktopIconLayer, type DesktopContribution, type WindowContentAdapter } from '@hypercard/engine/desktop-react';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { Provider } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { createBookStore } from '../app/store';
+import { STACK } from '../domain/stack';
 import { BookTrackerRealAppWindow } from './renderBookTrackerApp';
 
 const launcherStateSlice = createSlice({
@@ -25,6 +27,7 @@ const launcherStateSlice = createSlice({
 const BOOK_TRACKER_APP_ID = 'book-tracker-debug';
 const BOOK_TRACKER_FOLDER_INSTANCE_ID = 'folder';
 const BOOK_TRACKER_WORKSPACE_INSTANCE_PREFIX = 'workspace-';
+const BOOK_TRACKER_SESSION_PREFIX = 'book-tracker-session:';
 
 function nextInstanceId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
@@ -66,8 +69,26 @@ function buildWorkspaceWindowPayload(): OpenWindowPayload {
       h: 700,
     },
     content: {
-      kind: 'app',
-      appKey: formatAppKey(BOOK_TRACKER_APP_ID, instanceId),
+      kind: 'card',
+      card: {
+        stackId: STACK.id,
+        cardId: STACK.homeCard,
+        cardSessionId: `${BOOK_TRACKER_SESSION_PREFIX}${instanceId}`,
+      },
+    },
+  };
+}
+
+function createBookTrackerCardAdapter(): WindowContentAdapter {
+  return {
+    id: 'book-tracker-debug.card-window',
+    canRender: (window) => window.content.kind === 'card' && window.content.card?.stackId === STACK.id,
+    render: (window) => {
+      const cardRef = window.content.card;
+      if (window.content.kind !== 'card' || !cardRef || cardRef.stackId !== STACK.id) {
+        return null;
+      }
+      return <PluginCardSessionHost windowId={window.id} sessionId={cardRef.cardSessionId} stack={STACK} />;
     },
   };
 }
@@ -128,6 +149,12 @@ export const bookTrackerLauncherModule: LaunchableAppModule = {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
     return buildLaunchWindowPayload(reason);
   },
+  createContributions: (): DesktopContribution[] => [
+    {
+      id: 'book-tracker-debug.window-adapters',
+      windowContentAdapters: [createBookTrackerCardAdapter()],
+    },
+  ],
   renderWindow: ({ instanceId, windowId }): ReactNode =>
     instanceId === BOOK_TRACKER_FOLDER_INSTANCE_ID ? (
       <BookTrackerFolderWindow />

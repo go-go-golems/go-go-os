@@ -83,3 +83,20 @@ Validation:
 - `npm run typecheck -w packages/engine`
 - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
 - `npm run test -w apps/os-launcher -- src/__tests__/launcherContextMenu.test.tsx src/__tests__/launcherHost.test.tsx`
+
+## 2026-02-25
+
+Completed OS-10 Phase 5 (Scenario 4: conversation-level menu): chat timeline background now opens a conversation-target context menu, conversation actions are registered and routed through inventory chat command namespace, and launcher host tests validate action routing.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/components/widgets/ChatWindow.tsx — Added timeline context-menu callback surface for conversation background targeting.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/packages/engine/src/chat/components/ChatConversationWindow.tsx — Registered conversation context actions and opened `conversation-context` menu on timeline background right-click.
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/inventory/src/launcher/renderInventoryApp.tsx — Added inventory conversation command builders/parsing and handlers (`change-profile`, `replay-last-turn`, `open-timeline`, `export-transcript`).
+- /home/manuel/workspaces/2026-02-24/add-menus/go-go-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx — Added integration tests for conversation command namespace routing and payload outcomes.
+
+Validation:
+
+- `npm run typecheck -w packages/engine`
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx`

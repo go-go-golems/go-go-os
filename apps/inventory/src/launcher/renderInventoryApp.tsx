@@ -44,7 +44,14 @@ const CHAT_COMMAND_PREFIX = 'inventory.chat.';
 const PROFILE_SELECT_TOKEN = '.profile.select.';
 
 interface InventoryChatCommand {
-  kind: 'debug-event-viewer' | 'debug-timeline' | 'profile-select';
+  kind:
+    | 'debug-event-viewer'
+    | 'debug-timeline'
+    | 'profile-select'
+    | 'conversation-change-profile'
+    | 'conversation-replay-last-turn'
+    | 'conversation-open-timeline'
+    | 'conversation-export-transcript';
   convId: string;
   profile?: string | null;
 }
@@ -242,6 +249,22 @@ function buildChatProfileSelectCommand(convId: string, profile: string | null): 
   return `${CHAT_COMMAND_PREFIX}${convId}${PROFILE_SELECT_TOKEN}${token}`;
 }
 
+function buildChatConversationChangeProfileCommand(convId: string): string {
+  return `${CHAT_COMMAND_PREFIX}${convId}.conversation.change-profile`;
+}
+
+function buildChatConversationReplayLastTurnCommand(convId: string): string {
+  return `${CHAT_COMMAND_PREFIX}${convId}.conversation.replay-last-turn`;
+}
+
+function buildChatConversationOpenTimelineCommand(convId: string): string {
+  return `${CHAT_COMMAND_PREFIX}${convId}.conversation.open-timeline`;
+}
+
+function buildChatConversationExportTranscriptCommand(convId: string): string {
+  return `${CHAT_COMMAND_PREFIX}${convId}.conversation.export-transcript`;
+}
+
 function parseInventoryChatCommand(commandId: string): InventoryChatCommand | null {
   if (!commandId.startsWith(CHAT_COMMAND_PREFIX)) {
     return null;
@@ -254,6 +277,22 @@ function parseInventoryChatCommand(commandId: string): InventoryChatCommand | nu
   if (rest.endsWith('.debug.timeline-debug')) {
     const convId = rest.slice(0, -'.debug.timeline-debug'.length);
     return convId ? { kind: 'debug-timeline', convId } : null;
+  }
+  if (rest.endsWith('.conversation.change-profile')) {
+    const convId = rest.slice(0, -'.conversation.change-profile'.length);
+    return convId ? { kind: 'conversation-change-profile', convId } : null;
+  }
+  if (rest.endsWith('.conversation.replay-last-turn')) {
+    const convId = rest.slice(0, -'.conversation.replay-last-turn'.length);
+    return convId ? { kind: 'conversation-replay-last-turn', convId } : null;
+  }
+  if (rest.endsWith('.conversation.open-timeline')) {
+    const convId = rest.slice(0, -'.conversation.open-timeline'.length);
+    return convId ? { kind: 'conversation-open-timeline', convId } : null;
+  }
+  if (rest.endsWith('.conversation.export-transcript')) {
+    const convId = rest.slice(0, -'.conversation.export-transcript'.length);
+    return convId ? { kind: 'conversation-export-transcript', convId } : null;
   }
 
   const profileIdx = rest.indexOf(PROFILE_SELECT_TOKEN);
@@ -361,6 +400,35 @@ function buildFocusedChatContextActions(convId: string): DesktopActionEntry[] {
   ];
 }
 
+function buildConversationContextActions(convId: string): DesktopActionEntry[] {
+  return [
+    {
+      id: `chat-conversation-profile-${convId}`,
+      label: 'Change Profile',
+      commandId: buildChatConversationChangeProfileCommand(convId),
+      payload: { conversationId: convId },
+    },
+    {
+      id: `chat-conversation-replay-${convId}`,
+      label: 'Replay Last Turn',
+      commandId: buildChatConversationReplayLastTurnCommand(convId),
+      payload: { conversationId: convId },
+    },
+    {
+      id: `chat-conversation-timeline-${convId}`,
+      label: 'Open Timeline',
+      commandId: buildChatConversationOpenTimelineCommand(convId),
+      payload: { conversationId: convId },
+    },
+    {
+      id: `chat-conversation-export-${convId}`,
+      label: 'Export Transcript',
+      commandId: buildChatConversationExportTranscriptCommand(convId),
+      payload: { conversationId: convId },
+    },
+  ];
+}
+
 function createInventoryCardAdapter(): WindowContentAdapter {
   return {
     id: 'inventory.card-adapter',
@@ -447,6 +515,69 @@ function createInventoryCommands(hostContext: LauncherHostContext): DesktopComma
           }),
         );
         return 'handled';
+      },
+    },
+    {
+      id: 'inventory.chat.conversation-actions',
+      priority: 130,
+      matches: (commandId) => {
+        const parsed = parseInventoryChatCommand(commandId);
+        return (
+          parsed?.kind === 'conversation-change-profile' ||
+          parsed?.kind === 'conversation-replay-last-turn' ||
+          parsed?.kind === 'conversation-open-timeline' ||
+          parsed?.kind === 'conversation-export-transcript'
+        );
+      },
+      run: (commandId, ctx) => {
+        const parsed = parseInventoryChatCommand(commandId);
+        if (!parsed) {
+          return 'pass';
+        }
+
+        if (parsed.kind === 'conversation-open-timeline') {
+          hostContext.openWindow(buildTimelineDebugWindowPayload(parsed.convId));
+          return 'handled';
+        }
+
+        if (parsed.kind === 'conversation-replay-last-turn') {
+          hostContext.dispatch(showToast(`Replay requested for conversation ${parsed.convId}`));
+          return 'handled';
+        }
+
+        if (parsed.kind === 'conversation-export-transcript') {
+          hostContext.dispatch(showToast(`Export transcript requested for conversation ${parsed.convId}`));
+          return 'handled';
+        }
+
+        if (parsed.kind === 'conversation-change-profile') {
+          const state = (ctx.getState?.() ?? {}) as InventoryRootState;
+          const profiles = state.chatProfiles?.availableProfiles ?? [];
+          if (profiles.length === 0) {
+            return 'pass';
+          }
+          const scopeKey = `conv:${parsed.convId}`;
+          const selectedRegistry =
+            state.chatProfiles?.selectedByScope?.[scopeKey]?.registry ??
+            state.chatProfiles?.selectedRegistry ??
+            'default';
+          const currentProfile =
+            state.chatProfiles?.selectedByScope?.[scopeKey]?.profile ??
+            state.chatProfiles?.selectedProfile ??
+            null;
+          const currentIndex = profiles.findIndex((profile) => profile.slug === currentProfile);
+          const nextProfile = profiles[(currentIndex + 1 + profiles.length) % profiles.length];
+          ctx.dispatch(
+            chatProfilesSlice.actions.setSelectedProfile({
+              profile: nextProfile?.slug ?? null,
+              registry: selectedRegistry,
+              scopeKey,
+            }),
+          );
+          return 'handled';
+        }
+
+        return 'pass';
       },
     },
     {
@@ -719,6 +850,7 @@ function InventoryChatAssistantWindow({
     [availableProfiles, convId, selectedProfile],
   );
   const focusedContextActions = useMemo(() => buildFocusedChatContextActions(convId), [convId]);
+  const conversationContextActions = useMemo(() => buildConversationContextActions(convId), [convId]);
 
   useRegisterWindowMenuSections(focusedMenuSections);
   useRegisterWindowContextActions(focusedContextActions);
@@ -754,6 +886,7 @@ function InventoryChatAssistantWindow({
       profileRegistry="default"
       profileScopeKey={`conv:${convId}`}
       renderMode={renderMode}
+      conversationContextActions={conversationContextActions}
       headerActions={
         <>
           <button type="button" data-part="btn" onClick={openEventViewer} style={{ fontSize: 10, padding: '1px 6px' }}>

@@ -39,10 +39,10 @@
 
 ### Phase 5: Scenario 4 - Conversation-level menu
 
-- [ ] `OS10-50` Add conversation-surface context target for chat window body.
-- [ ] `OS10-51` Implement conversation actions (`Change Profile`, `Replay Last Turn`, `Open Timeline`, `Export Transcript`).
-- [ ] `OS10-52` Route conversation actions through existing inventory chat command namespace.
-- [ ] `OS10-53` Add integration tests for conversation-level context actions.
+- [x] `OS10-50` Add conversation-surface context target for chat window body.
+- [x] `OS10-51` Implement conversation actions (`Change Profile`, `Replay Last Turn`, `Open Timeline`, `Export Transcript`).
+- [x] `OS10-52` Route conversation actions through existing inventory chat command namespace.
+- [x] `OS10-53` Add integration tests for conversation-level context actions.
 
 ### Phase 6: Scenario 10 - Role/profile-aware menus
 

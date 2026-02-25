@@ -26,15 +26,17 @@ RelatedFiles:
       Note: Target-key registry and precedence resolver (including icon-kind fallback).
     - Path: packages/engine/src/chat/renderers/builtin/MessageRenderer.tsx
       Note: Per-message context action registration and message-target context menu invocation.
+    - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
+      Note: Conversation-surface context menu targeting and registration wiring.
+    - Path: packages/engine/src/components/widgets/ChatWindow.tsx
+      Note: Conversation background context-menu event surface.
     - Path: packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx
       Note: Runtime hook/API surface for opening context menus from in-window components.
-    - Path: packages/desktop-os/src/runtime/buildLauncherIcons.ts
-      Note: Launcher icon composition with default folder icon and member mapping.
     - Path: apps/inventory/src/launcher/renderInventoryApp.tsx
-      Note: Inventory launcher command handlers for chat message context actions.
+      Note: Inventory launcher command handlers for chat message and conversation context actions.
 ExternalSources: []
 Summary: Implementation planning ticket for target-scoped context menu showcase scenarios (icons, folders, chat message/conversation, role-aware menus) plus plugin-extension feasibility notes.
-LastUpdated: 2026-02-25T17:03:00-05:00
+LastUpdated: 2026-02-25T17:07:00-05:00
 WhatFor: Track planning and execution for high-impact context menu showcases in desktop-os/engine.
 WhenToUse: Use when implementing or reviewing OS-level context menu UX scenarios and extension hooks.
 ---

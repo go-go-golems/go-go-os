@@ -31,12 +31,16 @@ RelatedFiles:
     - Path: packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx
       Note: Added runtime hook/API for opening target-scoped context menus from window content.
     - Path: apps/inventory/src/launcher/renderInventoryApp.tsx
-      Note: Added inventory command handlers for chat message context actions.
+      Note: Added inventory command handlers for chat message and conversation context actions.
     - Path: apps/os-launcher/src/__tests__/launcherHost.test.tsx
-      Note: Added command-level tests for message action payload routing.
+      Note: Added command-level tests for message and conversation action routing.
+    - Path: packages/engine/src/chat/components/ChatConversationWindow.tsx
+      Note: Added conversation-surface context menu targeting and action registration.
+    - Path: packages/engine/src/components/widgets/ChatWindow.tsx
+      Note: Added timeline context-menu callback to support conversation right-click actions.
 ExternalSources: []
 Summary: Diary for OS-10 implementation work.
-LastUpdated: 2026-02-25T17:03:00-05:00
+LastUpdated: 2026-02-25T17:07:00-05:00
 WhatFor: Capture implementation progress and rationale as OS-10 moves from planning into execution.
 WhenToUse: Use when continuing OS-10 or reviewing completed showcase phases.
 ---
@@ -354,3 +358,99 @@ This step focused on target accuracy and payload determinism: each message actio
   - `contextTarget.windowId`
 - Runtime API addition:
   - `openContextMenu({ x, y, menuId, target, windowId?, widgetId? })`
+
+## Step 5: Phase 5 Scenario 4 (Conversation-Level Menu)
+
+Implemented conversation-surface context menu targeting so right-clicking the chat timeline background opens conversation actions instead of falling back to window-level context.
+
+This step kept command ownership in inventory’s existing chat namespace: conversation actions are emitted as `inventory.chat.<conv>.conversation.*` commands and routed through launcher contribution handlers.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue straight through the next planned phase after message context actions.
+
+**Inferred user intent:** Complete OS-10 scenario execution sequentially with concrete behavior, tests, and ticket bookkeeping.
+
+### What I did
+
+- Added timeline context-menu callback in chat widget surface:
+  - `ChatWindow` now accepts `onTimelineContextMenu`.
+- Added conversation target opening in chat conversation window:
+  - `ChatConversationWindow` now:
+    - registers conversation-scoped actions via `useRegisterConversationContextActions`,
+    - opens `conversation-context` menu on timeline background right-click using `useOpenDesktopContextMenu`,
+    - ignores message bubble right-click events so message menu remains higher priority on messages.
+- Added inventory conversation command namespace helpers:
+  - command builders + parser branches for:
+    - `inventory.chat.<conv>.conversation.change-profile`
+    - `inventory.chat.<conv>.conversation.replay-last-turn`
+    - `inventory.chat.<conv>.conversation.open-timeline`
+    - `inventory.chat.<conv>.conversation.export-transcript`
+- Added inventory handlers:
+  - `open-timeline`: opens timeline debug window for conversation.
+  - `change-profile`: rotates to next available profile in conversation scope.
+  - `replay-last-turn` / `export-transcript`: dispatch deterministic toast feedback.
+- Added launcher host test coverage:
+  - validated conversation command routing and outcomes for all four actions.
+
+### Why
+
+- Scenario 4 requires context behavior on the conversation canvas itself, not just message nodes or window chrome.
+- Routing through the existing inventory namespace keeps app logic in app handlers and avoids shell-level app coupling.
+
+### What worked
+
+- `npm run typecheck -w packages/engine` passed.
+- `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts` passed.
+- `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx` passed (with known existing selector warnings from unrelated components).
+
+### What didn't work
+
+- N/A for blockers in this phase; no new failing suites after the profile-dispatch assertion fix in host tests.
+
+### What I learned
+
+- Conversation-level and message-level menus can coexist cleanly by using event propagation boundaries (`chat-message` stops propagation, timeline background handles conversation context).
+- Namespace-first command routing remains maintainable as scenarios grow: parser + typed handlers keeps behavior explicit.
+
+### What was tricky to build
+
+- The sharp edge was ensuring profile-change action dispatches in the correct channel.
+  - Cause: inventory handlers mix `hostContext.dispatch` for host-side side effects and `ctx.dispatch` for command-context state updates.
+  - Symptom: initial test asserted against wrong dispatcher and failed.
+  - Resolution: updated test to provide/assert `ctx.dispatch` for profile updates while still asserting host dispatch for toast-based actions.
+
+### What warrants a second pair of eyes
+
+- Confirm product expectation for `Change Profile` behavior (cyclic next profile vs explicit selector submenu).
+- Confirm whether `Replay Last Turn` and `Export Transcript` should remain toast placeholders or gain concrete backend operations in next phase.
+
+### What should be done in the future
+
+- Phase 6 (`OS10-60`..`OS10-63`): role/profile-aware visibility filtering and guardrails on context actions.
+
+### Code review instructions
+
+- Start with:
+  - `packages/engine/src/chat/components/ChatConversationWindow.tsx`
+  - `packages/engine/src/components/widgets/ChatWindow.tsx`
+  - `apps/inventory/src/launcher/renderInventoryApp.tsx`
+  - `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+- Validate with:
+  - `npm run typecheck -w packages/engine`
+  - `npm run test -w packages/engine -- src/components/shell/windowing/contextActionRegistry.test.ts src/components/shell/windowing/desktopContributions.test.ts src/components/shell/windowing/desktopCommandRouter.test.ts`
+  - `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx src/__tests__/launcherContextMenu.test.tsx`
+
+### Technical details
+
+- Conversation command suffixes:
+  - `.conversation.change-profile`
+  - `.conversation.replay-last-turn`
+  - `.conversation.open-timeline`
+  - `.conversation.export-transcript`
+- Conversation context registration and invocation:
+  - Target kind: `conversation`
+  - Menu id: `conversation-context`
+  - Payload includes `conversationId`.

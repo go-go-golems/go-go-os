@@ -281,6 +281,75 @@ describe('launcher host wiring', () => {
     );
   });
 
+  it('routes conversation-level actions through inventory chat command namespace', () => {
+    const hostContext = createHostContext();
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
+
+    const openTimelineHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.open-timeline',
+      handlers,
+      {
+        ...commandContext(),
+        getState: () => ({ chatProfiles: { availableProfiles: [] } }),
+      },
+    );
+    expect(openTimelineHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(1);
+    const [timelinePayload] = hostContext.openWindow.mock.calls[0] as [{ id: string; title: string }];
+    expect(timelinePayload.id).toContain('timeline-debug-conv-42');
+    expect(timelinePayload.title).toContain('Timeline Debug');
+
+    const replayHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.replay-last-turn',
+      handlers,
+      commandContext(),
+    );
+    expect(replayHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
+      }),
+    );
+
+    const exportHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.export-transcript',
+      handlers,
+      commandContext(),
+    );
+    expect(exportHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
+      }),
+    );
+
+    const profileDispatch = vi.fn();
+    const profileHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.change-profile',
+      handlers,
+      {
+        ...commandContext(),
+        dispatch: profileDispatch,
+        getState: () => ({
+          chatProfiles: {
+            availableProfiles: [{ slug: 'default' }, { slug: 'agent' }],
+            selectedProfile: 'default',
+            selectedRegistry: 'default',
+            selectedByScope: {},
+          },
+        }),
+      },
+    );
+    expect(profileHandled).toBe(true);
+    expect(profileDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'chatProfiles/setSelectedProfile',
+        payload: { profile: 'agent', registry: 'default', scopeKey: 'conv:conv-42' },
+      }),
+    );
+  });
+
   it('keeps host app orchestration-only (no app-specific business imports)', () => {
     const source = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
     const forbiddenImports = [

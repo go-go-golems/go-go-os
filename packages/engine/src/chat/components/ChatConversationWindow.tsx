@@ -1,6 +1,12 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChatWindow } from '../../components/widgets/ChatWindow';
+import {
+  useDesktopWindowId,
+  useOpenDesktopContextMenu,
+  useRegisterConversationContextActions,
+} from '../../components/shell/windowing/desktopMenuRuntime';
+import type { DesktopActionEntry } from '../../components/shell/windowing/types';
 import {
   getTimelineRendererRegistryVersion,
   resolveTimelineRenderers,
@@ -49,6 +55,7 @@ export interface ChatConversationWindowProps {
   profileScopeKey?: string;
   windowId?: string;
   renderMode?: RenderMode;
+  conversationContextActions?: DesktopActionEntry[];
 }
 
 function toRenderEntity(entity: {
@@ -86,6 +93,7 @@ export function ChatConversationWindow({
   profileScopeKey,
   windowId,
   renderMode = 'normal',
+  conversationContextActions,
 }: ChatConversationWindowProps) {
   const dispatch = useDispatch();
   const resolvedWindowId = useMemo(() => resolveWindowStateKey(windowId, convId), [convId, windowId]);
@@ -97,6 +105,8 @@ export function ChatConversationWindow({
   );
   const currentProfile = useCurrentProfile(profileScopeKey);
   const setProfile = useSetProfile(basePrefix, { scopeKey: profileScopeKey });
+  const runtimeWindowId = useDesktopWindowId();
+  const openContextMenu = useOpenDesktopContextMenu();
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectRenderableTimelineEntities(state, convId)
@@ -125,6 +135,7 @@ export function ChatConversationWindow({
   const showPendingResponseSpinner = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectShouldShowPendingAiPlaceholder(state, resolvedWindowId, convId)
   );
+  useRegisterConversationContextActions(convId, conversationContextActions);
 
   useEffect(() => {
     if (entities.length > 0) {
@@ -275,6 +286,31 @@ export function ChatConversationWindow({
     </div>
   ) : null;
 
+  const handleTimelineContextMenu = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (!openContextMenu || !conversationContextActions || conversationContextActions.length === 0) {
+        return;
+      }
+      const eventTarget = event.target as HTMLElement | null;
+      if (eventTarget?.closest('[data-part="chat-message"]')) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      openContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        menuId: 'conversation-context',
+        target: {
+          kind: 'conversation',
+          conversationId: convId,
+          windowId: runtimeWindowId ?? undefined,
+        },
+      });
+    },
+    [convId, conversationContextActions, openContextMenu, runtimeWindowId],
+  );
+
   const composedHeaderActions =
     profileSelector || headerActions
       ? (
@@ -299,6 +335,7 @@ export function ChatConversationWindow({
       subtitle={subtitle}
       placeholder={placeholder}
       headerActions={composedHeaderActions}
+      onTimelineContextMenu={handleTimelineContextMenu}
       footer={
         <StatsFooter
           modelName={modelName}

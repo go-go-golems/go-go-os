@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { Btn } from './Btn';
 import { Chip } from './Chip';
 
@@ -18,6 +18,7 @@ export interface ChatWindowProps {
   welcomeContent?: ReactNode;
   footer?: ReactNode;
   headerActions?: ReactNode;
+  onTimelineContextMenu?: (event: MouseEvent<HTMLDivElement>) => void;
 }
 
 function WelcomeScreen({ children }: { children?: ReactNode }) {
@@ -52,6 +53,7 @@ export function ChatWindow({
   welcomeContent,
   footer,
   headerActions,
+  onTimelineContextMenu,
 }: ChatWindowProps) {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,7 +101,7 @@ export function ChatWindow({
         </div>
       </div>
 
-      <div data-part="chat-timeline">
+      <div data-part="chat-timeline" onContextMenu={onTimelineContextMenu}>
         {isEmpty && <WelcomeScreen>{welcomeContent}</WelcomeScreen>}
         {timelineContent}
         {showPendingResponseSpinner && (

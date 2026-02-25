@@ -1,7 +1,7 @@
 ---
 Title: Redux Throughput/FPS Diagnostics Middleware and Dev HyperCard Window
 Ticket: HC-041-REDUX-FPS-DEBUG
-Status: active
+Status: complete
 Topics:
     - debugging
     - frontend
@@ -27,11 +27,13 @@ RelatedFiles:
 ExternalSources: []
 Summary: |
     Ticket for implementing generic Redux throughput/FPS diagnostics (dev-only) and surfacing live metrics in a HyperCard app window that auto-opens on inventory startup in dev mode.
-LastUpdated: 2026-02-17T09:14:00-05:00
+LastUpdated: 2026-02-24T10:20:52.136439781-05:00
 WhatFor: |
     Make performance debugging of high-frequency Redux flows practical and repeatable without ad hoc logging.
 WhenToUse: Use for implementation and review of middleware instrumentation and diagnostics-window integration.
 ---
+
+
 
 
 # Redux Throughput/FPS Diagnostics Middleware and Dev HyperCard Window

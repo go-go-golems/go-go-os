@@ -27,3 +27,13 @@ Re-ran merge against origin/main, resolved all conflicts, removed residual legac
 - /home/manuel/workspaces/2026-02-18/add-more-macos-widgets/2026-02-12--hypercard-react/packages/engine/src/hypercard-chat/index.ts — Deleted residual legacy hypercard-chat entrypoint to match upstream structure
 - /home/manuel/workspaces/2026-02-18/add-more-macos-widgets/2026-02-12--hypercard-react/packages/engine/src/index.ts — Resolved root exports conflict and retained upstream module surface
 
+
+## 2026-02-24
+
+Ticket closed
+
+
+## 2026-02-24
+
+Ticket closed
+

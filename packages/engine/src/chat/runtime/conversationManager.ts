@@ -1,12 +1,14 @@
 import type { ChatConnectionStatus } from '../state/chatSessionSlice';
 import { clearConversationEventHistory, emitConversationEvent } from '../debug/eventBus';
 import { fetchTimelineSnapshot, submitPrompt } from './http';
+import type { ChatProfileSelection } from './profileTypes';
 import { ensureChatModulesRegistered } from './registerChatModules';
 import { WsManager } from '../ws/wsManager';
 
 export interface ConversationConnectArgs {
   convId: string;
   dispatch: (action: unknown) => unknown;
+  profileSelection?: ChatProfileSelection;
   basePrefix?: string;
   onStatus?: (status: ChatConnectionStatus) => void;
   hydrate?: boolean;
@@ -31,6 +33,7 @@ export class ConversationManager {
       await existing.ws.connect({
         convId: args.convId,
         dispatch: args.dispatch,
+        profileSelection: args.profileSelection,
         basePrefix: args.basePrefix,
         onStatus: args.onStatus,
         hydrate: args.hydrate,
@@ -49,6 +52,7 @@ export class ConversationManager {
     await ws.connect({
       convId: args.convId,
       dispatch: args.dispatch,
+      profileSelection: args.profileSelection,
       basePrefix: args.basePrefix,
       onStatus: args.onStatus,
       hydrate: args.hydrate,
@@ -68,8 +72,13 @@ export class ConversationManager {
     clearConversationEventHistory(convId);
   }
 
-  async send(prompt: string, convId: string, basePrefix = ''): Promise<void> {
-    await submitPrompt(prompt, convId, basePrefix);
+  async send(
+    prompt: string,
+    convId: string,
+    basePrefix = '',
+    profileSelection?: ChatProfileSelection
+  ): Promise<void> {
+    await submitPrompt(prompt, convId, basePrefix, { profileSelection });
   }
 
   async fetchSnapshot(convId: string, basePrefix = ''): Promise<unknown> {

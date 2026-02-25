@@ -1,4 +1,5 @@
 import type { ChatErrorRecord, ChatSessionSliceState } from './chatSessionSlice';
+import type { ChatProfilesState } from './profileSlice';
 import type { ConversationTimelineState, TimelineEntity, TimelineState } from './timelineSlice';
 import {
   ASSISTANT_SUGGESTIONS_ENTITY_ID,
@@ -10,6 +11,7 @@ import {
 export interface ChatStateSlice {
   timeline: TimelineState;
   chatSession: ChatSessionSliceState;
+  chatProfiles?: ChatProfilesState;
 }
 
 const EMPTY_TIMELINE: ConversationTimelineState = {
@@ -19,6 +21,13 @@ const EMPTY_TIMELINE: ConversationTimelineState = {
 const EMPTY_TIMELINE_ENTITIES: TimelineEntity[] = [];
 const EMPTY_SUGGESTIONS: string[] = [];
 const EMPTY_ERROR_HISTORY: ChatErrorRecord[] = [];
+const EMPTY_CHAT_PROFILES: ChatProfilesState = {
+  availableProfiles: [],
+  selectedProfile: null,
+  selectedRegistry: null,
+  loading: false,
+  error: null,
+};
 
 function getTimelineConversation(
   state: ChatStateSlice,
@@ -29,6 +38,10 @@ function getTimelineConversation(
 
 function getChatSession(state: ChatStateSlice, convId: string) {
   return state.chatSession.byConvId[convId];
+}
+
+function getChatProfiles(state: ChatStateSlice): ChatProfilesState {
+  return state.chatProfiles ?? EMPTY_CHAT_PROFILES;
 }
 
 export const selectConversationTimelineState = (
@@ -138,3 +151,17 @@ export const selectConversationIds = (state: ChatStateSlice): string[] => {
   const sessionIds = Object.keys(state.chatSession.byConvId);
   return Array.from(new Set([...timelineIds, ...sessionIds]));
 };
+
+export const selectAvailableProfiles = (state: ChatStateSlice) =>
+  getChatProfiles(state).availableProfiles;
+
+export const selectProfileLoading = (state: ChatStateSlice) =>
+  getChatProfiles(state).loading;
+
+export const selectProfileError = (state: ChatStateSlice) =>
+  getChatProfiles(state).error;
+
+export const selectCurrentProfileSelection = (state: ChatStateSlice) => ({
+  profile: getChatProfiles(state).selectedProfile ?? undefined,
+  registry: getChatProfiles(state).selectedRegistry ?? undefined,
+});

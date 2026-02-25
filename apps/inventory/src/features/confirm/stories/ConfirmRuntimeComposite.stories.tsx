@@ -159,13 +159,20 @@ const meta = {
 } satisfies Meta<typeof ConfirmRequestWindowHost>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof ConfirmRequestWindowHost>;
+const baseArgs: Story['args'] = {
+  request: firstStepRequest(),
+  onSubmitResponse: () => {},
+  onSubmitScriptEvent: () => {},
+};
 
 export const DisplayAndConfirmSection: Story = {
+  args: baseArgs,
   render: () => <ScriptHostHarness initialRequest={firstStepRequest()} />,
 };
 
 export const DisplayAndSelectSection: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={createScriptRequest('story-script-select', {
@@ -204,6 +211,7 @@ export const DisplayAndSelectSection: Story = {
 };
 
 export const DisplayAndFormSection: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={createScriptRequest('story-script-form', {
@@ -252,6 +260,7 @@ export const DisplayAndFormSection: Story = {
 };
 
 export const DisplayAndTableSection: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={createScriptRequest('story-script-table', {
@@ -296,6 +305,7 @@ export const DisplayAndTableSection: Story = {
 };
 
 export const DisplayAndUploadSection: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={createScriptRequest('story-script-upload', {
@@ -330,6 +340,7 @@ export const DisplayAndUploadSection: Story = {
 };
 
 export const DisplayAndImageSection: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={createScriptRequest('story-script-image', {
@@ -370,6 +381,7 @@ export const DisplayAndImageSection: Story = {
 };
 
 export const BackAndProgressRating: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={createScriptRequest('story-script-rating', {
@@ -393,6 +405,7 @@ export const BackAndProgressRating: Story = {
 };
 
 export const TwoStepConfirmThenRating: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={firstStepRequest()}
@@ -437,6 +450,7 @@ export const TwoStepConfirmThenRating: Story = {
 };
 
 export const InvalidSectionsContract: Story = {
+  args: baseArgs,
   render: () => (
     <ScriptHostHarness
       initialRequest={createScriptRequest('story-script-invalid-sections', {

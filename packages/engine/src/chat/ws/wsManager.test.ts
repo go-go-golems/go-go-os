@@ -102,6 +102,34 @@ describe('wsManager', () => {
     manager.disconnect();
   });
 
+  it('builds websocket URL with optional profile selection query params', async () => {
+    const store = createStore();
+    const manager = new WsManager();
+    const sockets: MockWebSocket[] = [];
+
+    const connectPromise = manager.connect({
+      convId: 'conv-profile',
+      dispatch: store.dispatch,
+      profileSelection: {
+        profile: 'agent',
+        registry: 'default',
+      },
+      hydrate: false,
+      wsFactory: (url) => {
+        const socket = new MockWebSocket(url);
+        sockets.push(socket);
+        return socket as unknown as WebSocket;
+      },
+      location: { protocol: 'https:', host: 'chat.local' },
+    });
+
+    expect(sockets).toHaveLength(1);
+    expect(sockets[0].url).toBe('wss://chat.local/ws?conv_id=conv-profile&profile=agent&registry=default');
+    sockets[0].emitOpen();
+    await connectPromise;
+    manager.disconnect();
+  });
+
   it('buffers frames during hydrate and replays them after snapshot apply', async () => {
     const store = createStore();
     const manager = new WsManager();

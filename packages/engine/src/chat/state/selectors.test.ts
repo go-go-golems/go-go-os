@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatSessionSliceState } from './chatSessionSlice';
 import {
+  selectAvailableProfiles,
   selectConversationCachedTokens,
+  selectCurrentProfileSelection,
+  selectProfileError,
+  selectProfileLoading,
   selectConversationTotalTokens,
   selectRenderableTimelineEntities,
   selectSuggestions,
@@ -143,5 +147,17 @@ describe('selectors', () => {
     expect(selectConversationTotalTokens(state, 'conv-tokens')).toBe(332);
     expect(selectConversationCachedTokens(state, 'conv-missing')).toBe(0);
     expect(selectConversationTotalTokens(state, 'conv-missing')).toBe(0);
+  });
+
+  it('returns profile selectors with safe defaults', () => {
+    const state = createState({ byConvId: {} });
+
+    expect(selectAvailableProfiles(state)).toEqual([]);
+    expect(selectProfileLoading(state)).toBe(false);
+    expect(selectProfileError(state)).toBeNull();
+    expect(selectCurrentProfileSelection(state)).toEqual({
+      profile: undefined,
+      registry: undefined,
+    });
   });
 });

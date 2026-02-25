@@ -10,10 +10,12 @@ import { chatSessionSlice, createChatError, type ChatConnectionStatus } from '..
 import type { TimelineEntity } from '../state/timelineSlice';
 import { timelineSlice } from '../state/timelineSlice';
 import { isRecord } from '../utils/guards';
+import type { ChatProfileSelection } from '../runtime/profileTypes';
 
 export interface ConnectArgs {
   convId: string;
   dispatch: SemContext['dispatch'];
+  profileSelection?: ChatProfileSelection;
   basePrefix?: string;
   onStatus?: (status: ChatConnectionStatus) => void;
   onLifecycle?: (event: WsLifecycleEvent) => void;
@@ -60,14 +62,34 @@ function resolveBasePrefix(basePrefix?: string): string {
   return typeof basePrefix === 'string' ? basePrefix.replace(/\/$/, '') : '';
 }
 
-function resolveWsUrl(convId: string, basePrefix?: string, location?: { protocol: string; host: string }) {
+function profileSelectionKey(selection?: ChatProfileSelection): string {
+  const profile = String(selection?.profile ?? '').trim();
+  const registry = String(selection?.registry ?? '').trim();
+  return `${registry}|${profile}`;
+}
+
+function resolveWsUrl(
+  convId: string,
+  profileSelection?: ChatProfileSelection,
+  basePrefix?: string,
+  location?: { protocol: string; host: string }
+) {
   const fallbackLocation =
     typeof window !== 'undefined' && window.location
       ? { protocol: window.location.protocol, host: window.location.host }
       : { protocol: 'http:', host: 'localhost' };
   const source = location ?? fallbackLocation;
   const protocol = source.protocol === 'https:' ? 'wss' : 'ws';
-  return `${protocol}://${source.host}${resolveBasePrefix(basePrefix)}/ws?conv_id=${encodeURIComponent(convId)}`;
+  let url = `${protocol}://${source.host}${resolveBasePrefix(basePrefix)}/ws?conv_id=${encodeURIComponent(convId)}`;
+  const profile = String(profileSelection?.profile ?? '').trim();
+  const registry = String(profileSelection?.registry ?? '').trim();
+  if (profile.length > 0) {
+    url += `&profile=${encodeURIComponent(profile)}`;
+  }
+  if (registry.length > 0) {
+    url += `&registry=${encodeURIComponent(registry)}`;
+  }
+  return url;
 }
 
 function timelineApiUrl(convId: string, basePrefix?: string) {
@@ -110,6 +132,7 @@ function toSemEnvelope(payload: unknown): SemEnvelope | null {
 class WsManager {
   private ws: WebSocket | null = null;
   private convId = '';
+  private profileSelection = '';
   private connectNonce = 0;
   private hydrated = false;
   private buffered: RawSemEnvelope[] = [];
@@ -123,11 +146,13 @@ class WsManager {
   }
 
   async connect(args: ConnectArgs) {
-    if (this.ws && this.convId === args.convId) {
+    const currentSelection = profileSelectionKey(args.profileSelection);
+    if (this.ws && this.convId === args.convId && this.profileSelection === currentSelection) {
       this.lastOnLifecycle = args.onLifecycle ?? this.lastOnLifecycle;
       this.emitLifecycle('connect.reuse', this.connectNonce, {
         hydrated: this.hydrated,
         hydrateRequested: args.hydrate !== false,
+        profileSelection: currentSelection,
       });
       if (args.hydrate !== false) {
         await this.ensureHydrated(args);
@@ -140,6 +165,7 @@ class WsManager {
     const nonce = this.connectNonce;
 
     this.convId = args.convId;
+    this.profileSelection = currentSelection;
     this.hydrated = false;
     this.buffered = [];
     this.lastOnStatus = args.onStatus ?? null;
@@ -147,6 +173,7 @@ class WsManager {
     this.lastDispatch = args.dispatch;
     this.emitLifecycle('connect.begin', nonce, {
       hydrateRequested: args.hydrate !== false,
+      profileSelection: currentSelection,
     });
 
     args.dispatch(
@@ -158,7 +185,7 @@ class WsManager {
     args.onStatus?.('connecting');
 
     const wsFactory = args.wsFactory ?? ((url: string) => new WebSocket(url));
-    const ws = wsFactory(resolveWsUrl(args.convId, args.basePrefix, args.location));
+    const ws = wsFactory(resolveWsUrl(args.convId, args.profileSelection, args.basePrefix, args.location));
     this.ws = ws;
 
     let settleOpen: (() => void) | null = null;
@@ -314,6 +341,7 @@ class WsManager {
 
     this.ws = null;
     this.convId = '';
+    this.profileSelection = '';
     this.hydrated = false;
     this.buffered = [];
     this.lastOnStatus = null;

@@ -1,8 +1,10 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { DesktopIconLayer } from '@hypercard/engine/desktop-react';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { Provider } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { createBookStore } from '../app/store';
 import { BookTrackerRealAppWindow } from './renderBookTrackerApp';
 
@@ -20,6 +22,10 @@ const launcherStateSlice = createSlice({
   },
 });
 
+const BOOK_TRACKER_APP_ID = 'book-tracker-debug';
+const BOOK_TRACKER_FOLDER_INSTANCE_ID = 'folder';
+const BOOK_TRACKER_WORKSPACE_INSTANCE_PREFIX = 'workspace-';
+
 function nextInstanceId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID();
@@ -28,7 +34,27 @@ function nextInstanceId(): string {
 }
 
 function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
-  const instanceId = nextInstanceId();
+  const instanceId = BOOK_TRACKER_FOLDER_INSTANCE_ID;
+  return {
+    id: `window:book-tracker-debug:${instanceId}`,
+    title: 'Book Tracker Folder',
+    icon: '📚',
+    bounds: {
+      x: 250,
+      y: 88,
+      w: 520,
+      h: 380,
+    },
+    content: {
+      kind: 'app',
+      appKey: formatAppKey(BOOK_TRACKER_APP_ID, instanceId),
+    },
+    dedupeKey: reason === 'startup' ? 'book-tracker-debug:folder:startup' : 'book-tracker-debug:folder',
+  };
+}
+
+function buildWorkspaceWindowPayload(): OpenWindowPayload {
+  const instanceId = `${BOOK_TRACKER_WORKSPACE_INSTANCE_PREFIX}${nextInstanceId()}`;
   return {
     id: `window:book-tracker-debug:${instanceId}`,
     title: 'Book Tracker',
@@ -41,9 +67,8 @@ function buildLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
     },
     content: {
       kind: 'app',
-      appKey: formatAppKey('book-tracker-debug', instanceId),
+      appKey: formatAppKey(BOOK_TRACKER_APP_ID, instanceId),
     },
-    dedupeKey: reason === 'startup' ? 'book-tracker-debug:startup' : undefined,
   };
 }
 
@@ -56,6 +81,32 @@ function BookTrackerLauncherAppHost() {
     <Provider store={storeRef.current}>
       <BookTrackerRealAppWindow />
     </Provider>
+  );
+}
+
+function BookTrackerFolderWindow() {
+  const dispatch = useDispatch();
+  const [selectedIconId, setSelectedIconId] = useState<string | null>('book-tracker-folder.open-workspace');
+
+  const openIcon = useCallback(
+    (iconId: string) => {
+      if (iconId !== 'book-tracker-folder.open-workspace') {
+        return;
+      }
+      dispatch(openWindow(buildWorkspaceWindowPayload()));
+    },
+    [dispatch],
+  );
+
+  return (
+    <section style={{ height: '100%', padding: 12 }}>
+      <DesktopIconLayer
+        icons={[{ id: 'book-tracker-folder.open-workspace', label: 'Open Book Tracker', icon: '📚' }]}
+        selectedIconId={selectedIconId}
+        onSelectIcon={setSelectedIconId}
+        onOpenIcon={openIcon}
+      />
+    </section>
   );
 }
 
@@ -77,5 +128,10 @@ export const bookTrackerLauncherModule: LaunchableAppModule = {
     ctx.dispatch(launcherStateSlice.actions.markLaunched(reason));
     return buildLaunchWindowPayload(reason);
   },
-  renderWindow: ({ windowId }): ReactNode => <BookTrackerLauncherAppHost key={windowId} />,
+  renderWindow: ({ instanceId, windowId }): ReactNode =>
+    instanceId === BOOK_TRACKER_FOLDER_INSTANCE_ID ? (
+      <BookTrackerFolderWindow />
+    ) : (
+      <BookTrackerLauncherAppHost key={windowId} />
+    ),
 };

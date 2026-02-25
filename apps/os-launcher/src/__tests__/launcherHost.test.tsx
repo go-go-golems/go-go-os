@@ -48,8 +48,13 @@ describe('launcher host wiring', () => {
 
     expect(hostContext.openWindow).toHaveBeenCalledTimes(appIds.length);
     for (const [index, appId] of appIds.entries()) {
-      const [payload] = hostContext.openWindow.mock.calls[index] as [{ content: { appKey: string } }];
-      expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
+      const [payload] = hostContext.openWindow.mock.calls[index] as [{ content: { kind: string; appKey?: string } }];
+      if (payload.content.kind === 'app') {
+        expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
+      } else {
+        expect(payload.content.kind).toBe('card');
+        expect(appId).toBe('inventory');
+      }
     }
   });
 
@@ -134,18 +139,24 @@ describe('launcher host wiring', () => {
     for (const module of launcherModules) {
       const ctx = createHostContext();
       const payload = module.buildLaunchWindow(ctx, 'icon');
-      const appKey = payload.content.kind === 'app' ? payload.content.appKey : '';
-      const parsed = parseAppKey(appKey);
-
-      expect(payload.content.kind).toBe('app');
-      expect(parsed).not.toBeNull();
-      expect(parsed?.appId).toBe(module.manifest.id);
       expect(payload.id).toContain(module.manifest.id);
+      if (payload.content.kind === 'app') {
+        const parsed = parseAppKey(payload.content.appKey ?? '');
+        expect(parsed).not.toBeNull();
+        expect(parsed?.appId).toBe(module.manifest.id);
+      } else {
+        expect(payload.content.kind).toBe('card');
+        expect(payload.content.card?.stackId).toBe('inventory');
+      }
+
+      const renderInstanceId = module.manifest.id === 'inventory' ? 'chat-test-instance' : 'test-instance';
+      const renderAppKey = formatAppKey(module.manifest.id, renderInstanceId);
+      const parsed = parseAppKey(renderAppKey);
 
       const rendered = module.renderWindow({
         appId: module.manifest.id,
-        appKey,
-        instanceId: parsed?.instanceId ?? 'missing',
+        appKey: renderAppKey,
+        instanceId: parsed.instanceId,
         windowId: payload.id,
         ctx: {
           dispatch: () => undefined,

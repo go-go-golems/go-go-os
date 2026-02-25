@@ -1,38 +1,35 @@
-import {
-  type ConfirmApiClient,
-  type ConfirmRequest,
-  ConfirmRequestWindowHost,
-  type ConfirmRuntimeAnyAction,
-  createConfirmRuntime,
-  reconcileSubmitConflict409,
-  selectActiveConfirmRequestById,
-  selectActiveConfirmRequests,
-  upsertRequest,
-} from '@hypercard/confirm-runtime';
+import { formatAppKey, parseAppKey, type LaunchReason, type LauncherHostContext } from '@hypercard/desktop-os';
 import {
   ChatConversationWindow,
   CodeEditorWindow,
-  EventViewerWindow,
   ensureChatModulesRegistered,
+  EventViewerWindow,
   getEditorInitialCode,
-  RuntimeCardDebugWindow,
   registerChatRuntimeModule,
   registerHypercardTimelineModule,
+  RuntimeCardDebugWindow,
   TimelineDebugWindow,
 } from '@hypercard/engine';
-import { closeWindow, type OpenWindowPayload, openWindow } from '@hypercard/engine/desktop-core';
-import { type DesktopContribution, DesktopShell } from '@hypercard/engine/desktop-react';
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../app/store';
+import { openWindow, type OpenWindowPayload, type WindowInstance } from '@hypercard/engine/desktop-core';
+import { PluginCardSessionHost } from '@hypercard/engine/desktop-hypercard-adapter';
+import {
+  type DesktopCommandHandler,
+  type DesktopContribution,
+  type WindowContentAdapter,
+} from '@hypercard/engine/desktop-react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { STACK } from '../domain/stack';
 import { ReduxPerfWindow } from '../features/debug/ReduxPerfWindow';
 
-const CHAT_APP_KEY = 'inventory-chat';
-const REDUX_PERF_APP_KEY = 'redux-perf-debug';
-const CONFIRM_REQUEST_APP_KEY_PREFIX = 'confirm-request:';
-const CONFIRM_QUEUE_APP_KEY = 'confirm-queue';
-const INVENTORY_API_BASE_PREFIX = resolveInventoryApiBasePrefix();
+const INVENTORY_APP_ID = 'inventory';
+const INVENTORY_API_BASE_PREFIX = '/api/apps/inventory';
+const CHAT_INSTANCE_PREFIX = 'chat-';
+const EVENT_VIEW_INSTANCE_PREFIX = 'event-viewer-';
+const TIMELINE_DEBUG_INSTANCE_PREFIX = 'timeline-debug-';
+const CODE_EDITOR_INSTANCE_PREFIX = 'code-editor-';
+const RUNTIME_DEBUG_INSTANCE = 'runtime-debug';
+const REDUX_PERF_INSTANCE = 'redux-perf';
 
 registerChatRuntimeModule({
   id: 'chat.hypercard-timeline',
@@ -40,126 +37,141 @@ registerChatRuntimeModule({
 });
 ensureChatModulesRegistered();
 
-function newConversationId(): string {
-  return typeof window.crypto?.randomUUID === 'function' ? window.crypto.randomUUID() : `inv-${Date.now()}`;
-}
-
-async function copyTextToClipboard(text: string): Promise<void> {
-  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
+function nextInstanceId(prefix: string): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return `${prefix}${globalThis.crypto.randomUUID()}`;
   }
-  throw new Error('clipboard unavailable');
+  return `${prefix}${Date.now()}`;
 }
 
-function resolveInventoryApiBasePrefix(): string {
-  const baseUrl = import.meta.env.BASE_URL ?? '/';
-  const trimmed = String(baseUrl).replace(/\/$/, '');
-  const rootPrefix = trimmed === '' ? '' : trimmed;
-  return `${rootPrefix}/api/apps/inventory`;
+function buildInventoryAppWindowPayload(
+  instanceId: string,
+  title: string,
+  icon: string,
+  bounds: OpenWindowPayload['bounds'],
+  dedupeKey?: string,
+): OpenWindowPayload {
+  return {
+    id: `window:inventory:${instanceId}`,
+    title,
+    icon,
+    bounds,
+    content: {
+      kind: 'app',
+      appKey: formatAppKey(INVENTORY_APP_ID, instanceId),
+    },
+    dedupeKey,
+  };
 }
 
-function resolveConfirmBaseUrl(): string {
-  const prefix = INVENTORY_API_BASE_PREFIX;
-  if (typeof window === 'undefined') {
-    return `${prefix}/confirm`;
-  }
-  return `${window.location.origin}${prefix}/confirm`;
+function buildInventoryCardWindowPayload(cardId: string, options?: { dedupe?: boolean }): OpenWindowPayload {
+  const card = STACK.cards[cardId];
+  const sessionId = nextInstanceId(`inv-card-${cardId}-`);
+  return {
+    id: `window:inventory:card:${cardId}:${sessionId}`,
+    title: card?.title ?? cardId,
+    icon: card?.icon ?? '📄',
+    bounds: {
+      x: 180 + Math.round(Math.random() * 60),
+      y: 40 + Math.round(Math.random() * 40),
+      w: 820,
+      h: 620,
+    },
+    content: {
+      kind: 'card',
+      card: {
+        stackId: STACK.id,
+        cardId,
+        cardSessionId: sessionId,
+      },
+    },
+    dedupeKey: options?.dedupe ? `inventory-card:${cardId}` : undefined,
+  };
 }
 
 function buildChatWindowPayload(options?: { dedupeKey?: string }): OpenWindowPayload {
-  const convId = newConversationId();
-  return {
-    id: `window:chat:${convId}`,
-    title: 'Inventory Chat',
-    icon: '💬',
-    bounds: {
-      x: 340 + Math.round(Math.random() * 60),
-      y: 20 + Math.round(Math.random() * 40),
-      w: 520,
-      h: 440,
-    },
-    content: {
-      kind: 'app',
-      appKey: `${CHAT_APP_KEY}:${convId}`,
-    },
-    dedupeKey: options?.dedupeKey ?? `chat:${convId}`,
-  };
+  const instanceId = nextInstanceId(CHAT_INSTANCE_PREFIX);
+  return buildInventoryAppWindowPayload(instanceId, 'Inventory Chat', '💬', { x: 340, y: 20, w: 560, h: 460 }, options?.dedupeKey);
 }
 
-function buildConfirmRequestWindowPayload(requestId: string, title?: string): OpenWindowPayload {
-  return {
-    id: `window:confirm:${requestId}`,
-    title: title && title.trim().length > 0 ? `Confirm: ${title}` : 'Confirm Request',
-    icon: '✅',
-    bounds: {
-      x: 420 + Math.round(Math.random() * 80),
-      y: 70 + Math.round(Math.random() * 50),
-      w: 520,
-      h: 420,
-    },
-    content: {
-      kind: 'app',
-      appKey: `${CONFIRM_REQUEST_APP_KEY_PREFIX}${requestId}`,
-    },
-    dedupeKey: `confirm-request:${requestId}`,
-  };
+function buildEventViewerWindowPayload(convId: string): OpenWindowPayload {
+  const shortId = convId.slice(0, 8);
+  return buildInventoryAppWindowPayload(
+    `${EVENT_VIEW_INSTANCE_PREFIX}${convId}`,
+    `Event Viewer (${shortId})`,
+    '🧭',
+    { x: 780, y: 40, w: 560, h: 420 },
+    `inventory-event-viewer:${convId}`,
+  );
 }
 
-function buildConfirmQueueWindowPayload(): OpenWindowPayload {
-  return {
-    id: 'window:confirm-queue',
-    title: 'Confirm Queue',
-    icon: '✅',
-    bounds: { x: 260, y: 40, w: 520, h: 400 },
-    content: {
-      kind: 'app',
-      appKey: CONFIRM_QUEUE_APP_KEY,
-    },
-    dedupeKey: CONFIRM_QUEUE_APP_KEY,
-  };
+function buildTimelineDebugWindowPayload(convId: string): OpenWindowPayload {
+  const shortId = convId.slice(0, 8);
+  return buildInventoryAppWindowPayload(
+    `${TIMELINE_DEBUG_INSTANCE_PREFIX}${convId}`,
+    `Timeline Debug (${shortId})`,
+    '🧱',
+    { x: 820, y: 60, w: 640, h: 460 },
+    `inventory-timeline-debug:${convId}`,
+  );
 }
 
-function chatConversationIdFromAppKey(appKey: string | undefined): string | null {
-  if (!appKey || !appKey.startsWith(`${CHAT_APP_KEY}:`)) {
+function buildRuntimeDebugWindowPayload(): OpenWindowPayload {
+  return buildInventoryAppWindowPayload(
+    RUNTIME_DEBUG_INSTANCE,
+    'Stacks & Cards',
+    '🔧',
+    { x: 80, y: 30, w: 560, h: 480 },
+    RUNTIME_DEBUG_INSTANCE,
+  );
+}
+
+function buildReduxPerfWindowPayload(): OpenWindowPayload {
+  return buildInventoryAppWindowPayload(
+    REDUX_PERF_INSTANCE,
+    'Redux Perf',
+    '📈',
+    { x: 900, y: 40, w: 420, h: 320 },
+    REDUX_PERF_INSTANCE,
+  );
+}
+
+export function buildInventoryLaunchWindowPayload(reason: LaunchReason): OpenWindowPayload {
+  return buildInventoryCardWindowPayload(STACK.homeCard, { dedupe: reason === 'startup' });
+}
+
+function resolveConversationIdFromWindow(win: WindowInstance | null | undefined): string | null {
+  if (!win || win.content.kind !== 'app' || !win.content.appKey) {
     return null;
   }
-  const convId = appKey.slice(CHAT_APP_KEY.length + 1).trim();
-  return convId.length > 0 ? convId : null;
-}
-
-function asObject(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  try {
+    const parsed = parseAppKey(win.content.appKey);
+    if (parsed.appId !== INVENTORY_APP_ID || !parsed.instanceId.startsWith(CHAT_INSTANCE_PREFIX)) {
+      return null;
+    }
+    return parsed.instanceId.slice(CHAT_INSTANCE_PREFIX.length) || null;
+  } catch {
     return null;
   }
-  return value as Record<string, unknown>;
 }
 
-function resolveEventViewerConversationId(state: unknown, focusedWindowId: string | null): string | null {
-  const root = asObject(state);
-  const windowing = root ? asObject(root.windowing) : null;
-  const windows = windowing ? asObject(windowing.windows) : null;
-  if (!windows) {
+function resolveFocusedConversationId(state: unknown, focusedWindowId: string | null): string | null {
+  if (typeof state !== 'object' || state === null || Array.isArray(state)) {
     return null;
   }
+  const root = state as Record<string, unknown>;
+  const windowing = root.windowing as Record<string, unknown> | undefined;
+  const windows = (windowing?.windows ?? {}) as Record<string, WindowInstance>;
 
-  if (focusedWindowId) {
-    const focusedWindow = asObject(windows[focusedWindowId]);
-    const content = focusedWindow ? asObject(focusedWindow.content) : null;
-    const fromFocused = chatConversationIdFromAppKey(
-      content && typeof content.appKey === 'string' ? content.appKey : undefined,
-    );
+  if (focusedWindowId && windows[focusedWindowId]) {
+    const fromFocused = resolveConversationIdFromWindow(windows[focusedWindowId]);
     if (fromFocused) {
       return fromFocused;
     }
   }
 
-  for (const value of Object.values(windows)) {
-    const win = asObject(value);
-    const content = win ? asObject(win.content) : null;
-    const convId = chatConversationIdFromAppKey(
-      content && typeof content.appKey === 'string' ? content.appKey : undefined,
-    );
+  for (const win of Object.values(windows)) {
+    const convId = resolveConversationIdFromWindow(win);
     if (convId) {
       return convId;
     }
@@ -168,45 +180,171 @@ function resolveEventViewerConversationId(state: unknown, focusedWindowId: strin
   return null;
 }
 
-function buildEventViewerWindowPayload(convId: string): OpenWindowPayload {
-  const shortId = convId.slice(0, 8);
+function asCardId(commandId: string): string | null {
+  if (commandId.startsWith('inventory.card.open.')) {
+    return commandId.replace('inventory.card.open.', '').trim() || null;
+  }
+  if (commandId.startsWith('icon.open.inventory.card.')) {
+    return commandId.replace('icon.open.inventory.card.', '').trim() || null;
+  }
+  return null;
+}
+
+function createInventoryCardAdapter(): WindowContentAdapter {
   return {
-    id: `window:event-viewer:${convId}`,
-    title: `Event Viewer (${shortId})`,
-    icon: '🧭',
-    bounds: { x: 780, y: 40, w: 560, h: 420 },
-    content: {
-      kind: 'app',
-      appKey: `event-viewer:${convId}`,
+    id: 'inventory.card-adapter',
+    canRender: (window) => window.content.kind === 'card' && window.content.card?.stackId === STACK.id,
+    render: (window, ctx) => {
+      if (window.content.kind !== 'card' || !window.content.card) {
+        return null;
+      }
+      return (
+        <PluginCardSessionHost
+          windowId={window.id}
+          sessionId={window.content.card.cardSessionId}
+          stack={STACK}
+          mode={ctx.mode}
+        />
+      );
     },
-    dedupeKey: `event-viewer:${convId}`,
   };
 }
 
-function buildTimelineDebugWindowPayload(convId: string): OpenWindowPayload {
-  const shortId = convId.slice(0, 8);
-  return {
-    id: `window:timeline-debug:${convId}`,
-    title: `Timeline Debug (${shortId})`,
-    icon: '🧱',
-    bounds: { x: 820, y: 60, w: 640, h: 460 },
-    content: {
-      kind: 'app',
-      appKey: `timeline-debug:${convId}`,
+function createInventoryCommands(hostContext: LauncherHostContext): DesktopCommandHandler[] {
+  return [
+    {
+      id: 'inventory.chat.new',
+      priority: 100,
+      matches: (commandId) => commandId === 'inventory.chat.new' || commandId === 'icon.open.inventory.new-chat',
+      run: () => {
+        hostContext.openWindow(buildChatWindowPayload());
+        return 'handled';
+      },
     },
-    dedupeKey: `timeline-debug:${convId}`,
-  };
+    {
+      id: 'inventory.card.open',
+      priority: 100,
+      matches: (commandId) => asCardId(commandId) !== null,
+      run: (commandId) => {
+        const cardId = asCardId(commandId);
+        if (!cardId || !STACK.cards[cardId]) {
+          return 'pass';
+        }
+        hostContext.openWindow(buildInventoryCardWindowPayload(cardId));
+        return 'handled';
+      },
+    },
+    {
+      id: 'inventory.debug.event-viewer',
+      priority: 100,
+      matches: (commandId) => commandId === 'inventory.debug.event-viewer' || commandId === 'icon.open.inventory.event-viewer',
+      run: (_commandId, ctx) => {
+        const convId = resolveFocusedConversationId(ctx.getState?.(), ctx.focusedWindowId);
+        if (!convId) {
+          return 'pass';
+        }
+        hostContext.openWindow(buildEventViewerWindowPayload(convId));
+        return 'handled';
+      },
+    },
+    {
+      id: 'inventory.debug.timeline-debug',
+      priority: 100,
+      matches: (commandId) => commandId === 'inventory.debug.timeline-debug' || commandId === 'icon.open.inventory.timeline-debug',
+      run: (_commandId, ctx) => {
+        const convId = resolveFocusedConversationId(ctx.getState?.(), ctx.focusedWindowId);
+        if (!convId) {
+          return 'pass';
+        }
+        hostContext.openWindow(buildTimelineDebugWindowPayload(convId));
+        return 'handled';
+      },
+    },
+    {
+      id: 'inventory.debug.stacks',
+      priority: 100,
+      matches: (commandId) => commandId === 'inventory.debug.stacks' || commandId === 'icon.open.inventory.runtime-debug',
+      run: () => {
+        hostContext.openWindow(buildRuntimeDebugWindowPayload());
+        return 'handled';
+      },
+    },
+    {
+      id: 'inventory.debug.redux-perf',
+      priority: 100,
+      matches: (commandId) => commandId === 'inventory.debug.redux-perf' || commandId === 'icon.open.inventory.redux-perf',
+      run: () => {
+        hostContext.openWindow(buildReduxPerfWindowPayload());
+        return 'handled';
+      },
+    },
+  ];
 }
 
-function buildRuntimeDebugWindowPayload(): OpenWindowPayload {
-  return {
-    id: 'window:runtime-debug',
-    title: 'Stacks & Cards',
-    icon: '🔧',
-    bounds: { x: 80, y: 30, w: 560, h: 480 },
-    content: { kind: 'app', appKey: 'runtime-card-debug' },
-    dedupeKey: 'runtime-card-debug',
-  };
+export function createInventoryContributions(hostContext: LauncherHostContext): DesktopContribution[] {
+  const cardIcons = Object.keys(STACK.cards).map((cardId) => ({
+    id: `inventory.card.${cardId}`,
+    label: STACK.cards[cardId].title ?? cardId,
+    icon: STACK.cards[cardId].icon ?? '📄',
+  }));
+
+  return [
+    {
+      id: 'inventory.launcher',
+      icons: [
+        { id: 'inventory.new-chat', label: 'New Chat', icon: '💬' },
+        { id: 'inventory.runtime-debug', label: 'Stacks & Cards', icon: '🔧' },
+        { id: 'inventory.event-viewer', label: 'Event Viewer', icon: '🧭' },
+        { id: 'inventory.timeline-debug', label: 'Timeline Debug', icon: '🧱' },
+        { id: 'inventory.redux-perf', label: 'Redux Perf', icon: '📈' },
+        ...cardIcons,
+      ],
+      menus: [
+        {
+          id: 'file',
+          label: 'File',
+          items: [
+            { id: 'inventory-new-chat', label: 'New Inventory Chat', commandId: 'inventory.chat.new', shortcut: 'Ctrl+N' },
+            {
+              id: 'inventory-open-home',
+              label: `Open ${STACK.cards[STACK.homeCard]?.title ?? 'Home'}`,
+              commandId: `inventory.card.open.${STACK.homeCard}`,
+            },
+            { id: 'inventory-close-focused', label: 'Close Window', commandId: 'window.close-focused', shortcut: 'Ctrl+W' },
+          ],
+        },
+        {
+          id: 'cards',
+          label: 'Cards',
+          items: Object.keys(STACK.cards).map((cardId) => ({
+            id: `inventory-open-${cardId}`,
+            label: `${STACK.cards[cardId].icon ?? ''} ${STACK.cards[cardId].title ?? cardId}`.trim(),
+            commandId: `inventory.card.open.${cardId}`,
+          })),
+        },
+        {
+          id: 'debug',
+          label: 'Debug',
+          items: [
+            { id: 'inventory-debug-stacks', label: '🔧 Stacks & Cards', commandId: 'inventory.debug.stacks' },
+            { id: 'inventory-debug-event-viewer', label: '🧭 Event Viewer', commandId: 'inventory.debug.event-viewer' },
+            { id: 'inventory-debug-timeline', label: '🧱 Timeline Debug', commandId: 'inventory.debug.timeline-debug' },
+            { id: 'inventory-debug-redux', label: '📈 Redux Perf', commandId: 'inventory.debug.redux-perf' },
+          ],
+        },
+      ],
+      commands: createInventoryCommands(hostContext),
+      windowContentAdapters: [createInventoryCardAdapter()],
+    },
+  ];
+}
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  throw new Error('clipboard unavailable');
 }
 
 function InventoryChatAssistantWindow({ convId }: { convId: string }) {
@@ -284,366 +422,34 @@ function InventoryChatAssistantWindow({ convId }: { convId: string }) {
   );
 }
 
-function ConfirmQueueWindow({ onOpenRequest }: { onOpenRequest: (request: ConfirmRequest) => void }) {
-  const requests = useSelector((state: RootState) => selectActiveConfirmRequests(state));
-
-  return (
-    <div data-part="card" style={{ padding: 10, display: 'grid', gap: 8 }}>
-      <div data-part="field-value">Active requests: {requests.length}</div>
-      {requests.length === 0 ? (
-        <div data-part="table-empty">No active requests</div>
-      ) : (
-        <div style={{ display: 'grid', gap: 6 }}>
-          {requests.map((request) => (
-            <div
-              key={request.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr auto',
-                gap: 8,
-                alignItems: 'center',
-                border: '1px solid currentColor',
-                borderRadius: 3,
-                padding: 6,
-              }}
-            >
-              <div>
-                <div data-part="field-label">{request.title ?? request.widgetType}</div>
-                <div data-part="field-value">
-                  {request.widgetType} · {request.id}
-                </div>
-              </div>
-              <button type="button" data-part="btn" onClick={() => onOpenRequest(request)}>
-                Open
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ConfirmRequestDesktopWindow({
-  requestId,
-  apiClient,
-}: {
-  requestId: string;
-  apiClient: ConfirmApiClient | null;
-}) {
-  const dispatch = useDispatch();
-  const request = useSelector((state: RootState) => selectActiveConfirmRequestById(state, requestId));
-
-  if (!request) {
-    return <div data-part="table-empty">Request not available (completed or not yet loaded)</div>;
+export function InventoryLauncherAppWindow({ instanceId }: { instanceId: string }): ReactNode {
+  if (instanceId.startsWith(CHAT_INSTANCE_PREFIX)) {
+    const convId = instanceId.slice(CHAT_INSTANCE_PREFIX.length);
+    return <InventoryChatAssistantWindow convId={convId} />;
   }
-  if (!apiClient) {
-    return <div data-part="table-empty">Confirm API unavailable</div>;
+  if (instanceId.startsWith(EVENT_VIEW_INSTANCE_PREFIX)) {
+    const convId = instanceId.slice(EVENT_VIEW_INSTANCE_PREFIX.length);
+    return <EventViewerWindow conversationId={convId} />;
+  }
+  if (instanceId.startsWith(TIMELINE_DEBUG_INSTANCE_PREFIX)) {
+    const convId = instanceId.slice(TIMELINE_DEBUG_INSTANCE_PREFIX.length);
+    return <TimelineDebugWindow conversationId={convId} />;
+  }
+  if (instanceId === RUNTIME_DEBUG_INSTANCE) {
+    return <RuntimeCardDebugWindow stacks={[STACK]} />;
+  }
+  if (instanceId === REDUX_PERF_INSTANCE) {
+    return <ReduxPerfWindow />;
+  }
+  if (instanceId.startsWith(CODE_EDITOR_INSTANCE_PREFIX)) {
+    const cardId = instanceId.slice(CODE_EDITOR_INSTANCE_PREFIX.length);
+    return <CodeEditorWindow cardId={cardId} initialCode={getEditorInitialCode(cardId)} />;
   }
 
   return (
-    <ConfirmRequestWindowHost
-      request={request}
-      onSubmitResponse={(_id, payload) => {
-        void apiClient
-          .submitResponse(request, payload)
-          .then((updated) => {
-            if (updated) {
-              dispatch(upsertRequest(updated));
-            }
-          })
-          .catch(async (error: unknown) => {
-            const handled = await reconcileSubmitConflict409({
-              requestId: request.id,
-              error,
-              apiClient,
-              dispatch: dispatch as unknown as (action: ConfirmRuntimeAnyAction) => void,
-              closeRequestWindow: (conflictRequestId: string) => {
-                dispatch(closeWindow(`window:confirm:${conflictRequestId}`));
-              },
-            });
-            if (handled) {
-              return;
-            }
-            console.error('confirm submit failed', error);
-          });
-      }}
-      onSubmitScriptEvent={(id, payload) => {
-        void apiClient
-          .submitScriptEvent(id, payload)
-          .then((updated) => {
-            if (updated) {
-              dispatch(upsertRequest(updated));
-            }
-          })
-          .catch(async (error: unknown) => {
-            const handled = await reconcileSubmitConflict409({
-              requestId: id,
-              error,
-              apiClient,
-              dispatch: dispatch as unknown as (action: ConfirmRuntimeAnyAction) => void,
-              closeRequestWindow: (conflictRequestId: string) => {
-                dispatch(closeWindow(`window:confirm:${conflictRequestId}`));
-              },
-            });
-            if (handled) {
-              return;
-            }
-            console.error('confirm script event submit failed', error);
-          });
-      }}
-    />
+    <section style={{ padding: 12, display: 'grid', gap: 8 }}>
+      <strong>Inventory</strong>
+      <span>Unknown inventory window instance: {instanceId}</span>
+    </section>
   );
-}
-
-export function InventoryRealAppWindow() {
-  const dispatch = useDispatch();
-  const [confirmApiClient, setConfirmApiClient] = useState<ConfirmApiClient | null>(null);
-
-  useEffect(() => {
-    const runtime = createConfirmRuntime({
-      host: {
-        resolveBaseUrl: resolveConfirmBaseUrl,
-        resolveSessionId: () => 'global',
-        resolveWsReconnectPolicy:
-          () =>
-          ({ attempt }) => ({
-            reconnect: attempt <= 6,
-            delayMs: Math.min(15_000, 500 * 2 ** Math.max(0, attempt - 1)),
-          }),
-        openRequestWindow: ({ requestId, title }) => {
-          dispatch(openWindow(buildConfirmRequestWindowPayload(requestId, title)));
-        },
-        closeRequestWindow: (requestId) => {
-          dispatch(closeWindow(`window:confirm:${requestId}`));
-        },
-        onError: (error) => {
-          // Keep runtime errors visible during integration while leaving UX design to the handoff ticket.
-          console.error('confirm-runtime error', error);
-        },
-      },
-      dispatch: dispatch as unknown as (action: ConfirmRuntimeAnyAction) => void,
-    });
-
-    setConfirmApiClient(runtime.apiClient);
-    runtime.connect();
-    return () => runtime.disconnect();
-  }, [dispatch]);
-
-  const renderAppWindow = useCallback(
-    (appKey: string): ReactNode => {
-      if (appKey === REDUX_PERF_APP_KEY) {
-        return <ReduxPerfWindow />;
-      }
-      if (appKey === CONFIRM_QUEUE_APP_KEY) {
-        return (
-          <ConfirmQueueWindow
-            onOpenRequest={(request) =>
-              dispatch(openWindow(buildConfirmRequestWindowPayload(request.id, request.title)))
-            }
-          />
-        );
-      }
-      if (appKey.startsWith(CONFIRM_REQUEST_APP_KEY_PREFIX)) {
-        const requestId = appKey.slice(CONFIRM_REQUEST_APP_KEY_PREFIX.length);
-        return <ConfirmRequestDesktopWindow requestId={requestId} apiClient={confirmApiClient} />;
-      }
-      if (appKey.startsWith(`${CHAT_APP_KEY}:`)) {
-        const convId = appKey.slice(CHAT_APP_KEY.length + 1);
-        return <InventoryChatAssistantWindow convId={convId} />;
-      }
-      if (appKey.startsWith('event-viewer:')) {
-        const convId = appKey.slice('event-viewer:'.length);
-        return <EventViewerWindow conversationId={convId} />;
-      }
-      if (appKey.startsWith('timeline-debug:')) {
-        const convId = appKey.slice('timeline-debug:'.length);
-        return <TimelineDebugWindow conversationId={convId} />;
-      }
-      if (appKey === 'runtime-card-debug') {
-        return <RuntimeCardDebugWindow stacks={[STACK]} />;
-      }
-      if (appKey.startsWith('code-editor:')) {
-        const cardId = appKey.slice('code-editor:'.length);
-        return <CodeEditorWindow cardId={cardId} initialCode={getEditorInitialCode(cardId)} />;
-      }
-      return null;
-    },
-    [confirmApiClient, dispatch],
-  );
-
-  const contributions = useMemo((): DesktopContribution[] => {
-    const cardIcons = Object.keys(STACK.cards).map((cardId) => ({
-      id: cardId,
-      label: STACK.cards[cardId].title ?? cardId,
-      icon: STACK.cards[cardId].icon ?? '📄',
-    }));
-    const debugIcons = [
-      { id: 'runtime-debug', label: 'Stacks & Cards', icon: '🔧' },
-      { id: 'event-viewer', label: 'Event Viewer', icon: '🧭' },
-      { id: 'timeline-debug', label: 'Timeline Debug', icon: '🧱' },
-    ];
-    if (import.meta.env.DEV) {
-      debugIcons.push({ id: 'redux-perf', label: 'Redux Perf', icon: '📈' });
-    }
-    const startupWindows = [
-      {
-        id: 'startup.chat',
-        create: () => buildChatWindowPayload({ dedupeKey: 'chat:startup' }),
-      },
-      ...(import.meta.env.DEV
-        ? [
-            {
-              id: 'startup.redux-perf',
-              create: () =>
-                ({
-                  id: 'window:redux-perf:dev',
-                  title: 'Redux Perf',
-                  icon: '📈',
-                  bounds: { x: 900, y: 40, w: 420, h: 320 },
-                  content: { kind: 'app', appKey: REDUX_PERF_APP_KEY },
-                  dedupeKey: REDUX_PERF_APP_KEY,
-                }) satisfies OpenWindowPayload,
-            },
-          ]
-        : []),
-    ];
-
-    return [
-      {
-        id: 'inventory.desktop',
-        icons: [
-          { id: 'new-chat', label: 'New Chat', icon: '💬' },
-          { id: 'confirm-queue', label: 'Confirm Queue', icon: '✅' },
-          ...debugIcons,
-          ...cardIcons,
-        ],
-        menus: [
-          {
-            id: 'file',
-            label: 'File',
-            items: [
-              { id: 'new-chat', label: 'New Chat', commandId: 'chat.new', shortcut: 'Ctrl+N' },
-              { id: 'confirm-queue', label: 'Open Confirm Queue', commandId: 'confirm.queue' },
-              { id: 'event-viewer', label: 'Open Event Viewer', commandId: 'debug.event-viewer' },
-              { id: 'timeline-debug', label: 'Open Timeline Debug', commandId: 'debug.timeline-debug' },
-              {
-                id: 'new-home',
-                label: `New ${STACK.cards[STACK.homeCard]?.title ?? 'Home'} Window`,
-                commandId: 'window.open.home',
-              },
-              { id: 'close-focused', label: 'Close Window', commandId: 'window.close-focused', shortcut: 'Ctrl+W' },
-            ],
-          },
-          {
-            id: 'cards',
-            label: 'Cards',
-            items: Object.keys(STACK.cards).map((cardId) => ({
-              id: `open-${cardId}`,
-              label: `${STACK.cards[cardId].icon ?? ''} ${STACK.cards[cardId].title ?? cardId}`.trim(),
-              commandId: `window.open.card.${cardId}`,
-            })),
-          },
-          {
-            id: 'window',
-            label: 'Window',
-            items: [
-              { id: 'tile', label: 'Tile Windows', commandId: 'window.tile' },
-              { id: 'cascade', label: 'Cascade Windows', commandId: 'window.cascade' },
-            ],
-          },
-          ...(import.meta.env.DEV
-            ? [
-                {
-                  id: 'debug',
-                  label: 'Debug',
-                  items: [
-                    { id: 'redux-perf', label: '📈 Redux Perf', commandId: 'debug.redux-perf' },
-                    { id: 'event-viewer', label: '🧭 Event Viewer', commandId: 'debug.event-viewer' },
-                    { id: 'timeline-debug', label: '🧱 Timeline Debug', commandId: 'debug.timeline-debug' },
-                    { id: 'stacks-cards', label: '🔧 Stacks & Cards', commandId: 'debug.stacks' },
-                  ],
-                },
-              ]
-            : []),
-        ],
-        commands: [
-          {
-            id: 'inventory.chat.new',
-            priority: 100,
-            matches: (commandId) => commandId === 'chat.new' || commandId === 'icon.open.new-chat',
-            run: (_commandId, ctx) => {
-              ctx.dispatch(openWindow(buildChatWindowPayload()));
-              return 'handled';
-            },
-          },
-          {
-            id: 'inventory.confirm.queue',
-            priority: 100,
-            matches: (commandId) => commandId === 'confirm.queue' || commandId === 'icon.open.confirm-queue',
-            run: (_commandId, ctx) => {
-              ctx.dispatch(openWindow(buildConfirmQueueWindowPayload()));
-              return 'handled';
-            },
-          },
-          {
-            id: 'inventory.debug.event-viewer',
-            priority: 100,
-            matches: (commandId) => commandId === 'debug.event-viewer' || commandId === 'icon.open.event-viewer',
-            run: (_commandId, ctx) => {
-              const convId = resolveEventViewerConversationId(ctx.getState?.(), ctx.focusedWindowId);
-              if (!convId) {
-                return 'pass';
-              }
-              ctx.dispatch(openWindow(buildEventViewerWindowPayload(convId)));
-              return 'handled';
-            },
-          },
-          {
-            id: 'inventory.debug.timeline-debug',
-            priority: 100,
-            matches: (commandId) => commandId === 'debug.timeline-debug' || commandId === 'icon.open.timeline-debug',
-            run: (_commandId, ctx) => {
-              const convId = resolveEventViewerConversationId(ctx.getState?.(), ctx.focusedWindowId);
-              if (!convId) {
-                return 'pass';
-              }
-              ctx.dispatch(openWindow(buildTimelineDebugWindowPayload(convId)));
-              return 'handled';
-            },
-          },
-          {
-            id: 'inventory.debug.stacks',
-            priority: 100,
-            matches: (commandId) => commandId === 'debug.stacks' || commandId === 'icon.open.runtime-debug',
-            run: (_commandId, ctx) => {
-              ctx.dispatch(openWindow(buildRuntimeDebugWindowPayload()));
-              return 'handled';
-            },
-          },
-          {
-            id: 'inventory.debug.redux-perf',
-            priority: 100,
-            matches: (commandId) => commandId === 'debug.redux-perf' || commandId === 'icon.open.redux-perf',
-            run: (_commandId, ctx) => {
-              ctx.dispatch(
-                openWindow({
-                  id: 'window:redux-perf:dev',
-                  title: 'Redux Perf',
-                  icon: '📈',
-                  bounds: { x: 900, y: 40, w: 420, h: 320 },
-                  content: { kind: 'app', appKey: REDUX_PERF_APP_KEY },
-                  dedupeKey: REDUX_PERF_APP_KEY,
-                }),
-              );
-              return 'handled';
-            },
-          },
-        ],
-        startupWindows,
-      },
-    ];
-  }, []);
-
-  return <DesktopShell stack={STACK} contributions={contributions} renderAppWindow={renderAppWindow} />;
 }

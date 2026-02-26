@@ -249,3 +249,73 @@ remarquee upload bundle \
 
 remarquee cloud ls /ai/2026/02/25/OS-09-JS-ENGINE-API-DESIGN --long --non-interactive
 ```
+
+## 2026-02-25 — v2 hard-cutover rewrite + reMarkable upload
+
+### User intent interpreted
+
+Update the OS-09 design doc with latest rebased findings, enforce hard cutover (no backwards compatibility or migration plan), explicitly remove unnecessary complexity (overlay abstraction), and upload as v2 to reMarkable.
+
+### Evidence gathered before rewrite
+
+1. Confirmed namespaced route hard-cut policy:
+   - `go-go-os/go-inventory-chat/internal/backendhost/routes.go`
+   - `go-go-os/go-inventory-chat/cmd/go-go-os-launcher/main.go`
+   - `go-go-os/go-inventory-chat/cmd/go-go-os-launcher/main_integration_test.go`
+2. Confirmed profile/schema endpoint mounting and schema catalog behavior:
+   - `go-go-os/go-inventory-chat/cmd/go-go-os-launcher/inventory_backend_module.go`
+   - `pinocchio/pkg/webchat/http/profile_api.go`
+3. Confirmed strict resolver/composer override rejection:
+   - `go-go-os/go-inventory-chat/internal/pinoweb/request_resolver.go`
+   - `go-go-os/go-inventory-chat/internal/pinoweb/runtime_composer.go`
+4. Confirmed frontend propagation of `profile` + `registry` over HTTP/WS:
+   - `go-go-os/packages/engine/src/chat/runtime/useConversation.ts`
+   - `go-go-os/packages/engine/src/chat/ws/wsManager.ts`
+   - `go-go-os/packages/engine/src/chat/runtime/profileApi.ts`
+5. Confirmed JS bindings parity gap (no profiles/schemas/factories namespaces):
+   - `geppetto/pkg/js/modules/geppetto/module.go`
+   - `geppetto/pkg/js/modules/geppetto/spec/geppetto.d.ts.tmpl`
+6. Confirmed overlay abstraction currently unused in production paths:
+   - `geppetto/pkg/profiles/overlay.go` exists
+   - concrete call-sites found only in `geppetto/pkg/profiles/overlay_test.go`
+
+### Document rewrite performed
+
+Replaced:
+
+- `go-go-os/ttmp/2026/02/24/OS-09-JS-ENGINE-API-DESIGN--js-engine-factory-profile-registry-and-middleware-schema-api-design/design-doc/01-comprehensive-js-api-design-for-engine-factories-profile-registry-and-schema-first-middleware.md`
+
+with v2 hard-cutover content that:
+
+1. removes migration/back-compat framing,
+2. locks namespaced/registry-first/schema-first architecture,
+3. adopts inference-first unified API shape (`profiles`, `schemas`, `factories`),
+4. hard-switches `engines.fromProfile` semantics,
+5. explicitly removes overlay abstraction from target implementation plan,
+6. updates references to current workspace paths and rebased code evidence.
+
+Also created upload-target copy:
+
+- `.../design-doc/01-comprehensive-js-api-design-for-engine-factories-profile-registry-and-schema-first-middleware-v2.md`
+
+### reMarkable upload actions
+
+Executed:
+
+```bash
+remarquee status
+remarquee upload md --dry-run --non-interactive --remote-dir /ai/2026/02/25/OS-09-JS-ENGINE-API-DESIGN <v2-md-path>
+remarquee upload md --non-interactive --remote-dir /ai/2026/02/25/OS-09-JS-ENGINE-API-DESIGN <v2-md-path>
+remarquee cloud ls /ai/2026/02/25/OS-09-JS-ENGINE-API-DESIGN --long --non-interactive
+```
+
+Observed:
+
+1. Dry-run succeeded.
+2. Upload succeeded:
+   - `01-comprehensive-js-api-design-for-engine-factories-profile-registry-and-schema-first-middleware-v2.pdf`
+3. Remote listing confirms presence in `/ai/2026/02/25/OS-09-JS-ENGINE-API-DESIGN`.
+
+### Outcome
+
+OS-09 design doc is now v2 hard-cutover aligned with latest system state and uploaded to reMarkable.

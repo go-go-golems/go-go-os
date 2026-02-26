@@ -23,3 +23,7 @@
   - `npm run build -w packages/engine`
   - `docmgr doctor --ticket OS-15-CONTEXT-ACTION-EFFECT-LOOP --stale-after 30` (all checks passed).
 - Added `reference/01-diary.md` with detailed implementation log, failures, fixes, and review instructions.
+
+## 2026-02-26 (closure)
+
+Closed per user direction after runtime split + Redux context-menu migration; deferred regression-test coverage accepted as documented risk.

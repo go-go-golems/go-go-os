@@ -1,6 +1,12 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChatWindow } from '../../components/widgets/ChatWindow';
+import {
+  useDesktopWindowId,
+  useOpenDesktopContextMenu,
+  useRegisterConversationContextActions,
+} from '../../components/shell/windowing/desktopMenuRuntime';
+import type { DesktopActionEntry } from '../../components/shell/windowing/types';
 import {
   getTimelineRendererRegistryVersion,
   resolveTimelineRenderers,
@@ -13,6 +19,7 @@ import {
   selectConversationTotalTokens,
   selectModelName,
   selectRenderableTimelineEntities,
+  selectShouldShowPendingAiPlaceholder,
   selectTimelineEntityById,
   selectStreamOutputTokens,
   selectStreamStartTime,
@@ -24,6 +31,7 @@ import {
   readSuggestionsEntityProps,
   STARTER_SUGGESTIONS_ENTITY_ID,
 } from '../state/suggestions';
+import { chatWindowSlice } from '../state/chatWindowSlice';
 import { timelineSlice } from '../state/timelineSlice';
 import { isRecord } from '../utils/guards';
 import { useConversation } from '../runtime/useConversation';
@@ -44,7 +52,10 @@ export interface ChatConversationWindowProps {
   headerActions?: ReactNode;
   enableProfileSelector?: boolean;
   profileRegistry?: string;
+  profileScopeKey?: string;
+  windowId?: string;
   renderMode?: RenderMode;
+  conversationContextActions?: DesktopActionEntry[];
 }
 
 function toRenderEntity(entity: {
@@ -63,24 +74,12 @@ function toRenderEntity(entity: {
   };
 }
 
-function isInboundResponseEntity(
-  entity: { kind: string; createdAt: number; props: unknown },
-  awaitingSinceMs: number
-): boolean {
-  if (entity.createdAt < awaitingSinceMs) {
-    return false;
+function resolveWindowStateKey(windowId: string | undefined, convId: string): string {
+  const normalizedWindowId = String(windowId ?? '').trim();
+  if (normalizedWindowId) {
+    return normalizedWindowId;
   }
-  if (entity.kind !== 'message') {
-    return true;
-  }
-  const props = isRecord(entity.props) ? entity.props : {};
-  const role = typeof props.role === 'string' ? props.role : 'assistant';
-  if (role === 'user') {
-    return false;
-  }
-  const content = typeof props.content === 'string' ? props.content.trim() : '';
-  const streaming = props.streaming === true;
-  return content.length > 0 || streaming;
+  return `chat:conv:${String(convId ?? '').trim()}`;
 }
 
 export function ChatConversationWindow({
@@ -91,18 +90,23 @@ export function ChatConversationWindow({
   headerActions,
   enableProfileSelector = false,
   profileRegistry,
+  profileScopeKey,
+  windowId,
   renderMode = 'normal',
+  conversationContextActions,
 }: ChatConversationWindowProps) {
   const dispatch = useDispatch();
-  const { send, connectionStatus, isStreaming } = useConversation(convId, basePrefix);
+  const resolvedWindowId = useMemo(() => resolveWindowStateKey(windowId, convId), [convId, windowId]);
+  const { send, connectionStatus, isStreaming } = useConversation(convId, basePrefix, profileScopeKey);
   const { profiles, loading: profilesLoading, error: profileError } = useProfiles(
     basePrefix,
     profileRegistry,
-    { enabled: enableProfileSelector }
+    { enabled: enableProfileSelector, scopeKey: profileScopeKey }
   );
-  const currentProfile = useCurrentProfile();
-  const setProfile = useSetProfile(basePrefix);
-  const [awaitingResponseSinceMs, setAwaitingResponseSinceMs] = useState<number | null>(null);
+  const currentProfile = useCurrentProfile(profileScopeKey);
+  const setProfile = useSetProfile(basePrefix, { scopeKey: profileScopeKey });
+  const runtimeWindowId = useDesktopWindowId();
+  const openContextMenu = useOpenDesktopContextMenu();
 
   const entities = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectRenderableTimelineEntities(state, convId)
@@ -128,6 +132,10 @@ export function ChatConversationWindow({
   const conversationTotalTokens = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
     selectConversationTotalTokens(state, convId)
   );
+  const showPendingResponseSpinner = useSelector((state: ChatStateSlice & Record<string, unknown>) =>
+    selectShouldShowPendingAiPlaceholder(state, resolvedWindowId, convId)
+  );
+  useRegisterConversationContextActions(convId, conversationContextActions);
 
   useEffect(() => {
     if (entities.length > 0) {
@@ -148,29 +156,30 @@ export function ChatConversationWindow({
   }, [convId, dispatch, entities.length, starterSuggestionsEntity]);
 
   useEffect(() => {
-    setAwaitingResponseSinceMs(null);
-  }, [convId]);
-
-  useEffect(() => {
-    if (awaitingResponseSinceMs === null) {
-      return;
-    }
-    if (connectionStatus === 'error' || connectionStatus === 'closed') {
-      setAwaitingResponseSinceMs(null);
-      return;
-    }
-    if (
-      entities.some((entity) =>
-        isInboundResponseEntity(entity, awaitingResponseSinceMs)
-      )
-    ) {
-      setAwaitingResponseSinceMs(null);
-    }
-  }, [awaitingResponseSinceMs, connectionStatus, entities]);
+    dispatch(
+      chatWindowSlice.actions.setWindowConversation({
+        windowId: resolvedWindowId,
+        convId,
+      })
+    );
+    return () => {
+      dispatch(
+        chatWindowSlice.actions.clearWindowState({
+          windowId: resolvedWindowId,
+        })
+      );
+    };
+  }, [convId, dispatch, resolvedWindowId]);
 
   const sendWithSuggestionLifecycle = useCallback(
     async (prompt: string) => {
-      setAwaitingResponseSinceMs(Date.now());
+      dispatch(
+        chatWindowSlice.actions.beginAwaitingAi({
+          windowId: resolvedWindowId,
+          convId,
+          baselineIndex: entities.length,
+        })
+      );
       dispatch(
         timelineSlice.actions.upsertSuggestions({
           convId,
@@ -195,11 +204,15 @@ export function ChatConversationWindow({
       try {
         await send(prompt);
       } catch (error) {
-        setAwaitingResponseSinceMs(null);
+        dispatch(
+          chatWindowSlice.actions.clearAwaitingAi({
+            windowId: resolvedWindowId,
+          })
+        );
         throw error;
       }
     },
-    [convId, dispatch, send]
+    [convId, dispatch, entities.length, resolvedWindowId, send]
   );
 
   const rendererRegistryVersion = useSyncExternalStore(
@@ -273,6 +286,31 @@ export function ChatConversationWindow({
     </div>
   ) : null;
 
+  const handleTimelineContextMenu = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (!openContextMenu || !conversationContextActions || conversationContextActions.length === 0) {
+        return;
+      }
+      const eventTarget = event.target as HTMLElement | null;
+      if (eventTarget?.closest('[data-part="chat-message"]')) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      openContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        menuId: 'conversation-context',
+        target: {
+          kind: 'conversation',
+          conversationId: convId,
+          windowId: runtimeWindowId ?? undefined,
+        },
+      });
+    },
+    [convId, conversationContextActions, openContextMenu, runtimeWindowId],
+  );
+
   const composedHeaderActions =
     profileSelector || headerActions
       ? (
@@ -289,7 +327,7 @@ export function ChatConversationWindow({
       timelineItemCount={entities.length}
       conversationTotalTokens={conversationTotalTokens}
       isStreaming={isStreaming}
-      showPendingResponseSpinner={awaitingResponseSinceMs !== null}
+      showPendingResponseSpinner={showPendingResponseSpinner}
       onSend={sendWithSuggestionLifecycle}
       suggestions={suggestions}
       showSuggestionsAlways
@@ -297,6 +335,7 @@ export function ChatConversationWindow({
       subtitle={subtitle}
       placeholder={placeholder}
       headerActions={composedHeaderActions}
+      onTimelineContextMenu={handleTimelineContextMenu}
       footer={
         <StatsFooter
           modelName={modelName}

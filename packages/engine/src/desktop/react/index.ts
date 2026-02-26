@@ -15,6 +15,7 @@ export {
 } from '../../components/shell/windowing/DesktopShellView';
 export {
   composeDesktopContributions,
+  mergeActionSections,
   routeContributionCommand,
   type ComposedDesktopContributions,
   type DesktopCommandContext,
@@ -23,6 +24,33 @@ export {
   type StartupWindowContext,
   type StartupWindowFactory,
 } from '../../components/shell/windowing/desktopContributions';
+export {
+  DesktopWindowMenuRuntimeProvider,
+  DesktopWindowScopeProvider,
+  useDesktopWindowId,
+  useOpenDesktopContextMenu,
+  useRegisterContextActions,
+  useRegisterConversationContextActions,
+  useRegisterIconContextActions,
+  useRegisterMessageContextActions,
+  useRegisterWidgetContextActions,
+  useRegisterWindowContextActions,
+  useRegisterWindowMenuSections,
+  type DesktopWindowMenuRuntime,
+} from '../../components/shell/windowing/desktopMenuRuntime';
+export {
+  applyActionVisibility,
+  isActionVisible,
+  isContextCommandAllowed,
+} from '../../components/shell/windowing/contextActionVisibility';
+export {
+  buildContextTargetKey,
+  normalizeContextTargetRef,
+  resolveContextActions,
+  resolveContextActionPrecedenceKeys,
+  type ContextActionRegistryEntry,
+  type ContextActionRegistryState,
+} from '../../components/shell/windowing/contextActionRegistry';
 export {
   createAppWindowContentAdapter,
   createFallbackWindowContentAdapter,
@@ -41,7 +69,19 @@ export {
   type WindowContentAdapter,
 } from '../../components/shell/windowing/windowContentAdapter';
 export type {
+  DesktopActionEntry,
+  DesktopActionItem,
+  DesktopActionSection,
+  DesktopActionVisibility,
+  DesktopActionVisibilityContext,
+  DesktopContextMenuOpenRequest,
+  DesktopCommandInvocation,
+  DesktopCommandSource,
+  ContextTargetKind,
+  DesktopContextTargetRef,
+  DesktopFolderIconOptions,
   DesktopIconDef,
+  DesktopIconKind,
   DesktopMenuEntry,
   DesktopMenuItem,
   DesktopMenuSection,

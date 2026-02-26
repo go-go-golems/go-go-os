@@ -1,11 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { OpenWindowPayload, WindowingState } from './types';
+import type { DesktopContextMenuState, OpenWindowPayload, WindowingState } from './types';
 
 const initialState: WindowingState = {
   desktop: {
     activeMenuId: null,
     selectedIconId: null,
     focusedWindowId: null,
+    contextMenu: null,
     zCounter: 0,
   },
   windows: {},
@@ -139,10 +140,19 @@ const windowingSlice = createSlice({
       state.desktop.selectedIconId = action.payload;
     },
 
+    setDesktopContextMenu(state, action: PayloadAction<DesktopContextMenuState | null>) {
+      state.desktop.contextMenu = action.payload;
+    },
+
+    closeDesktopContextMenu(state) {
+      state.desktop.contextMenu = null;
+    },
+
     /** Clear desktop transient state (close menu, deselect icon). */
     clearDesktopTransient(state) {
       state.desktop.activeMenuId = null;
       state.desktop.selectedIconId = null;
+      state.desktop.contextMenu = null;
     },
 
     // ── Per-session navigation ──
@@ -181,6 +191,8 @@ export const {
   resizeWindow,
   setActiveMenu,
   setSelectedIcon,
+  setDesktopContextMenu,
+  closeDesktopContextMenu,
   clearDesktopTransient,
   sessionNavGo,
   sessionNavBack,

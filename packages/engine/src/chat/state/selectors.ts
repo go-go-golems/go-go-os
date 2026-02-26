@@ -1,4 +1,5 @@
 import type { ChatErrorRecord, ChatSessionSliceState } from './chatSessionSlice';
+import type { ChatWindowSliceState } from './chatWindowSlice';
 import type { ChatProfilesState } from './profileSlice';
 import type { ConversationTimelineState, TimelineEntity, TimelineState } from './timelineSlice';
 import {
@@ -11,6 +12,7 @@ import {
 export interface ChatStateSlice {
   timeline: TimelineState;
   chatSession: ChatSessionSliceState;
+  chatWindow?: ChatWindowSliceState;
   chatProfiles?: ChatProfilesState;
 }
 
@@ -25,9 +27,17 @@ const EMPTY_CHAT_PROFILES: ChatProfilesState = {
   availableProfiles: [],
   selectedProfile: null,
   selectedRegistry: null,
+  selectedByScope: {},
   loading: false,
   error: null,
 };
+const EMPTY_CHAT_WINDOW: ChatWindowSliceState = {
+  byWindowId: {},
+};
+
+function normalizeSelectorValue(value: string | undefined): string {
+  return String(value ?? '').trim();
+}
 
 function getTimelineConversation(
   state: ChatStateSlice,
@@ -42,6 +52,10 @@ function getChatSession(state: ChatStateSlice, convId: string) {
 
 function getChatProfiles(state: ChatStateSlice): ChatProfilesState {
   return state.chatProfiles ?? EMPTY_CHAT_PROFILES;
+}
+
+function getChatWindow(state: ChatStateSlice): ChatWindowSliceState {
+  return state.chatWindow ?? EMPTY_CHAT_WINDOW;
 }
 
 export const selectConversationTimelineState = (
@@ -76,6 +90,70 @@ export const selectConnectionStatus = (state: ChatStateSlice, convId: string) =>
 
 export const selectIsStreaming = (state: ChatStateSlice, convId: string): boolean =>
   getChatSession(state, convId)?.isStreaming ?? false;
+
+function messageRole(props: unknown): string {
+  if (!props || typeof props !== 'object' || Array.isArray(props)) {
+    return '';
+  }
+  return String((props as Record<string, unknown>).role ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+function isUserMessageEntity(entity: TimelineEntity): boolean {
+  return entity.kind === 'message' && messageRole(entity.props) === 'user';
+}
+
+function isAiSignalEntity(entity: TimelineEntity): boolean {
+  if (entity.kind !== 'message') {
+    return true;
+  }
+  return messageRole(entity.props) !== 'user';
+}
+
+function findIndexAfter(
+  entities: TimelineEntity[],
+  startIndex: number,
+  predicate: (entity: TimelineEntity) => boolean
+): number {
+  const safeStart = Math.max(0, startIndex);
+  for (let i = safeStart; i < entities.length; i += 1) {
+    if (predicate(entities[i])) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+export const selectShouldShowPendingAiPlaceholder = (
+  state: ChatStateSlice,
+  windowId: string,
+  convId: string
+): boolean => {
+  const normalizedWindowId = normalizeSelectorValue(windowId);
+  const normalizedConvId = normalizeSelectorValue(convId);
+  if (!normalizedWindowId || !normalizedConvId) {
+    return false;
+  }
+
+  if (selectConnectionStatus(state, normalizedConvId) === 'error') {
+    return false;
+  }
+
+  const windowState = getChatWindow(state).byWindowId[normalizedWindowId];
+  if (!windowState || windowState.convId !== normalizedConvId || !windowState.awaiting) {
+    return false;
+  }
+
+  const entities = selectRenderableTimelineEntities(state, normalizedConvId);
+  const userIndex = findIndexAfter(entities, windowState.awaiting.baselineIndex, isUserMessageEntity);
+  if (userIndex < 0) {
+    return false;
+  }
+
+  const aiIndex = findIndexAfter(entities, userIndex + 1, isAiSignalEntity);
+  return aiIndex < 0;
+};
 
 export const selectSuggestions = (state: ChatStateSlice, convId: string): string[] =>
 {
@@ -161,7 +239,23 @@ export const selectProfileLoading = (state: ChatStateSlice) =>
 export const selectProfileError = (state: ChatStateSlice) =>
   getChatProfiles(state).error;
 
-export const selectCurrentProfileSelection = (state: ChatStateSlice) => ({
-  profile: getChatProfiles(state).selectedProfile ?? undefined,
-  registry: getChatProfiles(state).selectedRegistry ?? undefined,
-});
+export function selectCurrentProfileSelection(
+  state: ChatStateSlice,
+  scopeKey?: string
+): { profile: string | undefined; registry: string | undefined } {
+  const profiles = getChatProfiles(state);
+  const normalizedScope = String(scopeKey ?? '').trim();
+  if (normalizedScope) {
+    const scoped = profiles.selectedByScope[normalizedScope];
+    if (scoped) {
+      return {
+        profile: scoped.profile ?? undefined,
+        registry: scoped.registry ?? undefined,
+      };
+    }
+  }
+  return {
+    profile: profiles.selectedProfile ?? undefined,
+    registry: profiles.selectedRegistry ?? undefined,
+  };
+}

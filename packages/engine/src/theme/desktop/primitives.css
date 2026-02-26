@@ -404,7 +404,7 @@
   border: 2px solid var(--hc-color-border);
   background: var(--hc-color-bg);
   box-shadow: var(--hc-context-menu-shadow);
-  z-index: 500;
+  z-index: 100000;
   min-width: var(--hc-context-menu-min-width);
 }
 [data-part="context-menu-item"] {
@@ -807,4 +807,3 @@ button[data-part="table-row"]:nth-child(even) {
   padding: 2px 0;
   border-bottom: 1px dotted #ccc;
 }
-

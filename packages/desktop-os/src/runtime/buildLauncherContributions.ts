@@ -7,11 +7,12 @@ import type { LaunchReason } from '../contracts/appManifest';
 import type { LaunchableAppModule } from '../contracts/launchableAppModule';
 import type { LauncherHostContext } from '../contracts/launcherHostContext';
 import type { AppRegistry } from '../registry/createAppRegistry';
-import { buildLauncherIcons } from './buildLauncherIcons';
+import { buildLauncherIcons, type LauncherFolderIconOptions } from './buildLauncherIcons';
 
 export interface BuildLauncherContributionsOptions {
   hostContext: LauncherHostContext;
   iconContributionId?: string;
+  folderIcon?: LauncherFolderIconOptions | false;
 }
 
 function createLaunchCommandHandler(
@@ -57,7 +58,9 @@ export function buildLauncherContributions(
     ...moduleContributions,
     {
       id: options.iconContributionId ?? 'launcher.apps',
-      icons: buildLauncherIcons(registry),
+      icons: buildLauncherIcons(registry, {
+        folder: options.folderIcon,
+      }),
       commands: launchCommands,
     },
   ];

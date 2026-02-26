@@ -24,7 +24,7 @@ function commandContext(): DesktopCommandContext {
 
 function createHostContext() {
   return {
-    dispatch: () => undefined,
+    dispatch: vi.fn(() => undefined),
     getState: () => ({}),
     openWindow: vi.fn(),
     closeWindow: () => undefined,
@@ -67,6 +67,8 @@ describe('launcher host wiring', () => {
       hostContext: {
         dispatch: () => undefined,
         getState: () => ({}),
+        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
       },
       onUnknownAppKey: (appKey) => `unknown:${appKey}`,
     });
@@ -81,6 +83,8 @@ describe('launcher host wiring', () => {
       hostContext: {
         dispatch: () => undefined,
         getState: () => ({}),
+        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
       },
     });
 
@@ -171,6 +175,179 @@ describe('launcher host wiring', () => {
       });
       expect(rendered).not.toBeNull();
     }
+  });
+
+  it('derives inventory chat API base prefix from launcher host context', () => {
+    const module = launcherModules.find((entry) => entry.manifest.id === 'inventory');
+    expect(module).toBeTruthy();
+    if (!module) {
+      return;
+    }
+
+    const rendered = module.renderWindow({
+      appId: 'inventory',
+      appKey: formatAppKey('inventory', 'chat-test-instance'),
+      instanceId: 'chat-test-instance',
+      windowId: 'window:inventory:test',
+      ctx: {
+        dispatch: () => undefined,
+        getState: () => ({}),
+        moduleId: 'inventory',
+        stateKey: module.state?.stateKey,
+        resolveApiBase: () => '/launcher/api/apps/inventory',
+        resolveWsBase: () => '/launcher/api/apps/inventory/ws',
+      },
+    }) as { props?: Record<string, unknown> } | null;
+
+    expect(rendered).not.toBeNull();
+    expect(rendered?.props?.apiBasePrefix).toBe('/launcher/api/apps/inventory');
+  });
+
+  it('routes inventory chat-scoped debug and profile commands deterministically', () => {
+    const hostContext = createHostContext();
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
+
+    const debugHandled = routeContributionCommand(
+      'inventory.chat.conv-42.debug.event-viewer',
+      handlers,
+      commandContext(),
+    );
+    expect(debugHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(1);
+    const [eventPayload] = hostContext.openWindow.mock.calls[0] as [{ id: string; content: { appKey?: string } }];
+    expect(eventPayload.id).toContain('event-viewer-conv-42');
+    expect(eventPayload.content.appKey).toContain('event-viewer-conv-42');
+
+    const profileDispatch = vi.fn();
+    const profileHandled = routeContributionCommand(
+      'inventory.chat.conv-42.profile.select.agent',
+      handlers,
+      {
+        ...commandContext(),
+        dispatch: profileDispatch,
+        getState: () => ({ chatProfiles: { selectedRegistry: 'default' } }),
+      },
+    );
+    expect(profileHandled).toBe(true);
+    expect(profileDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'chatProfiles/setSelectedProfile',
+        payload: { profile: 'agent', registry: 'default', scopeKey: 'conv:conv-42' },
+      }),
+    );
+  });
+
+  it('routes message context actions using conversation/message payload metadata', () => {
+    const hostContext = createHostContext();
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
+
+    const invocation = {
+      source: 'context-menu' as const,
+      contextTarget: {
+        kind: 'message' as const,
+        conversationId: 'conv-42',
+        messageId: 'msg-9',
+      },
+      payload: {
+        conversationId: 'conv-42',
+        messageId: 'msg-9',
+        content: 'Need stock adjustments',
+      },
+    };
+
+    const debugHandled = routeContributionCommand('chat.message.debug-event', handlers, commandContext(), invocation);
+    expect(debugHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(1);
+    const [eventPayload] = hostContext.openWindow.mock.calls[0] as [{ id: string; title: string }];
+    expect(eventPayload.id).toContain('event-viewer-conv-42');
+    expect(eventPayload.title).toContain('Event Viewer');
+
+    const replyHandled = routeContributionCommand('chat.message.reply', handlers, commandContext(), invocation);
+    expect(replyHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
+      }),
+    );
+
+    const taskHandled = routeContributionCommand('chat.message.create-task', handlers, commandContext(), invocation);
+    expect(taskHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
+      }),
+    );
+  });
+
+  it('routes conversation-level actions through inventory chat command namespace', () => {
+    const hostContext = createHostContext();
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
+
+    const openTimelineHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.open-timeline',
+      handlers,
+      {
+        ...commandContext(),
+        getState: () => ({ chatProfiles: { availableProfiles: [] } }),
+      },
+    );
+    expect(openTimelineHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(1);
+    const [timelinePayload] = hostContext.openWindow.mock.calls[0] as [{ id: string; title: string }];
+    expect(timelinePayload.id).toContain('timeline-debug-conv-42');
+    expect(timelinePayload.title).toContain('Timeline Debug');
+
+    const replayHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.replay-last-turn',
+      handlers,
+      commandContext(),
+    );
+    expect(replayHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
+      }),
+    );
+
+    const exportHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.export-transcript',
+      handlers,
+      commandContext(),
+    );
+    expect(exportHandled).toBe(true);
+    expect(hostContext.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'notifications/showToast',
+      }),
+    );
+
+    const profileDispatch = vi.fn();
+    const profileHandled = routeContributionCommand(
+      'inventory.chat.conv-42.conversation.change-profile',
+      handlers,
+      {
+        ...commandContext(),
+        dispatch: profileDispatch,
+        getState: () => ({
+          chatProfiles: {
+            availableProfiles: [{ slug: 'default' }, { slug: 'agent' }],
+            selectedProfile: 'default',
+            selectedRegistry: 'default',
+            selectedByScope: {},
+          },
+        }),
+      },
+    );
+    expect(profileHandled).toBe(true);
+    expect(profileDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'chatProfiles/setSelectedProfile',
+        payload: { profile: 'agent', registry: 'default', scopeKey: 'conv:conv-42' },
+      }),
+    );
   });
 
   it('keeps host app orchestration-only (no app-specific business imports)', () => {

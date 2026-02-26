@@ -25,7 +25,7 @@ jobs:
           version: 10
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Lint launcher app
         run: pnpm exec biome check apps/os-launcher
@@ -76,7 +76,7 @@ jobs:
           go-version-file: go-inventory-chat/go.mod
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build launcher binary
         run: npm run launcher:binary:build

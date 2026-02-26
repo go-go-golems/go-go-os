@@ -1,4 +1,10 @@
-import { chatProfilesReducer, chatSessionReducer, createAppStore, timelineReducer } from '@hypercard/engine';
+import {
+  chatProfilesReducer,
+  chatSessionReducer,
+  chatWindowReducer,
+  createAppStore,
+  timelineReducer,
+} from '@hypercard/engine';
 import { confirmRuntimeReducer } from '@hypercard/confirm-runtime';
 import { inventoryReducer } from '../features/inventory/inventorySlice';
 import { salesReducer } from '../features/sales/salesSlice';
@@ -9,6 +15,7 @@ export const { store, createStore: createInventoryStore } = createAppStore(
     sales: salesReducer,
     timeline: timelineReducer,
     chatSession: chatSessionReducer,
+    chatWindow: chatWindowReducer,
     confirmRuntime: confirmRuntimeReducer,
     chatProfiles: chatProfilesReducer,
   },

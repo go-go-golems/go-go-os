@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   selectActiveMenuId,
+  selectDesktopContextMenu,
   selectFocusedWindow,
   selectFocusedWindowId,
   selectSelectedIconId,
@@ -14,6 +15,7 @@ import {
 import type { OpenWindowPayload } from '../desktop/core/state/types';
 import {
   clearDesktopTransient,
+  closeDesktopContextMenu,
   closeWindow,
   focusWindow,
   moveWindow,
@@ -22,6 +24,7 @@ import {
   sessionNavBack,
   sessionNavGo,
   sessionNavHome,
+  setDesktopContextMenu,
   setActiveMenu,
   setSelectedIcon,
   windowingReducer,
@@ -74,6 +77,7 @@ describe('windowingReducer', () => {
     expect(defaultState.desktop.focusedWindowId).toBeNull();
     expect(defaultState.desktop.activeMenuId).toBeNull();
     expect(defaultState.desktop.selectedIconId).toBeNull();
+    expect(defaultState.desktop.contextMenu).toBeNull();
     expect(defaultState.desktop.zCounter).toBe(0);
     expect(defaultState.windows).toEqual({});
     expect(defaultState.order).toEqual([]);
@@ -346,10 +350,49 @@ describe('windowingReducer', () => {
     });
 
     it('clearDesktopTransient clears menu and icon selection', () => {
-      const state = reduce(setActiveMenu('file'), setSelectedIcon('inventory'), clearDesktopTransient());
+      const state = reduce(
+        setActiveMenu('file'),
+        setSelectedIcon('inventory'),
+        setDesktopContextMenu({
+          x: 100,
+          y: 120,
+          menuId: 'icon-context',
+          windowId: null,
+          target: { kind: 'icon', iconId: 'inventory' },
+          items: [{ id: 'open', label: 'Open', commandId: 'icon.open.inventory' }],
+        }),
+        clearDesktopTransient(),
+      );
 
       expect(state.desktop.activeMenuId).toBeNull();
       expect(state.desktop.selectedIconId).toBeNull();
+      expect(state.desktop.contextMenu).toBeNull();
+    });
+
+    it('setDesktopContextMenu and closeDesktopContextMenu', () => {
+      const opened = reduce(
+        setDesktopContextMenu({
+          x: 40,
+          y: 64,
+          menuId: 'window-context',
+          windowId: 'w1',
+          widgetId: 'title-bar',
+          target: { kind: 'window', windowId: 'w1', widgetId: 'title-bar' },
+          items: [{ id: 'close', label: 'Close Window', commandId: 'window.close-focused' }],
+        }),
+      );
+      expect(opened.desktop.contextMenu).toEqual({
+        x: 40,
+        y: 64,
+        menuId: 'window-context',
+        windowId: 'w1',
+        widgetId: 'title-bar',
+        target: { kind: 'window', windowId: 'w1', widgetId: 'title-bar' },
+        items: [{ id: 'close', label: 'Close Window', commandId: 'window.close-focused' }],
+      });
+
+      const closed = windowingReducer(opened, closeDesktopContextMenu());
+      expect(closed.desktop.contextMenu).toBeNull();
     });
   });
 
@@ -473,6 +516,29 @@ describe('windowing selectors', () => {
       expect(selectFocusedWindowId(s)).toBe('w1');
       expect(selectActiveMenuId(s)).toBe('file');
       expect(selectSelectedIconId(s)).toBe('inventory');
+    });
+  });
+
+  describe('selectDesktopContextMenu', () => {
+    it('reads desktop context-menu state', () => {
+      const s = buildState(
+        setDesktopContextMenu({
+          x: 12,
+          y: 18,
+          menuId: 'message-context',
+          windowId: 'w1',
+          target: { kind: 'message', conversationId: 'conv-1', messageId: 'msg-1' },
+          items: [{ id: 'copy', label: 'Copy', commandId: 'chat.message.copy' }],
+        }),
+      );
+      expect(selectDesktopContextMenu(s)).toEqual({
+        x: 12,
+        y: 18,
+        menuId: 'message-context',
+        windowId: 'w1',
+        target: { kind: 'message', conversationId: 'conv-1', messageId: 'msg-1' },
+        items: [{ id: 'copy', label: 'Copy', commandId: 'chat.message.copy' }],
+      });
     });
   });
 

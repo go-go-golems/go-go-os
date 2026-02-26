@@ -64,3 +64,52 @@ export const ManyItems: Story = {
     onClose: () => {},
   },
 };
+
+export const ActionEntries: Story = {
+  args: {
+    x: 80,
+    y: 40,
+    items: [
+      { id: 'close', label: 'Close Window', commandId: 'window.close-focused', shortcut: 'Ctrl+W' },
+      { separator: true },
+      { id: 'tile', label: 'Tile Windows', commandId: 'window.tile' },
+      { id: 'cascade', label: 'Cascade Windows', commandId: 'window.cascade', checked: true },
+      { id: 'disabled', label: 'Disabled Item', commandId: 'window.disabled', disabled: true },
+    ],
+    onSelect: () => {},
+    onAction: () => {},
+    onClose: () => {},
+  },
+};
+
+export const WidgetTargetActions: Story = {
+  args: {
+    x: 80,
+    y: 40,
+    items: [
+      {
+        id: 'timeline-pin',
+        label: 'Pin Timeline Widget',
+        commandId: 'widget.timeline.pin',
+        payload: { widgetId: 'timeline-widget', target: 'timeline' },
+      },
+      {
+        id: 'timeline-copy',
+        label: 'Copy Widget Data',
+        commandId: 'widget.timeline.copy',
+        payload: { widgetId: 'timeline-widget', format: 'json' },
+      },
+      { separator: true },
+      {
+        id: 'sidebar-collapse',
+        label: 'Collapse Sidebar',
+        commandId: 'widget.sidebar.collapse',
+        payload: { widgetId: 'sidebar-main' },
+        checked: true,
+      },
+    ],
+    onSelect: () => {},
+    onAction: () => {},
+    onClose: () => {},
+  },
+};

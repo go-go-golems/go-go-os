@@ -55,6 +55,12 @@ topics:
       description: JavaScript and TypeScript implementation concerns
     - slug: profiles
       description: Profile registries and profile-based runtime selection
+    - slug: menus
+      description: Application and system menu architecture and behavior
+    - slug: ui
+      description: User interface layer and interaction design
+    - slug: plugins
+      description: Plugin and extension architecture concerns
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

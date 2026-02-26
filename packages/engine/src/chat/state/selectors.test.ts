@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatSessionSliceState } from './chatSessionSlice';
+import type { ChatWindowSliceState } from './chatWindowSlice';
 import {
   selectAvailableProfiles,
   selectConversationCachedTokens,
@@ -8,6 +9,7 @@ import {
   selectProfileLoading,
   selectConversationTotalTokens,
   selectRenderableTimelineEntities,
+  selectShouldShowPendingAiPlaceholder,
   selectSuggestions,
   type ChatStateSlice,
 } from './selectors';
@@ -18,10 +20,15 @@ import {
 } from './suggestions';
 import type { TimelineState } from './timelineSlice';
 
-function createState(timeline: TimelineState, chatSession?: ChatSessionSliceState): ChatStateSlice {
+function createState(
+  timeline: TimelineState,
+  chatSession?: ChatSessionSliceState,
+  chatWindow?: ChatWindowSliceState
+): ChatStateSlice {
   return {
     timeline,
     chatSession: chatSession ?? { byConvId: {} },
+    chatWindow,
   };
 }
 
@@ -159,5 +166,126 @@ describe('selectors', () => {
       profile: undefined,
       registry: undefined,
     });
+  });
+
+  it('returns scoped profile selection when scope key is present', () => {
+    const state: ChatStateSlice = {
+      timeline: { byConvId: {} },
+      chatSession: { byConvId: {} },
+      chatProfiles: {
+        availableProfiles: [],
+        selectedProfile: 'global-profile',
+        selectedRegistry: 'default',
+        selectedByScope: {
+          'conv:abc': {
+            profile: 'scoped-profile',
+            registry: 'default',
+          },
+        },
+        loading: false,
+        error: null,
+      },
+    };
+
+    expect(selectCurrentProfileSelection(state, 'conv:abc')).toEqual({
+      profile: 'scoped-profile',
+      registry: 'default',
+    });
+    expect(selectCurrentProfileSelection(state, 'conv:missing')).toEqual({
+      profile: 'global-profile',
+      registry: 'default',
+    });
+  });
+
+  it('shows pending placeholder only after user append until AI-side signal appears', () => {
+    const windowId = 'window:chat:1';
+    const convId = 'conv-pending';
+    const stateBeforeUser = createState(
+      {
+        byConvId: {
+          [convId]: {
+            byId: {},
+            order: [],
+          },
+        },
+      },
+      {
+        byConvId: {
+          [convId]: {
+            connectionStatus: 'connected',
+            isStreaming: false,
+            modelName: null,
+            turnStats: null,
+            conversationInputTokens: 0,
+            conversationOutputTokens: 0,
+            conversationCachedTokens: 0,
+            streamStartTime: null,
+            streamOutputTokens: 0,
+            lastError: null,
+            currentError: null,
+            errorHistory: [],
+          },
+        },
+      },
+      {
+        byWindowId: {
+          [windowId]: {
+            convId,
+            awaiting: {
+              baselineIndex: 0,
+            },
+          },
+        },
+      }
+    );
+    expect(selectShouldShowPendingAiPlaceholder(stateBeforeUser, windowId, convId)).toBe(false);
+
+    const stateWaiting = createState(
+      {
+        byConvId: {
+          [convId]: {
+            byId: {
+              'user-1': {
+                id: 'user-1',
+                kind: 'message',
+                createdAt: 1,
+                props: { role: 'user', content: 'hello' },
+              },
+            },
+            order: ['user-1'],
+          },
+        },
+      },
+      stateBeforeUser.chatSession,
+      stateBeforeUser.chatWindow
+    );
+    expect(selectShouldShowPendingAiPlaceholder(stateWaiting, windowId, convId)).toBe(true);
+
+    const stateAfterAiSignal = createState(
+      {
+        byConvId: {
+          [convId]: {
+            byId: {
+              'user-1': {
+                id: 'user-1',
+                kind: 'message',
+                createdAt: 1,
+                props: { role: 'user', content: 'hello' },
+              },
+              'assistant-1': {
+                id: 'assistant-1',
+                kind: 'message',
+                createdAt: 2,
+                props: { role: 'assistant', content: 'Hi' },
+              },
+            },
+            order: ['user-1', 'assistant-1'],
+          },
+        },
+      },
+      stateBeforeUser.chatSession,
+      stateBeforeUser.chatWindow
+    );
+    expect(selectShouldShowPendingAiPlaceholder(stateAfterAiSignal, windowId, convId)).toBe(false);
   });
 });

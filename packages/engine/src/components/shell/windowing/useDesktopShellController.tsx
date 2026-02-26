@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import createDebug from 'debug';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { clearToast, showToast } from '../../../features/notifications/notificationsSlice';
 import { type NotificationsStateSlice, selectToast } from '../../../features/notifications/selectors';
@@ -36,6 +37,7 @@ import {
 import {
   buildContextTargetKey,
   normalizeContextTargetRef,
+  resolveContextActionPrecedenceKeys,
   resolveContextActions,
   type ContextActionRegistryState,
 } from './contextActionRegistry';
@@ -72,6 +74,8 @@ import {
 import { useWindowInteractionController } from './useWindowInteractionController';
 
 type ShellState = WindowingStateSlice & NotificationsStateSlice & Record<string, unknown>;
+const contextActionResolveLog = createDebug('desktop:context-actions:resolve');
+const contextActionOpenLog = createDebug('desktop:context-actions:open');
 
 /** Convert windowing state WindowInstance to presentational DesktopWindowDef */
 function toWindowDef(win: WindowInstance, focused: boolean): DesktopWindowDef {
@@ -873,17 +877,37 @@ export function useDesktopShellController({
 
   const resolveContextMenuItemsForTarget = useCallback(
     (target: DesktopContextTargetRef): DesktopActionEntry[] => {
+      const precedenceKeys = resolveContextActionPrecedenceKeys(target);
+      const matchedPrecedence = precedenceKeys
+        .map((key) => ({ key, count: contextActionsByTargetKey[key]?.actions.length ?? 0 }))
+        .filter((entry) => entry.count > 0);
       const rawItems = buildRawContextMenuItemsForTarget({
         target,
         contextActionsByTargetKey,
         iconsById,
         windowsById,
       });
+      contextActionResolveLog(
+        'target=%o precedenceKeys=%o matched=%o rawItems=%d',
+        target,
+        precedenceKeys,
+        matchedPrecedence,
+        rawItems.length,
+      );
       if (rawItems.length === 0) {
         return rawItems;
       }
       const visibilityContext = resolveActionVisibilityContext(store.getState(), target);
-      return applyActionVisibility(rawItems, visibilityContext);
+      const visibleItems = applyActionVisibility(rawItems, visibilityContext);
+      contextActionResolveLog(
+        'target=%o visibleItems=%d roles=%o profile=%s registry=%s',
+        target,
+        visibleItems.length,
+        visibilityContext.roles ?? [],
+        visibilityContext.profile ?? '',
+        visibilityContext.registry ?? '',
+      );
+      return visibleItems;
     },
     [contextActionsByTargetKey, iconsById, store, windowsById],
   );
@@ -991,8 +1015,18 @@ export function useDesktopShellController({
     (request: DesktopContextMenuOpenRequest) => {
       const normalizedTarget = normalizeContextTargetRef(request.target);
       const items = resolveContextMenuItemsForTarget(normalizedTarget);
+      const resolvedMenuId = request.menuId ?? `${normalizedTarget.kind}-context`;
+      contextActionOpenLog(
+        'menuId=%s target=%o windowId=%s widgetId=%s items=%d',
+        resolvedMenuId,
+        normalizedTarget,
+        request.windowId ?? normalizedTarget.windowId ?? '',
+        request.widgetId ?? normalizedTarget.widgetId ?? '',
+        items.length,
+      );
 
       if (items.length === 0) {
+        contextActionOpenLog('menuId=%s target=%o empty; closing context menu', resolvedMenuId, normalizedTarget);
         setContextMenu(null);
         return;
       }
@@ -1008,7 +1042,7 @@ export function useDesktopShellController({
       setContextMenu({
         x: request.x,
         y: request.y,
-        menuId: request.menuId ?? `${normalizedTarget.kind}-context`,
+        menuId: resolvedMenuId,
         windowId: request.windowId ?? normalizedTarget.windowId ?? null,
         widgetId: request.widgetId ?? normalizedTarget.widgetId,
         target: normalizedTarget,

@@ -45,38 +45,105 @@ function pushUniqueKey(keys: string[], key: string, seen: Set<string>) {
   keys.push(key);
 }
 
+function pushTargetKey(keys: string[], target: DesktopContextTargetRef, seen: Set<string>) {
+  pushUniqueKey(keys, buildContextTargetKey(target), seen);
+}
+
 export function resolveContextActionPrecedenceKeys(target: DesktopContextTargetRef): string[] {
   const normalized = normalizeContextTargetRef(target);
   const keys: string[] = [];
   const seen = new Set<string>();
 
-  pushUniqueKey(keys, buildContextTargetKey(normalized), seen);
-  if (normalized.iconKind) {
-    pushUniqueKey(
+  pushTargetKey(keys, normalized, seen);
+  if (normalized.widgetId) {
+    pushTargetKey(
       keys,
-      buildContextTargetKey({
+      {
         ...normalized,
-        iconKind: undefined,
-      }),
+        widgetId: undefined,
+      },
       seen,
     );
   }
-
-  if (normalized.appId) {
-    pushUniqueKey(keys, buildContextTargetKey({ kind: normalized.kind, appId: normalized.appId }), seen);
+  if (normalized.iconKind) {
+    pushTargetKey(
+      keys,
+      {
+        ...normalized,
+        iconKind: undefined,
+      },
+      seen,
+    );
+    if (normalized.widgetId) {
+      pushTargetKey(
+        keys,
+        {
+          ...normalized,
+          widgetId: undefined,
+          iconKind: undefined,
+        },
+        seen,
+      );
+    }
   }
 
-  pushUniqueKey(keys, buildContextTargetKey({ kind: normalized.kind }), seen);
+  if (normalized.appId) {
+    pushTargetKey(
+      keys,
+      {
+        ...normalized,
+        appId: undefined,
+      },
+      seen,
+    );
+    if (normalized.widgetId) {
+      pushTargetKey(
+        keys,
+        {
+          ...normalized,
+          appId: undefined,
+          widgetId: undefined,
+        },
+        seen,
+      );
+    }
+    if (normalized.iconKind) {
+      pushTargetKey(
+        keys,
+        {
+          ...normalized,
+          appId: undefined,
+          iconKind: undefined,
+        },
+        seen,
+      );
+      if (normalized.widgetId) {
+        pushTargetKey(
+          keys,
+          {
+            ...normalized,
+            appId: undefined,
+            widgetId: undefined,
+            iconKind: undefined,
+          },
+          seen,
+        );
+      }
+    }
+    pushTargetKey(keys, { kind: normalized.kind, appId: normalized.appId }, seen);
+  }
+
+  pushTargetKey(keys, { kind: normalized.kind }, seen);
 
   if (normalized.windowId && normalized.kind !== 'window') {
     if (normalized.appId) {
-      pushUniqueKey(
+      pushTargetKey(
         keys,
-        buildContextTargetKey({ kind: 'window', windowId: normalized.windowId, appId: normalized.appId }),
+        { kind: 'window', windowId: normalized.windowId, appId: normalized.appId },
         seen
       );
     }
-    pushUniqueKey(keys, buildContextTargetKey({ kind: 'window', windowId: normalized.windowId }), seen);
+    pushTargetKey(keys, { kind: 'window', windowId: normalized.windowId }, seen);
   }
 
   return keys;

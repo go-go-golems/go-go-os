@@ -218,4 +218,36 @@ describe('launcher context menu behavior', () => {
     expect(appLabels).toEqual(sortedAppLabels);
   });
 
+  it('opens context menu for inventory-folder window icons and routes Open', async () => {
+    const { container, store } = await renderHost();
+    const inventoryLaunchPayload = launcherModules[0].buildLaunchWindow(createHostContext(), 'icon');
+
+    await act(async () => {
+      store.dispatch(openWindow(inventoryLaunchPayload));
+    });
+
+    const inWindowNewChatIcon = container.querySelector('[data-part="windowing-window"] [aria-label="New Chat"]');
+    expect(inWindowNewChatIcon).not.toBeNull();
+
+    const windowCountBefore = Object.keys(store.getState().windowing.windows).length;
+
+    fireContextMenu(inWindowNewChatIcon as Element);
+
+    const contextMenu = container.querySelector('[data-part="context-menu"]');
+    expect(contextMenu).not.toBeNull();
+    expect(contextMenu?.textContent).toContain('Open');
+
+    const openAction = Array.from(contextMenu?.querySelectorAll('button') ?? []).find(
+      (button) => button.textContent?.trim() === 'Open',
+    );
+    expect(openAction).not.toBeUndefined();
+
+    act(() => {
+      openAction?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+
+    const windowCountAfter = Object.keys(store.getState().windowing.windows).length;
+    expect(windowCountAfter).toBeGreaterThan(windowCountBefore);
+  });
+
 });

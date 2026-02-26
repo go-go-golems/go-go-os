@@ -75,7 +75,28 @@ function onMessageRightClick(event: React.MouseEvent, convId: string, messageId:
 }
 ```
 
-Resolution precedence is deterministic: `exact target -> kind/app fallback -> window fallback`.
+Resolution precedence is deterministic and qualifier-aware:
+
+1. exact normalized target
+2. qualifier drops for same target (`widgetId`, `iconKind`, `appId`)
+3. broad kind scopes (`kind + appId`, then `kind`)
+4. non-window kinds can also fall back to `kind=window` with the same `windowId`
+
+This means a menu opened with a fully-qualified target can still resolve actions registered by the standard hooks.
+
+## Target Mapping Cheat Sheet
+
+Right-click source target shape must be understood when debugging "action did not show up" cases.
+
+| Runtime hook / source | Typical registered/open target |
+| --- | --- |
+| `useRegisterWindowContextActions(actions)` | Registers `kind=window, windowId=<host-window-id>` |
+| Window title bar right-click | Opens `kind=window, windowId, widgetId='title-bar', appId=<derived-app>` |
+| Window surface right-click | Opens `kind=window, windowId, appId=<derived-app>` |
+| `useRegisterIconContextActions(iconId, actions)` | Registers `kind=icon, iconId, windowId?` |
+| Icon right-click (desktop or in-window) | Opens `kind=icon, iconId, iconKind?, appId?, windowId?` |
+| `useRegisterConversationContextActions(conversationId, actions)` | Registers `kind=conversation, conversationId, windowId?` |
+| `useRegisterMessageContextActions(conversationId, messageId, actions)` | Registers `kind=message, conversationId, messageId, windowId?` |
 
 ## Static Contributions (Module Level)
 
@@ -217,6 +238,25 @@ Behavior:
 - `unauthorized: 'hide'` removes the action.
 - `unauthorized: 'disable'` keeps the action visible but disabled.
 - The shell also enforces guardrails for context-menu command execution; hidden/disabled entries are not invocable through the context-menu path.
+
+## Troubleshooting: Action Not Showing
+
+When an expected action is missing:
+
+1. Verify the menu is opened with the target you expect (`kind`, `windowId`, `iconId`, `messageId`, `conversationId`, `appId`, `widgetId`).
+2. Verify the action is actually registered under the expected target scope.
+3. Check if visibility predicates hide/disable the item (`allowedProfiles`, `allowedRoles`, `when`).
+4. Enable debug logs to inspect computed precedence keys and matched registry entries:
+
+```js
+localStorage.debug = 'desktop:context-actions:*';
+// reload, then reproduce the right-click
+```
+
+You should see:
+
+- `desktop:context-actions:resolve` logs with `precedenceKeys` and `matched` entries
+- `desktop:context-actions:open` logs with normalized target and final item count
 
 ## Profile-Scoped Menu Patterns
 

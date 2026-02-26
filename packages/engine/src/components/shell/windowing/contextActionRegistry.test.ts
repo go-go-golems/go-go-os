@@ -30,7 +30,7 @@ describe('contextActionRegistry', () => {
     expect(key).toBe('kind=message|app=inventory|window=window:1|conversation=conv:1|message=msg:1');
   });
 
-  it('resolves precedence exact -> qualified kind -> kind -> window', () => {
+  it('resolves precedence exact -> qualifier drop -> qualified kind -> kind -> window', () => {
     const target = {
       kind: 'message' as const,
       appId: 'inventory',
@@ -42,11 +42,40 @@ describe('contextActionRegistry', () => {
     const keys = resolveContextActionPrecedenceKeys(target);
     expect(keys).toEqual([
       'kind=message|app=inventory|window=window:inventory:1|conversation=conv:1|message=msg:1',
+      'kind=message|window=window:inventory:1|conversation=conv:1|message=msg:1',
       'kind=message|app=inventory',
       'kind=message',
       'kind=window|app=inventory|window=window:inventory:1',
       'kind=window|window=window:inventory:1',
     ]);
+  });
+
+  it('drops app and widget qualifiers for window targets so window-scoped hooks still resolve', () => {
+    const target = {
+      kind: 'window' as const,
+      appId: 'runtime-tools',
+      windowId: 'window:runtime:1',
+      widgetId: 'title-bar',
+    };
+
+    const keys = resolveContextActionPrecedenceKeys(target);
+    expect(keys).toEqual([
+      'kind=window|app=runtime-tools|window=window:runtime:1|widget=title-bar',
+      'kind=window|app=runtime-tools|window=window:runtime:1',
+      'kind=window|window=window:runtime:1|widget=title-bar',
+      'kind=window|window=window:runtime:1',
+      'kind=window|app=runtime-tools',
+      'kind=window',
+    ]);
+
+    const registry: ContextActionRegistryState = {
+      [buildContextTargetKey({ kind: 'window', windowId: 'window:runtime:1' })]: {
+        target: { kind: 'window', windowId: 'window:runtime:1' },
+        actions: [action('inspect-window')],
+      },
+    };
+
+    expect(resolveContextActions(registry, target)).toEqual([action('inspect-window')]);
   });
 
   it('merges entries with deterministic precedence and item-id de-duplication', () => {
@@ -114,5 +143,30 @@ describe('contextActionRegistry', () => {
 
     const resolved = resolveContextActions(registry, target);
     expect(resolved).toEqual([action('open-folder'), action('open-generic')]);
+  });
+
+  it('drops icon/widget/app qualifiers with deterministic de-duplication for icon targets', () => {
+    const target = {
+      kind: 'icon' as const,
+      iconId: 'inventory-folder.new-chat',
+      iconKind: 'app' as const,
+      appId: 'inventory',
+      widgetId: 'grid',
+    };
+
+    const keys = resolveContextActionPrecedenceKeys(target);
+    expect(keys).toEqual([
+      'kind=icon|app=inventory|icon=inventory-folder.new-chat|iconKind=app|widget=grid',
+      'kind=icon|app=inventory|icon=inventory-folder.new-chat|iconKind=app',
+      'kind=icon|app=inventory|icon=inventory-folder.new-chat|widget=grid',
+      'kind=icon|app=inventory|icon=inventory-folder.new-chat',
+      'kind=icon|icon=inventory-folder.new-chat|iconKind=app|widget=grid',
+      'kind=icon|icon=inventory-folder.new-chat|iconKind=app',
+      'kind=icon|icon=inventory-folder.new-chat|widget=grid',
+      'kind=icon|icon=inventory-folder.new-chat',
+      'kind=icon|app=inventory',
+      'kind=icon',
+    ]);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });

@@ -23,10 +23,11 @@ import {
   type DesktopContribution,
   type DesktopIconDef,
   type WindowContentAdapter,
+  useOpenDesktopContextMenu,
   useRegisterWindowContextActions,
   useRegisterWindowMenuSections,
 } from '@hypercard/engine/desktop-react';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type MouseEvent, type ReactNode, useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';
 import { ReduxPerfWindow } from '../features/debug/ReduxPerfWindow';
@@ -624,6 +625,24 @@ function createInventoryCommands(hostContext: LauncherHostContext): DesktopComma
       },
     },
     {
+      id: 'inventory.folder-icon.open',
+      priority: 140,
+      matches: (commandId) => commandId.startsWith('icon.open.inventory-folder.'),
+      run: (commandId, ctx) => {
+        const iconId = commandId.slice('icon.open.'.length).trim();
+        if (!iconId) {
+          return 'pass';
+        }
+
+        const handled = openInventoryFolderIconById(iconId, {
+          openWindow: hostContext.openWindow,
+          getState: () => ctx.getState?.() ?? {},
+          focusedWindowId: ctx.focusedWindowId,
+        });
+        return handled ? 'handled' : 'pass';
+      },
+    },
+    {
       id: 'inventory.card.open',
       priority: 100,
       matches: (commandId) => asCardId(commandId) !== null,
@@ -741,25 +760,32 @@ const INVENTORY_FOLDER_ICONS: DesktopIconDef[] = [
   })),
 ];
 
-function openInventoryFolderIcon(iconId: string, options: { dispatch: ReturnType<typeof useDispatch>; getState: () => unknown }) {
-  const { dispatch, getState } = options;
+function openInventoryFolderIconById(
+  iconId: string,
+  options: {
+    openWindow: (payload: OpenWindowPayload) => void;
+    getState: () => unknown;
+    focusedWindowId: string | null;
+  },
+): boolean {
+  const { openWindow: openInventoryWindow, getState, focusedWindowId } = options;
   if (iconId === 'inventory-folder.new-chat') {
-    dispatch(openWindow(buildChatWindowPayload()));
-    return;
+    openInventoryWindow(buildChatWindowPayload());
+    return true;
   }
   if (iconId === 'inventory-folder.runtime-debug') {
-    dispatch(openWindow(buildRuntimeDebugWindowPayload()));
-    return;
+    openInventoryWindow(buildRuntimeDebugWindowPayload());
+    return true;
   }
   if (iconId === 'inventory-folder.redux-perf') {
-    dispatch(openWindow(buildReduxPerfWindowPayload()));
-    return;
+    openInventoryWindow(buildReduxPerfWindowPayload());
+    return true;
   }
   if (iconId === 'inventory-folder.event-viewer' || iconId === 'inventory-folder.timeline-debug') {
-    let convId = resolveFocusedConversationId(getState(), null);
+    let convId = resolveFocusedConversationId(getState(), focusedWindowId);
     if (!convId) {
       const chatPayload = buildChatWindowPayload();
-      dispatch(openWindow(chatPayload));
+      openInventoryWindow(chatPayload);
       if (chatPayload.content.kind === 'app' && chatPayload.content.appKey) {
         try {
           const parsed = parseAppKey(chatPayload.content.appKey);
@@ -772,30 +798,40 @@ function openInventoryFolderIcon(iconId: string, options: { dispatch: ReturnType
       }
     }
     if (!convId) {
-      return;
+      return false;
     }
-    dispatch(
-      openWindow(
-        iconId === 'inventory-folder.event-viewer'
-          ? buildEventViewerWindowPayload(convId)
-          : buildTimelineDebugWindowPayload(convId),
-      ),
+    openInventoryWindow(
+      iconId === 'inventory-folder.event-viewer'
+        ? buildEventViewerWindowPayload(convId)
+        : buildTimelineDebugWindowPayload(convId),
     );
-    return;
+    return true;
   }
   if (iconId.startsWith('inventory-folder.card.')) {
     const cardId = iconId.replace('inventory-folder.card.', '').trim();
     if (!cardId || !STACK.cards[cardId]) {
-      return;
+      return false;
     }
-    dispatch(openWindow(buildInventoryCardWindowPayload(cardId)));
+    openInventoryWindow(buildInventoryCardWindowPayload(cardId));
+    return true;
   }
+  return false;
+}
+
+function openInventoryFolderIcon(iconId: string, options: { dispatch: ReturnType<typeof useDispatch>; getState: () => unknown }) {
+  const { dispatch, getState } = options;
+  openInventoryFolderIconById(iconId, {
+    openWindow: (payload) => dispatch(openWindow(payload)),
+    getState,
+    focusedWindowId: null,
+  });
 }
 
 function InventoryFolderWindow() {
   const dispatch = useDispatch();
   const store = useStore();
   const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
+  const openDesktopContextMenu = useOpenDesktopContextMenu();
 
   const openIcon = useCallback(
     (iconId: string) => {
@@ -807,6 +843,24 @@ function InventoryFolderWindow() {
     [dispatch, store],
   );
 
+  const openIconContextMenu = useCallback(
+    (iconId: string, event: MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      openDesktopContextMenu?.({
+        x: event.clientX,
+        y: event.clientY,
+        menuId: 'icon-context',
+        target: {
+          kind: 'icon',
+          iconId,
+          iconKind: 'app',
+          appId: INVENTORY_APP_ID,
+        },
+      });
+    },
+    [openDesktopContextMenu],
+  );
+
   return (
     <section style={{ padding: 12, display: 'grid', gap: 8, height: '100%' }}>
       <strong>Inventory</strong>
@@ -815,6 +869,7 @@ function InventoryFolderWindow() {
         selectedIconId={selectedIconId}
         onSelectIcon={setSelectedIconId}
         onOpenIcon={openIcon}
+        onContextMenuIcon={openIconContextMenu}
       />
     </section>
   );

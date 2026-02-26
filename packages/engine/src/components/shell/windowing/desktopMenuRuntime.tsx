@@ -13,7 +13,12 @@ export interface DesktopWindowMenuRuntime {
   openContextMenu: (request: DesktopContextMenuOpenRequest) => void;
 }
 
-const DesktopWindowMenuRuntimeContext = createContext<DesktopWindowMenuRuntime | null>(null);
+type DesktopWindowMenuRegistrationRuntime = Omit<DesktopWindowMenuRuntime, 'openContextMenu'>;
+
+const DesktopWindowMenuRegistrationRuntimeContext =
+  createContext<DesktopWindowMenuRegistrationRuntime | null>(null);
+const DesktopWindowContextMenuRuntimeContext =
+  createContext<DesktopWindowMenuRuntime['openContextMenu'] | null>(null);
 const DesktopWindowScopeContext = createContext<string | null>(null);
 
 export interface DesktopWindowMenuRuntimeProviderProps extends DesktopWindowMenuRuntime {
@@ -30,7 +35,7 @@ export function DesktopWindowMenuRuntimeProvider({
   unregisterWindowContextActions,
   openContextMenu,
 }: DesktopWindowMenuRuntimeProviderProps) {
-  const runtime = useMemo(
+  const registrationRuntime = useMemo(
     () => ({
       registerWindowMenuSections,
       unregisterWindowMenuSections,
@@ -38,7 +43,6 @@ export function DesktopWindowMenuRuntimeProvider({
       unregisterContextActions,
       registerWindowContextActions,
       unregisterWindowContextActions,
-      openContextMenu,
     }),
     [
       registerWindowMenuSections,
@@ -47,14 +51,15 @@ export function DesktopWindowMenuRuntimeProvider({
       unregisterContextActions,
       registerWindowContextActions,
       unregisterWindowContextActions,
-      openContextMenu,
     ]
   );
 
   return (
-    <DesktopWindowMenuRuntimeContext.Provider value={runtime}>
-      {children}
-    </DesktopWindowMenuRuntimeContext.Provider>
+    <DesktopWindowMenuRegistrationRuntimeContext.Provider value={registrationRuntime}>
+      <DesktopWindowContextMenuRuntimeContext.Provider value={openContextMenu}>
+        {children}
+      </DesktopWindowContextMenuRuntimeContext.Provider>
+    </DesktopWindowMenuRegistrationRuntimeContext.Provider>
   );
 }
 
@@ -74,11 +79,11 @@ export function useDesktopWindowId(): string | null {
 export function useOpenDesktopContextMenu():
   | ((request: DesktopContextMenuOpenRequest) => void)
   | null {
-  return useContext(DesktopWindowMenuRuntimeContext)?.openContextMenu ?? null;
+  return useContext(DesktopWindowContextMenuRuntimeContext);
 }
 
 export function useRegisterWindowMenuSections(sections: DesktopActionSection[] | null | undefined): void {
-  const runtime = useContext(DesktopWindowMenuRuntimeContext);
+  const runtime = useContext(DesktopWindowMenuRegistrationRuntimeContext);
   const windowId = useDesktopWindowId();
 
   useEffect(() => {
@@ -93,7 +98,7 @@ export function useRegisterWindowMenuSections(sections: DesktopActionSection[] |
 }
 
 export function useRegisterWindowContextActions(actions: DesktopActionEntry[] | null | undefined): void {
-  const runtime = useContext(DesktopWindowMenuRuntimeContext);
+  const runtime = useContext(DesktopWindowMenuRegistrationRuntimeContext);
   const windowId = useDesktopWindowId();
 
   useEffect(() => {
@@ -112,7 +117,7 @@ export function useRegisterContextActions(
   target: DesktopContextTargetRef | null | undefined,
   actions: DesktopActionEntry[] | null | undefined
 ): void {
-  const runtime = useContext(DesktopWindowMenuRuntimeContext);
+  const runtime = useContext(DesktopWindowMenuRegistrationRuntimeContext);
   const normalizedTarget = useMemo(
     () => (target ? normalizeContextTargetRef(target) : null),
     [target]

@@ -1,5 +1,6 @@
 export {
   selectActiveMenuId,
+  selectDesktopContextMenu,
   selectFocusedWindow,
   selectFocusedWindowId,
   selectSelectedIconId,
@@ -13,6 +14,13 @@ export {
 } from './selectors';
 export type {
   CardSessionRef,
+  DesktopContextMenuActionItem,
+  DesktopContextMenuIconKind,
+  DesktopContextMenuItem,
+  DesktopContextMenuSeparator,
+  DesktopContextMenuState,
+  DesktopContextMenuTarget,
+  DesktopContextMenuTargetKind,
   DesktopState,
   NavEntry,
   OpenWindowPayload,
@@ -25,6 +33,7 @@ export type {
 } from './types';
 export {
   clearDesktopTransient,
+  closeDesktopContextMenu,
   closeWindow,
   focusWindow,
   moveWindow,
@@ -33,6 +42,7 @@ export {
   sessionNavBack,
   sessionNavGo,
   sessionNavHome,
+  setDesktopContextMenu,
   setActiveMenu,
   setSelectedIcon,
   windowingReducer,

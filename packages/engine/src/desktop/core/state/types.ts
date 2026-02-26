@@ -47,10 +47,51 @@ export interface SessionNav {
   nav: NavEntry[];
 }
 
+export type DesktopContextMenuTargetKind = 'window' | 'icon' | 'widget' | 'message' | 'conversation';
+export type DesktopContextMenuIconKind = 'app' | 'folder';
+
+export interface DesktopContextMenuTarget {
+  kind: DesktopContextMenuTargetKind;
+  windowId?: string;
+  iconId?: string;
+  iconKind?: DesktopContextMenuIconKind;
+  widgetId?: string;
+  messageId?: string;
+  conversationId?: string;
+  appId?: string;
+}
+
+export interface DesktopContextMenuSeparator {
+  separator: true;
+}
+
+export interface DesktopContextMenuActionItem {
+  id: string;
+  label: string;
+  commandId?: string;
+  shortcut?: string;
+  disabled?: boolean;
+  checked?: boolean;
+  payload?: Record<string, unknown>;
+}
+
+export type DesktopContextMenuItem = DesktopContextMenuActionItem | DesktopContextMenuSeparator;
+
+export interface DesktopContextMenuState {
+  x: number;
+  y: number;
+  menuId: string;
+  windowId: string | null;
+  widgetId?: string;
+  target: DesktopContextMenuTarget;
+  items: DesktopContextMenuItem[];
+}
+
 export interface DesktopState {
   activeMenuId: string | null;
   selectedIconId: string | null;
   focusedWindowId: string | null;
+  contextMenu: DesktopContextMenuState | null;
   zCounter: number;
 }
 

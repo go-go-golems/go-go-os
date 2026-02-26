@@ -20,6 +20,8 @@ export const selectActiveMenuId = (state: WindowingStateSlice) => state.windowin
 
 export const selectSelectedIconId = (state: WindowingStateSlice) => state.windowing.desktop.selectedIconId;
 
+export const selectDesktopContextMenu = (state: WindowingStateSlice) => state.windowing.desktop.contextMenu;
+
 // ── Windows ──
 
 /** All windows in insertion order. */

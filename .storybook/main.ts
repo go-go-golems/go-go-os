@@ -7,10 +7,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const config: StorybookConfig = {
   stories: [
     {
-      directory: '../apps/inventory/src',
-      files: '**/*.stories.@(ts|tsx)',
-    },
-    {
       directory: '../apps/todo/src',
       files: '**/*.stories.@(ts|tsx)',
     },

@@ -19,6 +19,10 @@ const config: StorybookConfig = {
       files: '**/*.stories.@(ts|tsx)',
     },
     {
+      directory: '../apps/apps-browser/src',
+      files: '**/*.stories.@(ts|tsx)',
+    },
+    {
       directory: '../packages/engine/src',
       files: '**/*.stories.@(ts|tsx)',
     },
@@ -36,6 +40,7 @@ const config: StorybookConfig = {
       ...config_.resolve.alias,
       '@hypercard/engine': resolve(__dirname, '../packages/engine/src'),
       '@hypercard/confirm-runtime': resolve(__dirname, '../packages/confirm-runtime/src'),
+      '@hypercard/apps-browser': resolve(__dirname, '../apps/apps-browser/src'),
     };
     return config_;
   },

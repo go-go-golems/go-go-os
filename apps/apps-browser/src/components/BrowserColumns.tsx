@@ -22,6 +22,7 @@ export function ModuleListPane({ apps, selectedAppId, onSelect, onContextMenuApp
               onClick={() => onSelect(app.app_id)}
               onContextMenu={(event) => {
                 event.preventDefault();
+                event.stopPropagation();
                 onContextMenuApp?.(app.app_id, event);
               }}
             >

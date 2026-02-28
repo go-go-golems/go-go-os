@@ -25,6 +25,7 @@ export function AppIcon({ app, selected, onClick, onDoubleClick, onContextMenu }
       onDoubleClick={onDoubleClick}
       onContextMenu={(event) => {
         event.preventDefault();
+        event.stopPropagation();
         onContextMenu?.(event);
       }}
       onKeyDown={(event) => {

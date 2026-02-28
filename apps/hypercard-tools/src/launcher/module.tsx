@@ -1,32 +1,53 @@
-import { formatAppKey, type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@hypercard/desktop-os';
-import { CodeEditorWindow, decodeRuntimeCardEditorInstanceId, getEditorInitialCode } from '@hypercard/hypercard-runtime';
+import { type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@hypercard/desktop-os';
+import { CodeEditorWindow, decodeRuntimeCardEditorInstanceId, getEditorInitialCode, PluginCardSessionHost } from '@hypercard/hypercard-runtime';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import type { DesktopCommandHandler, DesktopContribution } from '@hypercard/engine/desktop-react';
+import type { DesktopCommandHandler, DesktopContribution, WindowContentAdapter } from '@hypercard/engine/desktop-react';
 import type { ReactNode } from 'react';
+import { STACK } from '../domain/stack';
 
 const APP_ID = 'hypercard-tools';
-const HOME_INSTANCE = 'home';
 const OPEN_HOME_COMMAND = 'hypercard-tools.open-home';
+const WORKSPACE_INSTANCE_PREFIX = 'workspace-';
+const SESSION_PREFIX = 'hypercard-tools-session:';
 
-function buildHomeWindowPayload(reason: LaunchReason): OpenWindowPayload {
+function nextInstanceId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+  return `hypercard-tools-${Date.now()}`;
+}
+
+function buildWorkspaceWindowPayload(reason: LaunchReason): OpenWindowPayload {
+  const instanceId = `${WORKSPACE_INSTANCE_PREFIX}${nextInstanceId()}`;
   return {
-    id: `window:${APP_ID}:${HOME_INSTANCE}`,
+    id: `window:${APP_ID}:${instanceId}`,
     title: 'HyperCard Tools',
     icon: '🛠️',
-    bounds: { x: 210, y: 72, w: 760, h: 540 },
-    content: { kind: 'app', appKey: formatAppKey(APP_ID, HOME_INSTANCE) },
-    dedupeKey: reason === 'startup' ? `${APP_ID}:home:startup` : `${APP_ID}:home`,
+    bounds: { x: 210, y: 72, w: 980, h: 700 },
+    content: {
+      kind: 'card',
+      card: {
+        stackId: STACK.id,
+        cardId: STACK.homeCard,
+        cardSessionId: `${SESSION_PREFIX}${instanceId}`,
+      },
+    },
+    dedupeKey: reason === 'startup' ? `${APP_ID}:startup` : undefined,
   };
 }
 
-function renderHomeWindow(): ReactNode {
-  return (
-    <section style={{ padding: 14, display: 'grid', gap: 10, fontSize: 12 }}>
-      <strong>HyperCard Tools</strong>
-      <span>Runtime-card tooling windows are opened by command or by runtime debug UI actions.</span>
-      <span>Use Runtime Card Registry and click Edit to open the code editor for a runtime card.</span>
-    </section>
-  );
+function createHypercardToolsCardAdapter(): WindowContentAdapter {
+  return {
+    id: 'hypercard-tools.card-window',
+    canRender: (window) => window.content.kind === 'card' && window.content.card?.stackId === STACK.id,
+    render: (window) => {
+      const cardRef = window.content.card;
+      if (window.content.kind !== 'card' || !cardRef || cardRef.stackId !== STACK.id) {
+        return null;
+      }
+      return <PluginCardSessionHost windowId={window.id} sessionId={cardRef.cardSessionId} stack={STACK} />;
+    },
+  };
 }
 
 function renderUnknownInstance(instanceId: string): ReactNode {
@@ -44,7 +65,7 @@ function createHypercardToolsCommandHandler(hostContext: LauncherHostContext): D
     priority: 120,
     matches: (commandId) => commandId === OPEN_HOME_COMMAND,
     run: () => {
-      hostContext.openWindow(buildHomeWindowPayload('command'));
+      hostContext.openWindow(buildWorkspaceWindowPayload('command'));
       return 'handled';
     },
   };
@@ -58,18 +79,15 @@ export const hypercardToolsLauncherModule: LaunchableAppModule = {
     launch: { mode: 'window' },
     desktop: { order: 85 },
   },
-  buildLaunchWindow: (_ctx, reason) => buildHomeWindowPayload(reason),
+  buildLaunchWindow: (_ctx, reason) => buildWorkspaceWindowPayload(reason),
   createContributions: (hostContext): DesktopContribution[] => [
     {
       id: 'hypercard-tools.contributions',
       commands: [createHypercardToolsCommandHandler(hostContext)],
+      windowContentAdapters: [createHypercardToolsCardAdapter()],
     },
   ],
   renderWindow: ({ instanceId }): ReactNode => {
-    if (instanceId === HOME_INSTANCE) {
-      return renderHomeWindow();
-    }
-
     const ref = decodeRuntimeCardEditorInstanceId(instanceId);
     if (!ref) {
       return renderUnknownInstance(instanceId);

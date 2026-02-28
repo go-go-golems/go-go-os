@@ -7,7 +7,6 @@
     { "path": "apps/book-tracker-debug" },
     { "path": "apps/todo" },
     { "path": "apps/crm" },
-    { "path": "apps/apps-browser" },
-    { "path": "apps/arc-agi-player" }
+    { "path": "apps/apps-browser" }
   ]
 }

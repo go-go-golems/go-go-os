@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hypercard/chat-runtime": "workspace:*",
     "@hypercard/desktop-os": "workspace:*",
     "@hypercard/engine": "workspace:*",
     "@hypercard/hypercard-runtime": "workspace:*",

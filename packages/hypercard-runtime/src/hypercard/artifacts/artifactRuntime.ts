@@ -1,6 +1,6 @@
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import type { ArtifactSource } from './artifactsSlice';
-import { recordField, stringField, structuredRecordFromUnknown } from '@hypercard/engine';
+import { recordField, stringField, structuredRecordFromUnknown } from '@hypercard/chat-runtime';
 
 export interface ArtifactUpsert {
   id: string;

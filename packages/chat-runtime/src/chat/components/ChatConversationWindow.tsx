@@ -1,12 +1,12 @@
 import { type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ChatWindow } from '../../components/widgets/ChatWindow';
+import { ChatWindow } from '@hypercard/engine';
 import {
   useDesktopWindowId,
   useOpenDesktopContextMenu,
   useRegisterConversationContextActions,
-} from '../../components/shell/windowing/desktopMenuRuntime';
-import type { DesktopActionEntry } from '../../components/shell/windowing/types';
+  type DesktopActionEntry,
+} from '@hypercard/engine/desktop-react';
 import {
   getTimelineRendererRegistryVersion,
   resolveTimelineRenderers,

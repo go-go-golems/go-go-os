@@ -1,17 +1,20 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { clearSemHandlers, handleSem } from '@hypercard/engine';
-import { resetChatModulesRegistrationForTest } from '@hypercard/engine';
+import {
+  ASSISTANT_SUGGESTIONS_ENTITY_ID,
+  chatSessionSlice,
+  clearSemHandlers,
+  handleSem,
+  resetChatModulesRegistrationForTest,
+  timelineSlice,
+} from '@hypercard/chat-runtime';
 import {
   ensureHypercardChatModulesRegistered,
   registerHypercardTimelineChatModule,
 } from './registerHypercardChatModules';
-import { chatSessionSlice } from '@hypercard/engine';
-import { timelineSlice } from '@hypercard/engine';
 import { clearRuntimeCardRegistry, hasRuntimeCard } from '../../plugin-runtime/runtimeCardRegistry';
 import { createArtifactProjectionMiddleware } from '../artifacts/artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from '../artifacts/artifactsSlice';
-import { ASSISTANT_SUGGESTIONS_ENTITY_ID } from '@hypercard/engine';
 
 function createStore() {
   const artifactProjection = createArtifactProjectionMiddleware();

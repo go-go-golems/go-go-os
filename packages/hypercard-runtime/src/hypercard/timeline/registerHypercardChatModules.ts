@@ -2,7 +2,7 @@ import {
   ensureChatModulesRegistered,
   registerChatRuntimeModule,
   type ChatRuntimeModule,
-} from '@hypercard/engine';
+} from '@hypercard/chat-runtime';
 import { registerHypercardTimelineModule } from './registerHypercardTimeline';
 
 const hypercardTimelineModule: ChatRuntimeModule = {

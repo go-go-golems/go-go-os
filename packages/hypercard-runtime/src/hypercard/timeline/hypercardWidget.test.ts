@@ -1,9 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { handleSem, clearSemHandlers, resetChatModulesRegistrationForTest } from '@hypercard/engine';
+import { handleSem, clearSemHandlers, resetChatModulesRegistrationForTest } from '@hypercard/chat-runtime';
 import { ensureHypercardChatModulesRegistered, registerHypercardTimelineChatModule } from './registerHypercardChatModules';
-import { chatSessionSlice } from '@hypercard/engine';
-import { timelineSlice } from '@hypercard/engine';
+import { chatSessionSlice, timelineSlice } from '@hypercard/chat-runtime';
 import { createArtifactProjectionMiddleware } from '../artifacts/artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from '../artifacts/artifactsSlice';
 

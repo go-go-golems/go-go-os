@@ -3,7 +3,7 @@ import {
   useDesktopWindowId,
   useOpenDesktopContextMenu,
   useRegisterMessageContextActions,
-} from '../../../components/shell/windowing/desktopMenuRuntime';
+} from '@hypercard/engine/desktop-react';
 import type { RenderContext, RenderEntity } from '../types';
 
 function StreamingCursor() {

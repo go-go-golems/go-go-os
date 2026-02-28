@@ -12,8 +12,6 @@
 export * from './app';
 // ── Card DSL ──
 export * from './cards';
-// ── Chat ──
-export * from './chat';
 // ── Widgets ──
 export * from './components/widgets';
 // ── Debug utilities ──

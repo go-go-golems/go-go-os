@@ -1,4 +1,4 @@
-import { chatSessionReducer, chatWindowReducer, timelineReducer } from '@hypercard/engine';
+import { chatSessionReducer, chatWindowReducer, timelineReducer } from '@hypercard/chat-runtime';
 import { createAppStore } from '@hypercard/hypercard-runtime';
 import { activitiesReducer } from '../features/activities/activitiesSlice';
 import { companiesReducer } from '../features/companies/companiesSlice';

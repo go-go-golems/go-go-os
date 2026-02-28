@@ -1,5 +1,5 @@
-import { createListenerMiddleware, isAnyOf, type PayloadAction } from '@reduxjs/toolkit';
-import { timelineSlice, type TimelineEntity } from '@hypercard/engine';
+import { createListenerMiddleware, type PayloadAction } from '@reduxjs/toolkit';
+import { timelineSlice, type TimelineEntity } from '@hypercard/chat-runtime';
 import { registerRuntimeCard } from '../../plugin-runtime';
 import { extractArtifactUpsertFromTimelineEntity } from './artifactRuntime';
 import { upsertArtifact } from './artifactsSlice';
@@ -33,14 +33,30 @@ export function createArtifactProjectionMiddleware() {
   const listener = createListenerMiddleware();
 
   listener.startListening({
-    matcher: isAnyOf(timelineSlice.actions.addEntity, timelineSlice.actions.upsertEntity),
+    actionCreator: timelineSlice.actions.addEntity,
     effect: (action: ConversationEntityPayload, api) => {
       projectArtifactFromEntity(api.dispatch, action.payload.entity);
     },
   });
 
   listener.startListening({
-    matcher: isAnyOf(timelineSlice.actions.applySnapshot, timelineSlice.actions.mergeSnapshot),
+    actionCreator: timelineSlice.actions.upsertEntity,
+    effect: (action: ConversationEntityPayload, api) => {
+      projectArtifactFromEntity(api.dispatch, action.payload.entity);
+    },
+  });
+
+  listener.startListening({
+    actionCreator: timelineSlice.actions.applySnapshot,
+    effect: (action: SnapshotPayload, api) => {
+      for (const entity of action.payload.entities) {
+        projectArtifactFromEntity(api.dispatch, entity);
+      }
+    },
+  });
+
+  listener.startListening({
+    actionCreator: timelineSlice.actions.mergeSnapshot,
     effect: (action: SnapshotPayload, api) => {
       for (const entity of action.payload.entities) {
         projectArtifactFromEntity(api.dispatch, entity);

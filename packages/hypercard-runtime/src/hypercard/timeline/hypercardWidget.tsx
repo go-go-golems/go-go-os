@@ -1,9 +1,6 @@
 import { useDispatch } from 'react-redux';
-import type { RenderContext, RenderEntity } from '@hypercard/engine';
-import { stringField } from '@hypercard/engine';
-import type { SemContext, SemEvent } from '@hypercard/engine';
-import { registerSem } from '@hypercard/engine';
-import { type TimelineEntity, timelineSlice } from '@hypercard/engine';
+import type { RenderContext, RenderEntity, SemContext, SemEvent, TimelineEntity } from '@hypercard/chat-runtime';
+import { registerSem, stringField, timelineSlice } from '@hypercard/chat-runtime';
 import { openWindow } from '@hypercard/engine/desktop-core';
 import {
   buildArtifactOpenWindowPayload,

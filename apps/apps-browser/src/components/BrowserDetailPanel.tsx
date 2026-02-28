@@ -1,4 +1,4 @@
-import { SyntaxHighlight, toYaml } from '@hypercard/engine';
+import { SyntaxHighlight, toYaml } from '@hypercard/chat-runtime';
 import { useLazyGetSchemaDocumentQuery } from '../api/appsApi';
 import { useEffect, useRef, useState } from 'react';
 import { isReflectionUnsupported } from '../domain/selectors';

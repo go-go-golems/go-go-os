@@ -7,7 +7,7 @@ import {
   onRegistryChange,
   type RuntimeCardDefinition,
 } from '../../plugin-runtime';
-import { SyntaxHighlight } from '@hypercard/engine';
+import { SyntaxHighlight } from '@hypercard/chat-runtime';
 import type { ArtifactRecord } from '../artifacts/artifactsSlice';
 import { openCodeEditor } from '../editor/editorLaunch';
 

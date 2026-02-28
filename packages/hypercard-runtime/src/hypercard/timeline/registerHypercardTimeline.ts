@@ -1,4 +1,4 @@
-import { registerTimelineRenderer } from '@hypercard/engine';
+import { registerTimelineRenderer } from '@hypercard/chat-runtime';
 import { HypercardCardRenderer } from './hypercardCard';
 import { HypercardWidgetRenderer } from './hypercardWidget';
 

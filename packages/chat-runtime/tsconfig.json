@@ -16,12 +16,10 @@
     "baseUrl": ".",
     "paths": {
       "@hypercard/engine": ["../engine/src"],
-      "@hypercard/engine/*": ["../engine/src/*"],
-      "@hypercard/chat-runtime": ["../chat-runtime/src"],
-      "@hypercard/chat-runtime/*": ["../chat-runtime/src/*"]
+      "@hypercard/engine/*": ["../engine/src/*"]
     }
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.stories.tsx", "src/__tests__"],
-  "references": [{ "path": "../engine" }, { "path": "../chat-runtime" }]
+  "exclude": ["src/**/*.stories.tsx", "src/**/*.test.ts", "src/**/*.test.tsx", "src/__tests__"],
+  "references": [{ "path": "../engine" }]
 }

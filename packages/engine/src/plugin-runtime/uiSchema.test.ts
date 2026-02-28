@@ -24,6 +24,17 @@ describe('validateUINode', () => {
     expect(() => validateUINode({ kind: 'unknown' })).toThrow(/not supported/i);
   });
 
+  it('rejects counter nodes after DSL scope reduction', () => {
+    expect(() =>
+      validateUINode({
+        kind: 'counter',
+        props: {
+          value: 1,
+        },
+      })
+    ).toThrow(/not supported/i);
+  });
+
   it('rejects input without string value', () => {
     expect(() =>
       validateUINode({

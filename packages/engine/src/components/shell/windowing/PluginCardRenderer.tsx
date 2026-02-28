@@ -105,16 +105,6 @@ export function PluginCardRenderer({ tree, onEvent }: PluginCardRendererProps) {
       );
     }
 
-    if (node.kind === 'counter') {
-      return (
-        <div key={keyHint} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <Btn onClick={() => eventHandler(node.props.onDecrement, onEvent)}>-</Btn>
-          <span>{node.props.value}</span>
-          <Btn onClick={() => eventHandler(node.props.onIncrement, onEvent)}>+</Btn>
-        </div>
-      );
-    }
-
     if (node.kind === 'table') {
       return (
         <table key={keyHint} style={{ width: '100%', borderCollapse: 'collapse' }}>

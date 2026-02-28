@@ -61,19 +61,6 @@ export function assertUINode(value: unknown, path = 'root'): asserts value is UI
     return;
   }
 
-  if (kind === 'counter') {
-    if (!isRecord(value.props) || typeof value.props.value !== 'number') {
-      throw new Error(`${path}.props.value must be a number`);
-    }
-    if (value.props.onIncrement !== undefined) {
-      assertEventRef(value.props.onIncrement, `${path}.props.onIncrement`);
-    }
-    if (value.props.onDecrement !== undefined) {
-      assertEventRef(value.props.onDecrement, `${path}.props.onDecrement`);
-    }
-    return;
-  }
-
   if (kind === 'table') {
     if (!isRecord(value.props)) {
       throw new Error(`${path}.props must be an object`);

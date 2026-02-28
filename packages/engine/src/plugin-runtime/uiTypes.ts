@@ -28,14 +28,6 @@ export type UINode =
       };
     }
   | {
-      kind: 'counter';
-      props: {
-        value: number;
-        onIncrement?: UIEventRef;
-        onDecrement?: UIEventRef;
-      };
-    }
-  | {
       kind: 'table';
       props: {
         headers: string[];

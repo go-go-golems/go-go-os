@@ -32,6 +32,7 @@ export {
   showToast,
 } from './features/notifications/notificationsSlice';
 export * from './features/notifications/selectors';
+export * from './features/arcBridge';
 export * from './features/pluginCardRuntime';
 export * from './parts';
 // ── Theme ──

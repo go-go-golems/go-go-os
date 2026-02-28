@@ -14,17 +14,12 @@ export * from './app';
 export * from './cards';
 // ── Chat ──
 export * from './chat';
-// ── Plugin Runtime ──
-export * from './plugin-runtime';
-
 // ── Widgets ──
 export * from './components/widgets';
 // ── Debug utilities ──
 export * from './debug';
 // ── Diagnostics (Redux perf / FPS) ──
 export * from './diagnostics';
-// ── Hypercard ──
-export * from './hypercard';
 // ── State ──
 export {
   clearToast,
@@ -32,7 +27,6 @@ export {
   showToast,
 } from './features/notifications/notificationsSlice';
 export * from './features/notifications/selectors';
-export * from './features/pluginCardRuntime';
 export * from './parts';
 // ── Theme ──
 export { HyperCardTheme, type HyperCardThemeProps } from './theme/HyperCardTheme';

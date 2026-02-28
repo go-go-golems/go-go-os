@@ -1,15 +1,9 @@
 import { registerDefaultSemHandlers } from '../sem/semRegistry';
-import { registerHypercardTimelineModule } from '../../hypercard/timeline/registerHypercardTimeline';
 import { registerDefaultTimelineRenderers } from '../renderers/rendererRegistry';
 import {
   createChatModuleBootstrap,
   type ChatRuntimeModule,
 } from './moduleBootstrap';
-
-const hypercardTimelineModule: ChatRuntimeModule = {
-  id: 'chat.hypercard-timeline',
-  register: registerHypercardTimelineModule,
-};
 
 const bootstrap = createChatModuleBootstrap([
   {
@@ -24,15 +18,6 @@ const bootstrap = createChatModuleBootstrap([
 
 export function ensureChatModulesRegistered() {
   bootstrap.ensureRegistered();
-}
-
-export function registerHypercardTimelineChatModule() {
-  bootstrap.registerModule(hypercardTimelineModule);
-}
-
-export function ensureHypercardChatModulesRegistered() {
-  registerHypercardTimelineChatModule();
-  ensureChatModulesRegistered();
 }
 
 export function registerChatRuntimeModule(module: ChatRuntimeModule) {

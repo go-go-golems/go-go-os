@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/engine" },
+    { "path": "packages/hypercard-runtime" },
     { "path": "packages/confirm-runtime" },
     { "path": "packages/desktop-os" },
     { "path": "apps/book-tracker-debug" },

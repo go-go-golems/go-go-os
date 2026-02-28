@@ -7,7 +7,6 @@
     ".": "./src/index.ts",
     "./desktop-core": "./src/desktop-core.ts",
     "./desktop-react": "./src/desktop-react.ts",
-    "./desktop-hypercard-adapter": "./src/desktop-hypercard-adapter.ts",
     "./desktop-theme-macos1": "./src/desktop-theme-macos1.ts",
     "./theme": "./src/theme/index.ts",
     "./theme/classic.css": "./src/theme/classic.css",

@@ -57,7 +57,6 @@ import {
 import {
   createAppWindowContentAdapter,
   createFallbackWindowContentAdapter,
-  createHypercardCardContentAdapter,
 } from './defaultWindowContentAdapters';
 import { dragOverlayStore, useDragOverlaySnapshot } from './dragOverlayStore';
 import { routeDesktopCommand } from './desktopCommandRouter';
@@ -1150,7 +1149,7 @@ export function useDesktopShellController({
   );
 
   const defaultAdapters = useMemo<WindowContentAdapter[]>(
-    () => [createAppWindowContentAdapter(), createHypercardCardContentAdapter(), createFallbackWindowContentAdapter()],
+    () => [createAppWindowContentAdapter(), createFallbackWindowContentAdapter()],
     [],
   );
 

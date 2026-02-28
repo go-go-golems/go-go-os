@@ -1,5 +1,5 @@
 import { formatAppKey, type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@hypercard/desktop-os';
-import { CodeEditorWindow, decodeRuntimeCardEditorInstanceId, getEditorInitialCode } from '@hypercard/engine';
+import { CodeEditorWindow, decodeRuntimeCardEditorInstanceId, getEditorInitialCode } from '@hypercard/hypercard-runtime';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import type { DesktopCommandHandler, DesktopContribution } from '@hypercard/engine/desktop-react';
 import type { ReactNode } from 'react';

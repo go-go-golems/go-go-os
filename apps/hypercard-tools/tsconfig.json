@@ -17,9 +17,15 @@
       "@hypercard/desktop-os": ["../../packages/desktop-os/src"],
       "@hypercard/desktop-os/*": ["../../packages/desktop-os/src/*"],
       "@hypercard/engine": ["../../packages/engine/src"],
-      "@hypercard/engine/*": ["../../packages/engine/src/*"]
+      "@hypercard/engine/*": ["../../packages/engine/src/*"],
+      "@hypercard/hypercard-runtime": ["../../packages/hypercard-runtime/src"],
+      "@hypercard/hypercard-runtime/*": ["../../packages/hypercard-runtime/src/*"]
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/desktop-os" }, { "path": "../../packages/engine" }]
+  "references": [
+    { "path": "../../packages/desktop-os" },
+    { "path": "../../packages/engine" },
+    { "path": "../../packages/hypercard-runtime" }
+  ]
 }

@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createAppStore } from '../../../app/createAppStore';
 import type { CardStackDefinition } from '../../../cards/types';
 import { MessageRenderer } from '../../../chat/renderers/builtin/MessageRenderer';
+import { debugReducer } from '../../../debug/debugSlice';
 import { focusWindow, openWindow } from '../../../desktop/core/state/windowingSlice';
+import { windowingReducer } from '../../../desktop/core/state/windowingSlice';
+import { notificationsReducer } from '../../../features/notifications/notificationsSlice';
 import { DesktopShell } from './DesktopShell';
 import { useRegisterWindowContextActions, useRegisterWindowMenuSections } from './desktopMenuRuntime';
 import type { DesktopActionEntry, DesktopActionSection } from './types';
@@ -48,6 +51,16 @@ const APP_MENU_SECTIONS: DesktopActionSection[] = [
     items: [{ id: 'runtime-profile-default', label: 'Default Agent', commandId: 'runtime.profile.default' }],
   },
 ];
+
+function createTestStore() {
+  return configureStore({
+    reducer: {
+      windowing: windowingReducer,
+      notifications: notificationsReducer,
+      debug: debugReducer,
+    },
+  });
+}
 
 function RuntimeWindow() {
   useRegisterWindowContextActions(APP_CONTEXT_ACTIONS);
@@ -127,8 +140,7 @@ function fireContextMenu(target: Element): void {
 
 describe('desktop shell context-menu invocation metadata', () => {
   it('passes source/menu/window/widget/payload metadata to onCommand from title-bar actions', async () => {
-    const { createStore } = createAppStore({});
-    const store = createStore();
+    const store = createTestStore();
     const onCommand = vi.fn();
 
     const container = document.createElement('div');
@@ -199,8 +211,7 @@ describe('desktop shell context-menu invocation metadata', () => {
   });
 
   it('recomposes focused menubar sections when switching between runtime and neutral windows', async () => {
-    const { createStore } = createAppStore({});
-    const store = createStore();
+    const store = createTestStore();
 
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -267,8 +278,7 @@ describe('desktop shell context-menu invocation metadata', () => {
   });
 
   it('opens message-target context menu and forwards conversation/message payload metadata', async () => {
-    const { createStore } = createAppStore({});
-    const store = createStore();
+    const store = createTestStore();
     const onCommand = vi.fn();
 
     const container = document.createElement('div');

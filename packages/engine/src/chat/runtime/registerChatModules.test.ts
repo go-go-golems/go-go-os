@@ -6,13 +6,10 @@ import {
   registerTimelineRenderer,
   resolveTimelineRenderers,
 } from '../renderers/rendererRegistry';
-import { readSuggestionsEntityProps, ASSISTANT_SUGGESTIONS_ENTITY_ID } from '../state/suggestions';
 import { timelineSlice } from '../state/timelineSlice';
 import { clearSemHandlers, handleSem } from '../sem/semRegistry';
-import { hypercardArtifactsReducer } from '../../hypercard/artifacts/artifactsSlice';
 import {
   ensureChatModulesRegistered,
-  registerHypercardTimelineChatModule,
   listChatRuntimeModules,
   registerChatRuntimeModule,
   resetChatModulesRegistrationForTest,
@@ -23,7 +20,6 @@ function createStore() {
     reducer: {
       timeline: timelineSlice.reducer,
       chatSession: chatSessionSlice.reducer,
-      hypercardArtifacts: hypercardArtifactsReducer,
     },
   });
 }
@@ -35,7 +31,7 @@ describe('registerChatModules', () => {
     resetChatModulesRegistrationForTest();
   });
 
-  it('registers default handlers and keeps hypercard suggestion projection backend-driven', () => {
+  it('registers default handlers once', () => {
     ensureChatModulesRegistered();
     ensureChatModulesRegistered();
 
@@ -60,47 +56,9 @@ describe('registerChatModules', () => {
       { convId: 'conv-1', dispatch: store.dispatch }
     );
 
-    handleSem(
-      {
-        sem: true,
-        event: {
-          type: 'hypercard.suggestions.v1',
-          id: 'evt-suggestions',
-          data: {
-            suggestions: ['Open card'],
-          },
-        },
-      },
-      { convId: 'conv-1', dispatch: store.dispatch }
-    );
-
     const state = store.getState();
     expect(state.chatSession.byConvId['conv-1'].streamOutputTokens).toBe(2);
     expect(state.timeline.byConvId['conv-1']).toBeUndefined();
-
-    registerHypercardTimelineChatModule();
-
-    handleSem(
-      {
-        sem: true,
-        event: {
-          type: 'hypercard.suggestions.v1',
-          id: 'evt-suggestions-2',
-          data: {
-            suggestions: ['Open card now'],
-          },
-        },
-      },
-      { convId: 'conv-1', dispatch: store.dispatch }
-    );
-
-    const withHypercard = store.getState();
-    expect(withHypercard.timeline.byConvId['conv-1']).toBeUndefined();
-    expect(
-      readSuggestionsEntityProps(
-        withHypercard.timeline.byConvId['conv-1']?.byId[ASSISTANT_SUGGESTIONS_ENTITY_ID]
-      )
-    ).toBeNull();
   });
 
   it('exposes module contract registration and applies modules once', () => {

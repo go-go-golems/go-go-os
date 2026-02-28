@@ -84,6 +84,29 @@ function ReflectionDataSection({ appId }: { appId: string }) {
         </>
       )}
 
+      {doc.docs && doc.docs.length > 0 && (
+        <>
+          <div data-part="get-info-section">Documentation ({doc.docs.length})</div>
+          <ul data-part="get-info-api-list">
+            {doc.docs.map((entry) => (
+              <li key={entry.id} data-part="get-info-api-item">
+                <span data-part="get-info-api-method">DOC</span>
+                <span data-part="get-info-api-path">
+                  {entry.url ? (
+                    <a href={entry.url} target="_blank" rel="noreferrer">
+                      {entry.title}
+                    </a>
+                  ) : (
+                    entry.title
+                  )}
+                </span>
+                <span data-part="get-info-api-summary">{entry.description ?? entry.path ?? '\u2014'}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       {doc.schemas && doc.schemas.length > 0 && (
         <>
           <div data-part="get-info-section">Schemas ({doc.schemas.length})</div>

@@ -1,12 +1,14 @@
+import type { MouseEvent } from 'react';
 import type { AppManifestDocument, ReflectionAPI, ReflectionSchemaRef } from '../domain/types';
 
 export interface ModuleListPaneProps {
   apps: AppManifestDocument[];
   selectedAppId?: string;
   onSelect: (appId: string) => void;
+  onContextMenuApp?: (appId: string, event: MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function ModuleListPane({ apps, selectedAppId, onSelect }: ModuleListPaneProps) {
+export function ModuleListPane({ apps, selectedAppId, onSelect, onContextMenuApp }: ModuleListPaneProps) {
   return (
     <div data-part="browser-pane">
       <div data-part="browser-pane-header">Modules</div>
@@ -18,6 +20,10 @@ export function ModuleListPane({ apps, selectedAppId, onSelect }: ModuleListPane
               data-part="browser-pane-item"
               data-state={app.app_id === selectedAppId ? 'selected' : undefined}
               onClick={() => onSelect(app.app_id)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                onContextMenuApp?.(app.app_id, event);
+              }}
             >
               <span data-part="browser-item-health" data-variant={app.healthy ? 'healthy' : 'unhealthy'}>
                 {app.healthy ? '\u25CF' : '\u25CB'}

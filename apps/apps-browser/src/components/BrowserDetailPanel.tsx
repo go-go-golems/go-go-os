@@ -11,6 +11,7 @@ interface ModuleDetailProps {
 
 function ModuleDetail({ app, reflection }: ModuleDetailProps) {
   const unsupported = isReflectionUnsupported(reflection);
+  const doc = reflection && !reflection._unsupported ? reflection : undefined;
   const reflectionLabel = unsupported
     ? 'not implemented (501)'
     : app.reflection?.available
@@ -40,6 +41,31 @@ function ModuleDetail({ app, reflection }: ModuleDetailProps) {
           <dt>reflection:</dt>
           <dd>{reflectionLabel}</dd>
         </dl>
+        {doc?.docs && doc.docs.length > 0 && (
+          <div data-part="browser-detail-api-schemas">
+            <div data-part="browser-detail-section-title">Documentation</div>
+            {doc.docs.map((entry) => (
+              <div key={entry.id} data-part="browser-detail-api-schema">
+                <div data-part="browser-detail-api-schema-header">
+                  <span data-part="browser-detail-api-schema-label">{entry.title}</span>
+                  <span data-part="browser-detail-api-schema-id">doc:{entry.id}</span>
+                </div>
+                {entry.url ? (
+                  <div data-part="browser-detail-mono">
+                    <a href={entry.url} target="_blank" rel="noreferrer">
+                      {entry.url}
+                    </a>
+                  </div>
+                ) : entry.path ? (
+                  <div data-part="browser-detail-mono">{entry.path}</div>
+                ) : (
+                  <div data-part="browser-detail-mono">No URL/path provided</div>
+                )}
+                {entry.description && <div>{entry.description}</div>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

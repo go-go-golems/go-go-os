@@ -42,6 +42,8 @@ export interface ReflectionDocLink {
   id: string;
   title: string;
   url?: string;
+  path?: string;
+  description?: string;
 }
 
 export interface ReflectionAPI {

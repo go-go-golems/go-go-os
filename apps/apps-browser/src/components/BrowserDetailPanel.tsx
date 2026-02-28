@@ -1,5 +1,5 @@
-import type { AppManifestDocument, ReflectionAPI, ReflectionSchemaRef, ReflectionResult } from '../domain/types';
 import { isReflectionUnsupported } from '../domain/selectors';
+import type { AppManifestDocument, ReflectionAPI, ReflectionResult, ReflectionSchemaRef } from '../domain/types';
 
 interface ModuleDetailProps {
   app: AppManifestDocument;
@@ -26,11 +26,16 @@ function ModuleDetail({ app, reflection }: ModuleDetailProps) {
       </div>
       <div data-part="browser-detail-body">
         <dl data-part="browser-detail-fields">
-          <dt>id:</dt><dd>{app.app_id}</dd>
-          <dt>description:</dt><dd>{app.description ?? '\u2014'}</dd>
-          <dt>required:</dt><dd>{app.required ? 'yes' : 'no'}</dd>
-          <dt>base:</dt><dd data-part="browser-detail-mono">/api/apps/{app.app_id}/</dd>
-          <dt>reflection:</dt><dd>{reflectionLabel}</dd>
+          <dt>id:</dt>
+          <dd>{app.app_id}</dd>
+          <dt>description:</dt>
+          <dd>{app.description ?? '\u2014'}</dd>
+          <dt>required:</dt>
+          <dd>{app.required ? 'yes' : 'no'}</dd>
+          <dt>base:</dt>
+          <dd data-part="browser-detail-mono">/api/apps/{app.app_id}/</dd>
+          <dt>reflection:</dt>
+          <dd>{reflectionLabel}</dd>
         </dl>
       </div>
     </div>
@@ -46,15 +51,23 @@ function APIDetail({ api, appId }: APIDetailProps) {
   return (
     <div data-part="browser-detail">
       <div data-part="browser-detail-header">
-        <span data-part="browser-detail-title">{api.method} /api/apps/{appId}{api.path}</span>
+        <span data-part="browser-detail-title">
+          {api.method} /api/apps/{appId}
+          {api.path}
+        </span>
       </div>
       <div data-part="browser-detail-body">
         <dl data-part="browser-detail-fields">
-          <dt>summary:</dt><dd>{api.summary ?? '\u2014'}</dd>
-          <dt>tags:</dt><dd>{api.tags?.join(', ') ?? '\u2014'}</dd>
-          <dt>request_schema:</dt><dd>{api.request_schema ?? '\u2014'}</dd>
-          <dt>response_schema:</dt><dd>{api.response_schema ?? '\u2014'}</dd>
-          <dt>error_schema:</dt><dd>{api.error_schema ?? '\u2014'}</dd>
+          <dt>summary:</dt>
+          <dd>{api.summary ?? '\u2014'}</dd>
+          <dt>tags:</dt>
+          <dd>{api.tags?.join(', ') ?? '\u2014'}</dd>
+          <dt>request_schema:</dt>
+          <dd>{api.request_schema ?? '\u2014'}</dd>
+          <dt>response_schema:</dt>
+          <dd>{api.response_schema ?? '\u2014'}</dd>
+          <dt>error_schema:</dt>
+          <dd>{api.error_schema ?? '\u2014'}</dd>
         </dl>
       </div>
     </div>
@@ -74,18 +87,15 @@ function SchemaDetail({ schema }: SchemaDetailProps) {
       </div>
       <div data-part="browser-detail-body">
         <dl data-part="browser-detail-fields">
-          <dt>uri:</dt><dd data-part="browser-detail-mono">{schema.uri ?? '\u2014'}</dd>
+          <dt>uri:</dt>
+          <dd data-part="browser-detail-mono">{schema.uri ?? '\u2014'}</dd>
         </dl>
         {schema.embedded ? (
           <pre data-part="browser-detail-code">
-            {typeof schema.embedded === 'string'
-              ? schema.embedded
-              : JSON.stringify(schema.embedded, null, 2)}
+            {typeof schema.embedded === 'string' ? schema.embedded : JSON.stringify(schema.embedded, null, 2)}
           </pre>
         ) : (
-          <div data-part="browser-detail-placeholder">
-            Fetch from {schema.uri} to view full schema.
-          </div>
+          <div data-part="browser-detail-placeholder">Fetch from {schema.uri} to view full schema.</div>
         )}
       </div>
     </div>
@@ -100,7 +110,13 @@ export interface BrowserDetailPanelProps {
   reflectionLoading?: boolean;
 }
 
-export function BrowserDetailPanel({ selectedApp, selectedApi, selectedSchema, reflection, reflectionLoading }: BrowserDetailPanelProps) {
+export function BrowserDetailPanel({
+  selectedApp,
+  selectedApi,
+  selectedSchema,
+  reflection,
+  reflectionLoading,
+}: BrowserDetailPanelProps) {
   if (!selectedApp) {
     return (
       <div data-part="browser-detail">

@@ -1,13 +1,13 @@
-import { type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
+import type { LaunchableAppModule, LaunchReason } from '@hypercard/desktop-os';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import { type DesktopContribution, type WindowContentAdapter } from '@hypercard/engine/desktop-react';
+import type { DesktopContribution, WindowContentAdapter } from '@hypercard/engine/desktop-react';
 import { type ReactNode, useRef } from 'react';
 import { Provider } from 'react-redux';
 import { createAppsBrowserStore } from '../app/store';
 import { AppsFolderWindow } from '../components/AppsFolderWindow';
-import { ModuleBrowserWindow } from '../components/ModuleBrowserWindow';
-import { HealthDashboardWindow } from '../components/HealthDashboardWindow';
 import { GetInfoWindowByAppId } from '../components/GetInfoWindowByAppId';
+import { HealthDashboardWindow } from '../components/HealthDashboardWindow';
+import { ModuleBrowserWindow } from '../components/ModuleBrowserWindow';
 
 const APP_CONTENT_KIND = 'app' as const;
 const APP_KEY_FOLDER = 'apps-browser:folder';

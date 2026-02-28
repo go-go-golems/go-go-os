@@ -1,4 +1,4 @@
-import type { ReflectionAPI, ReflectionSchemaRef, ReflectionResult } from './types';
+import type { ReflectionAPI, ReflectionResult, ReflectionSchemaRef } from './types';
 
 /**
  * Given a selected API, return the set of schema IDs it references

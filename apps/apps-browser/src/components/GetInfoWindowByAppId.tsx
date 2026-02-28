@@ -11,9 +11,7 @@ export function GetInfoWindowByAppId({ appId, ...rest }: GetInfoWindowByAppIdPro
 
   if (!app) {
     return (
-      <div style={{ padding: 16, fontFamily: 'var(--hc-font-family)', color: '#777' }}>
-        Loading module info&hellip;
-      </div>
+      <div style={{ padding: 16, fontFamily: 'var(--hc-font-family)', color: '#777' }}>Loading module info&hellip;</div>
     );
   }
 

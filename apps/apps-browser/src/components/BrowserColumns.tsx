@@ -43,16 +43,20 @@ export interface APIListPaneProps {
   reflectionLoading?: boolean;
 }
 
-export function APIListPane({ apis, selectedApiId, onSelect, reflectionUnavailable, reflectionLoading }: APIListPaneProps) {
+export function APIListPane({
+  apis,
+  selectedApiId,
+  onSelect,
+  reflectionUnavailable,
+  reflectionLoading,
+}: APIListPaneProps) {
   return (
     <div data-part="browser-pane">
       <div data-part="browser-pane-header">APIs</div>
       {reflectionLoading ? (
         <div data-part="browser-pane-placeholder">Loading&hellip;</div>
       ) : reflectionUnavailable ? (
-        <div data-part="browser-pane-placeholder">
-          Reflection is not available for this module yet.
-        </div>
+        <div data-part="browser-pane-placeholder">Reflection is not available for this module yet.</div>
       ) : !apis || apis.length === 0 ? (
         <div data-part="browser-pane-placeholder" />
       ) : (
@@ -85,16 +89,21 @@ export interface SchemaListPaneProps {
   reflectionLoading?: boolean;
 }
 
-export function SchemaListPane({ schemas, selectedSchemaId, crossRefIds, onSelect, reflectionUnavailable, reflectionLoading }: SchemaListPaneProps) {
+export function SchemaListPane({
+  schemas,
+  selectedSchemaId,
+  crossRefIds,
+  onSelect,
+  reflectionUnavailable,
+  reflectionLoading,
+}: SchemaListPaneProps) {
   return (
     <div data-part="browser-pane">
       <div data-part="browser-pane-header">Schemas</div>
       {reflectionLoading ? (
         <div data-part="browser-pane-placeholder">Loading&hellip;</div>
       ) : reflectionUnavailable ? (
-        <div data-part="browser-pane-placeholder">
-          Reflection is not available for this module yet.
-        </div>
+        <div data-part="browser-pane-placeholder">Reflection is not available for this module yet.</div>
       ) : !schemas || schemas.length === 0 ? (
         <div data-part="browser-pane-placeholder" />
       ) : (
@@ -109,7 +118,11 @@ export function SchemaListPane({ schemas, selectedSchemaId, crossRefIds, onSelec
                   data-state={s.id === selectedSchemaId ? 'selected' : undefined}
                   onClick={() => onSelect(s.id)}
                 >
-                  {isCrossRef && <span data-part="browser-item-crossref" title="Referenced by selected API">{'\u25B8'}</span>}
+                  {isCrossRef && (
+                    <span data-part="browser-item-crossref" title="Referenced by selected API">
+                      {'\u25B8'}
+                    </span>
+                  )}
                   <span data-part="browser-item-label">{s.id}</span>
                 </button>
               </li>

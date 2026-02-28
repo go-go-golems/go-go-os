@@ -1,5 +1,5 @@
 import { MOCK_APPS_DEFAULT, MOCK_GEPA_REFLECTION } from '../fixtures/apps';
-import { createAppsHandlers, type AppsHandlerData } from './createAppsHandlers';
+import { type AppsHandlerData, createAppsHandlers } from './createAppsHandlers';
 
 export const defaultAppsHandlerData: AppsHandlerData = {
   apps: MOCK_APPS_DEFAULT,

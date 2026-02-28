@@ -22,8 +22,7 @@ export const MOCK_GEPA: AppManifestDocument = {
 export const MOCK_INVENTORY_UNHEALTHY: AppManifestDocument = {
   ...MOCK_INVENTORY,
   healthy: false,
-  health_error:
-    'database connection pool exhausted: dial tcp 127.0.0.1:5432: connect: connection refused',
+  health_error: 'database connection pool exhausted: dial tcp 127.0.0.1:5432: connect: connection refused',
 };
 
 export const MOCK_AUTH: AppManifestDocument = {

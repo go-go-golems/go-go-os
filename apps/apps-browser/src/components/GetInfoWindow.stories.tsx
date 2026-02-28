@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
 import { createAppsBrowserStore } from '../app/store';
-import { createDefaultAppsHandlers } from '../mocks/msw/defaultHandlers';
 import { MOCK_GEPA, MOCK_INVENTORY, MOCK_INVENTORY_UNHEALTHY } from '../mocks/fixtures/apps';
+import { createDefaultAppsHandlers } from '../mocks/msw/defaultHandlers';
 import { GetInfoWindow } from './GetInfoWindow';
 
 function StoreDecorator(Story: React.ComponentType) {

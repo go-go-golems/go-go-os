@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetAppsQuery, useGetReflectionQuery } from '../api/appsApi';
+import { findApi, findSchema, getCrossRefSchemaIds, isReflectionUnsupported } from '../domain/selectors';
 import { sortApps } from '../domain/sorting';
-import { getCrossRefSchemaIds, findApi, findSchema, isReflectionUnsupported } from '../domain/selectors';
 import type { ReflectionResult } from '../domain/types';
-import { ModuleListPane, APIListPane, SchemaListPane } from './BrowserColumns';
+import { APIListPane, ModuleListPane, SchemaListPane } from './BrowserColumns';
 import { BrowserDetailPanel } from './BrowserDetailPanel';
 import './ModuleBrowserWindow.css';
 
@@ -11,7 +11,13 @@ export interface ModuleBrowserWindowProps {
   initialAppId?: string;
 }
 
-function ReflectionLoader({ appId, children }: { appId: string; children: (result: ReflectionResult | undefined, isLoading: boolean) => React.ReactNode }) {
+function ReflectionLoader({
+  appId,
+  children,
+}: {
+  appId: string;
+  children: (result: ReflectionResult | undefined, isLoading: boolean) => React.ReactNode;
+}) {
   const { data, isLoading } = useGetReflectionQuery(appId);
   return <>{children(data, isLoading)}</>;
 }
@@ -83,12 +89,7 @@ export function ModuleBrowserWindow({ initialAppId }: ModuleBrowserWindowProps) 
   return (
     <div data-part="module-browser">
       <div data-part="module-browser-toolbar">
-        <button
-          type="button"
-          data-part="apps-folder-refresh"
-          onClick={() => refetch()}
-          aria-label="Refresh"
-        >
+        <button type="button" data-part="apps-folder-refresh" onClick={() => refetch()} aria-label="Refresh">
           &#x27F3;
         </button>
       </div>

@@ -1,16 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
-import { createAppsBrowserStore } from '../store';
-import { createDefaultAppsHandlers } from '../../mocks/msw/defaultHandlers';
-import {
-  MOCK_APPS_MANY,
-  MOCK_INVENTORY_UNHEALTHY,
-  MOCK_GEPA,
-} from '../../mocks/fixtures/apps';
 import { AppsFolderWindow } from '../../components/AppsFolderWindow';
-import { ModuleBrowserWindow } from '../../components/ModuleBrowserWindow';
 import { GetInfoWindow } from '../../components/GetInfoWindow';
 import { HealthDashboardWindow } from '../../components/HealthDashboardWindow';
+import { ModuleBrowserWindow } from '../../components/ModuleBrowserWindow';
+import { MOCK_APPS_MANY, MOCK_GEPA, MOCK_INVENTORY_UNHEALTHY } from '../../mocks/fixtures/apps';
+import { createDefaultAppsHandlers } from '../../mocks/msw/defaultHandlers';
+import { createAppsBrowserStore } from '../store';
 
 function StoreDecorator(Story: React.ComponentType) {
   const store = createAppsBrowserStore();
@@ -21,15 +17,40 @@ function StoreDecorator(Story: React.ComponentType) {
   );
 }
 
-function WindowFrame({ title, children, width = 600, height = 400 }: { title: string; children: React.ReactNode; width?: number; height?: number }) {
+function WindowFrame({
+  title,
+  children,
+  width = 600,
+  height = 400,
+}: {
+  title: string;
+  children: React.ReactNode;
+  width?: number;
+  height?: number;
+}) {
   return (
-    <div style={{ width, height, border: '2px solid #000', display: 'flex', flexDirection: 'column', fontFamily: 'var(--hc-font-family)' }}>
-      <div style={{ padding: '4px 8px', borderBottom: '2px solid #000', fontWeight: 'bold', fontSize: 12, textAlign: 'center' }}>
+    <div
+      style={{
+        width,
+        height,
+        border: '2px solid #000',
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: 'var(--hc-font-family)',
+      }}
+    >
+      <div
+        style={{
+          padding: '4px 8px',
+          borderBottom: '2px solid #000',
+          fontWeight: 'bold',
+          fontSize: 12,
+          textAlign: 'center',
+        }}
+      >
         {title}
       </div>
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        {children}
-      </div>
+      <div style={{ flex: 1, overflow: 'hidden' }}>{children}</div>
     </div>
   );
 }

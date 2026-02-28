@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { AppIcon } from './AppIcon';
-import { MOCK_INVENTORY, MOCK_GEPA, MOCK_INVENTORY_UNHEALTHY } from '../mocks/fixtures/apps';
 import type { AppManifestDocument } from '../domain/types';
+import { MOCK_GEPA, MOCK_INVENTORY, MOCK_INVENTORY_UNHEALTHY } from '../mocks/fixtures/apps';
+import { AppIcon } from './AppIcon';
 
 const meta = {
   title: 'Apps/AppsBrowser/AppIcon',

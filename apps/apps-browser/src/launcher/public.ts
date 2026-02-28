@@ -1,6 +1,6 @@
 export {
   appsBrowserLauncherModule,
   buildBrowserWindowPayload,
-  buildHealthWindowPayload,
   buildGetInfoWindowPayload,
+  buildHealthWindowPayload,
 } from './module';

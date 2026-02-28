@@ -1,9 +1,11 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { pluginCardRuntimeReducer } from '@hypercard/engine';
-import { notificationsReducer } from '@hypercard/engine';
-import { debugReducer } from '@hypercard/engine';
-import { hypercardArtifactsReducer } from '@hypercard/engine';
+import {
+  debugReducer,
+  hypercardArtifactsReducer,
+  notificationsReducer,
+  pluginCardRuntimeReducer,
+} from '@hypercard/engine';
 import { windowingReducer } from '@hypercard/engine/desktop-core';
+import { configureStore } from '@reduxjs/toolkit';
 import { appsApi } from '../api/appsApi';
 import { appsBrowserReducer } from '../features/appsBrowser/appsBrowserSlice';
 
@@ -21,8 +23,7 @@ function createAppsBrowserStore() {
       // RTK Query
       [appsApi.reducerPath]: appsApi.reducer,
     },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(appsApi.middleware),
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(appsApi.middleware),
   });
 }
 

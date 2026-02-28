@@ -1,7 +1,7 @@
 import { useGetAppsQuery } from '../api/appsApi';
-import { sortApps, computeSummaryStats, hasUnhealthyRequired } from '../domain/sorting';
-import type { AppManifestDocument } from '../domain/types';
 import type { AppsSummaryStats } from '../domain/sorting';
+import { computeSummaryStats, hasUnhealthyRequired, sortApps } from '../domain/sorting';
+import type { AppManifestDocument } from '../domain/types';
 import './HealthDashboardWindow.css';
 
 export interface HealthDashboardWindowProps {
@@ -28,18 +28,18 @@ function SummaryCards({ stats, hasUnhealthyReq }: { stats: AppsSummaryStats; has
       </div>
       <div data-part="summary-card" data-variant={hasDegraded ? 'warning' : undefined}>
         <div data-part="summary-card-value">
-          {hasDegraded && '\u26A0 '}{stats.healthy}
+          {hasDegraded && '\u26A0 '}
+          {stats.healthy}
         </div>
         <div data-part="summary-card-label">healthy</div>
         {hasDegraded && <div data-part="summary-card-subtitle">of {stats.mounted}</div>}
       </div>
       <div data-part="summary-card" data-variant={hasUnhealthyReq ? 'warning' : undefined}>
         <div data-part="summary-card-value">
-          {hasUnhealthyReq && '\u26A0 '}{hasUnhealthyReq ? stats.unhealthy : stats.required}
+          {hasUnhealthyReq && '\u26A0 '}
+          {hasUnhealthyReq ? stats.unhealthy : stats.required}
         </div>
-        <div data-part="summary-card-label">
-          {hasUnhealthyReq ? 'required unhealthy' : 'required'}
-        </div>
+        <div data-part="summary-card-label">{hasUnhealthyReq ? 'required unhealthy' : 'required'}</div>
       </div>
     </div>
   );
@@ -48,7 +48,13 @@ function SummaryCards({ stats, hasUnhealthyReq }: { stats: AppsSummaryStats; has
 function HealthModuleRow({ app, onClick }: { app: AppManifestDocument; onClick?: () => void }) {
   const healthy = app.healthy !== false;
   return (
-    <div data-part="health-module-row" onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') onClick?.(); }}>
+    <div
+      data-part="health-module-row"
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onClick?.();
+      }}
+    >
       <div data-part="health-module-row-main">
         <span data-part="health-module-health" data-variant={healthy ? 'healthy' : 'unhealthy'}>
           {healthy ? '\u25CF' : '\u25CB'}
@@ -67,9 +73,7 @@ function HealthModuleRow({ app, onClick }: { app: AppManifestDocument; onClick?:
         <div data-part="health-module-error">
           {app.health_error}
           {app.required && (
-            <div data-part="health-module-error-footer">
-              This is a required module. System may be degraded.
-            </div>
+            <div data-part="health-module-error-footer">This is a required module. System may be degraded.</div>
           )}
         </div>
       )}
@@ -97,12 +101,7 @@ export function HealthDashboardWindow({ onClickModule }: HealthDashboardWindowPr
   return (
     <div data-part="health-dashboard">
       <div data-part="health-dashboard-toolbar">
-        <button
-          type="button"
-          data-part="apps-folder-refresh"
-          onClick={() => refetch()}
-          aria-label="Refresh"
-        >
+        <button type="button" data-part="apps-folder-refresh" onClick={() => refetch()} aria-label="Refresh">
           &#x27F3;
         </button>
       </div>
@@ -112,11 +111,7 @@ export function HealthDashboardWindow({ onClickModule }: HealthDashboardWindowPr
         <div data-part="health-module-list">
           <div data-part="health-module-list-header">Modules</div>
           {sorted.map((app) => (
-            <HealthModuleRow
-              key={app.app_id}
-              app={app}
-              onClick={() => onClickModule?.(app.app_id)}
-            />
+            <HealthModuleRow key={app.app_id} app={app} onClick={() => onClickModule?.(app.app_id)} />
           ))}
         </div>
       </div>

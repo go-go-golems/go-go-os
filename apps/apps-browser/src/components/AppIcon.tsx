@@ -36,25 +36,17 @@ export function AppIcon({ app, selected, onClick, onDoubleClick, onContextMenu }
     >
       <span data-part="app-icon-frame" aria-hidden="true">
         {app.required && <span data-part="app-icon-required">&#x25C8;</span>}
-        <span
-          data-part="app-icon-health"
-          data-variant={healthy ? 'healthy' : 'unhealthy'}
-        >
+        <span data-part="app-icon-health" data-variant={healthy ? 'healthy' : 'unhealthy'}>
           {healthy ? '\u25CF' : '\u25CB'}
         </span>
-        <span
-          data-part="app-icon-glyph"
-          data-variant={healthy ? undefined : 'unhealthy'}
-        >
+        <span data-part="app-icon-glyph" data-variant={healthy ? undefined : 'unhealthy'}>
           {healthy ? '\u25A6\u25A6' : '\u2591\u2591'}
         </span>
         {hasReflection && <span data-part="app-icon-reflection">&#x2605;</span>}
       </span>
-      <span
-        data-part="app-icon-label"
-        data-variant={healthy ? undefined : 'unhealthy'}
-      >
-        {healthy ? '' : '\u26A0 '}{app.name}
+      <span data-part="app-icon-label" data-variant={healthy ? undefined : 'unhealthy'}>
+        {healthy ? '' : '\u26A0 '}
+        {app.name}
       </span>
     </button>
   );

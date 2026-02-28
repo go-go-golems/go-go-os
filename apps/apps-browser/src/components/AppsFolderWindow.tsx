@@ -1,5 +1,5 @@
 import { useGetAppsQuery } from '../api/appsApi';
-import { sortApps, computeSummaryStats } from '../domain/sorting';
+import { computeSummaryStats, sortApps } from '../domain/sorting';
 import { AppIcon } from './AppIcon';
 import './AppsFolderWindow.css';
 
@@ -11,15 +11,9 @@ export interface AppsFolderWindowProps {
 function StatusSummary({ stats }: { stats: ReturnType<typeof computeSummaryStats> }) {
   const hasUnhealthy = stats.unhealthy > 0;
   return (
-    <span
-      data-part="apps-folder-status"
-      data-variant={hasUnhealthy ? 'warning' : undefined}
-    >
-      {stats.mounted} apps &middot;{' '}
-      {hasUnhealthy
-        ? `\u26A0 ${stats.unhealthy} unhealthy`
-        : `${stats.healthy} healthy`}
-      {' '}&middot; {stats.required} required
+    <span data-part="apps-folder-status" data-variant={hasUnhealthy ? 'warning' : undefined}>
+      {stats.mounted} apps &middot; {hasUnhealthy ? `\u26A0 ${stats.unhealthy} unhealthy` : `${stats.healthy} healthy`}{' '}
+      &middot; {stats.required} required
     </span>
   );
 }
@@ -52,12 +46,7 @@ export function AppsFolderWindow({ onSelectApp, onOpenApp }: AppsFolderWindowPro
     <div data-part="apps-folder">
       <div data-part="apps-folder-toolbar">
         <StatusSummary stats={stats} />
-        <button
-          type="button"
-          data-part="apps-folder-refresh"
-          onClick={() => refetch()}
-          aria-label="Refresh"
-        >
+        <button type="button" data-part="apps-folder-refresh" onClick={() => refetch()} aria-label="Refresh">
           &#x27F3;
         </button>
       </div>

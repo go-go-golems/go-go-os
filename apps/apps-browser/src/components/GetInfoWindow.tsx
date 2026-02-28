@@ -1,6 +1,6 @@
 import { useGetReflectionQuery } from '../api/appsApi';
-import type { AppManifestDocument, ReflectionResult } from '../domain/types';
 import { isReflectionUnsupported } from '../domain/selectors';
+import type { AppManifestDocument, ReflectionResult } from '../domain/types';
 import { AppIcon } from './AppIcon';
 import './GetInfoWindow.css';
 
@@ -15,11 +15,10 @@ function ReflectionSection({ appId, hasReflection }: { appId: string; hasReflect
       <>
         <div data-part="get-info-section">Reflection</div>
         <dl data-part="get-info-fields">
-          <dt>Available:</dt><dd>No</dd>
+          <dt>Available:</dt>
+          <dd>No</dd>
         </dl>
-        <div data-part="get-info-note">
-          This module does not publish reflective API metadata yet.
-        </div>
+        <div data-part="get-info-note">This module does not publish reflective API metadata yet.</div>
       </>
     );
   }
@@ -44,11 +43,10 @@ function ReflectionDataSection({ appId }: { appId: string }) {
       <>
         <div data-part="get-info-section">Reflection</div>
         <dl data-part="get-info-fields">
-          <dt>Available:</dt><dd>No</dd>
+          <dt>Available:</dt>
+          <dd>No</dd>
         </dl>
-        <div data-part="get-info-note">
-          This module does not publish reflective API metadata yet.
-        </div>
+        <div data-part="get-info-note">This module does not publish reflective API metadata yet.</div>
       </>
     );
   }
@@ -59,8 +57,16 @@ function ReflectionDataSection({ appId }: { appId: string }) {
     <>
       <div data-part="get-info-section">Reflection</div>
       <dl data-part="get-info-fields">
-        <dt>Available:</dt><dd>{'\u2605'} Yes ({doc.version ?? '?'})</dd>
-        {doc.app_id && <><dt>URL:</dt><dd style={{ fontFamily: 'monospace', fontSize: 10 }}>/api/os/apps/{doc.app_id}/reflection</dd></>}
+        <dt>Available:</dt>
+        <dd>
+          {'\u2605'} Yes ({doc.version ?? '?'})
+        </dd>
+        {doc.app_id && (
+          <>
+            <dt>URL:</dt>
+            <dd style={{ fontFamily: 'monospace', fontSize: 10 }}>/api/os/apps/{doc.app_id}/reflection</dd>
+          </>
+        )}
       </dl>
 
       {doc.apis && doc.apis.length > 0 && (
@@ -83,7 +89,9 @@ function ReflectionDataSection({ appId }: { appId: string }) {
           <div data-part="get-info-section">Schemas ({doc.schemas.length})</div>
           <div data-part="get-info-chips">
             {doc.schemas.map((s) => (
-              <span key={s.id} data-part="get-info-chip">{s.id}</span>
+              <span key={s.id} data-part="get-info-chip">
+                {s.id}
+              </span>
             ))}
           </div>
         </>
@@ -107,27 +115,32 @@ export function GetInfoWindow({ app, onOpenInBrowser }: GetInfoWindowProps) {
 
       <div data-part="get-info-section">General</div>
       <dl data-part="get-info-fields">
-        <dt>Description:</dt><dd>{app.description ?? '\u2014'}</dd>
-        <dt>Required:</dt><dd>{app.required ? '\u25C8 Yes (required at startup)' : 'No'}</dd>
-        <dt>Base URL:</dt><dd style={{ fontFamily: 'monospace', fontSize: 10 }}>/api/apps/{app.app_id}/</dd>
+        <dt>Description:</dt>
+        <dd>{app.description ?? '\u2014'}</dd>
+        <dt>Required:</dt>
+        <dd>{app.required ? '\u25C8 Yes (required at startup)' : 'No'}</dd>
+        <dt>Base URL:</dt>
+        <dd style={{ fontFamily: 'monospace', fontSize: 10 }}>/api/apps/{app.app_id}/</dd>
       </dl>
 
       <div data-part="get-info-section">Health</div>
       <dl data-part="get-info-fields">
         <dt>Status:</dt>
         <dd>
-          {app.healthy
-            ? <>{'\u25CF'} Healthy</>
-            : <>{'\u25CB'} <span style={{ color: '#a00' }}>Unhealthy</span></>}
+          {app.healthy ? (
+            <>{'\u25CF'} Healthy</>
+          ) : (
+            <>
+              {'\u25CB'} <span style={{ color: '#a00' }}>Unhealthy</span>
+            </>
+          )}
         </dd>
       </dl>
       {app.health_error && (
         <div data-part="get-info-health-error">
           {app.health_error}
           {app.required && (
-            <div style={{ marginTop: 4, fontWeight: 'bold' }}>
-              This is a required module. System may be degraded.
-            </div>
+            <div style={{ marginTop: 4, fontWeight: 'bold' }}>This is a required module. System may be degraded.</div>
           )}
         </div>
       )}
@@ -136,11 +149,7 @@ export function GetInfoWindow({ app, onOpenInBrowser }: GetInfoWindowProps) {
 
       {hasReflection && onOpenInBrowser && (
         <div data-part="get-info-footer">
-          <button
-            type="button"
-            data-part="btn"
-            onClick={onOpenInBrowser}
-          >
+          <button type="button" data-part="btn" onClick={onOpenInBrowser}>
             Open in Browser
           </button>
         </div>

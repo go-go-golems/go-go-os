@@ -30,6 +30,7 @@ export {
   selectPendingNavIntents,
   selectPendingSystemIntents,
   selectPluginCardRuntimeState,
+  selectProjectedRuntimeDomains,
   selectRuntimeCardState,
   selectRuntimeSession,
   selectRuntimeSessionState,

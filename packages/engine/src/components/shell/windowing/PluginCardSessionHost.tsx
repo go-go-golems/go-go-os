@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useDispatch, useSelector, useStore } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import type { CardStackDefinition } from '../../../cards';
 import { showToast } from '../../../features/notifications/notificationsSlice';
 import {
   registerRuntimeSession,
   removeRuntimeSession,
   selectRuntimeCardState,
+  selectProjectedRuntimeDomains,
   selectRuntimeSession,
   selectRuntimeSessionState,
   setRuntimeSessionStatus,
@@ -29,7 +30,7 @@ function getPluginConfig(stack: CardStackDefinition) {
   return null;
 }
 
-function projectGlobalState(rootState: StoreState, opts: {
+function projectGlobalState(domains: Record<string, unknown>, opts: {
   stackId: string;
   sessionId: string;
   cardId: string;
@@ -39,9 +40,6 @@ function projectGlobalState(rootState: StoreState, opts: {
   focusedWindowId: string | null;
   runtimeStatus: string;
 }) {
-  const knownSlices = new Set(['pluginCardRuntime', 'windowing', 'notifications', 'debug']);
-  const domains = Object.fromEntries(Object.entries(rootState).filter(([key]) => !knownSlices.has(key)));
-
   return {
     self: {
       stackId: opts.stackId,
@@ -93,6 +91,10 @@ export function PluginCardSessionHost({
   const runtimeSession = useSelector((state: StoreState) => selectRuntimeSession(state as any, sessionId));
   const sessionState = useSelector((state: StoreState) => selectRuntimeSessionState(state as any, sessionId));
   const cardState = useSelector((state: StoreState) => selectRuntimeCardState(state as any, sessionId, currentCardId));
+  const projectedDomains = useSelector(
+    (state: StoreState) => selectProjectedRuntimeDomains(state as any),
+    shallowEqual,
+  );
 
   const runtimeServiceRef = useRef<QuickJSCardRuntimeService | null>(null);
   const isPreview = mode === 'preview';
@@ -260,7 +262,7 @@ export function PluginCardSessionHost({
 
   const projectGlobal = useCallback(
     () =>
-      projectGlobalState(store.getState(), {
+      projectGlobalState(projectedDomains, {
         stackId: stack.id,
         sessionId,
         cardId: currentCardId,
@@ -271,7 +273,7 @@ export function PluginCardSessionHost({
         runtimeStatus: runtimeSession?.status ?? 'missing',
       }),
     [
-      store,
+      projectedDomains,
       stack.id,
       sessionId,
       currentCardId,

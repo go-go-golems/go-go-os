@@ -78,6 +78,7 @@ export function HypercardWidgetRenderer({ e, ctx }: { e: RenderEntity; ctx?: Ren
   const artifactId = e.props.artifactId ? String(e.props.artifactId) : '';
   const template = e.props.template ? String(e.props.template) : '';
   const runtimeCardId = e.props.runtimeCardId ? String(e.props.runtimeCardId) : '';
+  const stackId = e.props.stackId ? String(e.props.stackId) : undefined;
   const hasArtifact = Boolean(normalizeArtifactId(artifactId));
   const hasRuntimeCard = runtimeCardId.trim().length > 0;
 
@@ -86,6 +87,7 @@ export function HypercardWidgetRenderer({ e, ctx }: { e: RenderEntity; ctx?: Ren
       artifactId,
       title,
       runtimeCardId,
+      stackId,
     });
     if (!payload) {
       return;

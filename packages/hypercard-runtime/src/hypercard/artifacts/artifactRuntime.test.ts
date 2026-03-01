@@ -46,6 +46,16 @@ describe('artifactRuntime', () => {
     expect(payload).toBeUndefined();
   });
 
+  it('defaults artifact-open card stack to inventory when stackId is not provided', () => {
+    const payload = buildArtifactOpenWindowPayload({
+      artifactId: 'cross-stack-check',
+      runtimeCardId: 'runtimeCrossStackCheck',
+      title: 'Cross Stack Check',
+    });
+
+    expect(payload?.content.card?.stackId).toBe('inventory');
+  });
+
   it('extracts artifact upsert from direct hypercard widget ready events', () => {
     const widget = extractArtifactUpsertFromSem('hypercard.widget.v1', {
       title: 'Inventory Summary Report',

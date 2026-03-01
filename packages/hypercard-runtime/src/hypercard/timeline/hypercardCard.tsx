@@ -75,6 +75,7 @@ export function HypercardCardRenderer({ e, ctx }: { e: RenderEntity; ctx?: Rende
   const detail = String(e.props.detail ?? '');
   const artifactId = e.props.artifactId ? String(e.props.artifactId) : '';
   const runtimeCardId = e.props.runtimeCardId ? String(e.props.runtimeCardId) : '';
+  const stackId = e.props.stackId ? String(e.props.stackId) : undefined;
   const hasRuntimeCard = runtimeCardId.trim().length > 0;
 
   const openArtifact = () => {
@@ -82,6 +83,7 @@ export function HypercardCardRenderer({ e, ctx }: { e: RenderEntity; ctx?: Rende
       artifactId,
       title,
       runtimeCardId,
+      stackId,
     });
     if (!payload) {
       return;

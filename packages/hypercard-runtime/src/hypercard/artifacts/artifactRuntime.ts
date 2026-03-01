@@ -248,7 +248,7 @@ export function buildArtifactOpenWindowPayload(input: {
   }
   const safeKey = sanitizeArtifactKey(artifactId);
   const title = input.title?.trim() || `Artifact ${artifactId}`;
-  const stackId = cleanString(input.stackId) ?? 'runtime';
+  const stackId = cleanString(input.stackId) ?? 'inventory';
 
   return {
     id: `window:artifact:${safeKey}`,

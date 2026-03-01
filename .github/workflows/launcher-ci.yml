@@ -27,18 +27,3 @@ jobs:
 
       - name: Run frontend tests
         run: npm run test
-
-  backendhost-go-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go-go-os/go.mod
-
-      - name: Run backendhost tests
-        working-directory: go-go-os
-        run: go test ./...

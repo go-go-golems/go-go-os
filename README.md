@@ -1,6 +1,6 @@
 # go-go-os
 
-`go-go-os` is the platform repository for shared desktop frontend packages plus the backend module host library.
+`go-go-os` is the platform repository for shared desktop frontend packages.
 
 It no longer owns:
 - the inventory frontend app (`go-go-app-inventory/apps/inventory`)
@@ -16,8 +16,6 @@ It no longer owns:
   - `apps/todo`
   - `apps/crm`
   - `apps/book-tracker-debug`
-- Backend module host package:
-  - `go-go-os/pkg/backendhost`
 
 ## Repository Layout
 
@@ -31,8 +29,6 @@ go-go-os/
     engine/
     desktop-os/
     confirm-runtime/
-  go-go-os/
-    pkg/backendhost/
 ```
 
 ## Frontend Quick Start
@@ -46,20 +42,18 @@ npm run storybook
 
 ## Backend Host Package
 
-The Go module for backend host contracts is nested in `go-go-os/go-go-os`.
+The backend host Go module was extracted to a dedicated repository:
 
-```bash
-cd go-go-os
-go test ./...
-```
+- `github.com/go-go-golems/go-go-os-backend`
+- package import: `github.com/go-go-golems/go-go-os-backend/pkg/backendhost`
 
 ## Ownership Boundary
 
 Use this repo when you are:
 - building shared desktop platform primitives
-- extending app-host contracts (`backendhost`)
 - updating shared Storybook/catalog tooling
 
 Use other repos when you are:
 - editing inventory app UX or reducers -> `go-go-app-inventory`
 - editing launcher composition UI/bundling/smoke flow -> `wesen-os`
+- extending backend app-host contracts (`backendhost`) -> `go-go-os-backend`

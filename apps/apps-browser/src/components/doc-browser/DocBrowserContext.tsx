@@ -11,16 +11,16 @@ export interface DocBrowserLocation {
   topic?: string;
 }
 
-interface DocBrowserState {
+export interface DocBrowserState {
   current: DocBrowserLocation;
   history: DocBrowserLocation[];
 }
 
-type DocBrowserAction =
+export type DocBrowserAction =
   | { type: 'navigate'; location: DocBrowserLocation }
   | { type: 'back' };
 
-function reducer(state: DocBrowserState, action: DocBrowserAction): DocBrowserState {
+export function docBrowserReducer(state: DocBrowserState, action: DocBrowserAction): DocBrowserState {
   switch (action.type) {
     case 'navigate':
       return {
@@ -67,7 +67,7 @@ export interface DocBrowserProviderProps {
 }
 
 export function DocBrowserProvider({ initialScreen = 'home', initialParams, children }: DocBrowserProviderProps) {
-  const [state, dispatch] = useReducer(reducer, {
+  const [state, dispatch] = useReducer(docBrowserReducer, {
     current: { screen: initialScreen, ...initialParams },
     history: [],
   });

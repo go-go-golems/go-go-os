@@ -16,6 +16,8 @@ import './ModuleBrowserWindow.css';
 
 export interface ModuleBrowserWindowProps {
   initialAppId?: string;
+  onOpenDocs?: (moduleId?: string) => void;
+  onOpenDocsCenter?: () => void;
 }
 
 function ReflectionLoader({
@@ -81,7 +83,7 @@ function ModuleContextRegistration({ app, windowId }: { app: AppManifestDocument
   return null;
 }
 
-export function ModuleBrowserWindow({ initialAppId }: ModuleBrowserWindowProps) {
+export function ModuleBrowserWindow({ initialAppId, onOpenDocs, onOpenDocsCenter }: ModuleBrowserWindowProps) {
   const { data: apps, refetch } = useGetAppsQuery();
   const sorted = useMemo(() => sortApps(apps ?? []), [apps]);
   const openContextMenu = useOpenDesktopContextMenu();
@@ -177,6 +179,29 @@ export function ModuleBrowserWindow({ initialAppId }: ModuleBrowserWindowProps) 
         <ModuleContextRegistration key={app.app_id} app={app} windowId={windowId} />
       ))}
       <div data-part="module-browser-toolbar">
+        <div data-part="module-browser-toolbar-actions">
+          {onOpenDocsCenter && (
+            <button
+              type="button"
+              data-part="module-browser-docs-btn"
+              onClick={onOpenDocsCenter}
+              aria-label="Open Documentation Center"
+            >
+              Doc Center
+            </button>
+          )}
+          {onOpenDocs && (
+            <button
+              type="button"
+              data-part="module-browser-docs-btn"
+              onClick={() => onOpenDocs(selectedAppId)}
+              disabled={!selectedAppId}
+              aria-label="Open selected module docs"
+            >
+              Module Docs
+            </button>
+          )}
+        </div>
         <button type="button" data-part="apps-folder-refresh" onClick={() => refetch()} aria-label="Refresh">
           &#x27F3;
         </button>

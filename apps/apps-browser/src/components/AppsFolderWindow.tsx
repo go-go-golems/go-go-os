@@ -10,6 +10,7 @@ import './AppsFolderWindow.css';
 export interface AppsFolderWindowProps {
   onSelectApp?: (appId: string) => void;
   onOpenApp?: (appId: string) => void;
+  onOpenDocsCenter?: () => void;
 }
 
 interface AppsFolderIconEntryProps {
@@ -107,7 +108,7 @@ function StatusSummary({ stats }: { stats: ReturnType<typeof computeSummaryStats
   );
 }
 
-export function AppsFolderWindow({ onSelectApp, onOpenApp }: AppsFolderWindowProps) {
+export function AppsFolderWindow({ onSelectApp, onOpenApp, onOpenDocsCenter }: AppsFolderWindowProps) {
   const { data: apps, isLoading, isError, refetch } = useGetAppsQuery();
   const [selectedAppId, setSelectedAppId] = useState<string | undefined>();
 
@@ -146,9 +147,21 @@ export function AppsFolderWindow({ onSelectApp, onOpenApp }: AppsFolderWindowPro
     <div data-part="apps-folder">
       <div data-part="apps-folder-toolbar">
         <StatusSummary stats={stats} />
-        <button type="button" data-part="apps-folder-refresh" onClick={() => refetch()} aria-label="Refresh">
-          &#x27F3;
-        </button>
+        <div data-part="apps-folder-toolbar-actions">
+          {onOpenDocsCenter && (
+            <button
+              type="button"
+              data-part="apps-folder-docs-center"
+              onClick={onOpenDocsCenter}
+              aria-label="Open Documentation Center"
+            >
+              Documentation
+            </button>
+          )}
+          <button type="button" data-part="apps-folder-refresh" onClick={() => refetch()} aria-label="Refresh">
+            &#x27F3;
+          </button>
+        </div>
       </div>
       <div data-part="apps-folder-grid">
         {sorted.map((app) => (

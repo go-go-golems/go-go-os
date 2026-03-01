@@ -27,6 +27,10 @@ const COMMAND_OPEN_HEALTH = 'apps-browser.open-health';
 const COMMAND_OPEN_DOCS = 'apps-browser.open-docs';
 const COMMAND_OPEN_DOC_PAGE = 'apps-browser.open-doc-page';
 const COMMAND_SEARCH_DOCS = 'apps-browser.search-docs';
+const DOC_ROUTE_HOME = 'home';
+const DOC_ROUTE_SEARCH = 'search';
+const DOC_ROUTE_MODULE = 'module';
+const DOC_ROUTE_DOC = 'doc';
 
 function buildFolderWindowPayload(reason: LaunchReason): OpenWindowPayload {
   return {
@@ -62,17 +66,23 @@ export function buildHealthWindowPayload(): OpenWindowPayload {
 }
 
 export function buildDocBrowserWindowPayload(opts?: {
+  screen?: 'home' | 'search';
   moduleId?: string;
   slug?: string;
   query?: string;
 }): OpenWindowPayload {
-  const suffix = opts?.moduleId
-    ? opts.slug
-      ? `${opts.moduleId}:${opts.slug}`
-      : opts.moduleId
-    : opts?.query
-      ? `search:${opts.query}`
-      : 'home';
+  const moduleId = asNonEmptyString(opts?.moduleId);
+  const slug = asNonEmptyString(opts?.slug);
+  const query = asNonEmptyString(opts?.query);
+  const suffix = moduleId
+    ? slug
+      ? `${DOC_ROUTE_DOC}:${encodeDocRoutePart(moduleId)}:${encodeDocRoutePart(slug)}`
+      : `${DOC_ROUTE_MODULE}:${encodeDocRoutePart(moduleId)}`
+    : opts?.screen === 'search' || opts?.query !== undefined
+      ? query
+        ? `${DOC_ROUTE_SEARCH}:${encodeDocRoutePart(query)}`
+        : DOC_ROUTE_SEARCH
+      : DOC_ROUTE_HOME;
   return {
     id: `window:apps-browser:docs:${suffix}`,
     title: 'Documentation',
@@ -112,12 +122,25 @@ function createAppsBrowserAdapter(hostContext: LauncherHostContext): WindowConte
       let content: ReactNode = null;
 
       if (appKey === APP_KEY_FOLDER) {
-        content = <AppsFolderWindow onOpenApp={(appId) => hostContext.openWindow(buildBrowserWindowPayload(appId))} />;
+        content = (
+          <AppsFolderWindow
+            onOpenApp={(appId) => hostContext.openWindow(buildBrowserWindowPayload(appId))}
+            onOpenDocsCenter={() => hostContext.openWindow(buildDocBrowserWindowPayload())}
+          />
+        );
       }
 
       if (content == null && appKey.startsWith(APP_KEY_BROWSER)) {
         const initialAppId = appKey.split(':').slice(2).join(':') || undefined;
-        content = <ModuleBrowserWindow initialAppId={initialAppId} />;
+        content = (
+          <ModuleBrowserWindow
+            initialAppId={initialAppId}
+            onOpenDocs={(moduleId) =>
+              hostContext.openWindow(buildDocBrowserWindowPayload(moduleId ? { moduleId } : undefined))
+            }
+            onOpenDocsCenter={() => hostContext.openWindow(buildDocBrowserWindowPayload())}
+          />
+        );
       }
 
       if (content == null && appKey === APP_KEY_HEALTH) {
@@ -126,16 +149,8 @@ function createAppsBrowserAdapter(hostContext: LauncherHostContext): WindowConte
 
       if (content == null && appKey.startsWith(APP_KEY_DOCS_PREFIX)) {
         const suffix = appKey.slice(APP_KEY_DOCS_PREFIX.length);
-        const parts = suffix.split(':');
-        if (parts[0] === 'home' || suffix === '') {
-          content = <DocBrowserWindow />;
-        } else if (parts[0] === 'search') {
-          content = <DocBrowserWindow initialScreen="search" initialQuery={parts.slice(1).join(':')} />;
-        } else if (parts.length >= 2) {
-          content = <DocBrowserWindow initialModuleId={parts[0]} initialSlug={parts.slice(1).join(':')} />;
-        } else {
-          content = <DocBrowserWindow initialModuleId={parts[0]} />;
-        }
+        const parsed = parseDocBrowserSuffix(suffix);
+        content = <DocBrowserWindow {...parsed} />;
       }
 
       if (content == null && appKey.startsWith(APP_KEY_GET_INFO_PREFIX)) {
@@ -169,10 +184,70 @@ function asNonEmptyString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+function encodeDocRoutePart(value: string): string {
+  return encodeURIComponent(value);
+}
+
+function decodeDocRoutePart(value: string | undefined): string | undefined {
+  const token = asNonEmptyString(value);
+  if (!token) {
+    return undefined;
+  }
+  try {
+    const decoded = decodeURIComponent(token);
+    return asNonEmptyString(decoded);
+  } catch {
+    return undefined;
+  }
+}
+
+function parseDocBrowserSuffix(suffix: string): {
+  initialScreen?: 'home' | 'search' | 'module-docs' | 'reader' | 'topic-browser';
+  initialModuleId?: string;
+  initialSlug?: string;
+  initialQuery?: string;
+} {
+  if (!suffix || suffix === DOC_ROUTE_HOME) {
+    return {};
+  }
+  const parts = suffix.split(':');
+  const route = parts[0];
+  if (route === DOC_ROUTE_SEARCH) {
+    const query = decodeDocRoutePart(parts.slice(1).join(':'));
+    return {
+      initialScreen: 'search',
+      initialQuery: query,
+    };
+  }
+  if (route === DOC_ROUTE_MODULE) {
+    const moduleId = decodeDocRoutePart(parts[1]);
+    if (!moduleId) {
+      return {};
+    }
+    return {
+      initialModuleId: moduleId,
+    };
+  }
+  if (route === DOC_ROUTE_DOC) {
+    const moduleId = decodeDocRoutePart(parts[1]);
+    const slug = decodeDocRoutePart(parts.slice(2).join(':'));
+    if (!moduleId) {
+      return {};
+    }
+    return slug
+      ? { initialModuleId: moduleId, initialSlug: slug }
+      : { initialModuleId: moduleId };
+  }
+  return {};
+}
+
 function resolveAppFromInvocation(invocation: DesktopCommandInvocation): { appId?: string; appName?: string } {
   const payload = invocation.payload ?? {};
   return {
-    appId: asNonEmptyString(payload.appId) ?? asNonEmptyString(invocation.contextTarget?.appId),
+    appId:
+      asNonEmptyString(payload.appId) ??
+      asNonEmptyString(payload.moduleId) ??
+      asNonEmptyString(invocation.contextTarget?.appId),
     appName: asNonEmptyString(payload.appName),
   };
 }
@@ -217,7 +292,7 @@ function createAppsBrowserCommandHandler(hostContext: LauncherHostContext): Desk
       }
       if (commandId === COMMAND_SEARCH_DOCS) {
         const query = asNonEmptyString(payload.query);
-        hostContext.openWindow(buildDocBrowserWindowPayload(query ? { query } : undefined));
+        hostContext.openWindow(buildDocBrowserWindowPayload({ screen: 'search', query }));
         return 'handled';
       }
       return 'pass';

@@ -98,6 +98,27 @@ export interface DocBrowserWindowProps {
   initialTopic?: string;
 }
 
+export function resolveInitialDocBrowserScreen({
+  screen,
+  initialModuleId,
+  initialSlug,
+}: {
+  screen?: 'home' | 'search' | 'module-docs' | 'reader' | 'topic-browser';
+  initialModuleId?: string;
+  initialSlug?: string;
+}): 'home' | 'search' | 'module-docs' | 'reader' | 'topic-browser' {
+  if (screen) {
+    return screen;
+  }
+  if (initialModuleId && initialSlug) {
+    return 'reader';
+  }
+  if (initialModuleId) {
+    return 'module-docs';
+  }
+  return 'home';
+}
+
 export function DocBrowserWindow({
   initialScreen: screen,
   initialModuleId,
@@ -105,8 +126,11 @@ export function DocBrowserWindow({
   initialQuery,
   initialTopic,
 }: DocBrowserWindowProps) {
-  const resolvedScreen =
-    screen ?? (initialModuleId && initialSlug ? 'reader' : initialModuleId ? 'module-docs' : 'home');
+  const resolvedScreen = resolveInitialDocBrowserScreen({
+    screen,
+    initialModuleId,
+    initialSlug,
+  });
   const initialParams = {
     moduleId: initialModuleId,
     slug: initialSlug,

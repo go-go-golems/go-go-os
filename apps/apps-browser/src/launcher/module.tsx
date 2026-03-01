@@ -10,6 +10,7 @@ import { type ReactNode, useRef } from 'react';
 import { Provider } from 'react-redux';
 import { createAppsBrowserStore } from '../app/store';
 import { AppsFolderWindow } from '../components/AppsFolderWindow';
+import { DocBrowserWindow } from '../components/doc-browser/DocBrowserWindow';
 import { GetInfoWindowByAppId } from '../components/GetInfoWindowByAppId';
 import { HealthDashboardWindow } from '../components/HealthDashboardWindow';
 import { ModuleBrowserWindow } from '../components/ModuleBrowserWindow';
@@ -19,9 +20,13 @@ const APP_KEY_FOLDER = 'apps-browser:folder';
 const APP_KEY_BROWSER = 'apps-browser:browser';
 const APP_KEY_HEALTH = 'apps-browser:health';
 const APP_KEY_GET_INFO_PREFIX = 'apps-browser:get-info:';
+const APP_KEY_DOCS_PREFIX = 'apps-browser:docs:';
 const COMMAND_OPEN_BROWSER = 'apps-browser.open-browser';
 const COMMAND_GET_INFO = 'apps-browser.get-info';
 const COMMAND_OPEN_HEALTH = 'apps-browser.open-health';
+const COMMAND_OPEN_DOCS = 'apps-browser.open-docs';
+const COMMAND_OPEN_DOC_PAGE = 'apps-browser.open-doc-page';
+const COMMAND_SEARCH_DOCS = 'apps-browser.search-docs';
 
 function buildFolderWindowPayload(reason: LaunchReason): OpenWindowPayload {
   return {
@@ -53,6 +58,31 @@ export function buildHealthWindowPayload(): OpenWindowPayload {
     bounds: { x: 140, y: 80, w: 600, h: 480 },
     content: { kind: APP_CONTENT_KIND, appKey: APP_KEY_HEALTH },
     dedupeKey: 'apps-browser:health',
+  };
+}
+
+export function buildDocBrowserWindowPayload(opts?: {
+  moduleId?: string;
+  slug?: string;
+  query?: string;
+}): OpenWindowPayload {
+  const suffix = opts?.moduleId
+    ? opts.slug
+      ? `${opts.moduleId}:${opts.slug}`
+      : opts.moduleId
+    : opts?.query
+      ? `search:${opts.query}`
+      : 'home';
+  return {
+    id: `window:apps-browser:docs:${suffix}`,
+    title: 'Documentation',
+    icon: '\uD83D\uDCD6',
+    bounds: { x: 160, y: 60, w: 700, h: 520 },
+    content: {
+      kind: APP_CONTENT_KIND,
+      appKey: `${APP_KEY_DOCS_PREFIX}${suffix}`,
+    },
+    dedupeKey: 'apps-browser:docs',
   };
 }
 
@@ -94,6 +124,20 @@ function createAppsBrowserAdapter(hostContext: LauncherHostContext): WindowConte
         content = <HealthDashboardWindow onClickModule={(appId) => hostContext.openWindow(buildGetInfoWindowPayload(appId))} />;
       }
 
+      if (content == null && appKey.startsWith(APP_KEY_DOCS_PREFIX)) {
+        const suffix = appKey.slice(APP_KEY_DOCS_PREFIX.length);
+        const parts = suffix.split(':');
+        if (parts[0] === 'home' || suffix === '') {
+          content = <DocBrowserWindow />;
+        } else if (parts[0] === 'search') {
+          content = <DocBrowserWindow initialScreen="search" initialQuery={parts.slice(1).join(':')} />;
+        } else if (parts.length >= 2) {
+          content = <DocBrowserWindow initialModuleId={parts[0]} initialSlug={parts.slice(1).join(':')} />;
+        } else {
+          content = <DocBrowserWindow initialModuleId={parts[0]} />;
+        }
+      }
+
       if (content == null && appKey.startsWith(APP_KEY_GET_INFO_PREFIX)) {
         const appId = appKey.slice(APP_KEY_GET_INFO_PREFIX.length);
         if (appId) {
@@ -101,6 +145,9 @@ function createAppsBrowserAdapter(hostContext: LauncherHostContext): WindowConte
             <GetInfoWindowByAppId
               appId={appId}
               onOpenInBrowser={() => hostContext.openWindow(buildBrowserWindowPayload(appId))}
+              onOpenDoc={(moduleId, slug) =>
+                hostContext.openWindow(buildDocBrowserWindowPayload({ moduleId, slug }))
+              }
             />
           );
         }
@@ -135,9 +182,15 @@ function createAppsBrowserCommandHandler(hostContext: LauncherHostContext): Desk
     id: 'apps-browser.commands',
     priority: 220,
     matches: (commandId) =>
-      commandId === COMMAND_OPEN_BROWSER || commandId === COMMAND_GET_INFO || commandId === COMMAND_OPEN_HEALTH,
+      commandId === COMMAND_OPEN_BROWSER ||
+      commandId === COMMAND_GET_INFO ||
+      commandId === COMMAND_OPEN_HEALTH ||
+      commandId === COMMAND_OPEN_DOCS ||
+      commandId === COMMAND_OPEN_DOC_PAGE ||
+      commandId === COMMAND_SEARCH_DOCS,
     run: (commandId, _ctx, invocation) => {
       const { appId, appName } = resolveAppFromInvocation(invocation);
+      const payload = invocation.payload ?? {};
       if (commandId === COMMAND_OPEN_HEALTH) {
         hostContext.openWindow(buildHealthWindowPayload());
         return 'handled';
@@ -148,6 +201,23 @@ function createAppsBrowserCommandHandler(hostContext: LauncherHostContext): Desk
       }
       if (commandId === COMMAND_GET_INFO && appId) {
         hostContext.openWindow(buildGetInfoWindowPayload(appId, appName));
+        return 'handled';
+      }
+      if (commandId === COMMAND_OPEN_DOCS) {
+        hostContext.openWindow(buildDocBrowserWindowPayload(appId ? { moduleId: appId } : undefined));
+        return 'handled';
+      }
+      if (commandId === COMMAND_OPEN_DOC_PAGE) {
+        const slug = asNonEmptyString(payload.slug);
+        if (appId && slug) {
+          hostContext.openWindow(buildDocBrowserWindowPayload({ moduleId: appId, slug }));
+          return 'handled';
+        }
+        return 'pass';
+      }
+      if (commandId === COMMAND_SEARCH_DOCS) {
+        const query = asNonEmptyString(payload.query);
+        hostContext.openWindow(buildDocBrowserWindowPayload(query ? { query } : undefined));
         return 'handled';
       }
       return 'pass';

@@ -7,6 +7,7 @@ import './GetInfoWindow.css';
 export interface GetInfoWindowProps {
   app: AppManifestDocument;
   onOpenInBrowser?: () => void;
+  onOpenDoc?: (moduleId: string, slug: string) => void;
 }
 
 function formatDocsFetchError(error: unknown): string {
@@ -35,7 +36,7 @@ function buildDocURL(appId: string, slug: string): string {
   return `/api/apps/${appId}/docs/${encodeURIComponent(slug)}`;
 }
 
-function DocumentationSection({ app }: { app: AppManifestDocument }) {
+function DocumentationSection({ app, onOpenDoc }: { app: AppManifestDocument; onOpenDoc?: (moduleId: string, slug: string) => void }) {
   if (app.docs?.available !== true) {
     return (
       <>
@@ -48,10 +49,10 @@ function DocumentationSection({ app }: { app: AppManifestDocument }) {
       </>
     );
   }
-  return <DocumentationDataSection app={app} />;
+  return <DocumentationDataSection app={app} onOpenDoc={onOpenDoc} />;
 }
 
-function DocumentationDataSection({ app }: { app: AppManifestDocument }) {
+function DocumentationDataSection({ app, onOpenDoc }: { app: AppManifestDocument; onOpenDoc?: (moduleId: string, slug: string) => void }) {
   const { data: toc, isLoading, isError, error } = useGetModuleDocsQuery(app.app_id);
 
   if (isLoading) {
@@ -115,9 +116,19 @@ function DocumentationDataSection({ app }: { app: AppManifestDocument }) {
             <li key={entry.slug} data-part="get-info-api-item">
               <span data-part="get-info-api-method">{entry.doc_type}</span>
               <span data-part="get-info-api-path">
-                <a href={buildDocURL(effectiveModuleID, entry.slug)} target="_blank" rel="noreferrer">
-                  {entry.title}
-                </a>
+                {onOpenDoc ? (
+                  <button
+                    type="button"
+                    data-part="get-info-doc-link"
+                    onClick={() => onOpenDoc(effectiveModuleID, entry.slug)}
+                  >
+                    {entry.title}
+                  </button>
+                ) : (
+                  <a href={buildDocURL(effectiveModuleID, entry.slug)} target="_blank" rel="noreferrer">
+                    {entry.title}
+                  </a>
+                )}
               </span>
               <span data-part="get-info-api-summary">{entry.summary ?? '\u2014'}</span>
             </li>
@@ -244,7 +255,7 @@ function ReflectionDataSection({ appId }: { appId: string }) {
   );
 }
 
-export function GetInfoWindow({ app, onOpenInBrowser }: GetInfoWindowProps) {
+export function GetInfoWindow({ app, onOpenInBrowser, onOpenDoc }: GetInfoWindowProps) {
   const hasReflection = app.reflection?.available === true;
 
   return (
@@ -289,7 +300,7 @@ export function GetInfoWindow({ app, onOpenInBrowser }: GetInfoWindowProps) {
         </div>
       )}
 
-      <DocumentationSection app={app} />
+      <DocumentationSection app={app} onOpenDoc={onOpenDoc} />
 
       <ReflectionSection appId={app.app_id} hasReflection={hasReflection} />
 

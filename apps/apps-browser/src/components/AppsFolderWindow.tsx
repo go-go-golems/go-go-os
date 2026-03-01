@@ -33,6 +33,12 @@ function buildAppContextActions(app: AppManifestDocument): DesktopActionEntry[] 
       commandId: 'apps-browser.get-info',
       payload: { appId: app.app_id, appName: app.name },
     },
+    {
+      id: `apps-browser.context.open-docs.${app.app_id}`,
+      label: 'View Documentation',
+      commandId: 'apps-browser.open-docs',
+      payload: { appId: app.app_id, appName: app.name },
+    },
     { separator: true },
     {
       id: `apps-browser.context.open-health.${app.app_id}`,

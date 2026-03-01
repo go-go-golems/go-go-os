@@ -77,17 +77,24 @@ function DocEntryCard({ doc, moduleId }: { doc: ModuleDocDocument; moduleId: str
       {doc.topics && doc.topics.length > 0 && (
         <div data-part="doc-entry-card-topics">
           {doc.topics.map((topic) => (
-            <button
+            <span
               key={topic}
-              type="button"
+              role="button"
+              tabIndex={0}
               data-part="doc-badge"
               onClick={(e) => {
                 e.stopPropagation();
                 openSearch();
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  openSearch();
+                }
+              }}
             >
               {topic}
-            </button>
+            </span>
           ))}
         </div>
       )}

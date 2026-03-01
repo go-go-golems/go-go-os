@@ -161,6 +161,54 @@ describe('apps-browser docs command routing', () => {
     expect(outcome).toBe('pass');
     expect(hostContext.openWindow).not.toHaveBeenCalled();
   });
+
+  it('opens help mode browser from apps-browser.open-help', () => {
+    const handler = getCommandHandler(hostContext);
+
+    const outcome = handler.run(
+      'apps-browser.open-help',
+      createDesktopCommandContext() as any,
+      createInvocation(),
+    );
+
+    expect(outcome).toBe('handled');
+    expect(hostContext.openWindow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Help',
+        content: expect.objectContaining({ appKey: 'apps-browser:docs:help:home' }),
+        dedupeKey: 'apps-browser:help',
+      }),
+    );
+  });
+
+  it('matches apps-browser.open-help command', () => {
+    const handler = getCommandHandler(hostContext);
+    expect(handler.matches('apps-browser.open-help')).toBe(true);
+  });
+});
+
+describe('apps-browser help menu contribution', () => {
+  it('contributes a Help menu section with required entries', () => {
+    const hostContext = createHostContext();
+    const contribution = getDesktopContribution(hostContext);
+
+    const menus = contribution.menus ?? [];
+    const helpMenu = menus.find((m) => m.id === 'help');
+
+    expect(helpMenu).toBeDefined();
+    expect(helpMenu!.label).toBe('Help');
+
+    const items = helpMenu!.items.filter((item) => !('separator' in item));
+    expect(items).toHaveLength(2);
+
+    const generalHelp = items.find((item) => 'id' in item && item.id === 'general-help');
+    expect(generalHelp).toBeDefined();
+    expect((generalHelp as any).commandId).toBe('apps-browser.open-help');
+
+    const appsDocs = items.find((item) => 'id' in item && item.id === 'apps-docs');
+    expect(appsDocs).toBeDefined();
+    expect((appsDocs as any).commandId).toBe('apps-browser.open-docs');
+  });
 });
 
 describe('apps-browser docs window route parsing', () => {
@@ -194,5 +242,34 @@ describe('apps-browser docs window route parsing', () => {
     const html = renderDocWindow('apps-browser:docs:doc:%E0%A4%A:overview');
 
     expect(html).toContain('{}');
+  });
+
+  it('routes help:home suffix to help mode home screen', () => {
+    const html = renderDocWindow('apps-browser:docs:help:home');
+
+    expect(html).toContain('&quot;mode&quot;:&quot;help&quot;');
+  });
+
+  it('routes help:doc:<slug> suffix to help mode reader with wesen-os moduleId', () => {
+    const html = renderDocWindow('apps-browser:docs:help:doc:wesen-os-guide');
+
+    expect(html).toContain('&quot;mode&quot;:&quot;help&quot;');
+    expect(html).toContain('&quot;initialModuleId&quot;:&quot;wesen-os&quot;');
+    expect(html).toContain('&quot;initialSlug&quot;:&quot;wesen-os-guide&quot;');
+  });
+
+  it('routes apps:module:<id> suffix to apps mode with moduleId', () => {
+    const html = renderDocWindow('apps-browser:docs:apps:module:inventory');
+
+    expect(html).toContain('&quot;mode&quot;:&quot;apps&quot;');
+    expect(html).toContain('&quot;initialModuleId&quot;:&quot;inventory&quot;');
+  });
+
+  it('routes apps:search:<query> suffix to apps mode search', () => {
+    const html = renderDocWindow('apps-browser:docs:apps:search:test%20query');
+
+    expect(html).toContain('&quot;mode&quot;:&quot;apps&quot;');
+    expect(html).toContain('&quot;initialScreen&quot;:&quot;search&quot;');
+    expect(html).toContain('&quot;initialQuery&quot;:&quot;test query&quot;');
   });
 });

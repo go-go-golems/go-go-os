@@ -13,5 +13,15 @@ export {
 } from './log-viewer/types';
 export { generateSampleLogs, generateLogEntry } from './log-viewer/sampleData';
 
+// ChartView
+export { ChartView, type ChartViewProps } from './chart-view/ChartView';
+export {
+  type ChartType,
+  type ChartDataset,
+  type ChartSeries,
+  type ChartTooltip,
+} from './chart-view/types';
+export { SAMPLE_DATASETS, DATASET_NAMES } from './chart-view/sampleData';
+
 // Parts
 export { RICH_PARTS, type RichPartName } from './parts';

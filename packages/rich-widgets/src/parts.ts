@@ -26,6 +26,14 @@ export const RICH_PARTS = {
   logViewerFilterItem: 'log-viewer-filter-item',
   logViewerControls: 'log-viewer-controls',
   logViewerStatusBar: 'log-viewer-status-bar',
+
+  // ChartView
+  chartView: 'chart-view',
+  chartViewCanvas: 'chart-view-canvas',
+  chartViewControls: 'chart-view-controls',
+  chartViewControlGroup: 'chart-view-control-group',
+  chartViewLegend: 'chart-view-legend',
+  chartViewInfo: 'chart-view-info',
 } as const;
 
 export type RichPartName = (typeof RICH_PARTS)[keyof typeof RICH_PARTS];

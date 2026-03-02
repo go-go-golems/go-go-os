@@ -60,5 +60,13 @@ export {
 } from './node-editor/types';
 export { INITIAL_NODES, INITIAL_CONNECTIONS } from './node-editor/sampleData';
 
+// Oscilloscope
+export { Oscilloscope, type OscilloscopeProps } from './oscilloscope/Oscilloscope';
+export {
+  type WaveformType,
+  WAVEFORM_TYPES,
+  WAVEFORM_ICONS,
+} from './oscilloscope/types';
+
 // Parts
 export { RICH_PARTS, type RichPartName } from './parts';

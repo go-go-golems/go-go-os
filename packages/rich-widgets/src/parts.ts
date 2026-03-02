@@ -89,6 +89,21 @@ export const RICH_PARTS = {
   nodeEditorNodePorts: 'node-editor-node-ports',
   nodeEditorPort: 'node-editor-port',
   nodeEditorStatusBar: 'node-editor-status-bar',
+
+  // Oscilloscope
+  oscilloscope: 'oscilloscope',
+  oscMain: 'osc-main',
+  oscDisplay: 'osc-display',
+  oscBezel: 'osc-bezel',
+  oscDisplayStatus: 'osc-display-status',
+  oscControls: 'osc-controls',
+  oscControlGroup: 'osc-control-group',
+  oscControlGroupTitle: 'osc-control-group-title',
+  oscSlider: 'osc-slider',
+  oscSliderLabel: 'osc-slider-label',
+  oscSliderValue: 'osc-slider-value',
+  oscToolbar: 'osc-toolbar',
+  oscSeparator: 'osc-separator',
 } as const;
 
 export type RichPartName = (typeof RICH_PARTS)[keyof typeof RICH_PARTS];

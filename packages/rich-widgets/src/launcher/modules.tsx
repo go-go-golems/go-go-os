@@ -21,6 +21,7 @@ import { SteamLauncher } from '../steam-launcher/SteamLauncher';
 import { YouTubeRetro } from '../youtube-retro/YouTubeRetro';
 import { ChatBrowser } from '../chat-browser/ChatBrowser';
 import { SystemModeler } from '../system-modeler/SystemModeler';
+import { ControlRoom } from '../control-room/ControlRoom';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -159,6 +160,11 @@ export const systemModelerModule = widget(
   () => <SystemModeler />,
 );
 
+export const controlRoomModule = widget(
+  'control-room', 'Control Room', '\uD83C\uDFDB\uFE0F', 119, 960, 700,
+  () => <ControlRoom />,
+);
+
 // ---------------------------------------------------------------------------
 // All modules as a single array for convenience
 // ---------------------------------------------------------------------------
@@ -183,4 +189,5 @@ export const RICH_WIDGET_MODULES: readonly LaunchableAppModule[] = [
   youtubeRetroModule,
   chatBrowserModule,
   systemModelerModule,
+  controlRoomModule,
 ];

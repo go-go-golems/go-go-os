@@ -278,5 +278,36 @@ export {
 } from './system-modeler/types';
 export { INITIAL_BLOCKS, INITIAL_WIRES } from './system-modeler/sampleData';
 
+// ControlRoom
+export {
+  ControlRoom,
+  type ControlRoomProps,
+} from './control-room/ControlRoom';
+export {
+  AnalogGauge,
+  type AnalogGaugeProps,
+  BarMeter,
+  type BarMeterProps,
+  HorizontalBar,
+  type HorizontalBarProps,
+  LED,
+  type LEDProps,
+  ToggleSwitch,
+  type ToggleSwitchProps,
+  SevenSeg,
+  type SevenSegProps,
+  Knob,
+  type KnobProps,
+  ScrollLog,
+  type ScrollLogProps,
+  Scope,
+  type ScopeProps,
+} from './control-room/instruments';
+export {
+  type LogLine,
+  type SwitchState,
+  type SwitchKey,
+} from './control-room/types';
+
 // Parts
 export { RICH_PARTS, type RichPartName } from './parts';

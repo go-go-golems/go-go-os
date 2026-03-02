@@ -25,6 +25,7 @@ import { SteamLauncher } from '../steam-launcher/SteamLauncher';
 import { YouTubeRetro } from '../youtube-retro/YouTubeRetro';
 import { ChatBrowser } from '../chat-browser/ChatBrowser';
 import { SystemModeler } from '../system-modeler/SystemModeler';
+import { ControlRoom } from '../control-room/ControlRoom';
 
 // ---------------------------------------------------------------------------
 // Widget registry for the story
@@ -59,6 +60,7 @@ const WIDGETS: WidgetDef[] = [
   { id: 'youtube-retro', name: 'RetroTube', icon: '\uD83C\uDFAC', w: 960, h: 680, render: () => <YouTubeRetro /> },
   { id: 'chat-browser', name: 'Chat Browser', icon: '\uD83D\uDDC4\uFE0F', w: 900, h: 600, render: () => <ChatBrowser /> },
   { id: 'system-modeler', name: 'SystemModeler', icon: '\uD83D\uDDA5\uFE0F', w: 960, h: 640, render: () => <SystemModeler /> },
+  { id: 'control-room', name: 'Control Room', icon: '\uD83C\uDFDB\uFE0F', w: 960, h: 700, render: () => <ControlRoom /> },
 ];
 
 const WIDGET_MAP = new Map(WIDGETS.map((w) => [w.id, w]));

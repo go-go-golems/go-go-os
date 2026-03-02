@@ -243,5 +243,22 @@ export {
   COMMENTS as YT_COMMENTS,
 } from './youtube-retro/sampleData';
 
+// ChatBrowser
+export {
+  ChatBrowser,
+  type ChatBrowserProps,
+} from './chat-browser/ChatBrowser';
+export {
+  type Conversation as ChatConversation,
+  type ChatMessage as ChatBrowserMessage,
+  type SearchParams as ChatSearchParams,
+  EMPTY_SEARCH,
+} from './chat-browser/types';
+export {
+  CONVERSATIONS as CHAT_CONVERSATIONS,
+  getAllTags as getChatTags,
+  getAllModels as getChatModels,
+} from './chat-browser/sampleData';
+
 // Parts
 export { RICH_PARTS, type RichPartName } from './parts';

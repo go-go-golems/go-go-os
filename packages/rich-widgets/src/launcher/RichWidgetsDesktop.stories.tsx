@@ -1,0 +1,189 @@
+import { configureStore } from '@reduxjs/toolkit';
+import type { Meta, StoryObj } from '@storybook/react';
+import { type ReactNode, useMemo } from 'react';
+import { Provider } from 'react-redux';
+import { windowingReducer, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { notificationsReducer, type CardStackDefinition } from '@hypercard/engine';
+import { DesktopShell, type DesktopIconDef, type DesktopContribution } from '@hypercard/engine/desktop-react';
+
+import { LogViewer } from '../log-viewer/LogViewer';
+import { ChartView } from '../chart-view/ChartView';
+import { MacWrite } from '../mac-write/MacWrite';
+import { KanbanBoard } from '../kanban/KanbanBoard';
+import { MacRepl } from '../repl/MacRepl';
+import { NodeEditor } from '../node-editor/NodeEditor';
+import { Oscilloscope } from '../oscilloscope/Oscilloscope';
+import { LogicAnalyzer } from '../logic-analyzer/LogicAnalyzer';
+import { MacCalendar } from '../calendar/MacCalendar';
+import { GraphNavigator } from '../graph-navigator/GraphNavigator';
+import { MacCalc } from '../calculator/MacCalc';
+import { DeepResearch } from '../deep-research/DeepResearch';
+import { GameFinder } from '../game-finder/GameFinder';
+import { RetroMusicPlayer } from '../music-player/RetroMusicPlayer';
+import { StreamLauncher } from '../stream-launcher/StreamLauncher';
+import { SteamLauncher } from '../steam-launcher/SteamLauncher';
+import { YouTubeRetro } from '../youtube-retro/YouTubeRetro';
+
+// ---------------------------------------------------------------------------
+// Widget registry for the story
+// ---------------------------------------------------------------------------
+
+interface WidgetDef {
+  id: string;
+  name: string;
+  icon: string;
+  w: number;
+  h: number;
+  render: () => ReactNode;
+}
+
+const WIDGETS: WidgetDef[] = [
+  { id: 'log-viewer', name: 'Log Viewer', icon: '\uD83D\uDCCB', w: 900, h: 600, render: () => <LogViewer /> },
+  { id: 'chart-view', name: 'Chart View', icon: '\uD83D\uDCC8', w: 800, h: 560, render: () => <ChartView /> },
+  { id: 'mac-write', name: 'MacWrite', icon: '\u270D\uFE0F', w: 800, h: 620, render: () => <MacWrite /> },
+  { id: 'kanban-board', name: 'Kanban Board', icon: '\uD83D\uDCCB', w: 960, h: 640, render: () => <KanbanBoard /> },
+  { id: 'mac-repl', name: 'MacRepl', icon: '\uD83D\uDCBB', w: 720, h: 480, render: () => <MacRepl /> },
+  { id: 'node-editor', name: 'Node Editor', icon: '\uD83D\uDD17', w: 900, h: 600, render: () => <NodeEditor /> },
+  { id: 'oscilloscope', name: 'Oscilloscope', icon: '\uD83D\uDCDF', w: 800, h: 560, render: () => <Oscilloscope /> },
+  { id: 'logic-analyzer', name: 'Logic Analyzer', icon: '\uD83D\uDD0C', w: 900, h: 560, render: () => <LogicAnalyzer /> },
+  { id: 'mac-calendar', name: 'Calendar', icon: '\uD83D\uDCC5', w: 840, h: 600, render: () => <MacCalendar /> },
+  { id: 'graph-navigator', name: 'Graph Navigator', icon: '\uD83C\uDF10', w: 900, h: 640, render: () => <GraphNavigator /> },
+  { id: 'mac-calc', name: 'MacCalc', icon: '\uD83E\uDDEE', w: 880, h: 600, render: () => <MacCalc /> },
+  { id: 'deep-research', name: 'Deep Research', icon: '\uD83D\uDD0D', w: 860, h: 620, render: () => <DeepResearch /> },
+  { id: 'game-finder', name: 'Game Finder', icon: '\uD83C\uDFAE', w: 900, h: 640, render: () => <GameFinder /> },
+  { id: 'retro-music-player', name: 'Music Player', icon: '\uD83C\uDFB5', w: 880, h: 600, render: () => <RetroMusicPlayer /> },
+  { id: 'stream-launcher', name: 'Streams', icon: '\uD83D\uDCFA', w: 900, h: 640, render: () => <StreamLauncher /> },
+  { id: 'steam-launcher', name: 'Game Library', icon: '\uD83D\uDD79\uFE0F', w: 960, h: 680, render: () => <SteamLauncher /> },
+  { id: 'youtube-retro', name: 'RetroTube', icon: '\uD83C\uDFAC', w: 960, h: 680, render: () => <YouTubeRetro /> },
+];
+
+const WIDGET_MAP = new Map(WIDGETS.map((w) => [w.id, w]));
+
+// ---------------------------------------------------------------------------
+// Desktop icons (all widgets as app icons + a folder)
+// ---------------------------------------------------------------------------
+
+const DESKTOP_ICONS: DesktopIconDef[] = [
+  ...WIDGETS.map((w): DesktopIconDef => ({
+    id: w.id,
+    label: w.name,
+    icon: w.icon,
+    kind: 'app',
+  })),
+  {
+    id: 'folder.rich-widgets',
+    label: 'Rich Widgets',
+    icon: '\uD83D\uDDC2\uFE0F',
+    kind: 'folder',
+    folder: { memberIconIds: WIDGETS.map((w) => w.id) },
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Contributions: startup windows for quick open
+// ---------------------------------------------------------------------------
+
+function makeStartupWindow(wDef: WidgetDef, idx: number): OpenWindowPayload {
+  return {
+    id: `window:${wDef.id}:startup`,
+    title: wDef.name,
+    icon: wDef.icon,
+    bounds: { x: 100 + (idx % 4) * 30, y: 60 + (idx % 4) * 20, w: wDef.w, h: wDef.h },
+    content: { kind: 'app', appKey: wDef.id },
+    dedupeKey: `${wDef.id}:startup`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Minimal stack (the shell requires one, even if we don't use cards)
+// ---------------------------------------------------------------------------
+
+const SHELL_STACK: CardStackDefinition = {
+  id: 'rich-widgets-desktop',
+  name: 'Rich Widgets Desktop',
+  icon: '\uD83D\uDDA5\uFE0F',
+  homeCard: 'empty',
+  cards: {
+    empty: {
+      id: 'empty',
+      type: 'report',
+      title: 'Rich Widgets',
+      icon: '\uD83D\uDDA5\uFE0F',
+      ui: { t: 'text', value: 'Double-click an icon on the desktop or open the Rich Widgets folder.' },
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Story frame
+// ---------------------------------------------------------------------------
+
+function createStore() {
+  return configureStore({
+    reducer: {
+      windowing: windowingReducer,
+      notifications: notificationsReducer,
+    },
+  });
+}
+
+function renderAppWindow(appKey: string): ReactNode {
+  const w = WIDGET_MAP.get(appKey);
+  if (!w) return null;
+  return <div style={{ width: '100%', height: '100%', overflow: 'auto' }}>{w.render()}</div>;
+}
+
+function RichWidgetsDesktopFrame({ startupWidget }: { startupWidget?: string }) {
+  const store = useMemo(() => createStore(), []);
+  const contributions = useMemo<DesktopContribution[]>(() => {
+    if (!startupWidget) return [];
+    const wDef = WIDGET_MAP.get(startupWidget);
+    if (!wDef) return [];
+    return [
+      {
+        id: 'rich-widgets-startup',
+        startupWindows: [{ id: `startup:${wDef.id}`, create: () => makeStartupWindow(wDef, 0) }],
+      },
+    ];
+  }, [startupWidget]);
+
+  return (
+    <Provider store={store}>
+      <div style={{ width: 1200, height: 800 }}>
+        <DesktopShell
+          stack={SHELL_STACK}
+          icons={DESKTOP_ICONS}
+          renderAppWindow={renderAppWindow}
+          contributions={contributions}
+        />
+      </div>
+    </Provider>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stories
+// ---------------------------------------------------------------------------
+
+const meta: Meta = {
+  title: 'Rich Widgets/Desktop Integration',
+  parameters: { layout: 'centered' },
+};
+export default meta;
+type Story = StoryObj;
+
+export const AllWidgets: Story = {
+  render: () => <RichWidgetsDesktopFrame />,
+};
+
+export const StartWithLogViewer: Story = {
+  render: () => <RichWidgetsDesktopFrame startupWidget="log-viewer" />,
+};
+
+export const StartWithMusicPlayer: Story = {
+  render: () => <RichWidgetsDesktopFrame startupWidget="retro-music-player" />,
+};
+
+export const StartWithSteamLauncher: Story = {
+  render: () => <RichWidgetsDesktopFrame startupWidget="steam-launcher" />,
+};

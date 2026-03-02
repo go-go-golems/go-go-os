@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Btn, Checkbox } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
 import { LabeledSlider } from '../primitives/LabeledSlider';
 import { Separator } from '../primitives/Separator';
+import { useAnimationLoop } from '../primitives/useAnimationLoop';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import type { SignalType, TriggerEdge, Protocol, Channel } from './types';
 import {
@@ -58,7 +59,6 @@ export function LogicAnalyzer({
   initialChannelCount = 6,
 }: LogicAnalyzerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
   const timeRef = useRef(0);
 
   const [running, setRunning] = useState(autoStart);
@@ -115,7 +115,6 @@ export function LogicAnalyzer({
       ctx.textAlign = 'center';
       ctx.fillText('No channels enabled', W / 2, H / 2);
       ctx.textAlign = 'left';
-      animRef.current = requestAnimationFrame(draw);
       return;
     }
 
@@ -289,7 +288,6 @@ export function LogicAnalyzer({
     if (running) {
       timeRef.current += 0.008 * speed;
     }
-    animRef.current = requestAnimationFrame(draw);
   }, [
     channels,
     enabledChannels,
@@ -304,10 +302,7 @@ export function LogicAnalyzer({
     canvasHeight,
   ]);
 
-  useEffect(() => {
-    animRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [draw]);
+  useAnimationLoop(draw, true);
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

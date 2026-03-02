@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Btn, Checkbox } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
 import { LabeledSlider } from '../primitives/LabeledSlider';
 import { Separator } from '../primitives/Separator';
+import { useAnimationLoop } from '../primitives/useAnimationLoop';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import type { WaveformType } from './types';
 import { WAVEFORM_TYPES, WAVEFORM_ICONS } from './types';
@@ -52,7 +53,6 @@ export function Oscilloscope({
   autoStart = true,
 }: OscilloscopeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
   const timeRef = useRef(0);
 
   const [waveform, setWaveform] = useState<WaveformType>(initialWaveform);
@@ -208,7 +208,6 @@ export function Oscilloscope({
     if (running) {
       timeRef.current += 0.012;
     }
-    animRef.current = requestAnimationFrame(draw);
   }, [
     waveform,
     frequency,
@@ -228,10 +227,7 @@ export function Oscilloscope({
     canvasHeight,
   ]);
 
-  useEffect(() => {
-    animRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [draw]);
+  useAnimationLoop(draw, true);
 
   return (
     <div data-part={RICH_PARTS.oscilloscope}>

@@ -68,5 +68,21 @@ export {
   WAVEFORM_ICONS,
 } from './oscilloscope/types';
 
+// LogicAnalyzer
+export {
+  LogicAnalyzer,
+  type LogicAnalyzerProps,
+} from './logic-analyzer/LogicAnalyzer';
+export {
+  type SignalType,
+  type TriggerEdge,
+  type Protocol,
+  type Channel,
+  CHANNEL_COLORS,
+  CHANNEL_NAMES,
+  SIGNAL_TYPES,
+  PROTOCOLS,
+} from './logic-analyzer/types';
+
 // Parts
 export { RICH_PARTS, type RichPartName } from './parts';

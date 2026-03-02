@@ -18,7 +18,7 @@
 
 - [ ] 9. Port `repl.jsx` → `MacRepl.tsx` with stories
 - [ ] 10. Port `oscilloscope.jsx` → `Oscilloscope.tsx` with stories
-- [ ] 11. Port `logic-analyzer.jsx` → `LogicAnalyzer.tsx` with stories
+- [x] 11. Port `logic-analyzer.jsx` → `LogicAnalyzer.tsx` with stories
 - [ ] 12. Port `chart-widget.jsx` → `ChartView.tsx` with stories
 
 ## Phase 4: Productivity widgets

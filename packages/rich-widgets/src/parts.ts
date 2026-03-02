@@ -90,6 +90,24 @@ export const RICH_PARTS = {
   nodeEditorPort: 'node-editor-port',
   nodeEditorStatusBar: 'node-editor-status-bar',
 
+  // LogicAnalyzer
+  logicAnalyzer: 'logic-analyzer',
+  laMain: 'la-main',
+  laDisplay: 'la-display',
+  laBezel: 'la-bezel',
+  laBezelReflection: 'la-bezel-reflection',
+  laDisplayStatus: 'la-display-status',
+  laControls: 'la-controls',
+  laControlGroup: 'la-control-group',
+  laControlGroupTitle: 'la-control-group-title',
+  laChannelRow: 'la-channel-row',
+  laChannelColor: 'la-channel-color',
+  laSlider: 'la-slider',
+  laSliderLabel: 'la-slider-label',
+  laSliderValue: 'la-slider-value',
+  laToolbar: 'la-toolbar',
+  laSeparator: 'la-separator',
+
   // Oscilloscope
   oscilloscope: 'oscilloscope',
   oscMain: 'osc-main',

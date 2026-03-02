@@ -1,5 +1,5 @@
 /* ── KanbanBoard ── */
-[data-part="kanban"] {
+[data-part="kb"] {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -10,7 +10,7 @@
   overflow: hidden;
 }
 
-[data-part="kanban-toolbar"] {
+[data-part="kb-toolbar"] {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -21,7 +21,7 @@
   flex-wrap: wrap;
 }
 
-[data-part="kanban-separator"] {
+[data-part="kb-separator"] {
   display: inline-block;
   width: 1px;
   height: 18px;
@@ -29,7 +29,7 @@
   opacity: 0.3;
 }
 
-[data-part="kanban-board"] {
+[data-part="kb-board"] {
   flex: 1;
   display: flex;
   gap: 0;
@@ -37,7 +37,7 @@
   overflow-y: hidden;
 }
 
-[data-part="kanban-column"] {
+[data-part="kb-column"] {
   min-width: 180px;
   width: 200px;
   flex-shrink: 0;
@@ -49,16 +49,16 @@
   overflow: hidden;
 }
 
-[data-part="kanban-column"][data-state="collapsed"] {
+[data-part="kb-column"][data-state="collapsed"] {
   min-width: 44px;
   width: 44px;
 }
 
-[data-part="kanban-column"][data-state="drag-over"] {
+[data-part="kb-column"][data-state="drag-over"] {
   background: color-mix(in srgb, var(--hc-color-accent) 10%, var(--hc-color-alt, #f0f0f0));
 }
 
-[data-part="kanban-column-header"] {
+[data-part="kb-column-header"] {
   padding: 8px 10px;
   border-bottom: 1px solid var(--hc-color-border);
   display: flex;
@@ -72,20 +72,20 @@
   font-size: 11px;
 }
 
-[data-part="kanban-column-count"] {
+[data-part="kb-column-count"] {
   font-size: 10px;
   font-weight: normal;
   opacity: 0.6;
 }
 
-[data-part="kanban-column-cards"] {
+[data-part="kb-column-cards"] {
   flex: 1;
   overflow-y: auto;
   padding: 6px 8px;
   min-height: 60px;
 }
 
-[data-part="kanban-card"] {
+[data-part="kb-card"] {
   background: var(--hc-color-bg);
   border: 1px solid var(--hc-color-border);
   padding: 8px 10px;
@@ -95,30 +95,30 @@
   border-left-width: 3px;
 }
 
-[data-part="kanban-card"]:hover {
+[data-part="kb-card"]:hover {
   box-shadow: 1px 1px 0 var(--hc-color-border);
 }
 
-[data-part="kanban-card"][data-priority="high"] {
+[data-part="kb-card"][data-priority="high"] {
   border-left-color: var(--hc-color-accent);
 }
 
-[data-part="kanban-card"][data-priority="medium"] {
+[data-part="kb-card"][data-priority="medium"] {
   border-left-color: var(--hc-color-fg);
   border-left-style: dashed;
 }
 
-[data-part="kanban-card"][data-priority="low"] {
+[data-part="kb-card"][data-priority="low"] {
   border-left-color: var(--hc-color-border);
 }
 
-[data-part="kanban-card-title"] {
+[data-part="kb-card-title"] {
   font-size: 11px;
   line-height: 1.3;
   margin-bottom: 2px;
 }
 
-[data-part="kanban-card-desc"] {
+[data-part="kb-card-desc"] {
   font-size: 9px;
   opacity: 0.6;
   margin-bottom: 4px;
@@ -127,20 +127,20 @@
   white-space: nowrap;
 }
 
-[data-part="kanban-card-tags"] {
+[data-part="kb-card-tags"] {
   display: flex;
   gap: 3px;
   flex-wrap: wrap;
 }
 
-[data-part="kanban-tag"] {
+[data-part="kb-tag"] {
   font-size: 9px;
   padding: 0 5px;
   border: 1px solid var(--hc-color-border);
   background: var(--hc-color-alt, #e8e8e8);
 }
 
-[data-part="kanban-modal-overlay"] {
+[data-part="kb-modal-overlay"] {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -150,7 +150,7 @@
   justify-content: center;
 }
 
-[data-part="kanban-modal"] {
+[data-part="kb-modal"] {
   width: 440px;
   max-width: 92%;
   background: var(--hc-color-bg);
@@ -160,7 +160,7 @@
   font-family: var(--hc-font-family);
 }
 
-[data-part="kanban-modal-header"] {
+[data-part="kb-modal-header"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -170,14 +170,14 @@
   font-weight: bold;
 }
 
-[data-part="kanban-modal-body"] {
+[data-part="kb-modal-body"] {
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-[data-part="kanban-modal-body"] label {
+[data-part="kb-modal-body"] label {
   display: block;
   font-size: 9px;
   text-transform: uppercase;
@@ -186,19 +186,19 @@
   margin-bottom: 4px;
 }
 
-[data-part="kanban-modal-body"] input,
-[data-part="kanban-modal-body"] textarea {
+[data-part="kb-modal-body"] input,
+[data-part="kb-modal-body"] textarea {
   width: 100%;
 }
 
-[data-part="kanban-modal-footer"] {
+[data-part="kb-modal-footer"] {
   display: flex;
   padding: 10px 14px;
   border-top: 1px solid var(--hc-color-border);
   gap: 8px;
 }
 
-[data-part="kanban-status-bar"] {
+[data-part="kb-status-bar"] {
   display: flex;
   align-items: center;
   border-top: 1px solid var(--hc-color-border);

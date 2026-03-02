@@ -276,7 +276,7 @@ export function MacWrite({
   };
 
   return (
-    <div data-part={RICH_PARTS.macWrite}>
+    <div data-part={RICH_PARTS.mw}>
       {/* ── Toolbar ── */}
       <WidgetToolbar>
         {/* Format buttons */}
@@ -358,7 +358,7 @@ export function MacWrite({
 
       {/* ── Find & Replace Bar ── */}
       {showFind && (
-        <div data-part={RICH_PARTS.macWriteFindBar}>
+        <div data-part={RICH_PARTS.mwFindBar}>
           <span style={{ fontSize: 12 }}>🔍</span>
           <input
             data-part="field-input"
@@ -415,11 +415,11 @@ export function MacWrite({
       )}
 
       {/* ── Editor / Preview ── */}
-      <div data-part={RICH_PARTS.macWriteBody}>
+      <div data-part={RICH_PARTS.mwBody}>
         {viewMode !== 'preview' && (
           <textarea
             ref={editorRef}
-            data-part={RICH_PARTS.macWriteEditor}
+            data-part={RICH_PARTS.mwEditor}
             value={content}
             onChange={(e) => updateContent(e.target.value)}
             onKeyDown={handleEditorKeyDown}
@@ -430,12 +430,12 @@ export function MacWrite({
           />
         )}
         {viewMode === 'split' && (
-          <div data-part={RICH_PARTS.macWriteDivider} />
+          <div data-part={RICH_PARTS.mwDivider} />
         )}
         {viewMode !== 'edit' && (
           <div
             ref={previewRef}
-            data-part={RICH_PARTS.macWritePreview}
+            data-part={RICH_PARTS.mwPreview}
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
         )}

@@ -25,7 +25,7 @@ function TaskCard({
 }) {
   return (
     <div
-      data-part={RICH_PARTS.kanbanCard}
+      data-part={RICH_PARTS.kbCard}
       data-priority={task.priority}
       draggable
       onDragStart={(e) => {
@@ -34,14 +34,14 @@ function TaskCard({
       }}
       onClick={() => onEdit(task)}
     >
-      <div data-part={RICH_PARTS.kanbanCardTitle}>{task.title}</div>
+      <div data-part={RICH_PARTS.kbCardTitle}>{task.title}</div>
       {task.desc && (
-        <div data-part={RICH_PARTS.kanbanCardDesc}>{task.desc}</div>
+        <div data-part={RICH_PARTS.kbCardDesc}>{task.desc}</div>
       )}
       {task.tags.length > 0 && (
-        <div data-part={RICH_PARTS.kanbanCardTags}>
+        <div data-part={RICH_PARTS.kbCardTags}>
           {task.tags.map((t) => (
-            <span key={t} data-part={RICH_PARTS.kanbanTag} data-tag={t}>
+            <span key={t} data-part={RICH_PARTS.kbTag} data-tag={t}>
               {TAG_LABELS[t]}
             </span>
           ))}
@@ -79,14 +79,14 @@ function TaskModal({
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div data-part={RICH_PARTS.kanbanModal}>
-        <div data-part={RICH_PARTS.kanbanModalHeader}>
+      <div data-part={RICH_PARTS.kbModal}>
+        <div data-part={RICH_PARTS.kbModalHeader}>
           <span>{isNew ? 'New Task' : 'Edit Task'}</span>
           <Btn onClick={onClose} style={{ fontSize: 9 }}>
             ✕
           </Btn>
         </div>
-        <div data-part={RICH_PARTS.kanbanModalBody}>
+        <div data-part={RICH_PARTS.kbModalBody}>
           <div>
             <label>Title</label>
             <input
@@ -151,7 +151,7 @@ function TaskModal({
             </div>
           </div>
         </div>
-        <div data-part={RICH_PARTS.kanbanModalFooter}>
+        <div data-part={RICH_PARTS.kbModalFooter}>
           {!isNew && (
             <Btn
               onClick={() => {
@@ -273,7 +273,7 @@ export function KanbanBoard({
   const hasFilters = !!(filterTag || filterPriority || searchQuery);
 
   return (
-    <div data-part={RICH_PARTS.kanban}>
+    <div data-part={RICH_PARTS.kb}>
       {/* ── Toolbar ── */}
       <WidgetToolbar>
         <Btn
@@ -336,7 +336,7 @@ export function KanbanBoard({
       </WidgetToolbar>
 
       {/* ── Board ── */}
-      <div data-part={RICH_PARTS.kanbanBoard}>
+      <div data-part={RICH_PARTS.kbBoard}>
         {columns.map((column) => {
           const colTasks = tasksByCol[column.id] || [];
           const total = totalByCol[column.id];
@@ -346,7 +346,7 @@ export function KanbanBoard({
           return (
             <div
               key={column.id}
-              data-part={RICH_PARTS.kanbanColumn}
+              data-part={RICH_PARTS.kbColumn}
               data-state={
                 collapsed ? 'collapsed' : isOver ? 'drag-over' : undefined
               }
@@ -358,14 +358,14 @@ export function KanbanBoard({
               onDrop={(e) => handleDrop(column.id, e)}
             >
               <div
-                data-part={RICH_PARTS.kanbanColumnHeader}
+                data-part={RICH_PARTS.kbColumnHeader}
                 onClick={() => toggleCollapse(column.id)}
               >
                 <span>
                   {column.icon} {column.title}
                 </span>
                 {!collapsed && (
-                  <span data-part={RICH_PARTS.kanbanColumnCount}>
+                  <span data-part={RICH_PARTS.kbColumnCount}>
                     {colTasks.length}
                     {colTasks.length !== total ? `/${total}` : ''}
                     <span
@@ -381,7 +381,7 @@ export function KanbanBoard({
                 )}
               </div>
               {!collapsed && (
-                <div data-part={RICH_PARTS.kanbanColumnCards}>
+                <div data-part={RICH_PARTS.kbColumnCards}>
                   {colTasks.length === 0 && (
                     <div
                       style={{

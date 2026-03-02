@@ -116,7 +116,7 @@ function LegendBar({
   chartType: ChartType;
 }) {
   return (
-    <div data-part={RICH_PARTS.chartViewLegend}>
+    <div data-part={RICH_PARTS.cvLegend}>
       {series.map((s, i) => (
         <div
           key={s.name}
@@ -191,9 +191,9 @@ export function ChartView({
   const types = availableTypes ?? CHART_TYPE_OPTIONS.map((o) => o.value);
 
   return (
-    <div data-part={RICH_PARTS.chartView}>
+    <div data-part={RICH_PARTS.cv}>
       {/* Chart area */}
-      <div data-part={RICH_PARTS.chartViewCanvas}>
+      <div data-part={RICH_PARTS.cvCanvas}>
         {title && (
           <div
             style={{
@@ -219,9 +219,9 @@ export function ChartView({
       </div>
 
       {/* Controls panel */}
-      <div data-part={RICH_PARTS.chartViewControls}>
+      <div data-part={RICH_PARTS.cvControls}>
         {/* Chart type */}
-        <div data-part={RICH_PARTS.chartViewControlGroup}>
+        <div data-part={RICH_PARTS.cvControlGroup}>
           <div
             style={{
               fontSize: 10,
@@ -249,7 +249,7 @@ export function ChartView({
 
         {/* Dataset selector */}
         {datasets && (
-          <div data-part={RICH_PARTS.chartViewControlGroup}>
+          <div data-part={RICH_PARTS.cvControlGroup}>
             <div
               style={{
                 fontSize: 10,
@@ -277,7 +277,7 @@ export function ChartView({
         )}
 
         {/* Info */}
-        <div data-part={RICH_PARTS.chartViewInfo}>
+        <div data-part={RICH_PARTS.cvInfo}>
           <b>ℹ️ Info</b>
           <br />
           Series: {data.series.length}

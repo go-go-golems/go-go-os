@@ -1,5 +1,5 @@
 /* ── MacWrite ── */
-[data-part="mac-write"] {
+[data-part="mw"] {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -10,7 +10,7 @@
   overflow: hidden;
 }
 
-[data-part="mac-write-toolbar"] {
+[data-part="mw-toolbar"] {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -21,7 +21,7 @@
   flex-shrink: 0;
 }
 
-[data-part="mac-write-separator"] {
+[data-part="mw-separator"] {
   display: inline-block;
   width: 1px;
   height: 18px;
@@ -30,7 +30,7 @@
   margin: 0 4px;
 }
 
-[data-part="mac-write-find-bar"] {
+[data-part="mw-find-bar"] {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -41,14 +41,14 @@
   font-size: 11px;
 }
 
-[data-part="mac-write-body"] {
+[data-part="mw-body"] {
   display: flex;
   flex: 1;
   overflow: hidden;
   min-height: 0;
 }
 
-[data-part="mac-write-editor"] {
+[data-part="mw-editor"] {
   width: 100%;
   height: 100%;
   flex: 1;
@@ -64,13 +64,13 @@
   tab-size: 2;
 }
 
-[data-part="mac-write-divider"] {
+[data-part="mw-divider"] {
   width: 2px;
   background: var(--hc-color-border);
   flex-shrink: 0;
 }
 
-[data-part="mac-write-preview"] {
+[data-part="mw-preview"] {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
@@ -82,21 +82,21 @@
   background: var(--hc-color-alt, #f8f8f5);
 }
 
-[data-part="mac-write-preview"] strong {
+[data-part="mw-preview"] strong {
   font-weight: bold;
   color: var(--hc-color-accent);
 }
 
-[data-part="mac-write-preview"] em {
+[data-part="mw-preview"] em {
   font-style: italic;
 }
 
-[data-part="mac-write-preview"] del {
+[data-part="mw-preview"] del {
   text-decoration: line-through;
   opacity: 0.5;
 }
 
-[data-part="mac-write-status-bar"] {
+[data-part="mw-status-bar"] {
   display: flex;
   align-items: center;
   justify-content: space-between;

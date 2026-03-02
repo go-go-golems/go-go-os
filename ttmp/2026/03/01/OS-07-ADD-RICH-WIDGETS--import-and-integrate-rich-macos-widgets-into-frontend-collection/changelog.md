@@ -2,6 +2,7 @@
 
 ## 2026-03-02
 
+- Completed RetroMusicPlayer widget port (task 21): now-playing bar, EQ visualizer, marquee ticker, transport controls, playlist sidebar, track list/grid, queue panel, search, 3 stories
 - Completed GameFinder widget port (task 20): sidebar nav, game list with canvas pixel art, detail view with achievements, install/launch simulation, search/filter/sort, 3 stories
 - Completed DeepResearch widget port (task 19): query sidebar, depth selector, research simulation, source cards, thinking steps, progress bar, report generation, 3 stories
 - Completed MacCalc spreadsheet widget port (task 18): formula engine, grid, formatting, find/replace, palette, 3 stories

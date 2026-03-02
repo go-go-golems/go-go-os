@@ -129,6 +129,32 @@ Ported `imports/deep-research-mac.jsx` (889 lines) → `packages/rich-widgets/sr
 - The ResearchStep union type with discriminated `type` field makes step rendering clean via switch/case
 - Barberpole progress bar animation reuses the same technique from the indeterminate progress pattern
 
+## Step 10: RetroMusicPlayer Widget Port (Phase 15)
+
+### What was done
+Ported `imports/spotify-retro.jsx` (623 lines) → `packages/rich-widgets/src/music-player/RetroMusicPlayer.tsx`.
+
+**Files created:**
+- `music-player/types.ts` — Playlist, AlbumMeta, Track, ViewMode, parseDuration, fmtTime
+- `music-player/sampleData.ts` — PLAYLISTS (10), ALBUMS, TRACKS_DB (4 playlists with specific tracks), getTracksForPlaylist()
+- `music-player/RetroMusicPlayer.tsx` — Main component + EqViz + Marquee sub-components
+- `music-player/RetroMusicPlayer.stories.tsx` — 3 stories (Default, Compact, FewPlaylists)
+- `theme/music-player.css` — ~60 data-part rules, marquee animation, striped progress bar
+
+**Features:** Now-playing bar with album art, transport controls (shuffle/prev/play/next/repeat), progress bar with seek, volume slider, EQ visualizer, marquee ticker, playlist sidebar, toolbar with play all/shuffle/grid toggle/EQ toggle/queue toggle, playlist header, track list (list/grid views), like toggle, queue panel, search, status bar, auto-advance with repeat support.
+
+### Key decisions
+- Removed menu bar, window chrome, desktop background, about dialog
+- Moved menu actions to toolbar buttons (Grid/List toggle, EQ, Queue)
+- Used `Btn` from engine for all buttons
+- EQ visualizer kept as animated bar chart with CSS transitions
+- Marquee uses CSS animation (`mp-marquee-scroll`)
+- Progress bar uses repeating-linear-gradient for striped fill (matching retro style)
+
+### Verification
+- TypeScript: clean
+- Storybook: all 3 stories render correctly on port 6007
+
 ## Step 9: GameFinder Widget Port (Phase 14)
 
 ### What was done

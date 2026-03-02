@@ -154,6 +154,25 @@ export {
 } from './deep-research/types';
 export { DEMO_STEPS, generateReport } from './deep-research/sampleData';
 
+// RetroMusicPlayer
+export {
+  RetroMusicPlayer,
+  type RetroMusicPlayerProps,
+} from './music-player/RetroMusicPlayer';
+export {
+  type Playlist,
+  type AlbumMeta,
+  type Track,
+  type ViewMode as MusicViewMode,
+  parseDuration as parseMusicDuration,
+  fmtTime as fmtMusicTime,
+} from './music-player/types';
+export {
+  PLAYLISTS,
+  ALBUMS,
+  getTracksForPlaylist,
+} from './music-player/sampleData';
+
 // GameFinder
 export { GameFinder, type GameFinderProps } from './game-finder/GameFinder';
 export {

@@ -12,3 +12,4 @@ import './graph-navigator.css';
 import './calculator.css';
 import './deep-research.css';
 import './game-finder.css';
+import './music-player.css';

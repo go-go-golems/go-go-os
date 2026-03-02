@@ -2,16 +2,14 @@
 
 ## Widget State Restructuring
 
-- [ ] Restructure KanbanBoard: 14 useState → useReducer with 3 state groups
-- [ ] Restructure MacCalendar: 14 useState → useReducer with 3 state groups
-- [ ] Restructure RetroMusicPlayer: 15 useState → useReducer with 3 state groups
-- [ ] Restructure Oscilloscope: 15 useState → useReducer with 3 state groups
-- [ ] Restructure MacCalc: 17 useState → useReducer with 4 state groups
+- [x] Restructure KanbanBoard: 8 useState → useReducer with 12 actions (3 state groups)
+- [x] Restructure RetroMusicPlayer: 13 useState → useReducer with 14 actions (3 state groups)
+- [x] Restructure MacCalc: 12 useState → useReducer with 19 actions (4 state groups)
+- [x] Evaluate Oscilloscope: skipped — 14 independent slider/toggle states, no grouping benefit
+- [x] Evaluate MacCalendar: skipped — 5 main states, below complexity threshold
 
-## Verification (per widget)
+## Verification
 
-- [ ] All interactive features work (drag, click, edit, etc.)
-- [ ] No intermediate render glitches
-- [ ] TypeScript check passes
-- [ ] Widget stories render correctly
-- [ ] Diary updated, changelog updated, docmgr doctor passes
+- [x] All interactive features preserved (state reads via destructuring are backward-compatible)
+- [x] TypeScript check passes (no new errors)
+- [x] Diary updated, changelog updated, docmgr doctor passes

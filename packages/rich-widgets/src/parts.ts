@@ -18,6 +18,16 @@ export const RICH_PARTS = {
   widgetSearchInput: 'widget-search-input',
   widgetSearchCount: 'widget-search-count',
   widgetSeparator: 'widget-separator',
+  labeledSlider: 'labeled-slider',
+  labeledSliderLabel: 'labeled-slider-label',
+  labeledSliderValue: 'labeled-slider-value',
+  commandPalette: 'command-palette',
+  commandPaletteSearch: 'command-palette-search',
+  commandPaletteInput: 'command-palette-input',
+  commandPaletteKbd: 'command-palette-kbd',
+  commandPaletteItem: 'command-palette-item',
+  commandPaletteFooter: 'command-palette-footer',
+  buttonGroup: 'button-group',
 
   // Sparkline
   sparkline: 'sparkline',

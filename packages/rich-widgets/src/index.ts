@@ -7,6 +7,20 @@ export { ProgressBar, type ProgressBarProps } from './primitives/ProgressBar';
 export { EmptyState, type EmptyStateProps } from './primitives/EmptyState';
 export { SearchBar, type SearchBarProps } from './primitives/SearchBar';
 export { Separator, type SeparatorProps } from './primitives/Separator';
+export {
+  LabeledSlider,
+  type LabeledSliderProps,
+} from './primitives/LabeledSlider';
+export { useAnimationLoop } from './primitives/useAnimationLoop';
+export {
+  CommandPalette,
+  type CommandPaletteProps,
+  type PaletteItem,
+} from './primitives/CommandPalette';
+export {
+  ButtonGroup,
+  type ButtonGroupProps,
+} from './primitives/ButtonGroup';
 
 // LogViewer
 export { LogViewer, type LogViewerProps } from './log-viewer/LogViewer';

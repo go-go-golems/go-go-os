@@ -1,7 +1,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
+import { ModalOverlay } from '../primitives/ModalOverlay';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
+import { Separator } from '../primitives/Separator';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import type { Task, Column, TagId, Priority } from './types';
 import { TAG_LABELS, PRIORITY_LABELS, ALL_TAGS, ALL_PRIORITIES } from './types';
@@ -76,11 +78,8 @@ function TaskModal({
     );
 
   return (
-    <div data-part={RICH_PARTS.kanbanModalOverlay} onClick={onClose}>
-      <div
-        data-part={RICH_PARTS.kanbanModal}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <ModalOverlay onClose={onClose}>
+      <div data-part={RICH_PARTS.kanbanModal}>
         <div data-part={RICH_PARTS.kanbanModalHeader}>
           <span>{isNew ? 'New Task' : 'Edit Task'}</span>
           <Btn onClick={onClose} style={{ fontSize: 9 }}>
@@ -187,7 +186,7 @@ function TaskModal({
           </Btn>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -284,7 +283,7 @@ export function KanbanBoard({
           + New
         </Btn>
 
-        <span data-part={RICH_PARTS.kanbanSeparator} />
+        <Separator />
 
         <input
           data-part="field-input"
@@ -294,7 +293,7 @@ export function KanbanBoard({
           style={{ width: 120 }}
         />
 
-        <span data-part={RICH_PARTS.kanbanSeparator} />
+        <Separator />
 
         {ALL_TAGS.map((key) => (
           <Btn
@@ -307,7 +306,7 @@ export function KanbanBoard({
           </Btn>
         ))}
 
-        <span data-part={RICH_PARTS.kanbanSeparator} />
+        <Separator />
 
         {ALL_PRIORITIES.map((key) => (
           <Btn

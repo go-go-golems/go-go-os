@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Btn, Checkbox } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
+import { Separator } from '../primitives/Separator';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import type { SignalType, TriggerEdge, Protocol, Channel } from './types';
 import {
@@ -541,7 +542,7 @@ export function LogicAnalyzer({
         >
           Defaults
         </Btn>
-        <span data-part={RICH_PARTS.laSeparator} />
+        <Separator />
         <Checkbox checked={showGrid} onChange={() => setShowGrid((v) => !v)} label="Grid" />
         <Checkbox
           checked={showEdges}

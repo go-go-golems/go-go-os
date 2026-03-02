@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
+import { ModalOverlay } from '../primitives/ModalOverlay';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import type { CalendarEvent, CalendarView, PaletteAction } from './types';
@@ -56,14 +57,9 @@ function Palette({
   };
 
   return (
-    <div
-      data-part={RICH_PARTS.calModalOverlay}
-      onClick={onClose}
-      style={{ paddingTop: 40, alignItems: 'flex-start' }}
-    >
+    <ModalOverlay onClose={onClose} style={{ paddingTop: 40, alignItems: 'flex-start' }}>
       <div
         data-part={RICH_PARTS.calModal}
-        onClick={(e) => e.stopPropagation()}
         style={{ width: 400 }}
       >
         <div data-part={RICH_PARTS.calPaletteSearch}>
@@ -98,7 +94,7 @@ function Palette({
           ))}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -128,10 +124,9 @@ function EventModal({
   const [color, setColor] = useState(event.color ?? 0);
 
   return (
-    <div data-part={RICH_PARTS.calModalOverlay} onClick={onClose}>
+    <ModalOverlay onClose={onClose}>
       <div
         data-part={RICH_PARTS.calModal}
-        onClick={(e) => e.stopPropagation()}
         style={{ width: 400 }}
       >
         <div data-part={RICH_PARTS.calModalHeader}>
@@ -260,7 +255,7 @@ function EventModal({
           </Btn>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

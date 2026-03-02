@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS as P } from '../parts';
+import { ModalOverlay } from '../primitives/ModalOverlay';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import { drawGameArt } from './gameArt';
 import {
@@ -315,7 +316,7 @@ export function GameFinder({ initialGames = SAMPLE_GAMES }: GameFinderProps) {
     <div data-part={P.gameFinder}>
       {/* Launch overlay */}
       {launchedGame && (
-        <div data-part={P.gfLaunchOverlay}>
+        <ModalOverlay onClose={() => setLaunchedGame(null)}>
           <div data-part={P.gfLaunchCard}>
             <GameArt
               type={
@@ -335,7 +336,7 @@ export function GameFinder({ initialGames = SAMPLE_GAMES }: GameFinderProps) {
               <div data-part={P.gfLaunchProgressFill} />
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       <div data-part={P.gfBody}>

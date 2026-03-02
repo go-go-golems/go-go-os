@@ -7,7 +7,9 @@ import {
 } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
+import { ModalOverlay } from '../primitives/ModalOverlay';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
+import { Separator } from '../primitives/Separator';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import type { CellData, CellRange, ClipboardData, CellFormat } from './types';
 import {
@@ -66,11 +68,8 @@ function Palette({
   };
 
   return (
-    <div onClick={onClose} data-part={RICH_PARTS.calcPaletteOverlay}>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        data-part={RICH_PARTS.calcPalette}
-      >
+    <ModalOverlay onClose={onClose}>
+      <div data-part={RICH_PARTS.calcPalette}>
         <div data-part={RICH_PARTS.calcPaletteSearch}>
           <span style={{ fontSize: 15, opacity: 0.4 }}>{'\uD83D\uDD0D'}</span>
           <input
@@ -126,7 +125,7 @@ function Palette({
           <span>esc close</span>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -717,7 +716,7 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         >
           {'\uD835\uDC3C'}
         </Btn>
-        <div data-part={RICH_PARTS.calcSeparator} />
+        <Separator />
         <Btn
           onClick={() => execAction('align-left')}
           data-state={currentCell.align === 'left' ? 'active' : undefined}
@@ -743,7 +742,7 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         >
           {'\u2AF8'}
         </Btn>
-        <div data-part={RICH_PARTS.calcSeparator} />
+        <Separator />
         <Btn
           onClick={() => execAction('fmt-plain')}
           data-state={currentCell.fmt === 'plain' ? 'active' : undefined}
@@ -776,7 +775,7 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         >
           %
         </Btn>
-        <div data-part={RICH_PARTS.calcSeparator} />
+        <Separator />
         <Btn
           onClick={() => execAction('sum-insert')}
           style={{ fontSize: 12, padding: '2px 7px' }}

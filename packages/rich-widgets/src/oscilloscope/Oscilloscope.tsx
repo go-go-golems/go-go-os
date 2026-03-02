@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Btn, Checkbox } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
+import { Separator } from '../primitives/Separator';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import type { WaveformType } from './types';
 import { WAVEFORM_TYPES, WAVEFORM_ICONS } from './types';
@@ -444,7 +445,7 @@ export function Oscilloscope({
         >
           ⏮ Reset
         </Btn>
-        <span data-part={RICH_PARTS.oscSeparator} />
+        <Separator />
         <Checkbox
           checked={showGrid}
           onChange={setShowGrid}

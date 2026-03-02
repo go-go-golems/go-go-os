@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
+import { ModalOverlay } from '../primitives/ModalOverlay';
+import { Separator } from '../primitives/Separator';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import type { BlockInstance, Wire, DragState, WiringState, BlockTypeDef, Point } from './types';
@@ -64,8 +66,8 @@ function ParamsDialog({
   onClose: () => void;
 }) {
   return (
-    <div data-part={RICH_PARTS.smDialogOverlay} onClick={onClose}>
-      <div data-part={RICH_PARTS.smDialog} onClick={(e) => e.stopPropagation()}>
+    <ModalOverlay onClose={onClose}>
+      <div data-part={RICH_PARTS.smDialog}>
         <div data-part={RICH_PARTS.smDialogHeader}>
           {block.emoji} {block.label} Parameters
         </div>
@@ -113,7 +115,7 @@ function ParamsDialog({
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -127,8 +129,8 @@ function SimParamsDialog({
   onClose: () => void;
 }) {
   return (
-    <div data-part={RICH_PARTS.smDialogOverlay} onClick={onClose}>
-      <div data-part={RICH_PARTS.smDialog} onClick={(e) => e.stopPropagation()}>
+    <ModalOverlay onClose={onClose}>
+      <div data-part={RICH_PARTS.smDialog}>
         <div data-part={RICH_PARTS.smDialogHeader}>Simulation Parameters</div>
         <div data-part={RICH_PARTS.smDialogBody}>
           <div data-part={RICH_PARTS.smParamRow}>
@@ -160,7 +162,7 @@ function SimParamsDialog({
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -487,7 +489,7 @@ export function SystemModeler({
       <WidgetToolbar>
         <Btn onClick={startSim} active={simRunning}>{'\u25B6'} Run</Btn>
         <Btn onClick={() => setSimRunning(false)}>{'\u23F9'}</Btn>
-        <div data-part={RICH_PARTS.smSeparator} />
+        <Separator />
         <Btn onClick={deleteSelected}>{'\uD83D\uDDD1\uFE0F'} Delete</Btn>
         <Btn onClick={clearModel}>New</Btn>
         <Btn onClick={() => setShowParams('sim')}>{'\u2699\uFE0F'} Params</Btn>

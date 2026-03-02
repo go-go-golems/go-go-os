@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
+import { Separator } from '../primitives/Separator';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import type { ViewMode, FormatAction, WordCount } from './types';
 import { parseMarkdown } from './markdown';
@@ -290,7 +291,7 @@ export function MacWrite({
           </Btn>
         ))}
 
-        <span data-part={RICH_PARTS.macWriteSeparator} />
+        <Separator />
 
         {/* Heading buttons */}
         {FORMAT_ACTIONS.filter((a) => a.category === 'heading').map((action) => (
@@ -304,7 +305,7 @@ export function MacWrite({
           </Btn>
         ))}
 
-        <span data-part={RICH_PARTS.macWriteSeparator} />
+        <Separator />
 
         {/* Insert buttons */}
         {FORMAT_ACTIONS.filter((a) => a.category === 'insert')
@@ -320,7 +321,7 @@ export function MacWrite({
             </Btn>
           ))}
 
-        <span data-part={RICH_PARTS.macWriteSeparator} />
+        <Separator />
 
         {/* Remaining insert buttons */}
         {FORMAT_ACTIONS.filter((a) => a.category === 'insert')

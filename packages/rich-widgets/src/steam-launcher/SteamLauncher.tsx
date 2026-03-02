@@ -1,6 +1,7 @@
 import { useState, type FC } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS as P } from '../parts';
+import { ModalOverlay } from '../primitives/ModalOverlay';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import type { SteamGame, SteamTab, GameFilter, Friend } from './types';
@@ -374,7 +375,7 @@ export const SteamLauncher: FC<SteamLauncherProps> = ({
 
       {/* Launching dialog */}
       {launching && (
-        <div data-part={P.stLaunchOverlay}>
+        <ModalOverlay onClose={() => setLaunching(null)}>
           <div data-part={P.stLaunchDialog}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>{launching.icon}</div>
             <div data-part={P.stLaunchTitle}>Preparing to launch</div>
@@ -383,7 +384,7 @@ export const SteamLauncher: FC<SteamLauncherProps> = ({
               <div data-part={P.stLaunchFill} />
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Status bar */}

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type FC } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS as P } from '../parts';
+import { Separator } from '../primitives/Separator';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import type { Stream, StreamSort } from './types';
 import { CATEGORIES, SORT_OPTIONS } from './types';
@@ -144,7 +145,7 @@ const PlayerView: FC<{
               {playing ? '\u23F8' : '\u25B6'}
             </Btn>
             <Btn onClick={() => setProgress(Math.min(1, progress + 0.05))}>{'\u23ED'}</Btn>
-            <div data-part={P.slSeparator} />
+            <Separator />
             <div data-part={P.slVolume}>
               <span data-part={P.slVolIcon}>{'\uD83D\uDD08'}</span>
               <div data-part={P.slVolBar} onClick={handleVolClick}>

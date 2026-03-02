@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { RadioButton } from '@hypercard/engine';
 import { RICH_PARTS } from '../parts';
 import type { ChartType, ChartDataset, ChartTooltip } from './types';
+import { SAMPLE_DATASETS } from './sampleData';
 import {
   drawLineChart,
   drawBarChart,
@@ -173,14 +174,14 @@ function LegendBar({
 
 // ── Main Component ───────────────────────────────────────────────────
 export function ChartView({
-  data: initialData,
+  data: initialData = SAMPLE_DATASETS['Quarterly Revenue'],
   initialChartType = 'line',
   width = 540,
   height = 320,
   title,
   availableTypes,
   datasets,
-}: ChartViewProps) {
+}: Partial<ChartViewProps> = {}) {
   const [chartType, setChartType] = useState<ChartType>(initialChartType);
   const [datasetKey, setDatasetKey] = useState<string>(
     datasets ? Object.keys(datasets)[0] : '',

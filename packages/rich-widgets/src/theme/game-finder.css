@@ -80,24 +80,6 @@
   cursor: pointer;
 }
 
-[data-part="gf-radio"] {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1.5px solid var(--hc-color-border);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--hc-color-bg);
-}
-
-[data-part="gf-radio-dot"] {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--hc-color-fg);
-}
-
 [data-part="gf-profile-stats"] {
   padding: 8px;
   font-size: 8px;

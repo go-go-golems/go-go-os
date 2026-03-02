@@ -53,24 +53,6 @@
   font-size: 11px;
 }
 
-[data-part="dr-radio"] {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--hc-color-border);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-[data-part="dr-radio-dot"] {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--hc-color-fg);
-}
-
 [data-part="dr-options-section"] {
   border-top: 1px solid var(--hc-color-border);
   padding-top: 8px;

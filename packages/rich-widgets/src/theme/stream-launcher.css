@@ -71,26 +71,6 @@
   margin-bottom: 2px;
 }
 
-[data-part='sl-radio'] {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 12px;
-  height: 12px;
-  border: 1.5px solid var(--hc-color-fg);
-  border-radius: 50%;
-  background: var(--hc-color-bg);
-  flex-shrink: 0;
-}
-
-[data-part='sl-radio-dot'] {
-  width: 6px;
-  height: 6px;
-  background: var(--hc-color-fg);
-  border-radius: 50%;
-  display: block;
-}
-
 [data-part='sl-sidebar-stats'] {
   padding: 8px;
   border-top: 1px solid var(--hc-color-border);

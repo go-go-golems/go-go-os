@@ -720,3 +720,34 @@ I continued the same Phase D cleanup pattern on KanbanBoard, removing part keys 
   - `rg -n "kbToolbar|kbSeparator|kbModalOverlay|kbStatusBar|kb-toolbar|kb-separator|kb-modal-overlay|kb-status-bar" packages/rich-widgets/src || echo "no matches"`
   - `npm run test -w packages/rich-widgets`
   - `npm run storybook:check`
+
+## Step 12: Re-upload OS-08 bundle after Task 5 (2026-03-03)
+
+I refreshed the reMarkable bundle after Task 5 so the cloud/device artifact includes the latest Kanban residue cleanup and diary/task/changelog updates.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue the same iterative delivery cycle and keep uploaded documentation current.
+
+### What I did
+- Executed dry-run and real bundle uploads for:
+  - design doc 03
+  - investigation diary
+  - tasks
+  - changelog
+- Uploaded artifact name:
+  - `OS-08-CLEANUP-RICH-WIDGETS-update-2026-03-03-task5`
+- Target directory:
+  - `/ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS`
+- Verified remote listing includes new artifact.
+
+### What worked
+- Upload and listing succeeded without auth/session issues.
+
+### Technical details
+- Key commands:
+  - `remarquee upload bundle --dry-run ... --name "OS-08-CLEANUP-RICH-WIDGETS-update-2026-03-03-task5" --remote-dir /ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS --toc-depth 2`
+  - `remarquee upload bundle ... --name "OS-08-CLEANUP-RICH-WIDGETS-update-2026-03-03-task5" --remote-dir /ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS --toc-depth 2`
+  - `remarquee cloud ls /ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS --long --non-interactive`

@@ -117,3 +117,15 @@ Phase A Task 5 complete (commit 1f8737ca7a8ef5d958b9da55326725214fc8ff95): remov
 
 - /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/parts.ts — Removed `kbToolbar`, `kbSeparator`, `kbModalOverlay`, and `kbStatusBar` dead part constants
 - /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/kanban.css — Removed unused `kb-toolbar`/`kb-separator`/`kb-modal-overlay`/`kb-status-bar` selectors
+
+
+## 2026-03-03
+
+Uploaded refreshed OS-08 review bundle including Task 5 updates to reMarkable at `/ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS` as `OS-08-CLEANUP-RICH-WIDGETS-update-2026-03-03-task5`.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/ttmp/2026/03/02/OS-08-CLEANUP-RICH-WIDGETS--cleanup-and-refactor-rich-macos-widgets-extract-primitives-normalize-state-reduce-duplication/design-doc/03-independent-review-redux-usage-storybook-state-simulation-modularization-and-css-duplication.md — Included in uploaded bundle
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/ttmp/2026/03/02/OS-08-CLEANUP-RICH-WIDGETS--cleanup-and-refactor-rich-macos-widgets-extract-primitives-normalize-state-reduce-duplication/reference/01-investigation-diary.md — Included in uploaded bundle
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/ttmp/2026/03/02/OS-08-CLEANUP-RICH-WIDGETS--cleanup-and-refactor-rich-macos-widgets-extract-primitives-normalize-state-reduce-duplication/tasks.md — Included in uploaded bundle
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/ttmp/2026/03/02/OS-08-CLEANUP-RICH-WIDGETS--cleanup-and-refactor-rich-macos-widgets-extract-primitives-normalize-state-reduce-duplication/changelog.md — Included in uploaded bundle

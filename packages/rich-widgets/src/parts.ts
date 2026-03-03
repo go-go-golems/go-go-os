@@ -68,8 +68,6 @@ export const RICH_PARTS = {
 
   // KanbanBoard
   kb: 'kb',
-  kbToolbar: 'kb-toolbar',
-  kbSeparator: 'kb-separator',
   kbBoard: 'kb-board',
   kbColumn: 'kb-column',
   kbColumnHeader: 'kb-column-header',
@@ -80,12 +78,10 @@ export const RICH_PARTS = {
   kbCardDesc: 'kb-card-desc',
   kbCardTags: 'kb-card-tags',
   kbTag: 'kb-tag',
-  kbModalOverlay: 'kb-modal-overlay',
   kbModal: 'kb-modal',
   kbModalHeader: 'kb-modal-header',
   kbModalBody: 'kb-modal-body',
   kbModalFooter: 'kb-modal-footer',
-  kbStatusBar: 'kb-status-bar',
 
   // MacRepl
   repl: 'repl',

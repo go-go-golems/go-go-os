@@ -60,14 +60,11 @@ export const RICH_PARTS = {
 
   // MacWrite
   mw: 'mw',
-  mwToolbar: 'mw-toolbar',
-  mwSeparator: 'mw-separator',
   mwFindBar: 'mw-find-bar',
   mwBody: 'mw-body',
   mwEditor: 'mw-editor',
   mwDivider: 'mw-divider',
   mwPreview: 'mw-preview',
-  mwStatusBar: 'mw-status-bar',
 
   // KanbanBoard
   kb: 'kb',

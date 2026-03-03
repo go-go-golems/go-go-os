@@ -751,3 +751,46 @@ I refreshed the reMarkable bundle after Task 5 so the cloud/device artifact incl
   - `remarquee upload bundle --dry-run ... --name "OS-08-CLEANUP-RICH-WIDGETS-update-2026-03-03-task5" --remote-dir /ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS --toc-depth 2`
   - `remarquee upload bundle ... --name "OS-08-CLEANUP-RICH-WIDGETS-update-2026-03-03-task5" --remote-dir /ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS --toc-depth 2`
   - `remarquee cloud ls /ai/2026/03/03/OS-08-CLEANUP-RICH-WIDGETS --long --non-interactive`
+
+## Step 13: Task 6 implementation — full remaining dead-part/selector sweep (2026-03-03)
+
+Per the “do them all, don’t stop” instruction, I switched from widget-by-widget micro tasks to a complete final sweep of all remaining dead `RICH_PARTS` keys and matching legacy CSS selectors.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok do them all, don't stop before"
+
+**Assistant interpretation:** Finish the entire dead-part backlog in one end-to-end pass, including verification and documentation.
+
+**Commit (code):** `e24f3f4f72f82f2a3d4ef7af843ac0648ecfc49b` — "chore(rich-widgets): remove remaining dead parts and legacy selectors"
+
+### What I did
+- Audited remaining `RICH_PARTS` usage and generated dead-key inventory.
+- Removed all remaining dead constants from `parts.ts`.
+- Removed matching obsolete selectors from rich-widget theme files:
+  - `repl.css`, `node-editor.css`, `logic-analyzer.css`, `calendar.css`, `oscilloscope.css`
+  - `calculator.css`, `deep-research.css`, `game-finder.css`, `music-player.css`
+  - `stream-launcher.css`, `steam-launcher.css`, `youtube-retro.css`, `chat-browser.css`, `system-modeler.css`
+- Validated:
+  - `npm run test -w packages/rich-widgets` (pass)
+  - `npm run storybook:check` (pass)
+  - Residue audit result: `total_keys=605`, `dead_keys=0`
+  - Spot legacy selector grep returns no matches for prior dead selector set.
+
+### Why
+- This closes the core Phase D residue debt identified in the independent review: stale part constants and stale widget-specific selectors remaining after primitive migration.
+
+### What worked
+- The sweep was deletion-only and deterministic, so behavior risk remained low.
+- Existing test and storybook taxonomy checks stayed green.
+- Dead-key metric reached zero, which gives a clear completion signal.
+
+### What didn't work
+- N/A
+
+### Technical details
+- Key commands:
+  - dead-key audit script (`parts.ts` keys minus `P.<key>` usage scan)
+  - `npm run test -w packages/rich-widgets`
+  - `npm run storybook:check`
+  - legacy-selector spot check grep after sweep

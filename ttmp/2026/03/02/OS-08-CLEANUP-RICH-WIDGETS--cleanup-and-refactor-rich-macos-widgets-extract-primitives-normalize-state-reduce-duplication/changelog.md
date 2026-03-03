@@ -129,3 +129,26 @@ Uploaded refreshed OS-08 review bundle including Task 5 updates to reMarkable at
 - /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/ttmp/2026/03/02/OS-08-CLEANUP-RICH-WIDGETS--cleanup-and-refactor-rich-macos-widgets-extract-primitives-normalize-state-reduce-duplication/reference/01-investigation-diary.md — Included in uploaded bundle
 - /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/ttmp/2026/03/02/OS-08-CLEANUP-RICH-WIDGETS--cleanup-and-refactor-rich-macos-widgets-extract-primitives-normalize-state-reduce-duplication/tasks.md — Included in uploaded bundle
 - /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/ttmp/2026/03/02/OS-08-CLEANUP-RICH-WIDGETS--cleanup-and-refactor-rich-macos-widgets-extract-primitives-normalize-state-reduce-duplication/changelog.md — Included in uploaded bundle
+
+
+## 2026-03-03
+
+Phase A Task 6 complete (commit e24f3f4f72f82f2a3d4ef7af843ac0648ecfc49b): removed all remaining dead `RICH_PARTS` constants and matching legacy selectors across rich widgets (`dead_keys=0` in audit).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/parts.ts — Full dead-key sweep (605 remaining keys, 0 dead)
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/calculator.css — Removed dead toolbar/status/palette selector group
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/calendar.css — Removed dead toolbar/status/palette selector group
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/chat-browser.css — Removed dead toolbar/status/empty-state selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/deep-research.css — Removed dead depth-option/empty-state selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/game-finder.css — Removed dead sort/progress/overlay/status selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/logic-analyzer.css — Removed dead slider/toolbar/separator selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/music-player.css — Removed dead toolbar/empty-state/status selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/node-editor.css — Removed dead toolbar/status selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/oscilloscope.css — Removed dead slider/toolbar/separator selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/repl.css — Removed dead status selector
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/steam-launcher.css — Removed dead toolbar/empty-state/launch-overlay/status selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/stream-launcher.css — Removed dead sort/search/empty/separator/status selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/system-modeler.css — Removed dead toolbar/separator/progress/status/dialog-overlay selectors
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/theme/youtube-retro.css — Removed dead empty-state/status selectors

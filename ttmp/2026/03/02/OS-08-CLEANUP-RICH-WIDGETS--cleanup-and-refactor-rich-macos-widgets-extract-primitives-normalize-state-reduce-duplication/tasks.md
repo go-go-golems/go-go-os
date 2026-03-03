@@ -68,3 +68,4 @@
 - [x] Task 3: Remove dead LogViewer toolbar/status part constants and legacy CSS selectors
 - [x] Task 4: Remove dead MacWrite toolbar/separator/status part constants and legacy CSS selectors
 - [x] Task 5: Remove dead Kanban toolbar/separator/modal-overlay/status part constants and legacy CSS selectors
+- [x] Task 6: Complete remaining dead-part + legacy-selector sweep across rich widgets (dead key count → 0)

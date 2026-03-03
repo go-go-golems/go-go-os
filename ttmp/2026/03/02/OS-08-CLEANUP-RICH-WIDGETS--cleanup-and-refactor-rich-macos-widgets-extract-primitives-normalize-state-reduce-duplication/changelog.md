@@ -55,3 +55,12 @@ Phase A Task 1 complete (commit 6c766dad9bb19cb31c96984ce6da1b59e9a8bddc): added
 - /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/launcher/richWidgetsLauncherState.test.ts — Reducer test coverage
 - /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/launcher/richWidgetsLauncherState.ts — New launcher reducer and actions
 
+
+## 2026-03-02
+
+Phase A Task 2 complete (commit 0a57c34b118824e70d02c8d3db90c54b0d3f2b9d): added Redux-seeded Storybook desktop scenarios for rich widgets (SeedLogAndMusicWindows, SeedInstrumentCluster) using pre-render store seeding.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-macos-rich-widgets/go-go-os-frontend/packages/rich-widgets/src/launcher/RichWidgetsDesktop.stories.tsx — Redux-seeded scenario support and new stories
+

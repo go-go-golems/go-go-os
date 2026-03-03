@@ -13,7 +13,9 @@ Owners: []
 RelatedFiles:
     - Path: packages/rich-widgets/src/index.ts:Main barrel export for all widgets
     - Path: packages/rich-widgets/src/launcher/RichWidgetsDesktop.stories.tsx
-      Note: Storybook run and Redux coverage evidence
+      Note: |-
+        Storybook run and Redux coverage evidence
+        Task 2 Redux-seeded Storybook scenarios (commit 0a57c34b118824e70d02c8d3db90c54b0d3f2b9d)
     - Path: packages/rich-widgets/src/launcher/modules.tsx
       Note: Task 1 wiring across module launch paths (commit 6c766dad9bb19cb31c96984ce6da1b59e9a8bddc)
     - Path: packages/rich-widgets/src/launcher/richWidgetsLauncherState.test.ts
@@ -34,6 +36,7 @@ LastUpdated: 2026-03-02T23:30:00-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -412,3 +415,72 @@ I implemented this as a package-level launcher slice that tracks launch stats by
   - `npm run test -w packages/rich-widgets`
   - `npm run typecheck -w packages/rich-widgets` (known workspace failures)
   - `git clean -fd packages/engine/src` (cleanup of generated artifacts from failed typecheck)
+
+## Step 6: Task 2 implementation — Redux-seeded Storybook desktop scenarios (2026-03-03)
+
+I continued with the next scoped task from the same implementation sequence and kept the commit surface tight. This step targeted Storybook simulation depth: moving from only startup-window scenarios to explicit Redux-seeded window state scenarios for rich widgets.
+
+The change is intentionally story-only and non-runtime, so it improves test/debug ergonomics without changing production launcher behavior.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Continue task-by-task implementation with a dedicated commit and diary checkpoint for Storybook Redux simulation improvements.
+
+**Inferred user intent:** Keep momentum with small, auditable increments and frequent visibility in the diary.
+
+**Commit (code):** `0a57c34b118824e70d02c8d3db90c54b0d3f2b9d` — "feat(storybook): add redux-seeded rich-widget desktop scenarios"
+
+### What I did
+- Updated:
+  - `packages/rich-widgets/src/launcher/RichWidgetsDesktop.stories.tsx`
+- Added seeded-store helpers:
+  - `SeedStore` type
+  - `seedWindows(widgetIds)` helper that dispatches `openWindow(...)` into the Redux store before render.
+- Added two new Redux-seeded scenarios:
+  - `SeedLogAndMusicWindows`
+  - `SeedInstrumentCluster`
+- Retained existing startup-widget stories (`StartWithLogViewer`, `StartWithMusicPlayer`, `StartWithSteamLauncher`) for compatibility.
+- Validated:
+  - `npm run storybook:check` (pass)
+  - `npm run test -w packages/rich-widgets` (pass)
+
+### Why
+- This directly addresses the gap identified in the independent review: rich-widget Storybook had very limited Redux-backed state simulation.
+- Seeding store state with open windows gives deterministic “already-running desktop” scenarios that are closer to real runtime snapshots.
+
+### What worked
+- Storybook taxonomy checks remained green after adding scenarios.
+- The seeded approach fit the existing story architecture cleanly.
+- No runtime package code changed; risk stayed low.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Pre-seeding the store is a lightweight way to model multi-window desktop states without introducing heavy harness plumbing.
+- This pattern is reusable for additional rich-widget scenarios (error-state layouts, multi-window stress snapshots, etc.).
+
+### What was tricky to build
+- The main subtlety was making seeding deterministic while preserving story isolation.
+- Using `useMemo` store construction + seed callback per story render keeps each scenario isolated and repeatable.
+
+### What warrants a second pair of eyes
+- Whether we should extract the seeding helper into a shared `storyHelpers` module now or wait until a second story file needs it.
+- Whether seeded stories should use deterministic window coordinates instead of randomized `buildWindowPayload` offsets for screenshot stability.
+
+### What should be done in the future
+- Next incremental task: extract shared Storybook helper(s) if more rich-widget stories start using seeded Redux state.
+
+### Code review instructions
+- Start with:
+  - `packages/rich-widgets/src/launcher/RichWidgetsDesktop.stories.tsx`
+- Validate with:
+  - `npm run storybook:check`
+  - `npm run test -w packages/rich-widgets`
+
+### Technical details
+- Key commands:
+  - `npm run storybook:check`
+  - `npm run test -w packages/rich-widgets`

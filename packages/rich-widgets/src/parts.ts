@@ -28,6 +28,9 @@ export const RICH_PARTS = {
   commandPaletteItem: 'command-palette-item',
   commandPaletteFooter: 'command-palette-footer',
   buttonGroup: 'button-group',
+  rwLauncher: 'rw-launcher',
+  rwLauncherHeader: 'rw-launcher-header',
+  rwLauncherHint: 'rw-launcher-hint',
 
   // Sparkline
   sparkline: 'sparkline',

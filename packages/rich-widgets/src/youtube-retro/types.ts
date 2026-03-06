@@ -34,6 +34,11 @@ export interface YtCategory {
   icon: string;
 }
 
+export interface YouTubeRetroProps {
+  videos?: YtVideo[];
+  height?: number | string;
+}
+
 export type YtView = 'home' | 'watch';
 
 export const CATEGORIES: YtCategory[] = [

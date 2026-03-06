@@ -1,3 +1,4 @@
+import { combineReducers } from '@reduxjs/toolkit';
 import type { LaunchableAppModule } from '@hypercard/desktop-os';
 import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import type { ReactNode } from 'react';
@@ -5,27 +6,122 @@ import {
   richWidgetsLauncherActions,
   richWidgetsLauncherReducer,
 } from './richWidgetsLauncherState';
+import {
+  LOG_VIEWER_STATE_KEY,
+  logViewerReducer,
+} from '../log-viewer/logViewerState';
 
 import { LogViewer } from '../log-viewer/LogViewer';
 import { ChartView } from '../chart-view/ChartView';
+import {
+  CHART_VIEW_STATE_KEY,
+  chartViewReducer,
+} from '../chart-view/chartViewState';
 import { MacWrite } from '../mac-write/MacWrite';
+import {
+  MAC_WRITE_STATE_KEY,
+  macWriteReducer,
+} from '../mac-write/macWriteState';
 import { KanbanBoard } from '../kanban/KanbanBoard';
+import {
+  KANBAN_STATE_KEY,
+  kanbanReducer,
+} from '../kanban/kanbanState';
 import { MacRepl } from '../repl/MacRepl';
+import {
+  MAC_REPL_STATE_KEY,
+  macReplReducer,
+} from '../repl/replState';
 import { NodeEditor } from '../node-editor/NodeEditor';
+import {
+  NODE_EDITOR_STATE_KEY,
+  nodeEditorReducer,
+} from '../node-editor/nodeEditorState';
 import { Oscilloscope } from '../oscilloscope/Oscilloscope';
+import {
+  OSCILLOSCOPE_STATE_KEY,
+  oscilloscopeReducer,
+} from '../oscilloscope/oscilloscopeState';
 import { LogicAnalyzer } from '../logic-analyzer/LogicAnalyzer';
+import {
+  LOGIC_ANALYZER_STATE_KEY,
+  logicAnalyzerReducer,
+} from '../logic-analyzer/logicAnalyzerState';
 import { MacCalendar } from '../calendar/MacCalendar';
+import {
+  MAC_CALENDAR_STATE_KEY,
+  macCalendarReducer,
+} from '../calendar/macCalendarState';
+import { MacSlides } from '../mac-slides/MacSlides';
+import {
+  MAC_SLIDES_STATE_KEY,
+  macSlidesReducer,
+} from '../mac-slides/macSlidesState';
 import { GraphNavigator } from '../graph-navigator/GraphNavigator';
+import {
+  GRAPH_NAVIGATOR_STATE_KEY,
+  graphNavigatorReducer,
+} from '../graph-navigator/graphNavigatorState';
 import { MacCalc } from '../calculator/MacCalc';
+import {
+  MAC_CALC_STATE_KEY,
+  macCalcReducer,
+} from '../calculator/macCalcState';
 import { DeepResearch } from '../deep-research/DeepResearch';
+import {
+  DEEP_RESEARCH_STATE_KEY,
+  deepResearchReducer,
+} from '../deep-research/deepResearchState';
 import { GameFinder } from '../game-finder/GameFinder';
+import {
+  GAME_FINDER_STATE_KEY,
+  gameFinderReducer,
+} from '../game-finder/gameFinderState';
 import { RetroMusicPlayer } from '../music-player/RetroMusicPlayer';
+import {
+  MUSIC_PLAYER_STATE_KEY,
+  musicPlayerReducer,
+} from '../music-player/musicPlayerState';
 import { StreamLauncher } from '../stream-launcher/StreamLauncher';
+import {
+  STREAM_LAUNCHER_STATE_KEY,
+  streamLauncherReducer,
+} from '../stream-launcher/streamLauncherState';
 import { SteamLauncher } from '../steam-launcher/SteamLauncher';
+import {
+  STEAM_LAUNCHER_STATE_KEY,
+  steamLauncherReducer,
+} from '../steam-launcher/steamLauncherState';
 import { YouTubeRetro } from '../youtube-retro/YouTubeRetro';
+import {
+  YOUTUBE_RETRO_STATE_KEY,
+  youTubeRetroReducer,
+} from '../youtube-retro/youTubeRetroState';
 import { ChatBrowser } from '../chat-browser/ChatBrowser';
+import {
+  CHAT_BROWSER_STATE_KEY,
+  chatBrowserReducer,
+} from '../chat-browser/chatBrowserState';
 import { SystemModeler } from '../system-modeler/SystemModeler';
+import {
+  SYSTEM_MODELER_STATE_KEY,
+  systemModelerReducer,
+} from '../system-modeler/systemModelerState';
 import { ControlRoom } from '../control-room/ControlRoom';
+import {
+  CONTROL_ROOM_STATE_KEY,
+  controlRoomReducer,
+} from '../control-room/controlRoomState';
+import { MermaidEditor } from '../mermaid-editor/MermaidEditor';
+import {
+  MERMAID_EDITOR_STATE_KEY,
+  mermaidEditorReducer,
+} from '../mermaid-editor/mermaidEditorState';
+import { MacBrowser } from '../mac-browser/MacBrowser';
+import {
+  MAC_BROWSER_STATE_KEY,
+  macBrowserReducer,
+} from '../mac-browser/macBrowserState';
 
 type LaunchReason = 'icon' | 'menu' | 'command' | 'startup';
 
@@ -83,105 +179,255 @@ export const logViewerModule: LaunchableAppModule = {
     () => <LogViewer />,
   ),
   state: {
-    stateKey: 'app_rich_widgets',
-    reducer: richWidgetsLauncherReducer,
+    stateKey: LOG_VIEWER_STATE_KEY,
+    reducer: combineReducers({
+      launcher: richWidgetsLauncherReducer,
+      viewer: logViewerReducer,
+    }),
   },
 };
 
-export const chartViewModule = widget(
-  'chart-view', 'Chart View', '\uD83D\uDCC8', 101, 800, 560,
-  () => <ChartView />,
-);
+export const chartViewModule: LaunchableAppModule = {
+  ...widget(
+    'chart-view', 'Chart View', '\uD83D\uDCC8', 101, 800, 560,
+    () => <ChartView />,
+  ),
+  state: {
+    stateKey: CHART_VIEW_STATE_KEY,
+    reducer: chartViewReducer,
+  },
+};
 
-export const macWriteModule = widget(
-  'mac-write', 'MacWrite', '\u270D\uFE0F', 102, 800, 620,
-  () => <MacWrite />,
-);
+export const macWriteModule: LaunchableAppModule = {
+  ...widget(
+    'mac-write', 'MacWrite', '\u270D\uFE0F', 102, 800, 620,
+    () => <MacWrite />,
+  ),
+  state: {
+    stateKey: MAC_WRITE_STATE_KEY,
+    reducer: macWriteReducer,
+  },
+};
 
-export const kanbanBoardModule = widget(
-  'kanban-board', 'Kanban Board', '\uD83D\uDCCB', 103, 960, 640,
-  () => <KanbanBoard />,
-);
+export const kanbanBoardModule: LaunchableAppModule = {
+  ...widget(
+    'kanban-board', 'Kanban Board', '\uD83D\uDCCB', 103, 960, 640,
+    () => <KanbanBoard />,
+  ),
+  state: {
+    stateKey: KANBAN_STATE_KEY,
+    reducer: kanbanReducer,
+  },
+};
 
-export const macReplModule = widget(
-  'mac-repl', 'MacRepl', '\uD83D\uDCBB', 104, 720, 480,
-  () => <MacRepl />,
-);
+export const macReplModule: LaunchableAppModule = {
+  ...widget(
+    'mac-repl', 'MacRepl', '\uD83D\uDCBB', 104, 720, 480,
+    () => <MacRepl />,
+  ),
+  state: {
+    stateKey: MAC_REPL_STATE_KEY,
+    reducer: macReplReducer,
+  },
+};
 
-export const nodeEditorModule = widget(
-  'node-editor', 'Node Editor', '\uD83D\uDD17', 105, 900, 600,
-  () => <NodeEditor />,
-);
+export const nodeEditorModule: LaunchableAppModule = {
+  ...widget(
+    'node-editor', 'Node Editor', '\uD83D\uDD17', 105, 900, 600,
+    () => <NodeEditor />,
+  ),
+  state: {
+    stateKey: NODE_EDITOR_STATE_KEY,
+    reducer: nodeEditorReducer,
+  },
+};
 
-export const oscilloscopeModule = widget(
-  'oscilloscope', 'Oscilloscope', '\uD83D\uDCDF', 106, 800, 560,
-  () => <Oscilloscope />,
-);
+export const oscilloscopeModule: LaunchableAppModule = {
+  ...widget(
+    'oscilloscope', 'Oscilloscope', '\uD83D\uDCDF', 106, 800, 560,
+    () => <Oscilloscope />,
+  ),
+  state: {
+    stateKey: OSCILLOSCOPE_STATE_KEY,
+    reducer: oscilloscopeReducer,
+  },
+};
 
-export const logicAnalyzerModule = widget(
-  'logic-analyzer', 'Logic Analyzer', '\uD83D\uDD0C', 107, 900, 560,
-  () => <LogicAnalyzer />,
-);
+export const logicAnalyzerModule: LaunchableAppModule = {
+  ...widget(
+    'logic-analyzer', 'Logic Analyzer', '\uD83D\uDD0C', 107, 900, 560,
+    () => <LogicAnalyzer />,
+  ),
+  state: {
+    stateKey: LOGIC_ANALYZER_STATE_KEY,
+    reducer: logicAnalyzerReducer,
+  },
+};
 
-export const macCalendarModule = widget(
-  'mac-calendar', 'Calendar', '\uD83D\uDCC5', 108, 840, 600,
-  () => <MacCalendar />,
-);
+export const macCalendarModule: LaunchableAppModule = {
+  ...widget(
+    'mac-calendar', 'Calendar', '\uD83D\uDCC5', 108, 840, 600,
+    () => <MacCalendar />,
+  ),
+  state: {
+    stateKey: MAC_CALENDAR_STATE_KEY,
+    reducer: macCalendarReducer,
+  },
+};
 
-export const graphNavigatorModule = widget(
-  'graph-navigator', 'Graph Navigator', '\uD83C\uDF10', 109, 900, 640,
-  () => <GraphNavigator />,
-);
+export const macSlidesModule: LaunchableAppModule = {
+  ...widget(
+    'mac-slides', 'MacSlides', '\uD83D\uDDBC\uFE0F', 120, 980, 680,
+    () => <MacSlides fileName="Launcher Deck" />,
+  ),
+  state: {
+    stateKey: MAC_SLIDES_STATE_KEY,
+    reducer: macSlidesReducer,
+  },
+};
 
-export const macCalcModule = widget(
-  'mac-calc', 'MacCalc', '\uD83E\uDDEE', 110, 880, 600,
-  () => <MacCalc />,
-);
+export const graphNavigatorModule: LaunchableAppModule = {
+  ...widget(
+    'graph-navigator', 'Graph Navigator', '\uD83C\uDF10', 109, 900, 640,
+    () => <GraphNavigator />,
+  ),
+  state: {
+    stateKey: GRAPH_NAVIGATOR_STATE_KEY,
+    reducer: graphNavigatorReducer,
+  },
+};
 
-export const deepResearchModule = widget(
-  'deep-research', 'Deep Research', '\uD83D\uDD0D', 111, 860, 620,
-  () => <DeepResearch />,
-);
+export const macCalcModule: LaunchableAppModule = {
+  ...widget(
+    'mac-calc', 'MacCalc', '\uD83E\uDDEE', 110, 880, 600,
+    () => <MacCalc />,
+  ),
+  state: {
+    stateKey: MAC_CALC_STATE_KEY,
+    reducer: macCalcReducer,
+  },
+};
 
-export const gameFinderModule = widget(
-  'game-finder', 'Game Finder', '\uD83C\uDFAE', 112, 900, 640,
-  () => <GameFinder />,
-);
+export const deepResearchModule: LaunchableAppModule = {
+  ...widget(
+    'deep-research', 'Deep Research', '\uD83D\uDD0D', 111, 860, 620,
+    () => <DeepResearch />,
+  ),
+  state: {
+    stateKey: DEEP_RESEARCH_STATE_KEY,
+    reducer: deepResearchReducer,
+  },
+};
 
-export const retroMusicPlayerModule = widget(
-  'retro-music-player', 'Music Player', '\uD83C\uDFB5', 113, 880, 600,
-  () => <RetroMusicPlayer />,
-);
+export const gameFinderModule: LaunchableAppModule = {
+  ...widget(
+    'game-finder', 'Game Finder', '\uD83C\uDFAE', 112, 900, 640,
+    () => <GameFinder />,
+  ),
+  state: {
+    stateKey: GAME_FINDER_STATE_KEY,
+    reducer: gameFinderReducer,
+  },
+};
 
-export const streamLauncherModule = widget(
-  'stream-launcher', 'Streams', '\uD83D\uDCFA', 114, 900, 640,
-  () => <StreamLauncher />,
-);
+export const retroMusicPlayerModule: LaunchableAppModule = {
+  ...widget(
+    'retro-music-player', 'Music Player', '\uD83C\uDFB5', 113, 880, 600,
+    () => <RetroMusicPlayer />,
+  ),
+  state: {
+    stateKey: MUSIC_PLAYER_STATE_KEY,
+    reducer: musicPlayerReducer,
+  },
+};
 
-export const steamLauncherModule = widget(
-  'steam-launcher', 'Game Library', '\uD83D\uDD79\uFE0F', 115, 960, 680,
-  () => <SteamLauncher />,
-);
+export const streamLauncherModule: LaunchableAppModule = {
+  ...widget(
+    'stream-launcher', 'Streams', '\uD83D\uDCFA', 114, 900, 640,
+    () => <StreamLauncher />,
+  ),
+  state: {
+    stateKey: STREAM_LAUNCHER_STATE_KEY,
+    reducer: streamLauncherReducer,
+  },
+};
 
-export const youtubeRetroModule = widget(
-  'youtube-retro', 'RetroTube', '\uD83C\uDFAC', 116, 960, 680,
-  () => <YouTubeRetro />,
-);
+export const steamLauncherModule: LaunchableAppModule = {
+  ...widget(
+    'steam-launcher', 'Game Library', '\uD83D\uDD79\uFE0F', 115, 960, 680,
+    () => <SteamLauncher />,
+  ),
+  state: {
+    stateKey: STEAM_LAUNCHER_STATE_KEY,
+    reducer: steamLauncherReducer,
+  },
+};
 
-export const chatBrowserModule = widget(
-  'chat-browser', 'Chat Browser', '\uD83D\uDDC4\uFE0F', 117, 900, 600,
-  () => <ChatBrowser />,
-);
+export const youtubeRetroModule: LaunchableAppModule = {
+  ...widget(
+    'youtube-retro', 'RetroTube', '\uD83C\uDFAC', 116, 960, 680,
+    () => <YouTubeRetro />,
+  ),
+  state: {
+    stateKey: YOUTUBE_RETRO_STATE_KEY,
+    reducer: youTubeRetroReducer,
+  },
+};
 
-export const systemModelerModule = widget(
-  'system-modeler', 'SystemModeler', '\uD83D\uDDA5\uFE0F', 118, 960, 640,
-  () => <SystemModeler />,
-);
+export const chatBrowserModule: LaunchableAppModule = {
+  ...widget(
+    'chat-browser', 'Chat Browser', '\uD83D\uDDC4\uFE0F', 117, 900, 600,
+    () => <ChatBrowser />,
+  ),
+  state: {
+    stateKey: CHAT_BROWSER_STATE_KEY,
+    reducer: chatBrowserReducer,
+  },
+};
 
-export const controlRoomModule = widget(
-  'control-room', 'Control Room', '\uD83C\uDFDB\uFE0F', 119, 960, 700,
-  () => <ControlRoom />,
-);
+export const systemModelerModule: LaunchableAppModule = {
+  ...widget(
+    'system-modeler', 'SystemModeler', '\uD83D\uDDA5\uFE0F', 118, 960, 640,
+    () => <SystemModeler />,
+  ),
+  state: {
+    stateKey: SYSTEM_MODELER_STATE_KEY,
+    reducer: systemModelerReducer,
+  },
+};
+
+export const controlRoomModule: LaunchableAppModule = {
+  ...widget(
+    'control-room', 'Control Room', '\uD83C\uDFDB\uFE0F', 119, 960, 700,
+    () => <ControlRoom />,
+  ),
+  state: {
+    stateKey: CONTROL_ROOM_STATE_KEY,
+    reducer: controlRoomReducer,
+  },
+};
+
+export const mermaidEditorModule: LaunchableAppModule = {
+  ...widget(
+    'mermaid-editor', 'MermaidEditor', '🧭', 121, 980, 680,
+    () => <MermaidEditor />,
+  ),
+  state: {
+    stateKey: MERMAID_EDITOR_STATE_KEY,
+    reducer: mermaidEditorReducer,
+  },
+};
+
+export const macBrowserModule: LaunchableAppModule = {
+  ...widget(
+    'mac-browser', 'MacBrowser', '🌐', 122, 920, 680,
+    () => <MacBrowser />,
+  ),
+  state: {
+    stateKey: MAC_BROWSER_STATE_KEY,
+    reducer: macBrowserReducer,
+  },
+};
 
 // ---------------------------------------------------------------------------
 // All modules as a single array for convenience
@@ -197,6 +443,7 @@ export const RICH_WIDGET_MODULES: readonly LaunchableAppModule[] = [
   oscilloscopeModule,
   logicAnalyzerModule,
   macCalendarModule,
+  macSlidesModule,
   graphNavigatorModule,
   macCalcModule,
   deepResearchModule,
@@ -208,4 +455,6 @@ export const RICH_WIDGET_MODULES: readonly LaunchableAppModule[] = [
   chatBrowserModule,
   systemModelerModule,
   controlRoomModule,
+  mermaidEditorModule,
+  macBrowserModule,
 ];

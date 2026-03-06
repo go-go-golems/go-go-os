@@ -437,6 +437,59 @@ remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-i
   - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT`
   - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task4`
 
+## 2026-03-06 — Task 9 (`StreamLauncher`)
+
+### What changed
+
+1. Added `packages/rich-widgets/src/stream-launcher/streamLauncherState.ts` with a dedicated `app_rw_stream_launcher` slice covering:
+   - stream library seed data
+   - category/search/sort state
+   - active player selection
+   - player progress, playing, volume, and chat visibility
+2. Added reducer coverage in `packages/rich-widgets/src/stream-launcher/streamLauncherState.test.ts`.
+3. Reworked `packages/rich-widgets/src/stream-launcher/StreamLauncher.tsx` into the connected/standalone pattern used across OS-17.
+4. Converted `packages/rich-widgets/src/stream-launcher/StreamLauncher.stories.tsx` to Redux-seeded scenarios and added explicit stories for:
+   - player-open playback state
+   - search-filtered browse state
+   - archive-only and empty-library browse states
+5. Wired launcher registration and public exports to the new slice key.
+6. Fixed an existing layout flaw discovered during live Storybook review by switching the widget root from flex-wrap layout to a grid layout so the shared status bar stops compressing the player area.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+- Live Storybook verification on port `6006` ✅ for:
+  - `richwidgets-streamlauncher--redux-player-open`
+- Playwright MCP only showed the existing Storybook/MSW asset warnings after the layout fix; no `StreamLauncher`-specific runtime errors remained.
+
+### Next task
+
+Continue with `SteamLauncher`.
+
+### Publication refresh
+
+```bash
+docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30
+remarquee upload bundle \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/index.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/design/01-redux-rollout-backlog-and-sequencing.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/tasks.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/changelog.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/reference/01-investigation-diary.md \
+  --name "OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task9" \
+  --remote-dir "/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT" \
+  --toc-depth 2 --non-interactive
+remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-interactive
+```
+
 ## 2026-03-06 — Task 8 (`RetroMusicPlayer`)
 
 ### What changed

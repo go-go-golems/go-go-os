@@ -383,6 +383,13 @@ export {
   type SystemModelerProps,
 } from './system-modeler/SystemModeler';
 export {
+  SYSTEM_MODELER_STATE_KEY,
+  createSystemModelerStateSeed,
+  selectSystemModelerState,
+  systemModelerActions,
+  systemModelerReducer,
+} from './system-modeler/systemModelerState';
+export {
   type BlockTypeDef,
   type BlockInstance,
   type Wire,

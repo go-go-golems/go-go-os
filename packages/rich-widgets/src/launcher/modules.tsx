@@ -79,6 +79,10 @@ import {
   chatBrowserReducer,
 } from '../chat-browser/chatBrowserState';
 import { SystemModeler } from '../system-modeler/SystemModeler';
+import {
+  SYSTEM_MODELER_STATE_KEY,
+  systemModelerReducer,
+} from '../system-modeler/systemModelerState';
 import { ControlRoom } from '../control-room/ControlRoom';
 
 type LaunchReason = 'icon' | 'menu' | 'command' | 'startup';
@@ -307,10 +311,16 @@ export const chatBrowserModule: LaunchableAppModule = {
   },
 };
 
-export const systemModelerModule = widget(
-  'system-modeler', 'SystemModeler', '\uD83D\uDDA5\uFE0F', 118, 960, 640,
-  () => <SystemModeler />,
-);
+export const systemModelerModule: LaunchableAppModule = {
+  ...widget(
+    'system-modeler', 'SystemModeler', '\uD83D\uDDA5\uFE0F', 118, 960, 640,
+    () => <SystemModeler />,
+  ),
+  state: {
+    stateKey: SYSTEM_MODELER_STATE_KEY,
+    reducer: systemModelerReducer,
+  },
+};
 
 export const controlRoomModule = widget(
   'control-room', 'Control Room', '\uD83C\uDFDB\uFE0F', 119, 960, 700,

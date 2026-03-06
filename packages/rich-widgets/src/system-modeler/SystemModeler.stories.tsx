@@ -1,7 +1,15 @@
+import { configureStore } from '@reduxjs/toolkit';
 import type { Meta, StoryObj } from '@storybook/react';
-import { SystemModeler } from './SystemModeler';
-import { INITIAL_BLOCKS, INITIAL_WIRES } from './sampleData';
 import { fixedFrameDecorator } from '../storybook/frameDecorators';
+import { SeededStoreProvider, type SeedStore } from '../storybook/seededStore';
+import { INITIAL_BLOCKS, INITIAL_WIRES } from './sampleData';
+import { SystemModeler } from './SystemModeler';
+import {
+  createSystemModelerStateSeed,
+  systemModelerActions,
+  systemModelerReducer,
+  SYSTEM_MODELER_STATE_KEY,
+} from './systemModelerState';
 import '@hypercard/rich-widgets/theme';
 
 const meta: Meta<typeof SystemModeler> = {
@@ -11,6 +19,33 @@ const meta: Meta<typeof SystemModeler> = {
 };
 export default meta;
 type Story = StoryObj<typeof SystemModeler>;
+
+function createSystemModelerStoryStore() {
+  return configureStore({
+    reducer: {
+      [SYSTEM_MODELER_STATE_KEY]: systemModelerReducer,
+    },
+  });
+}
+
+type SystemModelerStoryStore = ReturnType<typeof createSystemModelerStoryStore>;
+type SystemModelerSeedStore = SeedStore<SystemModelerStoryStore>;
+
+function renderWithStore(seedStore: SystemModelerSeedStore) {
+  return () => (
+    <SeededStoreProvider createStore={createSystemModelerStoryStore} seedStore={seedStore}>
+      <SystemModeler />
+    </SeededStoreProvider>
+  );
+}
+
+function renderSeededStory(seed: Parameters<typeof createSystemModelerStateSeed>[0]) {
+  return renderWithStore((store) => {
+    store.dispatch(
+      systemModelerActions.replaceState(createSystemModelerStateSeed(seed)),
+    );
+  });
+}
 
 const denseBlocks = [
   ...INITIAL_BLOCKS,
@@ -28,35 +63,38 @@ const denseWires = [
 ];
 
 export const Default: Story = {
-  args: {},
+  render: renderSeededStory({}),
   decorators: [fixedFrameDecorator(960, 600)],
 };
 
 export const Compact: Story = {
-  args: {},
+  render: renderSeededStory({}),
   decorators: [fixedFrameDecorator(700, 440)],
 };
 
 export const EmptyCanvas: Story = {
-  args: {
+  render: renderSeededStory({
     initialBlocks: [],
     initialWires: [],
-  },
+  }),
   decorators: [fixedFrameDecorator(960, 600)],
 };
 
 export const DenseCanvas: Story = {
-  args: {
+  render: renderSeededStory({
     initialBlocks: denseBlocks,
     initialWires: denseWires,
-  },
+    selectedBlockId: 'b5',
+  }),
   decorators: [fixedFrameDecorator(1100, 680)],
 };
 
 export const SignalChain: Story = {
-  args: {
+  render: renderSeededStory({
     initialBlocks: INITIAL_BLOCKS,
     initialWires: INITIAL_WIRES,
-  },
+    showParams: 'sim',
+    simTime: '20.0',
+  }),
   decorators: [fixedFrameDecorator(960, 600)],
 };

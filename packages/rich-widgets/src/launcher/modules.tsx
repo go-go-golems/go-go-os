@@ -50,6 +50,10 @@ import { StreamLauncher } from '../stream-launcher/StreamLauncher';
 import { SteamLauncher } from '../steam-launcher/SteamLauncher';
 import { YouTubeRetro } from '../youtube-retro/YouTubeRetro';
 import { ChatBrowser } from '../chat-browser/ChatBrowser';
+import {
+  CHAT_BROWSER_STATE_KEY,
+  chatBrowserReducer,
+} from '../chat-browser/chatBrowserState';
 import { SystemModeler } from '../system-modeler/SystemModeler';
 import { ControlRoom } from '../control-room/ControlRoom';
 
@@ -232,10 +236,16 @@ export const youtubeRetroModule = widget(
   () => <YouTubeRetro />,
 );
 
-export const chatBrowserModule = widget(
-  'chat-browser', 'Chat Browser', '\uD83D\uDDC4\uFE0F', 117, 900, 600,
-  () => <ChatBrowser />,
-);
+export const chatBrowserModule: LaunchableAppModule = {
+  ...widget(
+    'chat-browser', 'Chat Browser', '\uD83D\uDDC4\uFE0F', 117, 900, 600,
+    () => <ChatBrowser />,
+  ),
+  state: {
+    stateKey: CHAT_BROWSER_STATE_KEY,
+    reducer: chatBrowserReducer,
+  },
+};
 
 export const systemModelerModule = widget(
   'system-modeler', 'SystemModeler', '\uD83D\uDDA5\uFE0F', 118, 960, 640,

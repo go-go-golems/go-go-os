@@ -325,6 +325,13 @@ export {
   type ChatBrowserProps,
 } from './chat-browser/ChatBrowser';
 export {
+  CHAT_BROWSER_STATE_KEY,
+  chatBrowserActions,
+  chatBrowserReducer,
+  createChatBrowserStateSeed,
+  selectChatBrowserState,
+} from './chat-browser/chatBrowserState';
+export {
   type Conversation as ChatConversation,
   type ChatMessage as ChatBrowserMessage,
   type SearchParams as ChatSearchParams,

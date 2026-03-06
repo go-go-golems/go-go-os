@@ -1,20 +1,31 @@
-import { useState, useMemo } from 'react';
+import { useContext, useEffect, useMemo, useReducer } from 'react';
 import { Btn, Checkbox } from '@hypercard/engine';
+import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { EmptyState } from '../primitives/EmptyState';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import type { Conversation, SearchParams } from './types';
-import { EMPTY_SEARCH } from './types';
 import { CONVERSATIONS, getAllTags, getAllModels } from './sampleData';
+import {
+  CHAT_BROWSER_STATE_KEY,
+  chatBrowserActions,
+  chatBrowserReducer,
+  createChatBrowserStateSeed,
+  selectChatBrowserState,
+  type ChatBrowserAction,
+  type ChatBrowserState,
+} from './chatBrowserState';
 
-// ── Props ────────────────────────────────────────────────────────────
 export interface ChatBrowserProps {
-  /** Conversations to browse */
   conversations?: Conversation[];
 }
 
-// ── Sub-components ───────────────────────────────────────────────────
+function createInitialSeed(props: ChatBrowserProps): ChatBrowserState {
+  return createChatBrowserStateSeed({
+    conversations: props.conversations ?? CONVERSATIONS,
+  });
+}
 
 function ConvoRow({
   convo,
@@ -45,8 +56,8 @@ function ConvoRow({
         <span>{'\uD83D\uDCC5'} {convo.date}</span>
       </div>
       <div data-part={P.cbConvoTags}>
-        {convo.tags.map((t) => (
-          <span key={t} data-part={P.cbTag}>{t}</span>
+        {convo.tags.map((tag) => (
+          <span key={tag} data-part={P.cbTag}>{tag}</span>
         ))}
       </div>
     </div>
@@ -61,10 +72,7 @@ function MessageBubble({
   model: string;
 }) {
   return (
-    <div
-      data-part={P.cbMessage}
-      data-role={message.role}
-    >
+    <div data-part={P.cbMessage} data-role={message.role}>
       <div data-part={P.cbMessageHeader}>
         <span data-part={P.cbMessageIcon}>
           {message.role === 'user' ? '\uD83D\uDC64' : '\uD83E\uDD16'}
@@ -88,7 +96,7 @@ function SearchPanel({
   params: SearchParams;
   allTags: string[];
   allModels: string[];
-  onChange: (p: SearchParams) => void;
+  onChange: (params: SearchParams) => void;
   onSearch: () => void;
   onClear: () => void;
   onClose: () => void;
@@ -97,7 +105,7 @@ function SearchPanel({
     onChange({
       ...params,
       tags: params.tags.includes(tag)
-        ? params.tags.filter((t) => t !== tag)
+        ? params.tags.filter((value) => value !== tag)
         : [...params.tags, tag],
     });
   };
@@ -109,9 +117,9 @@ function SearchPanel({
         <input
           data-part="field-input"
           value={params.text}
-          onChange={(e) => onChange({ ...params, text: e.target.value })}
+          onChange={(event) => onChange({ ...params, text: event.target.value })}
           placeholder="Enter search terms..."
-          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+          onKeyDown={(event) => event.key === 'Enter' && onSearch()}
         />
       </div>
 
@@ -131,16 +139,17 @@ function SearchPanel({
       <div data-part={P.cbSearchSection}>
         <div data-part={P.cbSearchLabel}>Model:</div>
         <div data-part={P.cbModelFilter}>
-          <Btn
-            active={!params.model}
-            onClick={() => onChange({ ...params, model: '' })}
-          >All</Btn>
-          {allModels.map((m) => (
+          <Btn active={!params.model} onClick={() => onChange({ ...params, model: '' })}>
+            All
+          </Btn>
+          {allModels.map((model) => (
             <Btn
-              key={m}
-              active={params.model === m}
-              onClick={() => onChange({ ...params, model: m })}
-            >{m}</Btn>
+              key={model}
+              active={params.model === model}
+              onClick={() => onChange({ ...params, model })}
+            >
+              {model}
+            </Btn>
           ))}
         </div>
       </div>
@@ -148,14 +157,14 @@ function SearchPanel({
       <div data-part={P.cbSearchSection}>
         <div data-part={P.cbSearchLabel}>Tags:</div>
         <div data-part={P.cbTagFilter}>
-          {allTags.map((t) => (
+          {allTags.map((tag) => (
             <span
-              key={t}
+              key={tag}
               data-part={P.cbFilterTag}
-              data-active={params.tags.includes(t) || undefined}
-              onClick={() => toggleTag(t)}
+              data-active={params.tags.includes(tag) || undefined}
+              onClick={() => toggleTag(tag)}
             >
-              {t}
+              {tag}
             </span>
           ))}
         </div>
@@ -168,14 +177,14 @@ function SearchPanel({
             data-part="field-input"
             type="date"
             value={params.dateFrom}
-            onChange={(e) => onChange({ ...params, dateFrom: e.target.value })}
+            onChange={(event) => onChange({ ...params, dateFrom: event.target.value })}
           />
           <span>to</span>
           <input
             data-part="field-input"
             type="date"
             value={params.dateTo}
-            onChange={(e) => onChange({ ...params, dateTo: e.target.value })}
+            onChange={(event) => onChange({ ...params, dateTo: event.target.value })}
           />
         </div>
       </div>
@@ -189,119 +198,124 @@ function SearchPanel({
   );
 }
 
-// ── Main Component ───────────────────────────────────────────────────
-export function ChatBrowser({
-  conversations: initialConversations = CONVERSATIONS,
-}: ChatBrowserProps = {}) {
-  const [selectedConvo, setSelectedConvo] = useState<Conversation | null>(null);
-  const [quickFilter, setQuickFilter] = useState('');
-  const [searchParams, setSearchParams] = useState<SearchParams>({ ...EMPTY_SEARCH });
-  const [searchResults, setSearchResults] = useState<Conversation[] | null>(null);
-  const [showSearch, setShowSearch] = useState(false);
+function ChatBrowserFrame({
+  state,
+  dispatch,
+}: {
+  state: ChatBrowserState;
+  dispatch: (action: ChatBrowserAction) => void;
+}) {
+  const { conversations, selectedConversationId, quickFilter, searchParams, searchResultIds, showSearch } = state;
+  const selectedConvo = conversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
 
-  const allTags = useMemo(() => getAllTags(initialConversations), [initialConversations]);
-  const allModels = useMemo(() => getAllModels(initialConversations), [initialConversations]);
+  const allTags = useMemo(() => getAllTags(conversations), [conversations]);
+  const allModels = useMemo(() => getAllModels(conversations), [conversations]);
 
   const displayedConvos = useMemo(() => {
-    let list = searchResults ?? initialConversations;
+    let list = searchResultIds
+      ? conversations.filter((conversation) => searchResultIds.includes(conversation.id))
+      : conversations;
+
     if (quickFilter) {
-      const q = quickFilter.toLowerCase();
+      const query = quickFilter.toLowerCase();
       list = list.filter(
-        (c) =>
-          c.title.toLowerCase().includes(q) ||
-          c.tags.some((t) => t.toLowerCase().includes(q)) ||
-          c.model.toLowerCase().includes(q),
+        (conversation) =>
+          conversation.title.toLowerCase().includes(query) ||
+          conversation.tags.some((tag) => tag.toLowerCase().includes(query)) ||
+          conversation.model.toLowerCase().includes(query),
       );
     }
+
     return list;
-  }, [searchResults, quickFilter, initialConversations]);
+  }, [conversations, quickFilter, searchResultIds]);
 
   const runSearch = () => {
     const { text, model, tags, dateFrom, dateTo, inMessages, inTitles } = searchParams;
-    let results = [...initialConversations];
+    let results = [...conversations];
+
     if (text) {
-      const q = text.toLowerCase();
-      results = results.filter((c) => {
-        const titleMatch = inTitles && c.title.toLowerCase().includes(q);
-        const msgMatch = inMessages && c.messages.some((m) => m.text.toLowerCase().includes(q));
+      const query = text.toLowerCase();
+      results = results.filter((conversation) => {
+        const titleMatch = inTitles && conversation.title.toLowerCase().includes(query);
+        const msgMatch =
+          inMessages &&
+          conversation.messages.some((message) => message.text.toLowerCase().includes(query));
         return titleMatch || msgMatch;
       });
     }
-    if (model) results = results.filter((c) => c.model === model);
-    if (tags.length) results = results.filter((c) => tags.some((t) => c.tags.includes(t)));
-    if (dateFrom) results = results.filter((c) => c.date >= dateFrom);
-    if (dateTo) results = results.filter((c) => c.date <= dateTo);
-    setSearchResults(results);
-    setShowSearch(false);
+
+    if (model) results = results.filter((conversation) => conversation.model === model);
+    if (tags.length) results = results.filter((conversation) => tags.some((tag) => conversation.tags.includes(tag)));
+    if (dateFrom) results = results.filter((conversation) => conversation.date >= dateFrom);
+    if (dateTo) results = results.filter((conversation) => conversation.date <= dateTo);
+
+    dispatch(chatBrowserActions.setSearchResultIds(results.map((conversation) => conversation.id)));
+    dispatch(chatBrowserActions.setShowSearch(false));
   };
 
   const clearSearch = () => {
-    setSearchResults(null);
-    setSearchParams({ ...EMPTY_SEARCH });
+    dispatch(chatBrowserActions.clearSearch());
   };
 
   return (
     <div data-part={P.chatBrowser}>
-      {/* Sidebar: conversation list */}
       <div data-part={P.cbSidebar}>
-        {/* Toolbar */}
         <WidgetToolbar>
           <input
             data-part="field-input"
             placeholder="Quick filter..."
             value={quickFilter}
-            onChange={(e) => setQuickFilter(e.target.value)}
+            onChange={(event) => dispatch(chatBrowserActions.setQuickFilter(event.target.value))}
             style={{ flex: 1 }}
           />
-          <Btn onClick={() => setShowSearch(!showSearch)}>{'\uD83D\uDD0D'}</Btn>
-          {searchResults && (
-            <Btn onClick={clearSearch}>{'\u2715'}</Btn>
-          )}
+          <Btn onClick={() => dispatch(chatBrowserActions.setShowSearch(!showSearch))}>
+            {'\uD83D\uDD0D'}
+          </Btn>
+          {searchResultIds && <Btn onClick={clearSearch}>{'\u2715'}</Btn>}
         </WidgetToolbar>
 
-        {/* List */}
         <div data-part={P.cbConvoList}>
-          {displayedConvos.length === 0 && (
-            <EmptyState message="No conversations found." />
-          )}
-          {displayedConvos.map((c, i) => (
+          {displayedConvos.length === 0 && <EmptyState message="No conversations found." />}
+          {displayedConvos.map((conversation, index) => (
             <ConvoRow
-              key={c.id}
-              convo={c}
-              selected={selectedConvo?.id === c.id}
-              even={i % 2 === 0}
-              onSelect={() => setSelectedConvo(c)}
+              key={conversation.id}
+              convo={conversation}
+              selected={selectedConvo?.id === conversation.id}
+              even={index % 2 === 0}
+              onSelect={() => dispatch(chatBrowserActions.setSelectedConversationId(conversation.id))}
             />
           ))}
         </div>
 
-        {/* Status */}
         <WidgetStatusBar>
           <span>{displayedConvos.length} conversations</span>
-          <span>{searchResults ? '\uD83D\uDD0D Filtered' : '\uD83D\uDCC2 All'}</span>
+          <span>{searchResultIds ? '\uD83D\uDD0D Filtered' : '\uD83D\uDCC2 All'}</span>
         </WidgetStatusBar>
       </div>
 
-      {/* Main: viewer or search */}
       <div data-part={P.cbMain}>
         {showSearch ? (
           <SearchPanel
             params={searchParams}
             allTags={allTags}
             allModels={allModels}
-            onChange={setSearchParams}
+            onChange={(params) => dispatch(chatBrowserActions.setSearchParams(params))}
             onSearch={runSearch}
             onClear={clearSearch}
-            onClose={() => setShowSearch(false)}
+            onClose={() => dispatch(chatBrowserActions.setShowSearch(false))}
           />
         ) : !selectedConvo ? (
           <EmptyState
             icon={'\uD83D\uDDC4\uFE0F'}
-            message={<><div style={{ fontWeight: 'bold', marginBottom: 8 }}>No Conversation Selected</div><div>Select a conversation from the list to view it here.</div></>}
+            message={
+              <>
+                <div style={{ fontWeight: 'bold', marginBottom: 8 }}>No Conversation Selected</div>
+                <div>Select a conversation from the list to view it here.</div>
+              </>
+            }
           />
         ) : (
           <>
-            {/* Conversation header */}
             <div data-part={P.cbViewerHeader}>
               <div data-part={P.cbViewerTitle}>{selectedConvo.title}</div>
               <div data-part={P.cbViewerMeta}>
@@ -310,16 +324,15 @@ export function ChatBrowser({
                 <span>{'\uD83D\uDCAC'} {selectedConvo.messages.length} messages</span>
               </div>
               <div data-part={P.cbViewerTags}>
-                {selectedConvo.tags.map((t) => (
-                  <span key={t} data-part={P.cbTag}>{t}</span>
+                {selectedConvo.tags.map((tag) => (
+                  <span key={tag} data-part={P.cbTag}>{tag}</span>
                 ))}
               </div>
             </div>
 
-            {/* Messages */}
             <div data-part={P.cbMessages}>
-              {selectedConvo.messages.map((m, i) => (
-                <MessageBubble key={i} message={m} model={selectedConvo.model} />
+              {selectedConvo.messages.map((message, index) => (
+                <MessageBubble key={index} message={message} model={selectedConvo.model} />
               ))}
             </div>
           </>
@@ -327,4 +340,39 @@ export function ChatBrowser({
       </div>
     </div>
   );
+}
+
+function StandaloneChatBrowser(props: ChatBrowserProps) {
+  const [state, dispatch] = useReducer(chatBrowserReducer, createInitialSeed(props));
+
+  return <ChatBrowserFrame state={state} dispatch={dispatch} />;
+}
+
+function ConnectedChatBrowser(props: ChatBrowserProps) {
+  const reduxDispatch = useDispatch();
+  const state = useSelector(selectChatBrowserState);
+
+  useEffect(() => {
+    reduxDispatch(chatBrowserActions.initializeIfNeeded(createInitialSeed(props)));
+  }, [props.conversations, reduxDispatch]);
+
+  const effectiveState = state.initialized ? state : createInitialSeed(props);
+
+  return <ChatBrowserFrame state={effectiveState} dispatch={(action) => reduxDispatch(action)} />;
+}
+
+export function ChatBrowser(props: ChatBrowserProps = {}) {
+  const reduxContext = useContext(ReactReduxContext);
+  const store = reduxContext?.store;
+  const rootState = store?.getState();
+  const hasRegisteredSlice =
+    typeof rootState === 'object' &&
+    rootState !== null &&
+    CHAT_BROWSER_STATE_KEY in (rootState as Record<string, unknown>);
+
+  if (hasRegisteredSlice) {
+    return <ConnectedChatBrowser {...props} />;
+  }
+
+  return <StandaloneChatBrowser {...props} />;
 }

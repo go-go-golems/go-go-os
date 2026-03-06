@@ -217,6 +217,13 @@ export {
   type DeepResearchProps,
 } from './deep-research/DeepResearch';
 export {
+  DEEP_RESEARCH_STATE_KEY,
+  createDeepResearchStateSeed,
+  deepResearchActions,
+  deepResearchReducer,
+  selectDeepResearchState,
+} from './deep-research/deepResearchState';
+export {
   type ResearchStep,
   type DepthLevel,
   DEPTH_LEVELS,

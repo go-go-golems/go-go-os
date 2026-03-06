@@ -1,10 +1,26 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+} from 'react';
 import { Btn, Checkbox, RadioButton } from '@hypercard/engine';
+import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { EmptyState } from '../primitives/EmptyState';
 import type { ResearchStep, DepthLevel } from './types';
 import { DEPTH_LEVELS } from './types';
 import { DEMO_STEPS, generateReport, WEB_ONLY_INDICES, ACADEMIC_INDICES } from './sampleData';
+import {
+  createDeepResearchStateSeed,
+  DEEP_RESEARCH_STATE_KEY,
+  deepResearchActions,
+  deepResearchReducer,
+  selectDeepResearchState,
+  type DeepResearchAction,
+  type DeepResearchState,
+} from './deepResearchState';
 
 // ── Source Card ──────────────────────────────────────────────────────
 function SourceCard({
@@ -56,20 +72,34 @@ function ProgressBar({
 // ── Props ───────────────────────────────────────────────────────────
 export interface DeepResearchProps {
   initialSteps?: ResearchStep[];
+  initialQuery?: string;
 }
 
-// ── Main Component ──────────────────────────────────────────────────
-export function DeepResearch({ initialSteps }: DeepResearchProps) {
-  const [query, setQuery] = useState('');
-  const [isResearching, setIsResearching] = useState(false);
-  const [steps, setSteps] = useState<ResearchStep[]>(
-    initialSteps ?? [],
-  );
-  const [progress, setProgress] = useState(0);
-  const [report, setReport] = useState('');
-  const [depthLevel, setDepthLevel] = useState<DepthLevel>('standard');
-  const [webSearch, setWebSearch] = useState(true);
-  const [academicOnly, setAcademicOnly] = useState(false);
+function createInitialSeed(props: DeepResearchProps) {
+  return createDeepResearchStateSeed({
+    query: props.initialQuery,
+    initialSteps: props.initialSteps,
+  });
+}
+
+function DeepResearchFrame({
+  state,
+  dispatch,
+}: {
+  state: DeepResearchState;
+  dispatch: (action: DeepResearchAction) => void;
+}) {
+  const {
+    query,
+    isResearching,
+    steps,
+    progress,
+    report,
+    depthLevel,
+    webSearch,
+    academicOnly,
+    runRevision,
+  } = state;
   const stepsEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -79,12 +109,15 @@ export function DeepResearch({ initialSteps }: DeepResearchProps) {
 
   useEffect(scrollToBottom, [steps, scrollToBottom]);
 
-  const startResearch = () => {
+  const startResearch = useCallback(() => {
     if (!query.trim() || isResearching) return;
-    setIsResearching(true);
-    setSteps([]);
-    setReport('');
-    setProgress(0);
+    dispatch(deepResearchActions.startResearchRun());
+  }, [dispatch, isResearching, query]);
+
+  useEffect(() => {
+    if (!isResearching || runRevision === 0 || !query.trim()) {
+      return;
+    }
 
     // Filter demo steps based on web search and academic toggles
     const filteredSteps = DEMO_STEPS.filter((_step, idx) => {
@@ -97,17 +130,24 @@ export function DeepResearch({ initialSteps }: DeepResearchProps) {
     timerRef.current = setInterval(() => {
       if (i < filteredSteps.length) {
         const step = filteredSteps[i];
-        setSteps((prev) => [...prev, step]);
-        setProgress(((i + 1) / filteredSteps.length) * 100);
+        dispatch(deepResearchActions.appendStep(step));
+        dispatch(deepResearchActions.setProgress(((i + 1) / filteredSteps.length) * 100));
         if (step.type === 'done') {
           if (timerRef.current) clearInterval(timerRef.current);
-          setIsResearching(false);
-          setReport(generateReport(query, depthLevel, { webSearch, academicOnly }));
+          dispatch(
+            deepResearchActions.finishResearch(
+              generateReport(query, depthLevel, { webSearch, academicOnly }),
+            ),
+          );
         }
         i++;
       }
     }, 900);
-  };
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [academicOnly, depthLevel, dispatch, isResearching, query, runRevision, webSearch]);
 
   useEffect(() => {
     return () => {
@@ -127,7 +167,7 @@ export function DeepResearch({ initialSteps }: DeepResearchProps) {
           <div data-part={P.drLabel}>Research Query:</div>
           <textarea
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => dispatch(deepResearchActions.setQuery(e.target.value))}
             placeholder="What would you like to research?"
             disabled={isResearching}
             data-part={P.drQueryInput}
@@ -145,7 +185,7 @@ export function DeepResearch({ initialSteps }: DeepResearchProps) {
               key={level.value}
               label={`${level.label} (${level.time})`}
               selected={depthLevel === level.value}
-              onChange={() => setDepthLevel(level.value)}
+              onChange={() => dispatch(deepResearchActions.setDepthLevel(level.value))}
               disabled={isResearching}
             />
           ))}
@@ -156,12 +196,12 @@ export function DeepResearch({ initialSteps }: DeepResearchProps) {
           <div data-part={P.drLabel}>Options:</div>
           <Checkbox
             checked={webSearch}
-            onChange={() => setWebSearch((v) => !v)}
+            onChange={() => dispatch(deepResearchActions.setWebSearch(!webSearch))}
             label="Web search"
           />
           <Checkbox
             checked={academicOnly}
-            onChange={() => setAcademicOnly((v) => !v)}
+            onChange={() => dispatch(deepResearchActions.setAcademicOnly(!academicOnly))}
             label="Academic sources only"
           />
         </div>
@@ -287,4 +327,44 @@ export function DeepResearch({ initialSteps }: DeepResearchProps) {
       </div>
     </div>
   );
+}
+
+function StandaloneDeepResearch(props: DeepResearchProps) {
+  const [state, dispatch] = useReducer(deepResearchReducer, createInitialSeed(props));
+
+  return <DeepResearchFrame state={state} dispatch={dispatch} />;
+}
+
+function ConnectedDeepResearch(props: DeepResearchProps) {
+  const reduxDispatch = useDispatch();
+  const state = useSelector(selectDeepResearchState);
+
+  useEffect(() => {
+    reduxDispatch(deepResearchActions.initializeIfNeeded(createInitialSeed(props)));
+  }, [props.initialQuery, props.initialSteps, reduxDispatch]);
+
+  const effectiveState = state.initialized ? state : createInitialSeed(props);
+
+  const dispatch = useCallback((action: DeepResearchAction) => {
+    reduxDispatch(action);
+  }, [reduxDispatch]);
+
+  return <DeepResearchFrame state={effectiveState} dispatch={dispatch} />;
+}
+
+// ── Main Component ──────────────────────────────────────────────────
+export function DeepResearch(props: DeepResearchProps) {
+  const reduxContext = useContext(ReactReduxContext);
+  const store = reduxContext?.store;
+  const rootState = store?.getState();
+  const hasRegisteredSlice =
+    typeof rootState === 'object' &&
+    rootState !== null &&
+    DEEP_RESEARCH_STATE_KEY in (rootState as Record<string, unknown>);
+
+  if (hasRegisteredSlice) {
+    return <ConnectedDeepResearch {...props} />;
+  }
+
+  return <StandaloneDeepResearch {...props} />;
 }

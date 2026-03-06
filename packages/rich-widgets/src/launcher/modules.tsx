@@ -40,6 +40,10 @@ import {
   macCalcReducer,
 } from '../calculator/macCalcState';
 import { DeepResearch } from '../deep-research/DeepResearch';
+import {
+  DEEP_RESEARCH_STATE_KEY,
+  deepResearchReducer,
+} from '../deep-research/deepResearchState';
 import { GameFinder } from '../game-finder/GameFinder';
 import { RetroMusicPlayer } from '../music-player/RetroMusicPlayer';
 import { StreamLauncher } from '../stream-launcher/StreamLauncher';
@@ -192,10 +196,16 @@ export const macCalcModule: LaunchableAppModule = {
   },
 };
 
-export const deepResearchModule = widget(
-  'deep-research', 'Deep Research', '\uD83D\uDD0D', 111, 860, 620,
-  () => <DeepResearch />,
-);
+export const deepResearchModule: LaunchableAppModule = {
+  ...widget(
+    'deep-research', 'Deep Research', '\uD83D\uDD0D', 111, 860, 620,
+    () => <DeepResearch />,
+  ),
+  state: {
+    stateKey: DEEP_RESEARCH_STATE_KEY,
+    reducer: deepResearchReducer,
+  },
+};
 
 export const gameFinderModule = widget(
   'game-finder', 'Game Finder', '\uD83C\uDFAE', 112, 900, 640,

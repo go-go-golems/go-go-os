@@ -19,4 +19,18 @@ describe('macSlides markdown helpers', () => {
     expect(renderBasicMarkdown('# Hello')).toContain('<h1>Hello</h1>');
     expect(createDeck('# One\n\n---\n\n# Two').slides).toHaveLength(2);
   });
+
+  it('renders ordered and unordered lists without placeholder tags', () => {
+    const html = renderBasicMarkdown('- One\n- Two\n\n1. First\n2. Second');
+    expect(html).toContain('<ul><li>One</li><li>Two</li></ul>');
+    expect(html).toContain('<ol><li>First</li><li>Second</li></ol>');
+    expect(html).not.toContain('oli>');
+  });
+
+  it('escapes html and preserves inline formatting inside paragraphs', () => {
+    const html = renderBasicMarkdown('Use **bold** and `code` with <script>.');
+    expect(html).toContain('<strong>bold</strong>');
+    expect(html).toContain('<code>code</code>');
+    expect(html).toContain('&lt;script&gt;');
+  });
 });

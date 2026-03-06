@@ -49,39 +49,88 @@ export function alignClassName(align: SlideAlignment): string {
   return 'slide-content slide-auto';
 }
 
-export function renderBasicMarkdown(src: string): string {
-  let html = src
+function escapeHtml(src: string): string {
+  return src
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
 
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+function renderInlineMarkdown(src: string): string {
+  let html = escapeHtml(src);
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  return html;
+}
 
-  html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-  html = html.replace(/\*(.+?)\*/g, '<i>$1</i>');
-  html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+function renderHeading(line: string): string | null {
+  const match = line.match(/^(#{1,3})\s+(.+)$/);
+  if (!match) {
+    return null;
+  }
 
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+  return `<h${match[1].length}>${renderInlineMarkdown(match[2])}</h${match[1].length}>`;
+}
 
-  html = html.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
-  html = html.replace(/((?:<oli>.*<\/oli>\n?)+)/g, (match) =>
-    `<ol>${match.replace(/oli>/g, 'li>')}</ol>`,
-  );
+export function renderBasicMarkdown(src: string): string {
+  const lines = src.split('\n');
+  const rendered: string[] = [];
 
-  return html
-    .split('\n\n')
-    .map((block) => {
-      const trimmed = block.trim();
-      if (!trimmed) {
-        return '';
+  for (let index = 0; index < lines.length; ) {
+    const currentLine = lines[index]?.trim() ?? '';
+
+    if (!currentLine) {
+      index += 1;
+      continue;
+    }
+
+    const heading = renderHeading(currentLine);
+    if (heading) {
+      rendered.push(heading);
+      index += 1;
+      continue;
+    }
+
+    if (/^- /.test(currentLine)) {
+      const items: string[] = [];
+      while (index < lines.length) {
+        const line = lines[index]?.trim() ?? '';
+        if (!/^- /.test(line)) {
+          break;
+        }
+        items.push(`<li>${renderInlineMarkdown(line.replace(/^- /, ''))}</li>`);
+        index += 1;
       }
-      if (/^<[hulo]/.test(trimmed)) {
-        return trimmed;
+      rendered.push(`<ul>${items.join('')}</ul>`);
+      continue;
+    }
+
+    if (/^\d+\. /.test(currentLine)) {
+      const items: string[] = [];
+      while (index < lines.length) {
+        const line = lines[index]?.trim() ?? '';
+        if (!/^\d+\. /.test(line)) {
+          break;
+        }
+        items.push(`<li>${renderInlineMarkdown(line.replace(/^\d+\. /, ''))}</li>`);
+        index += 1;
       }
-      return `<p>${trimmed.replace(/\n/g, '<br/>')}</p>`;
-    })
-    .join('');
+      rendered.push(`<ol>${items.join('')}</ol>`);
+      continue;
+    }
+
+    const paragraphLines: string[] = [];
+    while (index < lines.length) {
+      const line = lines[index]?.trim() ?? '';
+      if (!line || renderHeading(line) || /^- /.test(line) || /^\d+\. /.test(line)) {
+        break;
+      }
+      paragraphLines.push(renderInlineMarkdown(line));
+      index += 1;
+    }
+    rendered.push(`<p>${paragraphLines.join('<br/>')}</p>`);
+  }
+
+  return rendered.join('');
 }

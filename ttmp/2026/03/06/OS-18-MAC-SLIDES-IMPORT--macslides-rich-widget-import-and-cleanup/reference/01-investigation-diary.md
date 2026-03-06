@@ -101,3 +101,54 @@ npm run test -w packages/rich-widgets
 ### Next task
 
 Task 2: add `RICH_PARTS` entries and build `theme/mac-slides.css`, replacing the import’s inline style object and injected style blocks with repo-native CSS.
+
+## 2026-03-06 — Task 2 parts and CSS contract
+
+### Goal
+
+Define the widget’s parts/CSS contract before the full JSX rebuild so the next implementation step can target stable `data-part` names instead of inventing them during the component rewrite.
+
+### Files changed
+
+- `packages/rich-widgets/src/parts.ts`
+- `packages/rich-widgets/src/theme/mac-slides.css`
+- `packages/rich-widgets/src/theme/index.ts`
+
+### What changed
+
+1. Added a `MacSlides` section to `RICH_PARTS` for the major widget regions:
+   - root/body/sidebar/editor/preview,
+   - slide thumbnail regions,
+   - pane headers/meta,
+   - preview frame/navigation row,
+   - alignment toggle/deck stats,
+   - presentation-mode frame/status.
+2. Added `theme/mac-slides.css` with the initial CSS contract:
+   - base widget layout,
+   - sidebar/thumb layout,
+   - editor/preview pane structure,
+   - presentation-mode overlay/frame,
+   - extracted `.slide-content` typography rules.
+3. Imported the new CSS file from `packages/rich-widgets/src/theme/index.ts`.
+
+### Notes
+
+- This task intentionally defines the target CSS contract before the full widget rebuild.
+- The current scaffold component does not yet consume all of these parts; that happens in Task 3.
+- Remote font imports, desktop textures, and browser-global scrollbar hacks are still absent from the CSS on purpose and will not be reintroduced.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+
+### Next task
+
+Task 3: rebuild the widget layout against the new parts/CSS contract, remove the fake app chrome, and keep only the actual presentation editor functionality.

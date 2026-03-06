@@ -46,7 +46,7 @@ This ticket executes the OS-16 migration plan. The rule for this rollout is:
 - [x] `StreamLauncher`
 - [x] `SteamLauncher`
 - [x] `YouTubeRetro`
-- [ ] `NodeEditor`
+- [x] `NodeEditor`
 - [ ] `SystemModeler`
 
 ### Phase 2 — Partial slices later
@@ -72,4 +72,4 @@ This ticket executes the OS-16 migration plan. The rule for this rollout is:
 4. seed deterministic Storybook states via Redux;
 5. preserve non-Redux standalone usage when the widget is rendered outside launcher/store context.
 
-The next implementation task is `NodeEditor`.
+The next implementation task is `SystemModeler`.

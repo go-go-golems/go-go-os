@@ -723,3 +723,55 @@ remarquee upload bundle \
   --toc-depth 2 --non-interactive
 remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-interactive
 ```
+
+## 2026-03-06 — Task 12 (`NodeEditor`)
+
+### What changed
+
+1. Added `packages/rich-widgets/src/node-editor/nodeEditorState.ts` with a dedicated `app_rw_node_editor` slice covering:
+   - document nodes and connections
+   - selected node state
+   - canvas pan state
+2. Added reducer coverage in `packages/rich-widgets/src/node-editor/nodeEditorState.test.ts`.
+3. Split the widget subcomponents and geometry helper into their own files:
+   - `packages/rich-widgets/src/node-editor/NodeComponent.tsx`
+   - `packages/rich-widgets/src/node-editor/NodeConnectionSvg.tsx`
+   - `packages/rich-widgets/src/node-editor/nodeEditorGeometry.ts`
+4. Reworked `packages/rich-widgets/src/node-editor/NodeEditor.tsx` into the connected/standalone pattern used across OS-17 while keeping drag and temporary connection state local.
+5. Converted `packages/rich-widgets/src/node-editor/NodeEditor.stories.tsx` to Redux-seeded scenarios and added explicit seeded graph-selection and dense-document states.
+6. Wired launcher registration and public exports to the new slice key.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+- Live Storybook verification on port `6006` ✅ for:
+  - `richwidgets-nodeeditor--branching-graph`
+- Playwright MCP only showed the existing Storybook/MSW asset warnings; no `NodeEditor`-specific runtime errors surfaced.
+
+### Next task
+
+Continue with `SystemModeler`.
+
+### Publication refresh
+
+```bash
+docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30
+remarquee upload bundle \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/index.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/design/01-redux-rollout-backlog-and-sequencing.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/tasks.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/changelog.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/reference/01-investigation-diary.md \
+  --name "OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task12" \
+  --remote-dir "/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT" \
+  --toc-depth 2 --non-interactive
+remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-interactive
+```

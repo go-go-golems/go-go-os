@@ -65,6 +65,10 @@ import {
   steamLauncherReducer,
 } from '../steam-launcher/steamLauncherState';
 import { YouTubeRetro } from '../youtube-retro/YouTubeRetro';
+import {
+  YOUTUBE_RETRO_STATE_KEY,
+  youTubeRetroReducer,
+} from '../youtube-retro/youTubeRetroState';
 import { ChatBrowser } from '../chat-browser/ChatBrowser';
 import {
   CHAT_BROWSER_STATE_KEY,
@@ -271,10 +275,16 @@ export const steamLauncherModule: LaunchableAppModule = {
   },
 };
 
-export const youtubeRetroModule = widget(
-  'youtube-retro', 'RetroTube', '\uD83C\uDFAC', 116, 960, 680,
-  () => <YouTubeRetro />,
-);
+export const youtubeRetroModule: LaunchableAppModule = {
+  ...widget(
+    'youtube-retro', 'RetroTube', '\uD83C\uDFAC', 116, 960, 680,
+    () => <YouTubeRetro />,
+  ),
+  state: {
+    stateKey: YOUTUBE_RETRO_STATE_KEY,
+    reducer: youTubeRetroReducer,
+  },
+};
 
 export const chatBrowserModule: LaunchableAppModule = {
   ...widget(

@@ -323,11 +323,14 @@ export {
 } from './steam-launcher/sampleData';
 
 // YouTubeRetro
+export { YouTubeRetro } from './youtube-retro/YouTubeRetro';
 export {
-  YouTubeRetro,
   type YouTubeRetroProps,
-} from './youtube-retro/YouTubeRetro';
-export {
+  YOUTUBE_RETRO_STATE_KEY,
+  createYouTubeRetroStateSeed,
+  selectYouTubeRetroState,
+  youTubeRetroActions,
+  youTubeRetroReducer,
   type YtChannel,
   type YtVideo,
   type YtComment,

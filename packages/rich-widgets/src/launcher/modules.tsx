@@ -22,6 +22,10 @@ import { LogicAnalyzer } from '../logic-analyzer/LogicAnalyzer';
 import { MacCalendar } from '../calendar/MacCalendar';
 import { GraphNavigator } from '../graph-navigator/GraphNavigator';
 import { MacCalc } from '../calculator/MacCalc';
+import {
+  MAC_CALC_STATE_KEY,
+  macCalcReducer,
+} from '../calculator/macCalcState';
 import { DeepResearch } from '../deep-research/DeepResearch';
 import { GameFinder } from '../game-finder/GameFinder';
 import { RetroMusicPlayer } from '../music-player/RetroMusicPlayer';
@@ -141,10 +145,16 @@ export const graphNavigatorModule = widget(
   () => <GraphNavigator />,
 );
 
-export const macCalcModule = widget(
-  'mac-calc', 'MacCalc', '\uD83E\uDDEE', 110, 880, 600,
-  () => <MacCalc />,
-);
+export const macCalcModule: LaunchableAppModule = {
+  ...widget(
+    'mac-calc', 'MacCalc', '\uD83E\uDDEE', 110, 880, 600,
+    () => <MacCalc />,
+  ),
+  state: {
+    stateKey: MAC_CALC_STATE_KEY,
+    reducer: macCalcReducer,
+  },
+};
 
 export const deepResearchModule = widget(
   'deep-research', 'Deep Research', '\uD83D\uDD0D', 111, 860, 620,

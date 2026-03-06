@@ -1,8 +1,16 @@
+import { configureStore } from '@reduxjs/toolkit';
 import type { Meta, StoryObj } from '@storybook/react';
 import { MacCalc } from './MacCalc';
 import { createSampleCells } from './sampleData';
 import { cellId } from './types';
 import { fixedFrameDecorator, fullscreenDecorator } from '../storybook/frameDecorators';
+import { SeededStoreProvider, type SeedStore } from '../storybook/seededStore';
+import {
+  createMacCalcStateSeed,
+  MAC_CALC_STATE_KEY,
+  macCalcActions,
+  macCalcReducer,
+} from './macCalcState';
 import '@hypercard/rich-widgets/theme';
 
 const meta: Meta<typeof MacCalc> = {
@@ -42,6 +50,33 @@ const denseCells = {
   [cellId(14, 0)]: { raw: 'October', fmt: 'plain', bold: true, italic: false, align: 'left' },
 };
 
+function createMacCalcStoryStore() {
+  return configureStore({
+    reducer: {
+      [MAC_CALC_STATE_KEY]: macCalcReducer,
+    },
+  });
+}
+
+type MacCalcStoryStore = ReturnType<typeof createMacCalcStoryStore>;
+type MacCalcSeedStore = SeedStore<MacCalcStoryStore>;
+
+function renderWithStore(
+  seedStore: MacCalcSeedStore,
+  height: string | number = '100vh',
+) {
+  return () => (
+    <SeededStoreProvider
+      createStore={createMacCalcStoryStore}
+      seedStore={seedStore}
+    >
+      <div style={{ height }}>
+        <MacCalc />
+      </div>
+    </SeededStoreProvider>
+  );
+}
+
 export const Default: Story = {
   args: {},
   decorators: [fullscreenDecorator],
@@ -71,4 +106,52 @@ export const DenseSheet: Story = {
     initialCells: denseCells,
   },
   decorators: [fullscreenDecorator],
+};
+
+export const ReduxFindResults: Story = {
+  render: renderWithStore((store) => {
+    store.dispatch(
+      macCalcActions.replaceState(
+        createMacCalcStateSeed({
+          initialCells: denseCells,
+          showFind: true,
+          findQuery: 'Total',
+          sel: { r: 1, c: 5 },
+        }),
+      ),
+    );
+  }),
+  decorators: [fullscreenDecorator],
+};
+
+export const ReduxPaletteOpen: Story = {
+  render: renderWithStore((store) => {
+    store.dispatch(
+      macCalcActions.replaceState(
+        createMacCalcStateSeed({
+          initialCells: formulaGrid,
+          showPalette: true,
+          sel: { r: 2, c: 2 },
+        }),
+      ),
+    );
+  }),
+  decorators: [fullscreenDecorator],
+};
+
+export const ReduxEditingFormula: Story = {
+  render: renderWithStore((store) => {
+    store.dispatch(
+      macCalcActions.replaceState(
+        createMacCalcStateSeed({
+          initialCells: formulaGrid,
+          sel: { r: 3, c: 5 },
+          editing: true,
+          editVal: '=SUM(B4:F4)',
+          selRange: { r1: 3, c1: 1, r2: 3, c2: 5 },
+        }),
+      ),
+    );
+  }, 420),
+  decorators: [fixedFrameDecorator(760, 420)],
 };

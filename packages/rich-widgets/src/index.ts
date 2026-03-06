@@ -150,6 +150,13 @@ export {
 // MacCalc (Spreadsheet)
 export { MacCalc, type MacCalcProps } from './calculator/MacCalc';
 export {
+  MAC_CALC_STATE_KEY,
+  createMacCalcStateSeed,
+  macCalcActions,
+  macCalcReducer,
+  selectMacCalcState,
+} from './calculator/macCalcState';
+export {
   type CellData,
   type CellFormat,
   type CellAlign,

@@ -13,3 +13,6 @@
 - Completed Task 4: migrated `KanbanBoard` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded workflow stories
 - Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 4 with all checks passing
 - Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task4`
+- Completed Task 5: migrated `DeepResearch` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded progress/report stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 5 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task5`

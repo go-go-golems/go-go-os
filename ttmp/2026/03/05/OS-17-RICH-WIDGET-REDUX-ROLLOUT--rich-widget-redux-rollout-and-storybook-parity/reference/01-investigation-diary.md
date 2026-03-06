@@ -250,6 +250,86 @@ npm run storybook:check
 
 Continue with `DeepResearch`.
 
+## 2026-03-06 — Task 5 (`DeepResearch`)
+
+### Goal
+
+Move the durable research session state into `app_rw_deep_research`, preserve the standalone package-export path, and add Redux-seeded Storybook scenarios for in-progress and report-ready states.
+
+### Files changed
+
+- `packages/rich-widgets/src/deep-research/deepResearchState.ts`
+- `packages/rich-widgets/src/deep-research/deepResearchState.test.ts`
+- `packages/rich-widgets/src/deep-research/DeepResearch.tsx`
+- `packages/rich-widgets/src/deep-research/DeepResearch.stories.tsx`
+- `packages/rich-widgets/src/launcher/modules.tsx`
+- `packages/rich-widgets/src/index.ts`
+
+### Implementation notes
+
+1. Added `app_rw_deep_research` with a serializable slice for:
+   - `query`
+   - `steps`
+   - `progress`
+   - `report`
+   - `depthLevel`
+   - `webSearch`
+   - `academicOnly`
+   - `isResearching`
+   - `runRevision`
+2. Kept the interval handle and scroll-to-bottom effect local, which matches the OS-16 guidance: timers and DOM refs stay outside Redux.
+3. Added `runRevision` so Storybook can seed static “researching” states without automatically starting the interval loop on mount; actual interactive runs increment the revision and start the timer effect.
+4. Reworked the widget into the same pattern as the previous rollout tasks:
+   - connected Redux path when the slice is registered
+   - standalone `useReducer` fallback otherwise
+5. Converted the stories to seeded Redux scenarios and added explicit workflow cases for:
+   - `ReduxResearching`
+   - `ReduxReportReady`
+6. Wired launcher registration and package exports to the new slice key.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+- Live Storybook verification on port `6006` ✅ for:
+  - `richwidgets-deepresearch--redux-researching`
+  - `richwidgets-deepresearch--redux-report-ready`
+- Playwright MCP only showed the existing Storybook/MSW asset warnings; no DeepResearch-specific runtime errors surfaced.
+
+### Next task
+
+Continue with `ChatBrowser`.
+
+### Publication refresh
+
+```bash
+docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30
+remarquee upload bundle \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/index.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/design/01-redux-rollout-backlog-and-sequencing.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/tasks.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/changelog.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/reference/01-investigation-diary.md \
+  --name "OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task5" \
+  --remote-dir "/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT" \
+  --toc-depth 2 --non-interactive
+remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-interactive
+```
+
+- `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` ✅
+- Updated bundle upload ✅
+- Remote listing now shows:
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT`
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task4`
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task5`
+
 ### Publication refresh
 
 ```bash

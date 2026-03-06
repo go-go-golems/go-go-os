@@ -39,7 +39,7 @@ This ticket executes the OS-16 migration plan. The rule for this rollout is:
 - [ ] `MacCalc`
 - [ ] `MacCalendar`
 - [x] `KanbanBoard`
-- [ ] `DeepResearch`
+- [x] `DeepResearch`
 - [ ] `ChatBrowser`
 - [ ] `GameFinder`
 - [ ] `RetroMusicPlayer`
@@ -72,4 +72,4 @@ This ticket executes the OS-16 migration plan. The rule for this rollout is:
 4. seed deterministic Storybook states via Redux;
 5. preserve non-Redux standalone usage when the widget is rendered outside launcher/store context.
 
-The next implementation task is `DeepResearch`.
+The next implementation task is `ChatBrowser`.

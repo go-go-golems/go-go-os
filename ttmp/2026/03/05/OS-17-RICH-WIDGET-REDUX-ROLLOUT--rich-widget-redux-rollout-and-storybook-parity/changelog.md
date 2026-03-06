@@ -40,3 +40,8 @@
 - Completed Task 13: migrated `SystemModeler` to a dedicated Redux slice, split the widget subcomponents into their own files, added reducer tests, launcher wiring, and Redux-seeded topology/simulation stories
 - Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 13 with all checks passing
 - Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task13`
+- Completed Task 14: migrated `GraphNavigator` to a partial Redux slice, split force-graph canvas behavior into its own file, and added Redux-seeded graph/filter stories
+- Completed Task 15: migrated `MacRepl` to a partial Redux slice, split command/input helpers into their own files, and added Redux-seeded history/error stories
+- Completed Task 16: migrated `LogicAnalyzer` to a partial Redux slice, split the canvas and controls into their own files, and added Redux-seeded capture/display stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 16 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task16`

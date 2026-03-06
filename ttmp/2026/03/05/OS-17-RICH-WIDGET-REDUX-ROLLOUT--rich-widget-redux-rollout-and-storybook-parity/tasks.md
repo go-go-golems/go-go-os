@@ -18,5 +18,8 @@
 
 ## Follow-up Phases
 
-- [ ] Task 14 — Revisit partial-slice widgets (`GraphNavigator`, `MacRepl`, `LogicAnalyzer`, `ControlRoom`)
-- [ ] Task 15 — Reassess local-only widgets (`ChartView`, `MacWrite`, `Oscilloscope`) after the durable-widget pass
+- [x] Task 14 — Migrate `GraphNavigator` to `app_rw_graph_navigator`, keep simulation layout local, and add Redux-seeded graph/filter stories
+- [x] Task 15 — Migrate `MacRepl` to `app_rw_mac_repl`, keep input/completion UI local, and add Redux-seeded history/error stories
+- [x] Task 16 — Migrate `LogicAnalyzer` to `app_rw_logic_analyzer`, keep cursor/timing local, and add Redux-seeded capture/display stories
+- [ ] Task 17 — Revisit the remaining partial-slice widget (`ControlRoom`)
+- [ ] Task 18 — Reassess local-only widgets (`ChartView`, `MacWrite`, `Oscilloscope`) after the partial-slice pass

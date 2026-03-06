@@ -18,7 +18,7 @@ RelatedFiles:
     - packages/rich-widgets/src/calendar/MacCalendar.tsx
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-03-05T20:00:00-05:00
+LastUpdated: 2026-03-06T12:55:00-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -51,9 +51,9 @@ This ticket executes the OS-16 migration plan. The rule for this rollout is:
 
 ### Phase 2 — Partial slices later
 
-- [ ] `GraphNavigator`
-- [ ] `MacRepl`
-- [ ] `LogicAnalyzer`
+- [x] `GraphNavigator`
+- [x] `MacRepl`
+- [x] `LogicAnalyzer`
 - [ ] `ControlRoom`
 
 ### Phase 3 — Keep local unless requirements change
@@ -72,4 +72,6 @@ This ticket executes the OS-16 migration plan. The rule for this rollout is:
 4. seed deterministic Storybook states via Redux;
 5. preserve non-Redux standalone usage when the widget is rendered outside launcher/store context.
 
-The next implementation task is `GraphNavigator`.
+The partial-slice phase is now mostly complete. `GraphNavigator`, `MacRepl`, and `LogicAnalyzer` all use launcher-visible Redux state for durable controls and seeded Storybook scenarios, while keeping transient layout and DOM-interaction state local.
+
+The next implementation task is `ControlRoom`.

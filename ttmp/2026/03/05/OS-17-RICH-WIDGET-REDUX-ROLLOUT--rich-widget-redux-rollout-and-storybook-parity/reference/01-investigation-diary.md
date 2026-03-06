@@ -431,6 +431,131 @@ remarquee upload bundle \
 remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-interactive
 ```
 
+## 2026-03-06 — Task 14 (`GraphNavigator`)
+
+### What changed
+
+1. Added `packages/rich-widgets/src/graph-navigator/graphNavigatorState.ts` with a partial `app_rw_graph_navigator` slice covering:
+   - document nodes and edges
+   - selected node
+   - search query and filter type
+   - query log / execution history
+2. Added reducer coverage in `packages/rich-widgets/src/graph-navigator/graphNavigatorState.test.ts`.
+3. Split the touched widget logic into its own files:
+   - `packages/rich-widgets/src/graph-navigator/GraphCanvas.tsx`
+   - `packages/rich-widgets/src/graph-navigator/useForceGraph.ts`
+4. Reworked `packages/rich-widgets/src/graph-navigator/GraphNavigator.tsx` into the connected/standalone pattern while keeping force-layout positions and drag interaction local.
+5. Converted `packages/rich-widgets/src/graph-navigator/GraphNavigator.stories.tsx` to Redux-seeded scenarios and added explicit dense-graph and filtered-query states.
+6. Wired launcher registration and public exports to the new slice key.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+- Live Storybook verification on port `6006` ✅ for:
+  - `richwidgets-graphnavigator--dense-graph`
+- Playwright MCP only showed the existing Storybook/MSW asset warnings; no `GraphNavigator`-specific runtime errors surfaced.
+
+### Next task
+
+Continue with `MacRepl`.
+
+## 2026-03-06 — Task 15 (`MacRepl`)
+
+### What changed
+
+1. Added `packages/rich-widgets/src/repl/replState.ts` with a partial `app_rw_mac_repl` slice covering:
+   - terminal lines
+   - prompt value
+   - command history stack/index
+   - environment variables and aliases
+2. Added reducer coverage in `packages/rich-widgets/src/repl/replState.test.ts`.
+3. Split the touched widget logic into its own files:
+   - `packages/rich-widgets/src/repl/ReplInputLine.tsx`
+   - `packages/rich-widgets/src/repl/replCommands.ts`
+4. Reworked `packages/rich-widgets/src/repl/MacRepl.tsx` into the connected/standalone pattern while keeping live input buffer and completion popup state local.
+5. Converted `packages/rich-widgets/src/repl/MacRepl.stories.tsx` to Redux-seeded scenarios and added explicit history/error/long-session states.
+6. Wired launcher registration and public exports to the new slice key.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+- Live Storybook verification on port `6006` ✅ for:
+  - `richwidgets-macrepl--with-history`
+- Playwright MCP only showed the existing Storybook/MSW asset warnings; no `MacRepl`-specific runtime errors surfaced.
+
+### Next task
+
+Continue with `LogicAnalyzer`.
+
+## 2026-03-06 — Task 16 (`LogicAnalyzer`)
+
+### What changed
+
+1. Added `packages/rich-widgets/src/logic-analyzer/logicAnalyzerState.ts` with a partial `app_rw_logic_analyzer` slice covering:
+   - capture running state
+   - channel enablement
+   - speed and zoom
+   - display flags
+   - trigger and protocol settings
+2. Added reducer coverage in `packages/rich-widgets/src/logic-analyzer/logicAnalyzerState.test.ts`.
+3. Split the touched widget logic into its own files:
+   - `packages/rich-widgets/src/logic-analyzer/LogicAnalyzerCanvas.tsx`
+   - `packages/rich-widgets/src/logic-analyzer/LogicAnalyzerControls.tsx`
+4. Reworked `packages/rich-widgets/src/logic-analyzer/LogicAnalyzer.tsx` into the connected/standalone pattern while keeping cursor hover state and time progression local to the canvas.
+5. Converted `packages/rich-widgets/src/logic-analyzer/LogicAnalyzer.stories.tsx` to Redux-seeded scenarios and added explicit paused/bus/zoomed states.
+6. Wired launcher registration and public exports to the new slice key.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+- Live Storybook verification on port `6006` ✅ for:
+  - `richwidgets-logicanalyzer--wide-canvas`
+- Playwright MCP only showed the existing Storybook/MSW asset warnings; no `LogicAnalyzer`-specific runtime errors surfaced.
+
+### Next task
+
+Continue with `ControlRoom`.
+
+### Publication refresh
+
+```bash
+docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30
+remarquee upload bundle \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/index.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/design/01-redux-rollout-backlog-and-sequencing.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/tasks.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/changelog.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/reference/01-investigation-diary.md \
+  --name "OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task16" \
+  --remote-dir "/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT" \
+  --toc-depth 2 --non-interactive
+remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-interactive
+```
+
 - `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` ✅
 - Updated bundle upload ✅
 - Remote listing now shows:

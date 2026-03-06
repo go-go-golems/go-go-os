@@ -19,3 +19,6 @@
 - Completed Task 6: migrated `ChatBrowser` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded search/result stories
 - Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 6 with all checks passing
 - Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task6`
+- Completed Task 7: migrated `GameFinder` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded browse/install/detail stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 7 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task7`

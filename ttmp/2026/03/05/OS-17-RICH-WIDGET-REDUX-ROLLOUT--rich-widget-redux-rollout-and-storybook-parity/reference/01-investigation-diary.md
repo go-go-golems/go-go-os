@@ -361,6 +361,85 @@ npm run storybook:check
 
 Continue with `GameFinder`.
 
+## 2026-03-06 — Task 7 (`GameFinder`)
+
+### Goal
+
+Move `GameFinder` library/detail/search/install state into `app_rw_game_finder`, keep standalone export usage intact, and add Redux-seeded Storybook scenarios for detail/install/filter states.
+
+### Files changed
+
+- `packages/rich-widgets/src/game-finder/gameFinderState.ts`
+- `packages/rich-widgets/src/game-finder/gameFinderState.test.ts`
+- `packages/rich-widgets/src/game-finder/GameFinder.tsx`
+- `packages/rich-widgets/src/game-finder/GameFinder.stories.tsx`
+- `packages/rich-widgets/src/launcher/modules.tsx`
+- `packages/rich-widgets/src/index.ts`
+
+### Implementation notes
+
+1. Added `app_rw_game_finder` with a serializable slice for:
+   - `games`
+   - `view`
+   - `selectedGameId`
+   - `installingId`
+   - `search`
+   - `filter`
+   - `sortBy`
+   - `launchedGameId`
+2. Kept the download bar animation progress local because it is transient timer-driven UI, while the install/launch session flags moved into Redux.
+3. Reworked the widget into the same connected/standalone pattern used across OS-17.
+4. Converted Storybook to store-backed states and added explicit scenarios for:
+   - installed detail view
+   - installing detail view
+   - backlog-filtered library search
+5. Wired launcher registration and public exports to the new slice key.
+
+### Commands run
+
+```bash
+npm run test -w packages/rich-widgets
+npm run storybook:check
+```
+
+### Results
+
+- `npm run test -w packages/rich-widgets` ✅
+- `npm run storybook:check` ✅
+- Live Storybook verification on port `6006` ✅ for:
+  - `richwidgets-gamefinder--redux-detail-installed`
+  - `richwidgets-gamefinder--redux-installing`
+- Playwright MCP only showed the existing Storybook/MSW asset warnings; no GameFinder-specific runtime errors surfaced.
+
+### Next task
+
+Continue with `RetroMusicPlayer`.
+
+### Publication refresh
+
+```bash
+docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30
+remarquee upload bundle \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/index.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/design/01-redux-rollout-backlog-and-sequencing.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/tasks.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/changelog.md \
+  ttmp/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT--rich-widget-redux-rollout-and-storybook-parity/reference/01-investigation-diary.md \
+  --name "OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task7" \
+  --remote-dir "/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT" \
+  --toc-depth 2 --non-interactive
+remarquee cloud ls /ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT --long --non-interactive
+```
+
+- `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` ✅
+- Updated bundle upload ✅
+- Remote listing now shows:
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT`
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task4`
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task5`
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task6`
+  - `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT/OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task7`
+
 ### Publication refresh
 
 ```bash

@@ -20,6 +20,10 @@ import { NodeEditor } from '../node-editor/NodeEditor';
 import { Oscilloscope } from '../oscilloscope/Oscilloscope';
 import { LogicAnalyzer } from '../logic-analyzer/LogicAnalyzer';
 import { MacCalendar } from '../calendar/MacCalendar';
+import {
+  MAC_CALENDAR_STATE_KEY,
+  macCalendarReducer,
+} from '../calendar/macCalendarState';
 import { GraphNavigator } from '../graph-navigator/GraphNavigator';
 import { MacCalc } from '../calculator/MacCalc';
 import {
@@ -135,10 +139,16 @@ export const logicAnalyzerModule = widget(
   () => <LogicAnalyzer />,
 );
 
-export const macCalendarModule = widget(
-  'mac-calendar', 'Calendar', '\uD83D\uDCC5', 108, 840, 600,
-  () => <MacCalendar />,
-);
+export const macCalendarModule: LaunchableAppModule = {
+  ...widget(
+    'mac-calendar', 'Calendar', '\uD83D\uDCC5', 108, 840, 600,
+    () => <MacCalendar />,
+  ),
+  state: {
+    stateKey: MAC_CALENDAR_STATE_KEY,
+    reducer: macCalendarReducer,
+  },
+};
 
 export const graphNavigatorModule = widget(
   'graph-navigator', 'Graph Navigator', '\uD83C\uDF10', 109, 900, 640,

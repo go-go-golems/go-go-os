@@ -102,6 +102,13 @@ export {
   type MacCalendarProps,
 } from './calendar/MacCalendar';
 export {
+  MAC_CALENDAR_STATE_KEY,
+  createMacCalendarStateSeed,
+  macCalendarActions,
+  macCalendarReducer,
+  selectMacCalendarState,
+} from './calendar/macCalendarState';
+export {
   type CalendarEvent,
   type CalendarView,
   type PaletteAction,

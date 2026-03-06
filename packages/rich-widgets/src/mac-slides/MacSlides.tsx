@@ -85,16 +85,22 @@ function PresentationOverlay({
 export interface MacSlidesProps {
   initialMarkdown?: string;
   fileName?: string;
+  initialSlide?: number;
+  initialShowPalette?: boolean;
+  initialShowPresentation?: boolean;
 }
 
 export function MacSlides({
   initialMarkdown = DEFAULT_MARKDOWN,
   fileName = 'Untitled Presentation',
+  initialSlide = 0,
+  initialShowPalette = false,
+  initialShowPresentation = false,
 }: MacSlidesProps) {
   const [markdown, setMarkdown] = useState(initialMarkdown);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [showPalette, setShowPalette] = useState(false);
-  const [showPresentation, setShowPresentation] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(initialSlide);
+  const [showPalette, setShowPalette] = useState(initialShowPalette);
+  const [showPresentation, setShowPresentation] = useState(initialShowPresentation);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const deck = useMemo(() => createDeck(markdown), [markdown]);

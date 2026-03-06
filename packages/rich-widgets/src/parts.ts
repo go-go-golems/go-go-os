@@ -192,6 +192,7 @@ export const RICH_PARTS = {
   msPreviewArea: 'ms-preview-area',
   msSlideFrame: 'ms-slide-frame',
   msSlideThumbContent: 'ms-slide-thumb-content',
+  msSlideContent: 'ms-slide-content',
   msNavRow: 'ms-nav-row',
   msToolbarButton: 'ms-toolbar-button',
   msPaletteButton: 'ms-palette-button',

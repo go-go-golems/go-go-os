@@ -231,34 +231,33 @@
   font-family: var(--hc-font-family-mono, var(--hc-font-family));
 }
 
-/* Slide content */
-.slide-content {
+[data-part="ms-slide-content"] {
   color: var(--hc-color-fg);
   font-family: var(--hc-font-family);
 }
 
-.slide-auto {
+[data-part="ms-slide-content"][data-align="auto"] {
   text-align: left;
 }
 
-.slide-auto h1,
-.slide-auto h2,
-.slide-auto h3 {
+[data-part="ms-slide-content"][data-align="auto"] h1,
+[data-part="ms-slide-content"][data-align="auto"] h2,
+[data-part="ms-slide-content"][data-align="auto"] h3 {
   text-align: center;
 }
 
-.slide-all-center {
+[data-part="ms-slide-content"][data-align="center"] {
   text-align: center;
 }
 
-.slide-all-left,
-.slide-all-left h1,
-.slide-all-left h2,
-.slide-all-left h3 {
+[data-part="ms-slide-content"][data-align="left"],
+[data-part="ms-slide-content"][data-align="left"] h1,
+[data-part="ms-slide-content"][data-align="left"] h2,
+[data-part="ms-slide-content"][data-align="left"] h3 {
   text-align: left;
 }
 
-.slide-content h1 {
+[data-part="ms-slide-content"] h1 {
   margin: 8px 0;
   padding-bottom: 6px;
   border-bottom: 2px solid var(--hc-color-fg);
@@ -266,26 +265,26 @@
   font-weight: bold;
 }
 
-.slide-content h2 {
+[data-part="ms-slide-content"] h2 {
   margin: 6px 0;
   font-size: 20px;
   font-weight: bold;
 }
 
-.slide-content h3 {
+[data-part="ms-slide-content"] h3 {
   margin: 4px 0;
   font-size: 16px;
   font-weight: bold;
 }
 
-.slide-content p {
+[data-part="ms-slide-content"] p {
   margin: 6px 0;
   font-size: 14px;
   line-height: 1.5;
 }
 
-.slide-content ul,
-.slide-content ol {
+[data-part="ms-slide-content"] ul,
+[data-part="ms-slide-content"] ol {
   margin: 6px 0;
   padding-left: 24px;
   font-size: 14px;
@@ -293,19 +292,19 @@
   text-align: left;
 }
 
-.slide-all-center ul,
-.slide-all-center ol {
+[data-part="ms-slide-content"][data-align="center"] ul,
+[data-part="ms-slide-content"][data-align="center"] ol {
   display: inline-block;
   margin-left: auto;
   margin-right: auto;
 }
 
-.slide-content li {
+[data-part="ms-slide-content"] li {
   margin: 2px 0;
   list-style-position: outside;
 }
 
-.slide-content code {
+[data-part="ms-slide-content"] code {
   padding: 1px 4px;
   border: 1px solid var(--hc-color-border);
   background: var(--hc-color-alt, #ddd);

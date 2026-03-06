@@ -39,16 +39,6 @@ export function createDeck(markdown: string): MacSlidesDeck {
   };
 }
 
-export function alignClassName(align: SlideAlignment): string {
-  if (align === 'center') {
-    return 'slide-content slide-all-center';
-  }
-  if (align === 'left') {
-    return 'slide-content slide-all-left';
-  }
-  return 'slide-content slide-auto';
-}
-
 function escapeHtml(src: string): string {
   return src
     .replace(/&/g, '&amp;')

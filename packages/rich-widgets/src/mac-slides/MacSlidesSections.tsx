@@ -2,7 +2,8 @@ import { useEffect, useState, type RefObject } from 'react';
 import { Btn } from '@hypercard/engine';
 import { RICH_PARTS as P } from '../parts';
 import { EmptyState } from '../primitives/EmptyState';
-import { alignClassName, createDeck, renderBasicMarkdown } from './markdown';
+import { createDeck } from './markdown';
+import { SlideMarkup } from './SlideMarkup';
 
 export function PresentationOverlay({
   slides,
@@ -40,10 +41,7 @@ export function PresentationOverlay({
       onClick={() => setCurrentIndex((value) => Math.min(value + 1, slides.length - 1))}
     >
       <div data-part={P.msPresentationFrame}>
-        <div
-          className={alignClassName(currentSlide.align)}
-          dangerouslySetInnerHTML={{ __html: renderBasicMarkdown(currentSlide.content) }}
-        />
+        <SlideMarkup content={currentSlide.content} align={currentSlide.align} />
       </div>
       <div data-part={P.msPresentationStatus}>
         {currentIndex + 1} / {slides.length} — Press Esc to exit
@@ -79,12 +77,9 @@ export function SlideSidebar({
               onClick={() => onSelect(index)}
             >
               <div data-part={P.msSlideThumbPreview}>
-                <div
-                  data-part={P.msSlideThumbContent}
-                  dangerouslySetInnerHTML={{
-                    __html: renderBasicMarkdown(slide.content),
-                  }}
-                />
+                <div data-part={P.msSlideThumbContent}>
+                  <SlideMarkup content={slide.content} align={slide.align} />
+                </div>
               </div>
               <div data-part={P.msSlideThumbLabel}>Slide {index + 1}</div>
             </div>
@@ -150,10 +145,7 @@ export function PreviewPane({
       <div data-part={P.msPreviewArea}>
         {current ? (
           <div data-part={P.msSlideFrame}>
-            <div
-              className={alignClassName(current.align)}
-              dangerouslySetInnerHTML={{ __html: renderBasicMarkdown(current.content) }}
-            />
+            <SlideMarkup content={current.content} align={current.align} />
           </div>
         ) : (
           <EmptyState

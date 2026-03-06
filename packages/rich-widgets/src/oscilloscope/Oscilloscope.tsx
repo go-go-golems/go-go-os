@@ -1,426 +1,164 @@
-import { useState, useRef, useCallback } from 'react';
-import { Btn, Checkbox } from '@hypercard/engine';
+import { useContext, useEffect, useReducer, useRef } from 'react';
+import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
-import { LabeledSlider } from '../primitives/LabeledSlider';
-import { Separator } from '../primitives/Separator';
-import { useAnimationLoop } from '../primitives/useAnimationLoop';
-import { WidgetToolbar } from '../primitives/WidgetToolbar';
+import { OscilloscopeCanvas } from './OscilloscopeCanvas';
+import { OscilloscopeControls } from './OscilloscopeControls';
+import {
+  createOscilloscopeStateSeed,
+  oscilloscopeActions,
+  oscilloscopeReducer,
+  OSCILLOSCOPE_STATE_KEY,
+  selectOscilloscopeState,
+  type OscilloscopeAction,
+  type OscilloscopeState,
+} from './oscilloscopeState';
 import type { WaveformType } from './types';
-import { WAVEFORM_TYPES, WAVEFORM_ICONS } from './types';
 
-// ── Wave generator ───────────────────────────────────────────────────
-function generateWave(
-  type: WaveformType,
-  freq: number,
-  amp: number,
-  t: number,
-  offset = 0,
-): number {
-  const phase = (t * freq + offset) * Math.PI * 2;
-  switch (type) {
-    case 'sine':
-      return Math.sin(phase) * amp;
-    case 'square':
-      return (Math.sin(phase) > 0 ? 1 : -1) * amp;
-    case 'triangle':
-      return ((Math.asin(Math.sin(phase)) * 2) / Math.PI) * amp;
-    case 'sawtooth':
-      return (((phase % (Math.PI * 2)) / Math.PI - 1) * amp);
-    case 'noise':
-      return (Math.random() * 2 - 1) * amp;
-    default:
-      return 0;
-  }
-}
-
-// ── Props ────────────────────────────────────────────────────────────
 export interface OscilloscopeProps {
-  /** Canvas width in pixels */
   canvasWidth?: number;
-  /** Canvas height in pixels */
   canvasHeight?: number;
-  /** Initial waveform type */
   initialWaveform?: WaveformType;
-  /** Start running immediately */
   autoStart?: boolean;
 }
 
-// ── Component ────────────────────────────────────────────────────────
-export function Oscilloscope({
-  canvasWidth = 520,
-  canvasHeight = 300,
-  initialWaveform = 'sine',
-  autoStart = true,
-}: OscilloscopeProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const timeRef = useRef(0);
+function createInitialSeed(props: OscilloscopeProps): OscilloscopeState {
+  return createOscilloscopeStateSeed({
+    waveform: props.initialWaveform,
+    running: props.autoStart,
+  });
+}
 
-  const [waveform, setWaveform] = useState<WaveformType>(initialWaveform);
-  const [frequency, setFrequency] = useState(2.5);
-  const [amplitude, setAmplitude] = useState(80);
-  const [timebase, setTimebase] = useState(1);
-  const [offsetY, setOffsetY] = useState(0);
-  const [running, setRunning] = useState(autoStart);
-  const [showGrid, setShowGrid] = useState(true);
-  const [showCrosshair, setShowCrosshair] = useState(true);
-  const [channel2, setChannel2] = useState(false);
-  const [ch2Freq, setCh2Freq] = useState(5);
-  const [ch2Amp, setCh2Amp] = useState(40);
-  const [phosphor, setPhosphor] = useState(true);
-  const [triggerLevel, setTriggerLevel] = useState(0);
-  const [thickness, setThickness] = useState(2);
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    // HiDPI scaling
-    const dpr = window.devicePixelRatio || 1;
-    const logicalW = canvasWidth;
-    const logicalH = canvasHeight;
-    if (canvas.width !== logicalW * dpr || canvas.height !== logicalH * dpr) {
-      canvas.width = logicalW * dpr;
-      canvas.height = logicalH * dpr;
-      ctx.scale(dpr, dpr);
-    }
-    const W = logicalW;
-    const H = logicalH;
-    const midY = H / 2 + offsetY;
-
-    // CRT fade effect
-    if (phosphor) {
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
-      ctx.fillRect(0, 0, W, H);
-    } else {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // Grid
-    if (showGrid) {
-      ctx.strokeStyle = '#1a3a1a';
-      ctx.lineWidth = 0.5;
-      const gridX = W / 10;
-      const gridY = H / 8;
-      for (let i = 0; i <= 10; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * gridX, 0);
-        ctx.lineTo(i * gridX, H);
-        ctx.stroke();
-      }
-      for (let i = 0; i <= 8; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, i * gridY);
-        ctx.lineTo(W, i * gridY);
-        ctx.stroke();
-      }
-      // Center cross brighter
-      ctx.strokeStyle = '#2a5a2a';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(W / 2, 0);
-      ctx.lineTo(W / 2, H);
-      ctx.moveTo(0, H / 2);
-      ctx.lineTo(W, H / 2);
-      ctx.stroke();
-    }
-
-    // Crosshair
-    if (showCrosshair) {
-      ctx.strokeStyle = '#0f0';
-      ctx.lineWidth = 0.3;
-      ctx.setLineDash([2, 4]);
-      ctx.beginPath();
-      ctx.moveTo(0, midY);
-      ctx.lineTo(W, midY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // Trigger level line
-    ctx.strokeStyle = '#882200';
-    ctx.lineWidth = 0.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    const trigY = H / 2 - triggerLevel;
-    ctx.moveTo(0, trigY);
-    ctx.lineTo(W, trigY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // CH1 waveform
-    ctx.strokeStyle = '#00ff41';
-    ctx.lineWidth = thickness;
-    ctx.shadowColor = '#00ff41';
-    ctx.shadowBlur = thickness * 3;
-    ctx.beginPath();
-    for (let x = 0; x < W; x++) {
-      const t = (x / W) * timebase + timeRef.current;
-      const y = midY - generateWave(waveform, frequency, amplitude, t);
-      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // CH2 waveform
-    if (channel2) {
-      ctx.strokeStyle = '#41b0ff';
-      ctx.shadowColor = '#41b0ff';
-      ctx.shadowBlur = thickness * 3;
-      ctx.lineWidth = thickness;
-      ctx.beginPath();
-      for (let x = 0; x < W; x++) {
-        const t = (x / W) * timebase + timeRef.current;
-        const y = midY - generateWave('sine', ch2Freq, ch2Amp, t);
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-
-    ctx.shadowBlur = 0;
-
-    // Readout overlay
-    ctx.fillStyle = '#00ff41';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText(
-      `CH1: ${waveform.toUpperCase()} ${frequency.toFixed(1)}Hz`,
-      8,
-      14,
-    );
-    ctx.fillText(
-      `Amp: ${amplitude}% | TB: ${timebase.toFixed(1)}x`,
-      8,
-      26,
-    );
-    if (channel2) {
-      ctx.fillStyle = '#41b0ff';
-      ctx.fillText(
-        `CH2: SINE ${ch2Freq.toFixed(1)}Hz Amp:${ch2Amp}%`,
-        8,
-        38,
-      );
-    }
-
-    // Trigger marker
-    ctx.fillStyle = '#882200';
-    ctx.fillText('T', W - 14, trigY + 4);
-
-    if (running) {
-      timeRef.current += 0.012;
-    }
-  }, [
-    waveform,
-    frequency,
-    amplitude,
-    timebase,
-    offsetY,
-    running,
-    showGrid,
-    showCrosshair,
-    channel2,
-    ch2Freq,
-    ch2Amp,
-    phosphor,
-    triggerLevel,
-    thickness,
-    canvasWidth,
-    canvasHeight,
-  ]);
-
-  useAnimationLoop(draw, true);
+function OscilloscopeFrame({
+  state,
+  dispatch,
+  canvasWidth,
+  canvasHeight,
+  initialWaveform,
+  autoStart,
+}: {
+  state: OscilloscopeState;
+  dispatch: (action: OscilloscopeAction) => void;
+  canvasWidth: number;
+  canvasHeight: number;
+  initialWaveform?: WaveformType;
+  autoStart?: boolean;
+}) {
+  const resetTimeRef = useRef<(() => void) | null>(null);
 
   return (
     <div data-part={P.oscilloscope}>
-      {/* ── Display + Controls ── */}
       <div data-part={P.oscMain}>
-        {/* CRT Display */}
-        <div data-part={P.oscDisplay}>
-          <div data-part={P.oscBezel}>
-            <canvas
-              ref={canvasRef}
-              width={canvasWidth}
-              height={canvasHeight}
-              style={{ width: '100%', height: 'auto', display: 'block' }}
-            />
-          </div>
-          {/* Status bar below display */}
-          <div data-part={P.oscDisplayStatus}>
-            <span>
-              {running ? '▶ RUNNING' : '⏸ STOPPED'} | Sample Rate: 44.1kHz
-            </span>
-            <span>
-              Trigger: {triggerLevel > 0 ? '+' : ''}
-              {triggerLevel}mV | Mode: Auto
-            </span>
-          </div>
-        </div>
-
-        {/* Controls Panel */}
-        <div data-part={P.oscControls}>
-          {/* Waveform selector */}
-          <div data-part={P.oscControlGroup}>
-            <div data-part={P.oscControlGroupTitle}>CH1 Waveform</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-              {WAVEFORM_TYPES.map((w) => (
-                <Btn
-                  key={w}
-                  onClick={() => setWaveform(w)}
-                  data-state={waveform === w ? 'active' : undefined}
-                  style={{ fontSize: 9, padding: '2px 6px' }}
-                >
-                  {WAVEFORM_ICONS[w]} {w.slice(0, 3).toUpperCase()}
-                </Btn>
-              ))}
-            </div>
-          </div>
-
-          {/* CH1 Parameters */}
-          <div data-part={P.oscControlGroup}>
-            <div data-part={P.oscControlGroupTitle}>
-              CH1 Parameters
-            </div>
-            <LabeledSlider
-              label="Frequency"
-              value={frequency}
-              min={0.1}
-              max={20}
-              step={0.1}
-              onChange={setFrequency}
-              unit=" Hz"
-            />
-            <LabeledSlider
-              label="Amplitude"
-              value={amplitude}
-              min={0}
-              max={140}
-              step={1}
-              onChange={setAmplitude}
-              unit="%"
-            />
-            <LabeledSlider
-              label="Y Offset"
-              value={offsetY}
-              min={-100}
-              max={100}
-              step={1}
-              onChange={setOffsetY}
-              unit=" px"
-            />
-          </div>
-
-          {/* Horizontal / Trigger */}
-          <div data-part={P.oscControlGroup}>
-            <div data-part={P.oscControlGroupTitle}>
-              Horizontal / Trigger
-            </div>
-            <LabeledSlider
-              label="Time/Div"
-              value={timebase}
-              min={0.1}
-              max={5}
-              step={0.1}
-              onChange={setTimebase}
-              unit="x"
-            />
-            <LabeledSlider
-              label="Trig Level"
-              value={triggerLevel}
-              min={-100}
-              max={100}
-              step={1}
-              onChange={setTriggerLevel}
-              unit=" mV"
-            />
-            <LabeledSlider
-              label="Thickness"
-              value={thickness}
-              min={1}
-              max={5}
-              step={0.5}
-              onChange={setThickness}
-              unit=" px"
-            />
-          </div>
-
-          {/* CH2 */}
-          <div
-            data-part={P.oscControlGroup}
-            style={{ opacity: channel2 ? 1 : 0.7 }}
-          >
-            <div
-              data-part={P.oscControlGroupTitle}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <span>CH2 (Sine)</span>
-              <Checkbox
-                checked={channel2}
-                onChange={setChannel2}
-                label="ON"
-              />
-            </div>
-            {channel2 && (
-              <>
-                <LabeledSlider
-                  label="Frequency"
-                  value={ch2Freq}
-                  min={0.1}
-                  max={20}
-                  step={0.1}
-                  onChange={setCh2Freq}
-                  unit=" Hz"
-                />
-                <LabeledSlider
-                  label="Amplitude"
-                  value={ch2Amp}
-                  min={0}
-                  max={140}
-                  step={1}
-                  onChange={setCh2Amp}
-                  unit="%"
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Bottom Toolbar ── */}
-      <WidgetToolbar>
-        <Btn
-          onClick={() => setRunning(!running)}
-          style={{ fontSize: 10 }}
-        >
-          {running ? '⏸ Stop' : '▶ Run'}
-        </Btn>
-        <Btn
-          onClick={() => {
-            timeRef.current = 0;
+        <OscilloscopeCanvas
+          canvasWidth={canvasWidth}
+          canvasHeight={canvasHeight}
+          waveform={state.waveform}
+          frequency={state.frequency}
+          amplitude={state.amplitude}
+          timebase={state.timebase}
+          offsetY={state.offsetY}
+          running={state.running}
+          showGrid={state.showGrid}
+          showCrosshair={state.showCrosshair}
+          channel2={state.channel2}
+          ch2Freq={state.ch2Freq}
+          ch2Amp={state.ch2Amp}
+          phosphor={state.phosphor}
+          triggerLevel={state.triggerLevel}
+          thickness={state.thickness}
+          onResetTimeRef={(reset) => {
+            resetTimeRef.current = reset;
           }}
-          style={{ fontSize: 10 }}
-        >
-          ⏮ Reset
-        </Btn>
-        <Separator />
-        <Checkbox
-          checked={showGrid}
-          onChange={setShowGrid}
-          label="Grid"
         />
-        <Checkbox
-          checked={showCrosshair}
-          onChange={setShowCrosshair}
-          label="Cursor"
+        <OscilloscopeControls
+          waveform={state.waveform}
+          frequency={state.frequency}
+          amplitude={state.amplitude}
+          timebase={state.timebase}
+          offsetY={state.offsetY}
+          running={state.running}
+          showGrid={state.showGrid}
+          showCrosshair={state.showCrosshair}
+          channel2={state.channel2}
+          ch2Freq={state.ch2Freq}
+          ch2Amp={state.ch2Amp}
+          phosphor={state.phosphor}
+          triggerLevel={state.triggerLevel}
+          thickness={state.thickness}
+          onWaveformChange={(value) => dispatch(oscilloscopeActions.setWaveform(value))}
+          onFrequencyChange={(value) => dispatch(oscilloscopeActions.setFrequency(value))}
+          onAmplitudeChange={(value) => dispatch(oscilloscopeActions.setAmplitude(value))}
+          onTimebaseChange={(value) => dispatch(oscilloscopeActions.setTimebase(value))}
+          onOffsetYChange={(value) => dispatch(oscilloscopeActions.setOffsetY(value))}
+          onRunningChange={(value) => dispatch(oscilloscopeActions.setRunning(value))}
+          onShowGridChange={(value) => dispatch(oscilloscopeActions.setShowGrid(value))}
+          onShowCrosshairChange={(value) => dispatch(oscilloscopeActions.setShowCrosshair(value))}
+          onChannel2Change={(value) => dispatch(oscilloscopeActions.setChannel2(value))}
+          onCh2FreqChange={(value) => dispatch(oscilloscopeActions.setCh2Freq(value))}
+          onCh2AmpChange={(value) => dispatch(oscilloscopeActions.setCh2Amp(value))}
+          onPhosphorChange={(value) => dispatch(oscilloscopeActions.setPhosphor(value))}
+          onTriggerLevelChange={(value) => dispatch(oscilloscopeActions.setTriggerLevel(value))}
+          onThicknessChange={(value) => dispatch(oscilloscopeActions.setThickness(value))}
+          onResetTime={() => resetTimeRef.current?.()}
+          onResetDefaults={() =>
+            dispatch(
+              oscilloscopeActions.resetToDefaults({
+                waveform: initialWaveform,
+                running: autoStart,
+              }),
+            )}
         />
-        <Checkbox
-          checked={phosphor}
-          onChange={setPhosphor}
-          label="Phosphor"
-        />
-      </WidgetToolbar>
+      </div>
     </div>
   );
+}
+
+function StandaloneOscilloscope(props: OscilloscopeProps) {
+  const [state, dispatch] = useReducer(oscilloscopeReducer, createInitialSeed(props));
+  return (
+    <OscilloscopeFrame
+      state={state}
+      dispatch={dispatch}
+      canvasWidth={props.canvasWidth ?? 520}
+      canvasHeight={props.canvasHeight ?? 300}
+      initialWaveform={props.initialWaveform}
+      autoStart={props.autoStart}
+    />
+  );
+}
+
+function ConnectedOscilloscope(props: OscilloscopeProps) {
+  const reduxDispatch = useDispatch();
+  const state = useSelector(selectOscilloscopeState);
+
+  useEffect(() => {
+    reduxDispatch(oscilloscopeActions.initializeIfNeeded(createInitialSeed(props)));
+  }, [props.autoStart, props.initialWaveform, reduxDispatch]);
+
+  const effectiveState = state.initialized ? state : createInitialSeed(props);
+  return (
+    <OscilloscopeFrame
+      state={effectiveState}
+      dispatch={(action) => reduxDispatch(action)}
+      canvasWidth={props.canvasWidth ?? 520}
+      canvasHeight={props.canvasHeight ?? 300}
+      initialWaveform={props.initialWaveform}
+      autoStart={props.autoStart}
+    />
+  );
+}
+
+export function Oscilloscope(props: OscilloscopeProps) {
+  const reduxContext = useContext(ReactReduxContext);
+  const store = reduxContext?.store;
+  const rootState = store?.getState();
+  const hasRegisteredSlice =
+    typeof rootState === 'object' &&
+    rootState !== null &&
+    OSCILLOSCOPE_STATE_KEY in (rootState as Record<string, unknown>);
+
+  if (hasRegisteredSlice) {
+    return <ConnectedOscilloscope {...props} />;
+  }
+
+  return <StandaloneOscilloscope {...props} />;
 }

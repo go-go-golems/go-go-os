@@ -126,6 +126,13 @@ export { INITIAL_NODES, INITIAL_CONNECTIONS } from './node-editor/sampleData';
 // Oscilloscope
 export { Oscilloscope, type OscilloscopeProps } from './oscilloscope/Oscilloscope';
 export {
+  OSCILLOSCOPE_STATE_KEY,
+  createOscilloscopeStateSeed,
+  oscilloscopeActions,
+  oscilloscopeReducer,
+  selectOscilloscopeState,
+} from './oscilloscope/oscilloscopeState';
+export {
   type WaveformType,
   WAVEFORM_TYPES,
   WAVEFORM_ICONS,

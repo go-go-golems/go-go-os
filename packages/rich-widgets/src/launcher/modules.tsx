@@ -38,6 +38,10 @@ import {
   nodeEditorReducer,
 } from '../node-editor/nodeEditorState';
 import { Oscilloscope } from '../oscilloscope/Oscilloscope';
+import {
+  OSCILLOSCOPE_STATE_KEY,
+  oscilloscopeReducer,
+} from '../oscilloscope/oscilloscopeState';
 import { LogicAnalyzer } from '../logic-analyzer/LogicAnalyzer';
 import {
   LOGIC_ANALYZER_STATE_KEY,
@@ -228,10 +232,16 @@ export const nodeEditorModule: LaunchableAppModule = {
   },
 };
 
-export const oscilloscopeModule = widget(
-  'oscilloscope', 'Oscilloscope', '\uD83D\uDCDF', 106, 800, 560,
-  () => <Oscilloscope />,
-);
+export const oscilloscopeModule: LaunchableAppModule = {
+  ...widget(
+    'oscilloscope', 'Oscilloscope', '\uD83D\uDCDF', 106, 800, 560,
+    () => <Oscilloscope />,
+  ),
+  state: {
+    stateKey: OSCILLOSCOPE_STATE_KEY,
+    reducer: oscilloscopeReducer,
+  },
+};
 
 export const logicAnalyzerModule: LaunchableAppModule = {
   ...widget(

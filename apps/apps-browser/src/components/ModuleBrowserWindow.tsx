@@ -52,6 +52,12 @@ function buildAppContextActions(app: AppManifestDocument): DesktopActionEntry[] 
       commandId: 'apps-browser.open-docs',
       payload: { appId: app.app_id, appName: app.name },
     },
+    {
+      id: `apps-browser.module-browser.chat-with-app.${app.app_id}`,
+      label: 'Chat With App',
+      commandId: 'apps-browser.chat-with-app',
+      payload: { appId: app.app_id, appName: app.name },
+    },
     { separator: true },
     {
       id: `apps-browser.module-browser.open-health.${app.app_id}`,

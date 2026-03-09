@@ -50,8 +50,24 @@ function projectRuntimeState(domains: Record<string, unknown>, opts: {
   sessionState: Record<string, unknown>;
   cardState: Record<string, unknown>;
 }) {
-  const inventory = isRecord(domains.inventory) ? domains.inventory : {};
-  const sales = isRecord(domains.sales) ? domains.sales : {};
+  const projectedDomains = { ...domains };
+  const inventory = isRecord(projectedDomains.inventory) ? projectedDomains.inventory : null;
+  const sales = isRecord(projectedDomains.sales) ? projectedDomains.sales : null;
+
+  if (inventory) {
+    projectedDomains.inventory = {
+      ...inventory,
+      items: asArray(inventory.items),
+      selectedSku: typeof opts.currentNavParam === 'string' ? opts.currentNavParam : undefined,
+    };
+  }
+
+  if (sales) {
+    projectedDomains.sales = {
+      ...sales,
+      log: asArray(sales.log),
+    };
+  }
 
   return {
     self: {
@@ -72,15 +88,7 @@ function projectRuntimeState(domains: Record<string, unknown>, opts: {
     },
     filters: opts.sessionState,
     draft: opts.cardState,
-    inventory: {
-      ...inventory,
-      items: asArray(inventory.items),
-      selectedSku: typeof opts.currentNavParam === 'string' ? opts.currentNavParam : undefined,
-    },
-    sales: {
-      ...sales,
-      log: asArray(sales.log),
-    },
+    ...projectedDomains,
   };
 }
 
@@ -112,8 +120,12 @@ export function PluginCardSessionHost({
   const runtimeSession = useSelector((state: StoreState) => selectRuntimeSession(state as any, sessionId));
   const sessionState = useSelector((state: StoreState) => selectRuntimeSessionState(state as any, sessionId));
   const cardState = useSelector((state: StoreState) => selectRuntimeCardState(state as any, sessionId, currentCardId));
+  const projectedDomainKeys = useMemo(() => {
+    const keys = pluginConfig?.capabilities?.domain;
+    return Array.isArray(keys) ? keys.filter((key): key is string => typeof key === 'string' && key.length > 0) : [];
+  }, [pluginConfig]);
   const projectedDomains = useSelector(
-    (state: StoreState) => selectProjectedRuntimeDomains(state as any),
+    (state: StoreState) => selectProjectedRuntimeDomains(state as any, projectedDomainKeys),
     shallowEqual,
   );
 

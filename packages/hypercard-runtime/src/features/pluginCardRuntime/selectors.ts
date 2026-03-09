@@ -4,9 +4,8 @@ import type {
   PluginRuntimeSession,
 } from './pluginCardRuntimeSlice';
 
-const RUNTIME_PROJECTED_SLICES = new Set(['inventory', 'sales']);
 const EMPTY_RUNTIME_OBJECT = Object.freeze({}) as Record<string, unknown>;
-const projectedDomainsCache = new WeakMap<object, Record<string, unknown>>();
+const projectedDomainsCache = new WeakMap<object, Map<string, Record<string, unknown>>>();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -47,18 +46,32 @@ export const selectPendingNavIntents = (state: PluginCardRuntimeStateSlice) =>
  * The result is intended to be consumed with `useSelector(..., shallowEqual)` so callers
  * rerender only when relevant slice references change.
  */
-export const selectProjectedRuntimeDomains = (state: unknown): Record<string, unknown> => {
+export const selectProjectedRuntimeDomains = (
+  state: unknown,
+  allowedSlices: readonly string[] = [],
+): Record<string, unknown> => {
   if (!isRecord(state)) {
     return EMPTY_RUNTIME_OBJECT;
   }
 
-  const cached = projectedDomainsCache.get(state);
+  if (allowedSlices.length === 0) {
+    return EMPTY_RUNTIME_OBJECT;
+  }
+
+  const cacheKey = allowedSlices.join('\u0000');
+  const cachedByState = projectedDomainsCache.get(state);
+  const cached = cachedByState?.get(cacheKey);
   if (cached) {
     return cached;
   }
+
   const projected = Object.fromEntries(
-    Object.entries(state).filter(([key]) => RUNTIME_PROJECTED_SLICES.has(key)),
+    allowedSlices
+      .filter((key) => isRecord(state[key]))
+      .map((key) => [key, state[key]]),
   );
-  projectedDomainsCache.set(state, projected);
+  const nextCache = cachedByState ?? new Map<string, Record<string, unknown>>();
+  nextCache.set(cacheKey, projected);
+  projectedDomainsCache.set(state, nextCache);
   return projected;
 };

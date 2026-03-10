@@ -30,6 +30,15 @@ export interface RuntimeCardDebugWindowProps {
   initialStackId?: string;
 }
 
+function cardSource(card: { meta?: Record<string, unknown> }): string | null {
+  const runtime = card.meta?.runtime;
+  if (!runtime || typeof runtime !== 'object') {
+    return null;
+  }
+  const source = (runtime as Record<string, unknown>).source;
+  return typeof source === 'string' && source.trim().length > 0 ? source : null;
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 16 }}>
@@ -132,6 +141,7 @@ export function RuntimeCardDebugWindow({
               <th style={th}>ID</th>
               <th style={th}>Title</th>
               <th style={th}>Type</th>
+              <th style={th}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -141,6 +151,25 @@ export function RuntimeCardDebugWindow({
                 <td style={td}><code>{c.id}</code></td>
                 <td style={td}>{c.title}</td>
                 <td style={td}>{c.type}</td>
+                <td style={td}>
+                  {cardSource(c) ? (
+                    <button
+                      onClick={() => openCodeEditor(dispatch, { ownerAppId, cardId: c.id }, cardSource(c) ?? '')}
+                      style={{
+                        fontSize: 10,
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                        border: '1px solid #999',
+                        background: '#f0f0f0',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                  ) : (
+                    <span style={{ color: '#777' }}>—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -148,6 +177,9 @@ export function RuntimeCardDebugWindow({
       </Section>
 
       <Section title={`🃏 Runtime Card Registry (${registryCards.length})`}>
+        <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
+          Injected runtime cards from artifacts and ad-hoc registration appear here. Built-in stack cards are listed above.
+        </div>
         {registryCards.length === 0 ? (
           <div style={{ fontSize: 11, color: '#555' }}>No runtime cards registered yet.</div>
         ) : (

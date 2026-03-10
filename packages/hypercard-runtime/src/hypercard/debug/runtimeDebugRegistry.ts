@@ -3,6 +3,11 @@ import type { CardStackDefinition } from '@hypercard/engine';
 
 const registeredStacks = new Map<string, CardStackDefinition>();
 const listeners = new Set<() => void>();
+let registeredStacksSnapshot: CardStackDefinition[] = [];
+
+function refreshSnapshot() {
+  registeredStacksSnapshot = Array.from(registeredStacks.values());
+}
 
 function emitChange() {
   for (const listener of listeners) {
@@ -23,12 +28,13 @@ export function registerRuntimeDebugStacks(stacks: readonly CardStackDefinition[
     changed = true;
   }
   if (changed) {
+    refreshSnapshot();
     emitChange();
   }
 }
 
 export function getRegisteredRuntimeDebugStacks(): CardStackDefinition[] {
-  return Array.from(registeredStacks.values());
+  return registeredStacksSnapshot;
 }
 
 export function clearRegisteredRuntimeDebugStacks(): void {
@@ -36,6 +42,7 @@ export function clearRegisteredRuntimeDebugStacks(): void {
     return;
   }
   registeredStacks.clear();
+  refreshSnapshot();
   emitChange();
 }
 

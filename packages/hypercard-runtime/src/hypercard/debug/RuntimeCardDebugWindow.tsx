@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { type CardStackDefinition } from '@hypercard/engine';
+import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import {
   getPendingRuntimeCards,
   onRegistryChange,
@@ -28,6 +29,36 @@ export interface RuntimeCardDebugWindowProps {
   ownerAppId: string;
   stacks?: CardStackDefinition[];
   initialStackId?: string;
+}
+
+function nextDebugSessionId(prefix: string): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return `${prefix}${globalThis.crypto.randomUUID()}`;
+  }
+  return `${prefix}${Date.now()}`;
+}
+
+function buildStackCardWindowPayload(stack: CardStackDefinition, cardId: string): OpenWindowPayload | null {
+  const card = stack.cards[cardId];
+  if (!card) {
+    return null;
+  }
+
+  const sessionId = nextDebugSessionId(`runtime-debug:${stack.id}:${cardId}:`);
+  return {
+    id: `window:runtime-debug:${stack.id}:${cardId}:${sessionId}`,
+    title: card.title ?? cardId,
+    icon: card.icon ?? '📄',
+    bounds: { x: 180, y: 56, w: 960, h: 700 },
+    content: {
+      kind: 'card',
+      card: {
+        stackId: stack.id,
+        cardId,
+        cardSessionId: sessionId,
+      },
+    },
+  };
 }
 
 function cardSource(card: { meta?: Record<string, unknown> }): string | null {
@@ -104,6 +135,10 @@ export function RuntimeCardDebugWindow({
 
   const artifacts = useSelector((s: StoreSlice) => s.hypercardArtifacts?.byId ?? {});
   const sessions = useSelector((s: StoreSlice) => s.pluginCardRuntime?.sessions ?? {});
+  const stacksById = useMemo(
+    () => new Map(availableStacks.map((stack) => [stack.id, stack])),
+    [availableStacks],
+  );
 
   const activeStack = availableStacks.find((stack) => stack.id === selectedStackId) ?? availableStacks[0];
   const stackCards = activeStack ? Object.values(activeStack.cards) : [];
@@ -111,6 +146,18 @@ export function RuntimeCardDebugWindow({
 
   const td: React.CSSProperties = { padding: '3px 8px', fontSize: 11, borderBottom: '1px solid #ccc', verticalAlign: 'top', color: '#111' };
   const th: React.CSSProperties = { ...td, fontWeight: 700, background: '#e8e8f0', position: 'sticky', top: 0, color: '#111' };
+
+  const launchStackCard = (stackId: string, cardId: string) => {
+    const stack = stacksById.get(stackId);
+    if (!stack) {
+      return;
+    }
+    const payload = buildStackCardWindowPayload(stack, cardId);
+    if (!payload) {
+      return;
+    }
+    dispatch(openWindow(payload));
+  };
 
   return (
     <div style={{ padding: 12, fontFamily: 'monospace', fontSize: 12, color: '#111', overflow: 'auto', height: '100%' }}>
@@ -152,9 +199,9 @@ export function RuntimeCardDebugWindow({
                 <td style={td}>{c.title}</td>
                 <td style={td}>{c.type}</td>
                 <td style={td}>
-                  {cardSource(c) ? (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button
-                      onClick={() => openCodeEditor(dispatch, { ownerAppId, cardId: c.id }, cardSource(c) ?? '')}
+                      onClick={() => launchStackCard(activeStack.id, c.id)}
                       style={{
                         fontSize: 10,
                         padding: '1px 6px',
@@ -164,11 +211,24 @@ export function RuntimeCardDebugWindow({
                         cursor: 'pointer',
                       }}
                     >
-                      ✏️ Edit
+                      ▶ Open
                     </button>
-                  ) : (
-                    <span style={{ color: '#777' }}>—</span>
-                  )}
+                    {cardSource(c) ? (
+                      <button
+                        onClick={() => openCodeEditor(dispatch, { ownerAppId, cardId: c.id }, cardSource(c) ?? '')}
+                        style={{
+                          fontSize: 10,
+                          padding: '1px 6px',
+                          borderRadius: 3,
+                          border: '1px solid #999',
+                          background: '#f0f0f0',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -257,6 +317,7 @@ export function RuntimeCardDebugWindow({
                 <th style={th}>Stack</th>
                 <th style={th}>Status</th>
                 <th style={th}>Card States</th>
+                <th style={th}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -274,6 +335,47 @@ export function RuntimeCardDebugWindow({
                     {Object.keys(s.cardState ?? {}).map(cid => (
                       <div key={cid}><code style={{ fontSize: 10 }}>{cid}</code></div>
                     ))}
+                    {Object.keys(s.cardState ?? {}).length === 0 && <span style={{ color: '#555' }}>—</span>}
+                  </td>
+                  <td style={td}>
+                    {Object.keys(s.cardState ?? {}).map((cid) => {
+                      const stack = stacksById.get(s.stackId);
+                      const card = stack?.cards[cid];
+                      const source = card ? cardSource(card) : null;
+                      return (
+                        <div key={cid} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}>
+                          <code style={{ fontSize: 10 }}>{cid}</code>
+                          <button
+                            onClick={() => launchStackCard(s.stackId, cid)}
+                            style={{
+                              fontSize: 10,
+                              padding: '1px 6px',
+                              borderRadius: 3,
+                              border: '1px solid #999',
+                              background: '#f0f0f0',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ▶ Open
+                          </button>
+                          {source ? (
+                            <button
+                              onClick={() => openCodeEditor(dispatch, { ownerAppId, cardId: cid }, source)}
+                              style={{
+                                fontSize: 10,
+                                padding: '1px 6px',
+                                borderRadius: 3,
+                                border: '1px solid #999',
+                                background: '#f0f0f0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              ✏️ Edit
+                            </button>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                     {Object.keys(s.cardState ?? {}).length === 0 && <span style={{ color: '#555' }}>—</span>}
                   </td>
                 </tr>

@@ -113,6 +113,8 @@ describe('windowingReducer', () => {
 
       expect(state.windows.w1.minW).toBe(180);
       expect(state.windows.w1.minH).toBe(120);
+      expect(state.windows.w1.baseMinW).toBe(180);
+      expect(state.windows.w1.baseMinH).toBe(120);
     });
 
     it('uses custom minW/minH when specified', () => {
@@ -120,6 +122,8 @@ describe('windowingReducer', () => {
 
       expect(state.windows.w1.minW).toBe(250);
       expect(state.windows.w1.minH).toBe(200);
+      expect(state.windows.w1.baseMinW).toBe(250);
+      expect(state.windows.w1.baseMinH).toBe(200);
     });
 
     it('bootstraps session nav for card windows', () => {
@@ -357,22 +361,42 @@ describe('windowingReducer', () => {
       expect(state.windows.w1.minW).toBe(180); // unchanged
     });
 
-    it('does not lower minW below current value', () => {
+    it('does not lower minW below base floor', () => {
       const state = reduce(
         openWindow(cardWindow('w1', 'browse', { minW: 300 })),
         updateWindowMinSize({ id: 'w1', minW: 200 }),
       );
 
-      expect(state.windows.w1.minW).toBe(300);
+      expect(state.windows.w1.minW).toBe(300); // clamped to baseMinW
     });
 
-    it('does not lower minH below current value', () => {
+    it('does not lower minH below base floor', () => {
       const state = reduce(
         openWindow(cardWindow('w1', 'browse', { minH: 250 })),
         updateWindowMinSize({ id: 'w1', minH: 100 }),
       );
 
-      expect(state.windows.w1.minH).toBe(250);
+      expect(state.windows.w1.minH).toBe(250); // clamped to baseMinH
+    });
+
+    it('can shrink minW from a previous measurement down to base floor', () => {
+      const state = reduce(
+        openWindow(cardWindow('w1', 'browse')), // baseMinW = 180
+        updateWindowMinSize({ id: 'w1', minW: 500 }), // raised to 500
+        updateWindowMinSize({ id: 'w1', minW: 250 }), // shrinks to 250 (above base)
+      );
+
+      expect(state.windows.w1.minW).toBe(250);
+    });
+
+    it('can shrink minH from a previous measurement down to base floor', () => {
+      const state = reduce(
+        openWindow(cardWindow('w1', 'browse')), // baseMinH = 120
+        updateWindowMinSize({ id: 'w1', minH: 400 }), // raised to 400
+        updateWindowMinSize({ id: 'w1', minH: 150 }), // shrinks to 150 (above base)
+      );
+
+      expect(state.windows.w1.minH).toBe(150);
     });
 
     it('raises both minW and minH in a single dispatch', () => {

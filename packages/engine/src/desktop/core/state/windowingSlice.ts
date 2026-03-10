@@ -40,14 +40,18 @@ const windowingSlice = createSlice({
       }
 
       state.desktop.zCounter += 1;
+      const baseMinW = spec.minW ?? 180;
+      const baseMinH = spec.minH ?? 120;
       const win = {
         id: spec.id,
         title: spec.title,
         icon: spec.icon,
         bounds: spec.bounds,
         z: state.desktop.zCounter,
-        minW: spec.minW ?? 180,
-        minH: spec.minH ?? 120,
+        minW: baseMinW,
+        minH: baseMinH,
+        baseMinW,
+        baseMinH,
         isDialog: spec.isDialog,
         isResizable: spec.isResizable,
         content: spec.content,
@@ -130,16 +134,16 @@ const windowingSlice = createSlice({
       win.bounds.h = Math.max(win.minH, action.payload.h);
     },
 
-    /** Update content-derived minimum size. Can only raise, never lower. */
+    /** Update content-derived minimum size. Clamped to base floor but can shrink from previous measurement. */
     updateWindowMinSize(state, action: PayloadAction<{ id: string; minW?: number; minH?: number }>) {
       const win = state.windows[action.payload.id];
       if (!win) return;
 
       if (action.payload.minW !== undefined) {
-        win.minW = Math.max(win.minW, action.payload.minW);
+        win.minW = Math.max(win.baseMinW, action.payload.minW);
       }
       if (action.payload.minH !== undefined) {
-        win.minH = Math.max(win.minH, action.payload.minH);
+        win.minH = Math.max(win.baseMinH, action.payload.minH);
       }
     },
 

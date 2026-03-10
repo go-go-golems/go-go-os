@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useDocsIndex, useDocsSearch } from '../../domain/docsHooks';
-import { type DocsSearchQuery } from '../../domain/docsObjects';
+import type { DocsSearchQuery } from '../../domain/docsObjects';
 import { useDocBrowser } from './DocBrowserContext';
 import { createDocLinkHandlers } from './docLinkInteraction';
 
 interface DocSearchScreenProps {
-  initialQuery?: string;
+  initialFilter?: DocsSearchQuery;
 }
 
 interface FilterState {
@@ -24,6 +24,16 @@ function toggleSet(set: Set<string>, value: string): Set<string> {
     next.add(value);
   }
   return next;
+}
+
+function createFilterState(initialFilter?: DocsSearchQuery): FilterState {
+  return {
+    query: initialFilter?.query ?? '',
+    kinds: new Set(initialFilter?.kinds ?? []),
+    owners: new Set(initialFilter?.owners ?? []),
+    docTypes: new Set(initialFilter?.docTypes ?? []),
+    topics: new Set(initialFilter?.topics ?? []),
+  };
 }
 
 function FilterSection({
@@ -46,11 +56,7 @@ function FilterSection({
         const checked = selected.size === 0 || selected.has(item.slug);
         return (
           <label key={item.slug} data-part="doc-filter-item">
-            <input
-              type="checkbox"
-              checked={checked}
-              onChange={() => onToggle(item.slug)}
-            />
+            <input type="checkbox" checked={checked} onChange={() => onToggle(item.slug)} />
             <span data-part="doc-filter-item-label">{item.slug}</span>
             <span data-part="doc-filter-item-count">{item.count}</span>
           </label>
@@ -60,18 +66,9 @@ function FilterSection({
   );
 }
 
-function ResultCard({
-  result,
-}: {
-  result: ReturnType<typeof useDocsSearch>['results'][number];
-}) {
+function ResultCard({ result }: { result: ReturnType<typeof useDocsSearch>['results'][number] }) {
   const { openDoc, openDocNewWindow, showDocLinkMenu } = useDocBrowser();
-  const handlers = createDocLinkHandlers(
-    { path: result.path },
-    openDoc,
-    openDocNewWindow,
-    showDocLinkMenu,
-  );
+  const handlers = createDocLinkHandlers({ path: result.path }, openDoc, openDocNewWindow, showDocLinkMenu);
 
   return (
     <button
@@ -82,60 +79,80 @@ function ResultCard({
       onContextMenu={handlers.onContextMenu}
     >
       <div data-part="doc-result-card-badges">
-        <span data-part="doc-badge" data-variant="doc-type">{result.docType ?? 'reference'}</span>
-        <span data-part="doc-badge" data-variant="module">{result.kind}:{result.owner}</span>
+        <span data-part="doc-badge" data-variant="doc-type">
+          {result.docType ?? 'reference'}
+        </span>
+        <span data-part="doc-badge" data-variant="module">
+          {result.kind}:{result.owner}
+        </span>
       </div>
       <div data-part="doc-result-card-title">{result.title}</div>
-      {result.summary && (
-        <div data-part="doc-result-card-summary">{result.summary}</div>
-      )}
+      {result.summary && <div data-part="doc-result-card-summary">{result.summary}</div>}
     </button>
   );
 }
 
-export function DocSearchScreen({ initialQuery = '' }: DocSearchScreenProps) {
+export function DocSearchScreen({ initialFilter }: DocSearchScreenProps) {
   const { summaries } = useDocsIndex();
-  const [filter, setFilter] = useState<FilterState>({
-    query: initialQuery,
-    kinds: new Set<string>(),
-    owners: new Set<string>(),
-    docTypes: new Set<string>(),
-    topics: new Set<string>(),
-  });
+  const [filter, setFilter] = useState<FilterState>(() => createFilterState(initialFilter));
 
   const kindFacets = useMemo(() => facetCounts(summaries, (summary) => summary.kind), [summaries]);
   const ownerFacets = useMemo(() => facetCounts(summaries, (summary) => summary.owner), [summaries]);
-  const docTypeFacets = useMemo(
-    () => facetCounts(summaries, (summary) => summary.docType ?? 'reference'),
-    [summaries],
-  );
-  const topicFacets = useMemo(
-    () => facetCountsMany(summaries, (summary) => summary.topics ?? []),
-    [summaries],
-  );
+  const docTypeFacets = useMemo(() => facetCounts(summaries, (summary) => summary.docType ?? 'reference'), [summaries]);
+  const topicFacets = useMemo(() => facetCountsMany(summaries, (summary) => summary.topics ?? []), [summaries]);
 
-  const query = useMemo<DocsSearchQuery>(() => ({
-    query: filter.query.trim() || undefined,
-    kinds: filter.kinds.size > 0 ? [...filter.kinds] : undefined,
-    owners: filter.owners.size > 0 ? [...filter.owners] : undefined,
-    docTypes: filter.docTypes.size > 0 ? [...filter.docTypes] : undefined,
-    topics: filter.topics.size > 0 ? [...filter.topics] : undefined,
-  }), [filter]);
+  const query = useMemo<DocsSearchQuery>(
+    () => ({
+      query: filter.query.trim() || undefined,
+      kinds: filter.kinds.size > 0 ? [...filter.kinds] : undefined,
+      owners: filter.owners.size > 0 ? [...filter.owners] : undefined,
+      docTypes: filter.docTypes.size > 0 ? [...filter.docTypes] : undefined,
+      topics: filter.topics.size > 0 ? [...filter.topics] : undefined,
+    }),
+    [filter],
+  );
 
   const { results, status } = useDocsSearch(query);
 
-  const toggleKind = useCallback((slug: string) => {
-    setFilter((prev) => ({ ...prev, kinds: toggleSet(prev.kinds.size === 0 ? new Set(kindFacets.map((item) => item.slug)) : prev.kinds, slug) }));
-  }, [kindFacets]);
-  const toggleOwner = useCallback((slug: string) => {
-    setFilter((prev) => ({ ...prev, owners: toggleSet(prev.owners.size === 0 ? new Set(ownerFacets.map((item) => item.slug)) : prev.owners, slug) }));
-  }, [ownerFacets]);
-  const toggleDocType = useCallback((slug: string) => {
-    setFilter((prev) => ({ ...prev, docTypes: toggleSet(prev.docTypes.size === 0 ? new Set(docTypeFacets.map((item) => item.slug)) : prev.docTypes, slug) }));
-  }, [docTypeFacets]);
-  const toggleTopic = useCallback((slug: string) => {
-    setFilter((prev) => ({ ...prev, topics: toggleSet(prev.topics.size === 0 ? new Set(topicFacets.map((item) => item.slug)) : prev.topics, slug) }));
-  }, [topicFacets]);
+  const toggleKind = useCallback(
+    (slug: string) => {
+      setFilter((prev) => ({
+        ...prev,
+        kinds: toggleSet(prev.kinds.size === 0 ? new Set(kindFacets.map((item) => item.slug)) : prev.kinds, slug),
+      }));
+    },
+    [kindFacets],
+  );
+  const toggleOwner = useCallback(
+    (slug: string) => {
+      setFilter((prev) => ({
+        ...prev,
+        owners: toggleSet(prev.owners.size === 0 ? new Set(ownerFacets.map((item) => item.slug)) : prev.owners, slug),
+      }));
+    },
+    [ownerFacets],
+  );
+  const toggleDocType = useCallback(
+    (slug: string) => {
+      setFilter((prev) => ({
+        ...prev,
+        docTypes: toggleSet(
+          prev.docTypes.size === 0 ? new Set(docTypeFacets.map((item) => item.slug)) : prev.docTypes,
+          slug,
+        ),
+      }));
+    },
+    [docTypeFacets],
+  );
+  const toggleTopic = useCallback(
+    (slug: string) => {
+      setFilter((prev) => ({
+        ...prev,
+        topics: toggleSet(prev.topics.size === 0 ? new Set(topicFacets.map((item) => item.slug)) : prev.topics, slug),
+      }));
+    },
+    [topicFacets],
+  );
 
   const clearAll = useCallback(() => {
     setFilter({
@@ -194,9 +211,7 @@ export function DocSearchScreen({ initialQuery = '' }: DocSearchScreenProps) {
           </div>
 
           {status !== 'loading' && results.length === 0 && (
-            <div data-part="doc-center-message">
-              No mounted docs match your search.
-            </div>
+            <div data-part="doc-center-message">No mounted docs match your search.</div>
           )}
 
           {results.map((result) => (

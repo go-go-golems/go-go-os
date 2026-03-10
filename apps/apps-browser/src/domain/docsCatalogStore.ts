@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { DocObject, DocObjectPath, DocObjectSummary, DocsMountPath, DocsSearchQuery } from './docsObjects';
-import { docsRegistry, type DocsRegistry } from './docsRegistry';
+import { type DocsRegistry, docsRegistry } from './docsRegistry';
 
 type Listener = () => void;
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -84,7 +84,30 @@ export function createDocsCatalogStore(registry: DocsRegistry): DocsCatalogStore
     notify();
   };
 
-  const syncMountPaths = () => {
+  const invalidateForRegistryUpdate = (nextMountPaths: DocsMountPath[]) => {
+    const activeMounts = new Set(nextMountPaths);
+
+    for (const mountPath of Array.from(pendingMounts.keys())) {
+      if (!activeMounts.has(mountPath)) {
+        pendingMounts.delete(mountPath);
+      }
+    }
+    pendingObjects.clear();
+    pendingSearches.clear();
+
+    setSnapshot(() => ({
+      mountPaths: nextMountPaths,
+      mounts: {},
+      objects: {},
+      searches: {},
+    }));
+
+    nextMountPaths.forEach((mountPath) => {
+      void ensureMountLoaded(mountPath);
+    });
+  };
+
+  const refreshMountPaths = () => {
     const nextMountPaths = registry.listMountPaths();
     const same =
       nextMountPaths.length === snapshot.mountPaths.length &&
@@ -92,13 +115,14 @@ export function createDocsCatalogStore(registry: DocsRegistry): DocsCatalogStore
     if (same) {
       return;
     }
+
     setSnapshot((current) => ({
       ...current,
       mountPaths: nextMountPaths,
     }));
   };
 
-  registry.subscribe(syncMountPaths);
+  registry.subscribe(() => invalidateForRegistryUpdate(registry.listMountPaths()));
 
   async function ensureMountLoaded(mountPath: DocsMountPath): Promise<void> {
     const current = snapshot.mounts[mountPath];
@@ -133,7 +157,8 @@ export function createDocsCatalogStore(registry: DocsRegistry): DocsCatalogStore
       },
     }));
 
-    const job = resolved.mount.list(resolved.subpath)
+    const job = resolved.mount
+      .list(resolved.subpath)
       .then((summaries) => {
         setSnapshot((currentSnapshot) => ({
           ...currentSnapshot,
@@ -168,7 +193,7 @@ export function createDocsCatalogStore(registry: DocsRegistry): DocsCatalogStore
   }
 
   async function ensureAllMountsLoaded() {
-    syncMountPaths();
+    refreshMountPaths();
     await Promise.all(snapshot.mountPaths.map((mountPath) => ensureMountLoaded(mountPath)));
   }
 
@@ -204,7 +229,8 @@ export function createDocsCatalogStore(registry: DocsRegistry): DocsCatalogStore
       },
     }));
 
-    const job = resolved.mount.read(resolved.subpath)
+    const job = resolved.mount
+      .read(resolved.subpath)
       .then((value) => {
         setSnapshot((currentSnapshot) => ({
           ...currentSnapshot,
@@ -255,12 +281,14 @@ export function createDocsCatalogStore(registry: DocsRegistry): DocsCatalogStore
       },
     }));
 
-    const job = registry.search(query)
+    const job = registry
+      .search(query)
       .then((results) => {
         setSnapshot((currentSnapshot) => {
           const summariesByMount = new Map<DocsMountPath, DocObjectSummary[]>();
           for (const result of results) {
-            const existing = summariesByMount.get(result.mountPath) ?? currentSnapshotMounts(currentSnapshot, result.mountPath);
+            const existing =
+              summariesByMount.get(result.mountPath) ?? currentSnapshotMounts(currentSnapshot, result.mountPath);
             summariesByMount.set(result.mountPath, mergeSummaries(existing, [result]));
           }
 

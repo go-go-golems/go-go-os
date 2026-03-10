@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildDocObjectPath, buildDocsMountPath, type DocsMount } from './docsObjects';
 import { createDocsCatalogStore } from './docsCatalogStore';
+import { buildDocObjectPath, buildDocsMountPath, type DocsMount } from './docsObjects';
 import { DocsRegistry } from './docsRegistry';
 
 function createMount(kind: string, owner: string, slug = 'overview'): DocsMount {
@@ -8,17 +8,19 @@ function createMount(kind: string, owner: string, slug = 'overview'): DocsMount 
   return {
     mountPath: () => mountPath,
     async list() {
-      return [{
-        path: buildDocObjectPath(kind, owner, slug),
-        mountPath,
-        kind,
-        owner,
-        slug,
-        title: `${owner}:${slug}`,
-        summary: `summary ${owner}`,
-        docType: 'reference',
-        topics: ['docs'],
-      }];
+      return [
+        {
+          path: buildDocObjectPath(kind, owner, slug),
+          mountPath,
+          kind,
+          owner,
+          slug,
+          title: `${owner}:${slug}`,
+          summary: `summary ${owner}`,
+          docType: 'reference',
+          topics: ['docs'],
+        },
+      ];
     },
     async read(subpath) {
       const finalSlug = subpath[0];
@@ -49,7 +51,9 @@ describe('docsCatalogStore', () => {
 
     expect(snapshot.mountPaths).toEqual(['/docs/objects/module/inventory']);
     expect(snapshot.mounts['/docs/objects/module/inventory']?.status).toBe('ready');
-    expect(snapshot.mounts['/docs/objects/module/inventory']?.summaries[0]?.path).toBe('/docs/objects/module/inventory/overview');
+    expect(snapshot.mounts['/docs/objects/module/inventory']?.summaries[0]?.path).toBe(
+      '/docs/objects/module/inventory/overview',
+    );
   });
 
   it('loads individual doc objects by canonical path', async () => {
@@ -61,7 +65,9 @@ describe('docsCatalogStore', () => {
     const snapshot = store.getSnapshot();
 
     expect(snapshot.objects['/docs/objects/card/os-launcher/kanbanIncidentCommand']?.status).toBe('ready');
-    expect(snapshot.objects['/docs/objects/card/os-launcher/kanbanIncidentCommand']?.value?.content).toBe('doc content');
+    expect(snapshot.objects['/docs/objects/card/os-launcher/kanbanIncidentCommand']?.value?.content).toBe(
+      'doc content',
+    );
   });
 
   it('stores search result paths without Redux', async () => {
@@ -76,5 +82,23 @@ describe('docsCatalogStore', () => {
 
     expect(snapshot.searches[key]?.status).toBe('ready');
     expect(snapshot.searches[key]?.resultPaths).toEqual(['/docs/objects/card/os-launcher/kanbanIncidentCommand']);
+  });
+
+  it('reloads mount summaries when a mount is replaced at the same path', async () => {
+    const registry = new DocsRegistry();
+    registry.register(createMount('module', 'inventory', 'overview'));
+    const store = createDocsCatalogStore(registry);
+
+    await store.ensureMountLoaded('/docs/objects/module/inventory');
+    expect(store.getSnapshot().mounts['/docs/objects/module/inventory']?.summaries[0]?.path).toBe(
+      '/docs/objects/module/inventory/overview',
+    );
+
+    registry.register(createMount('module', 'inventory', 'fresh-start'));
+
+    await store.ensureMountLoaded('/docs/objects/module/inventory');
+    expect(store.getSnapshot().mounts['/docs/objects/module/inventory']?.summaries[0]?.path).toBe(
+      '/docs/objects/module/inventory/fresh-start',
+    );
   });
 });

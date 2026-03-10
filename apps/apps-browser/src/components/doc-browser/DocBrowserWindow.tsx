@@ -1,4 +1,5 @@
-import { mountPathFromObjectPath, type DocObjectPath, type DocsMountPath } from '../../domain/docsObjects';
+import { serializeDocsSearchQuery } from '../../domain/docsCatalogStore';
+import { type DocObjectPath, type DocsMountPath, mountPathFromObjectPath } from '../../domain/docsObjects';
 import { DocBrowserProvider, useDocBrowser } from './DocBrowserContext';
 import { DocCenterHome } from './DocCenterHome';
 import { DocReaderScreen } from './DocReaderScreen';
@@ -10,19 +11,12 @@ import './DocBrowserWindow.css';
 function DocBrowserToolbar() {
   const { location, canGoBack, goBack, goHome, openSearch, openCollection, openTopicBrowser } = useDocBrowser();
   const activeMountPath =
-    location.mountPath ??
-    (location.path ? mountPathFromObjectPath(location.path) ?? undefined : undefined);
+    location.mountPath ?? (location.path ? (mountPathFromObjectPath(location.path) ?? undefined) : undefined);
   const showCollectionBtn = (location.screen === 'reader' || location.screen === 'collection') && activeMountPath;
 
   return (
     <div data-part="doc-browser-toolbar">
-      <button
-        type="button"
-        data-part="doc-browser-nav-btn"
-        onClick={goBack}
-        disabled={!canGoBack}
-        aria-label="Back"
-      >
+      <button type="button" data-part="doc-browser-nav-btn" onClick={goBack} disabled={!canGoBack} aria-label="Back">
         {'\u25C0'}
       </button>
       <button
@@ -70,8 +64,10 @@ function DocBrowserScreenRouter() {
   switch (location.screen) {
     case 'home':
       return <DocCenterHome />;
-    case 'search':
-      return <DocSearchScreen initialQuery={location.query} />;
+    case 'search': {
+      const initialFilter = location.searchQuery ?? { query: location.query };
+      return <DocSearchScreen key={serializeDocsSearchQuery(initialFilter)} initialFilter={initialFilter} />;
+    }
     case 'collection':
       return location.mountPath ? (
         <ModuleDocsScreen mountPath={location.mountPath} />
@@ -130,11 +126,15 @@ function DocLinkContextMenu() {
 
   return (
     <>
-      <div data-part="doc-link-menu-backdrop" onClick={closeDocLinkMenu} onContextMenu={(e) => { e.preventDefault(); closeDocLinkMenu(); }} />
       <div
-        data-part="doc-link-menu"
-        style={{ left: docLinkMenu.x, top: docLinkMenu.y }}
-      >
+        data-part="doc-link-menu-backdrop"
+        onClick={closeDocLinkMenu}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          closeDocLinkMenu();
+        }}
+      />
+      <div data-part="doc-link-menu" style={{ left: docLinkMenu.x, top: docLinkMenu.y }}>
         <button
           type="button"
           data-part="doc-link-menu-item"
@@ -183,7 +183,11 @@ export function DocBrowserWindow({
   };
 
   return (
-    <DocBrowserProvider initialScreen={resolvedScreen} initialParams={initialParams} onOpenDocNewWindow={onOpenDocNewWindow}>
+    <DocBrowserProvider
+      initialScreen={resolvedScreen}
+      initialParams={initialParams}
+      onOpenDocNewWindow={onOpenDocNewWindow}
+    >
       <div data-part="doc-browser">
         <DocBrowserToolbar />
         <div data-part="doc-browser-content">

@@ -30,30 +30,15 @@ function CollectionCard({ card, appNames }: { card: CollectionCardData; appNames
 
   return (
     <div data-part="doc-module-card">
-      <div
-        data-part="doc-module-card-header"
-        onClick={() => openCollection(card.mountPath)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            openCollection(card.mountPath);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-      >
+      <button type="button" data-part="doc-module-card-header" onClick={() => openCollection(card.mountPath)}>
         <span data-part="doc-module-card-name">{displayLabel}</span>
-      </div>
+      </button>
       <div data-part="doc-module-card-meta">
         {card.count} page{card.count !== 1 ? 's' : ''} · {card.kind}
       </div>
       <ul data-part="doc-module-card-list">
         {card.summaries.slice(0, 5).map((doc) => {
-          const handlers = createDocLinkHandlers(
-            { path: doc.path },
-            openDoc,
-            openDocNewWindow,
-            showDocLinkMenu,
-          );
+          const handlers = createDocLinkHandlers({ path: doc.path }, openDoc, openDocNewWindow, showDocLinkMenu);
           return (
             <li key={doc.path}>
               <button
@@ -93,12 +78,7 @@ function ChipRow({
       <div data-part="doc-center-section">{title}</div>
       <div data-part="doc-chip-row">
         {items.map((item) => (
-          <button
-            key={item.slug}
-            type="button"
-            data-part="doc-chip"
-            onClick={() => onClick(item.slug)}
-          >
+          <button key={item.slug} type="button" data-part="doc-chip" onClick={() => onClick(item.slug)}>
             {item.slug}
             <span data-part="doc-chip-count">{item.count}</span>
           </button>
@@ -113,20 +93,18 @@ export function DocCenterHome() {
   const { status, summaries } = useDocsIndex();
   const { openSearch, openTopicBrowser } = useDocBrowser();
 
-  const appNames = useMemo(
-    () => new Map((apps ?? []).map((app) => [app.app_id, app.name])),
-    [apps],
-  );
+  const appNames = useMemo(() => new Map((apps ?? []).map((app) => [app.app_id, app.name])), [apps]);
 
   const collections = useMemo(
-    () => groupDocsByMount(summaries).map((group) => ({
-      mountPath: group.mountPath,
-      kind: group.kind,
-      owner: group.owner,
-      label: group.label,
-      count: group.count,
-      summaries: group.summaries,
-    })),
+    () =>
+      groupDocsByMount(summaries).map((group) => ({
+        mountPath: group.mountPath,
+        kind: group.kind,
+        owner: group.owner,
+        label: group.label,
+        count: group.count,
+        summaries: group.summaries,
+      })),
     [summaries],
   );
 
@@ -163,9 +141,7 @@ export function DocCenterHome() {
   if (collections.length === 0) {
     return (
       <div data-part="doc-center-home">
-        <div data-part="doc-center-message">
-          No documentation collections are mounted yet.
-        </div>
+        <div data-part="doc-center-message">No documentation collections are mounted yet.</div>
       </div>
     );
   }
@@ -182,7 +158,7 @@ export function DocCenterHome() {
       </div>
 
       <ChipRow title="Browse by Topic" items={topics} onClick={openTopicBrowser} />
-      <ChipRow title="Browse by Kind" items={kinds} onClick={(kind) => openSearch(kind)} />
+      <ChipRow title="Browse by Kind" items={kinds} onClick={(kind) => openSearch({ kinds: [kind] })} />
 
       <div data-part="doc-center-footer">
         {summaries.length} docs across {collections.length} mounted collections

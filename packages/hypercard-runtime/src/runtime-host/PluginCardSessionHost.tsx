@@ -5,6 +5,7 @@ import { showToast } from '@hypercard/engine';
 import {
   registerRuntimeSession,
   removeRuntimeSession,
+  resolveCapabilityPolicy,
   selectRuntimeCardState,
   selectProjectedRuntimeDomains,
   selectRuntimeSession,
@@ -119,12 +120,12 @@ export function PluginCardSessionHost({
   const runtimeSession = useSelector((state: StoreState) => selectRuntimeSession(state as any, sessionId));
   const sessionState = useSelector((state: StoreState) => selectRuntimeSessionState(state as any, sessionId));
   const cardState = useSelector((state: StoreState) => selectRuntimeCardState(state as any, sessionId, currentCardId));
-  const projectedDomainKeys = useMemo(() => {
-    const keys = pluginConfig?.capabilities?.domain;
-    return Array.isArray(keys) ? keys.filter((key): key is string => typeof key === 'string' && key.length > 0) : [];
-  }, [pluginConfig]);
+  const projectedDomainAccess = useMemo(
+    () => runtimeSession?.capabilities.domain ?? resolveCapabilityPolicy(pluginConfig?.capabilities).domain,
+    [pluginConfig, runtimeSession?.capabilities.domain],
+  );
   const projectedDomains = useSelector(
-    (state: StoreState) => selectProjectedRuntimeDomains(state as any, projectedDomainKeys),
+    (state: StoreState) => selectProjectedRuntimeDomains(state as any, projectedDomainAccess),
     shallowEqual,
   );
 

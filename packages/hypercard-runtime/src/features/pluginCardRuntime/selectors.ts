@@ -1,3 +1,4 @@
+import type { CapabilitySet } from './capabilityPolicy';
 import type {
   PluginCardRuntimeState,
   PluginCardRuntimeStateSlice,
@@ -6,6 +7,7 @@ import type {
 
 const EMPTY_RUNTIME_OBJECT = Object.freeze({}) as Record<string, unknown>;
 const projectedDomainsCache = new WeakMap<object, Map<string, Record<string, unknown>>>();
+const ALL_PROJECTED_DOMAINS_CACHE_KEY = '__all__';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -48,17 +50,17 @@ export const selectPendingNavIntents = (state: PluginCardRuntimeStateSlice) =>
  */
 export const selectProjectedRuntimeDomains = (
   state: unknown,
-  allowedSlices: readonly string[] = [],
+  allowedSlices: CapabilitySet = [],
 ): Record<string, unknown> => {
   if (!isRecord(state)) {
     return EMPTY_RUNTIME_OBJECT;
   }
 
-  if (allowedSlices.length === 0) {
+  if (Array.isArray(allowedSlices) && allowedSlices.length === 0) {
     return EMPTY_RUNTIME_OBJECT;
   }
 
-  const cacheKey = allowedSlices.join('\u0000');
+  const cacheKey = allowedSlices === 'all' ? ALL_PROJECTED_DOMAINS_CACHE_KEY : allowedSlices.join('\u0000');
   const cachedByState = projectedDomainsCache.get(state);
   const cached = cachedByState?.get(cacheKey);
   if (cached) {
@@ -66,7 +68,7 @@ export const selectProjectedRuntimeDomains = (
   }
 
   const projected = Object.fromEntries(
-    allowedSlices
+    (allowedSlices === 'all' ? Object.keys(state) : allowedSlices)
       .filter((key) => isRecord(state[key]))
       .map((key) => [key, state[key]]),
   );

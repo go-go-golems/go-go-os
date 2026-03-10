@@ -63,6 +63,18 @@ const TEST_STACK: CardStackDefinition = {
   },
 };
 
+function createTestStack(
+  capabilities?: NonNullable<CardStackDefinition['plugin']>['capabilities'],
+): CardStackDefinition {
+  return {
+    ...TEST_STACK,
+    plugin: {
+      ...TEST_STACK.plugin!,
+      capabilities,
+    },
+  };
+}
+
 function inventoryReducer(state = { items: [] as Array<{ sku: string }> }, action: { type: string; payload?: unknown }) {
   if (action.type === 'inventory/setItems' && Array.isArray(action.payload)) {
     return { items: action.payload as Array<{ sku: string }> };
@@ -102,7 +114,7 @@ async function waitForText(container: HTMLElement, text: string, timeoutMs = 300
 }
 
 describe('PluginCardSessionHost rerender invalidation', () => {
-  it('rerenders when only projected domain state changes', async () => {
+  async function renderAndUpdateCount(stack: CardStackDefinition) {
     const { createStore } = createAppStore({ inventory: inventoryReducer });
     const store = createStore();
 
@@ -116,7 +128,7 @@ describe('PluginCardSessionHost rerender invalidation', () => {
     await act(async () => {
       root.render(
         <Provider store={store}>
-          <PluginCardSessionHost windowId="window:runtime-rerender" sessionId="session-rerender" stack={TEST_STACK} />
+          <PluginCardSessionHost windowId="window:runtime-rerender" sessionId="session-rerender" stack={stack} />
         </Provider>,
       );
     });
@@ -128,5 +140,13 @@ describe('PluginCardSessionHost rerender invalidation', () => {
     });
 
     await waitForText(container, 'Count: 2');
+  }
+
+  it('rerenders when only projected domain state changes and capabilities are omitted', async () => {
+    await renderAndUpdateCount(createTestStack());
+  });
+
+  it('rerenders when only projected domain state changes and capabilities.domain is all', async () => {
+    await renderAndUpdateCount(createTestStack({ domain: 'all' }));
   });
 });

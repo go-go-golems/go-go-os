@@ -53,10 +53,11 @@ export function useContentMinSize(
   });
 
   // ResizeObserver catches descendant reflows (async loads, internal state changes)
-  // that don't trigger WindowBody re-render due to memo
+  // that don't trigger WindowBody re-render due to memo.
+  // Guarded for environments without ResizeObserver (e.g., jsdom in tests).
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || typeof ResizeObserver === 'undefined') return;
 
     const observer = new ResizeObserver(() => {
       report(measure(el));

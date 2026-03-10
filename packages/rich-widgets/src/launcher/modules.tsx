@@ -132,6 +132,7 @@ import {
 
 type LaunchReason = 'icon' | 'menu' | 'command' | 'startup';
 type RichWidgetsInstanceId = 'folder' | `widget~${string}`;
+type RichWidgetsFolderId = 'root' | 'kanban';
 
 interface RichWidgetDef {
   id: string;
@@ -179,6 +180,11 @@ export const RICH_WIDGETS: readonly RichWidgetDef[] = [
 ];
 
 const RICH_WIDGETS_BY_ID = new Map(RICH_WIDGETS.map((widget) => [widget.id, widget]));
+const KANBAN_FOLDER_ICON_ID = 'folder.kanban';
+const KANBAN_WIDGET_IDS = new Set<string>([
+  'kanban-board',
+  ...KANBAN_EXAMPLE_BOARDS.map((board) => board.id),
+]);
 
 function buildWidgetWindow(widget: RichWidgetDef, reason: LaunchReason): OpenWindowPayload {
   return {
@@ -234,24 +240,66 @@ function RichWidgetsFolderWindow({
   dispatchWindowAction: (action: unknown) => unknown;
 }) {
   const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<RichWidgetsFolderId>('root');
   const icons = useMemo<DesktopIconDef[]>(
-    () =>
-      RICH_WIDGETS.map((widgetDef) => ({
-        id: widgetDef.id,
-        label: widgetDef.name,
-        icon: widgetDef.icon,
-        kind: 'app',
+    () => {
+      if (currentFolder === 'kanban') {
+        return RICH_WIDGETS
+          .filter((widgetDef) => KANBAN_WIDGET_IDS.has(widgetDef.id))
+          .map((widgetDef) => ({
+            id: widgetDef.id,
+            label: widgetDef.name,
+            icon: widgetDef.icon,
+            kind: 'app',
+            appId: 'rich-widgets',
+          }));
+      }
+
+      const rootIcons = RICH_WIDGETS
+        .filter((widgetDef) => !KANBAN_WIDGET_IDS.has(widgetDef.id))
+        .map((widgetDef) => ({
+          id: widgetDef.id,
+          label: widgetDef.name,
+          icon: widgetDef.icon,
+          kind: 'app',
+          appId: 'rich-widgets',
+        }));
+
+      rootIcons.splice(3, 0, {
+        id: KANBAN_FOLDER_ICON_ID,
+        label: 'Kanban',
+        icon: '\uD83D\uDCC1',
+        kind: 'folder',
         appId: 'rich-widgets',
-      })),
-    [],
+      });
+
+      return rootIcons;
+    },
+    [currentFolder],
   );
 
   return (
     <section data-part={RICH_PARTS.rwLauncher}>
       <header data-part={RICH_PARTS.rwLauncherHeader}>
-        <strong>Rich Widgets</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {currentFolder !== 'root' ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentFolder('root');
+                setSelectedIconId(null);
+              }}
+              style={{ fontSize: 11 }}
+            >
+              Back
+            </button>
+          ) : null}
+          <strong>{currentFolder === 'root' ? 'Rich Widgets' : 'Rich Widgets / Kanban'}</strong>
+        </div>
         <span data-part={RICH_PARTS.rwLauncherHint}>
-          Double-click an icon to open the widget in its own launcher window. Concrete Kanban boards are grouped with the Kanban prefix.
+          {currentFolder === 'root'
+            ? 'Double-click an icon to open the widget in its own launcher window.'
+            : 'Open a concrete Kanban board preset or the base Kanban board.'}
         </span>
       </header>
       <DesktopIconLayer
@@ -259,6 +307,11 @@ function RichWidgetsFolderWindow({
         selectedIconId={selectedIconId}
         onSelectIcon={setSelectedIconId}
         onOpenIcon={(iconId: string) => {
+          if (iconId === KANBAN_FOLDER_ICON_ID) {
+            setCurrentFolder('kanban');
+            setSelectedIconId(null);
+            return;
+          }
           const widgetDef = RICH_WIDGETS_BY_ID.get(iconId);
           if (!widgetDef) {
             return;

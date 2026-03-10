@@ -1,12 +1,14 @@
 import {
-  useState,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
   useReducer,
   useRef,
-  useEffect,
-  useCallback,
-  useMemo,
+  useState,
 } from 'react';
 import { Btn } from '@hypercard/engine';
+import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { CommandPalette } from '../primitives/CommandPalette';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
@@ -16,7 +18,6 @@ import type { CellData, CellRange, ClipboardData, CellFormat } from './types';
 import {
   NUM_ROWS,
   NUM_COLS,
-  DEFAULT_COL_W,
   ROW_H,
   HEADER_H,
   ROW_HEADER_W,
@@ -25,184 +26,38 @@ import {
   cellId,
 } from './types';
 import { evaluateFormula } from './formula';
-import { createSampleCells, CALC_ACTIONS } from './sampleData';
+import { CALC_ACTIONS } from './sampleData';
+import {
+  createMacCalcStateSeed,
+  MAC_CALC_STATE_KEY,
+  macCalcActions,
+  type MacCalcAction,
+  type MacCalcState,
+  macCalcReducer,
+  selectMacCalcState,
+} from './macCalcState';
 
-// ── Reducer types ────────────────────────────────────────────────────
-interface CalcState {
-  cells: Record<string, CellData>;
-  clipboard: ClipboardData | null;
-  sel: { r: number; c: number };
-  selRange: CellRange | null;
-  isDragging: boolean;
-  dragStart: { r: number; c: number } | null;
-  editing: boolean;
-  editVal: string;
-  showFind: boolean;
-  findQuery: string;
-  showPalette: boolean;
-  colWidths: number[];
-}
-
-type CalcAction =
-  | { type: 'SET_CELLS'; cells: Record<string, CellData> }
-  | {
-      type: 'UPDATE_CELLS';
-      updater: (prev: Record<string, CellData>) => Record<string, CellData>;
-    }
-  | { type: 'SET_SEL'; r: number; c: number }
-  | { type: 'SET_SEL_RANGE'; range: CellRange | null }
-  | { type: 'START_DRAG'; r: number; c: number }
-  | { type: 'END_DRAG' }
-  | { type: 'SET_EDITING'; editing: boolean }
-  | { type: 'SET_EDIT_VAL'; val: string }
-  | { type: 'START_EDIT'; r: number; c: number; val: string }
-  | { type: 'COMMIT_EDIT' }
-  | {
-      type: 'NAVIGATE';
-      dr: number;
-      dc: number;
-    }
-  | { type: 'TOGGLE_PALETTE' }
-  | { type: 'SHOW_PALETTE' }
-  | { type: 'HIDE_PALETTE' }
-  | { type: 'TOGGLE_FIND' }
-  | { type: 'HIDE_FIND' }
-  | { type: 'SET_FIND_QUERY'; query: string }
-  | { type: 'SET_CLIPBOARD'; data: ClipboardData | null }
-  | { type: 'RESIZE_COL'; col: number; width: number };
-
-function calcReducer(state: CalcState, action: CalcAction): CalcState {
-  switch (action.type) {
-    case 'SET_CELLS':
-      return { ...state, cells: action.cells };
-
-    case 'UPDATE_CELLS':
-      return { ...state, cells: action.updater(state.cells) };
-
-    case 'SET_SEL':
-      return { ...state, sel: { r: action.r, c: action.c } };
-
-    case 'SET_SEL_RANGE':
-      return { ...state, selRange: action.range };
-
-    case 'START_DRAG':
-      return {
-        ...state,
-        isDragging: true,
-        dragStart: { r: action.r, c: action.c },
-      };
-
-    case 'END_DRAG':
-      return { ...state, isDragging: false, dragStart: null };
-
-    case 'SET_EDITING':
-      return { ...state, editing: action.editing };
-
-    case 'SET_EDIT_VAL':
-      return { ...state, editVal: action.val };
-
-    case 'START_EDIT':
-      return {
-        ...state,
-        sel: { r: action.r, c: action.c },
-        editing: true,
-        editVal: action.val,
-      };
-
-    case 'COMMIT_EDIT': {
-      if (!state.editing) return state;
-      const key = cellId(state.sel.r, state.sel.c);
-      const existing = state.cells[key] ?? EMPTY_CELL;
-      return {
-        ...state,
-        cells: {
-          ...state.cells,
-          [key]: { ...existing, raw: state.editVal },
-        },
-        editing: false,
-      };
-    }
-
-    case 'NAVIGATE': {
-      // First commit any active edit, then move selection
-      let cells = state.cells;
-      if (state.editing) {
-        const key = cellId(state.sel.r, state.sel.c);
-        const existing = state.cells[key] ?? EMPTY_CELL;
-        cells = { ...state.cells, [key]: { ...existing, raw: state.editVal } };
-      }
-      const newR = Math.max(
-        0,
-        Math.min(NUM_ROWS - 1, state.sel.r + action.dr),
-      );
-      const newC = Math.max(
-        0,
-        Math.min(NUM_COLS - 1, state.sel.c + action.dc),
-      );
-      return {
-        ...state,
-        cells,
-        editing: false,
-        sel: { r: newR, c: newC },
-        selRange: null,
-      };
-    }
-
-    case 'TOGGLE_PALETTE':
-      return { ...state, showPalette: !state.showPalette };
-
-    case 'SHOW_PALETTE':
-      return { ...state, showPalette: true };
-
-    case 'HIDE_PALETTE':
-      return { ...state, showPalette: false };
-
-    case 'TOGGLE_FIND':
-      return { ...state, showFind: !state.showFind };
-
-    case 'HIDE_FIND':
-      return { ...state, showFind: false, findQuery: '' };
-
-    case 'SET_FIND_QUERY':
-      return { ...state, findQuery: action.query };
-
-    case 'SET_CLIPBOARD':
-      return { ...state, clipboard: action.data };
-
-    case 'RESIZE_COL': {
-      const widths = [...state.colWidths];
-      widths[action.col] = Math.max(40, action.width);
-      return { ...state, colWidths: widths };
-    }
-
-    default:
-      return state;
-  }
-}
-
-// ── Find Bar ────────────────────────────────────────────────────────
 function FindBar({
+  query,
   onFind,
   onReplace,
   onReplaceAll,
   onClose,
   matchCount,
 }: {
+  query: string;
   onFind: (q: string) => void;
   onReplace: (f: string, r: string) => void;
   onReplaceAll: (f: string, r: string) => void;
   onClose: () => void;
   matchCount: number;
 }) {
-  const [find, setFind] = useState('');
   const [replace, setReplace] = useState('');
   const ref = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     ref.current?.focus();
   }, []);
-  useEffect(() => {
-    onFind(find);
-  }, [find, onFind]);
 
   return (
     <div data-part={P.calcFindBar}>
@@ -211,34 +66,41 @@ function FindBar({
       </span>
       <input
         ref={ref}
-        value={find}
-        onChange={(e) => setFind(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose();
+        value={query}
+        onChange={(event) => onFind(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            onClose();
+          }
         }}
         placeholder="Find\u2026"
         data-part={P.calcFindInput}
       />
       <input
         value={replace}
-        onChange={(e) => setReplace(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose();
+        onChange={(event) => setReplace(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            onClose();
+          }
         }}
         placeholder="Replace\u2026"
         data-part={P.calcFindInput}
       />
-      <Btn onClick={() => onReplace(find, replace)} style={{ fontSize: 11 }}>
+      <Btn
+        onClick={() => onReplace(query, replace)}
+        style={{ fontSize: 11 }}
+      >
         Replace
       </Btn>
       <Btn
-        onClick={() => onReplaceAll(find, replace)}
+        onClick={() => onReplaceAll(query, replace)}
         style={{ fontSize: 11 }}
       >
         All
       </Btn>
       <span style={{ color: 'var(--hc-color-muted)', fontSize: 11 }}>
-        {matchCount > 0 ? `${matchCount}` : find ? '0' : ''}
+        {matchCount > 0 ? `${matchCount}` : query ? '0' : ''}
       </span>
       <div
         onClick={onClose}
@@ -255,32 +117,17 @@ function FindBar({
   );
 }
 
-// ── Props ───────────────────────────────────────────────────────────
 export interface MacCalcProps {
   initialCells?: Record<string, CellData>;
 }
 
-// ── Main Component ──────────────────────────────────────────────────
-export function MacCalc({ initialCells }: MacCalcProps) {
-  const [state, dispatch] = useReducer(
-    calcReducer,
-    undefined,
-    (): CalcState => ({
-      cells: initialCells ?? createSampleCells(),
-      clipboard: null,
-      sel: { r: 0, c: 0 },
-      selRange: null,
-      isDragging: false,
-      dragStart: null,
-      editing: false,
-      editVal: '',
-      showFind: false,
-      findQuery: '',
-      showPalette: false,
-      colWidths: Array(NUM_COLS).fill(DEFAULT_COL_W) as number[],
-    }),
-  );
-
+function MacCalcInner({
+  state,
+  dispatch,
+}: {
+  state: MacCalcState;
+  dispatch: (action: MacCalcAction) => void;
+}) {
   const {
     cells,
     clipboard,
@@ -300,49 +147,56 @@ export function MacCalc({ initialCells }: MacCalcProps) {
   const editRef = useRef<HTMLInputElement>(null);
 
   const getCell = useCallback(
-    (r: number, c: number): CellData =>
-      cells[cellId(r, c)] || EMPTY_CELL,
+    (r: number, c: number): CellData => cells[cellId(r, c)] || EMPTY_CELL,
     [cells],
   );
 
   const setCell = useCallback(
     (r: number, c: number, updates: Partial<CellData>) => {
-      dispatch({
-        type: 'UPDATE_CELLS',
-        updater: (prev) => ({
-          ...prev,
-          [cellId(r, c)]: { ...(prev[cellId(r, c)] ?? EMPTY_CELL), ...updates },
+      const key = cellId(r, c);
+      dispatch(
+        macCalcActions.setCells({
+          ...cells,
+          [key]: { ...(cells[key] ?? EMPTY_CELL), ...updates },
         }),
-      });
+      );
     },
-    [],
+    [cells, dispatch],
   );
 
   const getCellDisplay = useCallback(
     (r: number, c: number): string => {
       const cell = getCell(r, c);
-      if (!cell.raw) return '';
-      const val = cell.raw.startsWith('=')
+      if (!cell.raw) {
+        return '';
+      }
+      const value = cell.raw.startsWith('=')
         ? evaluateFormula(cell.raw, cells)
         : cell.raw;
-      if (typeof val === 'string' && val.startsWith('#')) return val;
-      if (cell.fmt === 'currency' && typeof val === 'number')
-        return `$${val.toLocaleString(undefined, {
+      if (typeof value === 'string' && value.startsWith('#')) {
+        return value;
+      }
+      if (cell.fmt === 'currency' && typeof value === 'number') {
+        return `$${value.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })}`;
-      if (cell.fmt === 'percent' && typeof val === 'number')
-        return `${val.toFixed(1)}%`;
-      if (cell.fmt === 'number' && typeof val === 'number')
-        return val.toLocaleString();
-      return String(val);
+      }
+      if (cell.fmt === 'percent' && typeof value === 'number') {
+        return `${value.toFixed(1)}%`;
+      }
+      if (cell.fmt === 'number' && typeof value === 'number') {
+        return value.toLocaleString();
+      }
+      return String(value);
     },
     [cells, getCell],
   );
 
   const getRange = useCallback((): CellRange => {
-    if (!selRange)
+    if (!selRange) {
       return { r1: sel.r, c1: sel.c, r2: sel.r, c2: sel.c };
+    }
     return {
       r1: Math.min(selRange.r1, selRange.r2),
       c1: Math.min(selRange.c1, selRange.c2),
@@ -360,96 +214,103 @@ export function MacCalc({ initialCells }: MacCalcProps) {
   );
 
   const commitEdit = useCallback(() => {
-    dispatch({ type: 'COMMIT_EDIT' });
-  }, []);
+    dispatch(macCalcActions.commitEdit());
+  }, [dispatch]);
 
   const startEdit = useCallback(
     (r: number, c: number, initialVal?: string) => {
-      const val =
-        initialVal !== undefined
-          ? initialVal
-          : (cells[cellId(r, c)] ?? EMPTY_CELL).raw;
-      dispatch({ type: 'START_EDIT', r, c, val });
+      const value =
+        initialVal !== undefined ? initialVal : (cells[cellId(r, c)] ?? EMPTY_CELL).raw;
+      dispatch(macCalcActions.startEdit({ r, c, val: value }));
       setTimeout(() => editRef.current?.focus(), 0);
     },
-    [cells],
+    [cells, dispatch],
   );
 
-  const navigate = useCallback((dr: number, dc: number) => {
-    dispatch({ type: 'NAVIGATE', dr, dc });
-  }, []);
+  const navigate = useCallback(
+    (dr: number, dc: number) => {
+      dispatch(macCalcActions.navigate({ dr, dc }));
+    },
+    [dispatch],
+  );
 
   const matchCount = useMemo(() => {
-    if (!findQuery) return 0;
+    if (!findQuery) {
+      return 0;
+    }
     let count = 0;
-    const q = findQuery.toLowerCase();
-    Object.values(cells).forEach((c) => {
-      if (c.raw.toLowerCase().includes(q)) count++;
+    const query = findQuery.toLowerCase();
+    Object.values(cells).forEach((cell) => {
+      if (cell.raw.toLowerCase().includes(query)) {
+        count += 1;
+      }
     });
     return count;
-  }, [findQuery, cells]);
+  }, [cells, findQuery]);
 
   const handleFind = useCallback(
-    (q: string) => dispatch({ type: 'SET_FIND_QUERY', query: q }),
-    [],
+    (query: string) => dispatch(macCalcActions.setFindQuery(query)),
+    [dispatch],
   );
-  const handleReplace = useCallback((f: string, r: string) => {
-    if (!f) return;
-    dispatch({
-      type: 'UPDATE_CELLS',
-      updater: (prev) => {
-        const next = { ...prev };
-        const fl = f.toLowerCase();
-        for (const k in next) {
-          if (next[k].raw.toLowerCase().includes(fl)) {
-            next[k] = {
-              ...next[k],
-              raw: next[k].raw.replace(
-                new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
-                r,
-              ),
-            };
-            break;
-          }
+
+  const handleReplace = useCallback(
+    (find: string, replace: string) => {
+      if (!find) {
+        return;
+      }
+      const next = { ...cells };
+      const findLower = find.toLowerCase();
+      for (const key in next) {
+        if (next[key].raw.toLowerCase().includes(findLower)) {
+          next[key] = {
+            ...next[key],
+            raw: next[key].raw.replace(
+              new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+              replace,
+            ),
+          };
+          break;
         }
-        return next;
-      },
-    });
-  }, []);
-  const handleReplaceAll = useCallback((f: string, r: string) => {
-    if (!f) return;
-    dispatch({
-      type: 'UPDATE_CELLS',
-      updater: (prev) => {
-        const next = { ...prev };
-        const regex = new RegExp(
-          f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-          'gi',
-        );
-        for (const k in next)
-          next[k] = { ...next[k], raw: next[k].raw.replace(regex, r) };
-        return next;
-      },
-    });
-  }, []);
+      }
+      dispatch(macCalcActions.setCells(next));
+    },
+    [cells, dispatch],
+  );
+
+  const handleReplaceAll = useCallback(
+    (find: string, replace: string) => {
+      if (!find) {
+        return;
+      }
+      const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const next = Object.fromEntries(
+        Object.entries(cells).map(([key, value]) => [
+          key,
+          { ...value, raw: value.raw.replace(regex, replace) },
+        ]),
+      );
+      dispatch(macCalcActions.setCells(next));
+    },
+    [cells, dispatch],
+  );
 
   const execAction = useCallback(
     (id: string) => {
       const { r1, c1, r2, c2 } = getRange();
       const applyToRange = (fn: (r: number, c: number) => void) => {
-        for (let r = r1; r <= r2; r++)
-          for (let c = c1; c <= c2; c++) fn(r, c);
+        for (let r = r1; r <= r2; r += 1) {
+          for (let c = c1; c <= c2; c += 1) {
+            fn(r, c);
+          }
+        }
       };
+
       switch (id) {
         case 'bold':
-          applyToRange((r, c) =>
-            setCell(r, c, { bold: !getCell(r, c).bold }),
-          );
+          applyToRange((r, c) => setCell(r, c, { bold: !getCell(r, c).bold }));
           break;
         case 'italic':
-          applyToRange((r, c) =>
-            setCell(r, c, { italic: !getCell(r, c).italic }),
-          );
+          applyToRange((r, c) => setCell(r, c, { italic: !getCell(r, c).italic }));
           break;
         case 'align-left':
           applyToRange((r, c) => setCell(r, c, { align: 'left' }));
@@ -494,256 +355,273 @@ export function MacCalc({ initialCells }: MacCalcProps) {
           startEdit(sel.r, sel.c, '=IF(,, )');
           break;
         case 'find':
-          dispatch({ type: 'TOGGLE_FIND' });
+          dispatch(macCalcActions.toggleFind());
           break;
         case 'copy': {
           const data: Record<string, CellData> = {};
           applyToRange((r, c) => {
             data[`${r - r1},${c - c1}`] = { ...getCell(r, c) };
           });
-          dispatch({
-            type: 'SET_CLIPBOARD',
-            data: { data, rows: r2 - r1 + 1, cols: c2 - c1 + 1 },
-          });
+          dispatch(
+            macCalcActions.setClipboard({
+              data,
+              rows: r2 - r1 + 1,
+              cols: c2 - c1 + 1,
+            }),
+          );
           break;
         }
         case 'paste': {
-          if (!clipboard) break;
-          dispatch({
-            type: 'UPDATE_CELLS',
-            updater: (prev) => {
-              const next = { ...prev };
-              for (let dr = 0; dr < clipboard.rows; dr++) {
-                for (let dc = 0; dc < clipboard.cols; dc++) {
-                  const src = clipboard.data[`${dr},${dc}`];
-                  if (src)
-                    next[cellId(sel.r + dr, sel.c + dc)] = { ...src };
-                }
+          if (!clipboard) {
+            break;
+          }
+          const next = { ...cells };
+          for (let dr = 0; dr < clipboard.rows; dr += 1) {
+            for (let dc = 0; dc < clipboard.cols; dc += 1) {
+              const source = clipboard.data[`${dr},${dc}`];
+              if (source) {
+                next[cellId(sel.r + dr, sel.c + dc)] = { ...source };
               }
-              return next;
-            },
-          });
+            }
+          }
+          dispatch(macCalcActions.setCells(next));
           break;
         }
         case 'select-all':
-          dispatch({
-            type: 'SET_SEL_RANGE',
-            range: { r1: 0, c1: 0, r2: NUM_ROWS - 1, c2: NUM_COLS - 1 },
-          });
+          dispatch(
+            macCalcActions.setSelectionRange({
+              r1: 0,
+              c1: 0,
+              r2: NUM_ROWS - 1,
+              c2: NUM_COLS - 1,
+            }),
+          );
           break;
         case 'export': {
           let csv = '';
-          for (let r = 0; r < NUM_ROWS; r++) {
+          for (let r = 0; r < NUM_ROWS; r += 1) {
             const row: string[] = [];
-            for (let c = 0; c < NUM_COLS; c++)
+            for (let c = 0; c < NUM_COLS; c += 1) {
               row.push(getCellDisplay(r, c));
-            if (row.some((v) => v)) csv += row.join(',') + '\n';
+            }
+            if (row.some((value) => value)) {
+              csv += row.join(',') + '\n';
+            }
           }
           try {
             navigator.clipboard?.writeText(csv);
           } catch {
-            /* noop */
+            // noop
           }
           break;
         }
       }
     },
-    [
-      getRange,
-      getCell,
-      setCell,
-      startEdit,
-      sel,
-      clipboard,
-      getCellDisplay,
-    ],
+    [cells, clipboard, dispatch, getCell, getCellDisplay, getRange, sel, setCell, startEdit],
   );
 
-  // Keyboard
   const handleGridKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (showPalette) return;
-      if (e.key === 'Escape') {
+    (event: React.KeyboardEvent) => {
+      if (showPalette) {
+        return;
+      }
+      if (event.key === 'Escape') {
         if (editing) {
-          dispatch({ type: 'SET_EDITING', editing: false });
-          dispatch({ type: 'SET_EDIT_VAL', val: '' });
+          dispatch(macCalcActions.setEditing(false));
+          dispatch(macCalcActions.setEditValue(''));
         }
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'p') {
-        e.preventDefault();
-        dispatch({ type: 'SHOW_PALETTE' });
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'p') {
+        event.preventDefault();
+        dispatch(macCalcActions.showPalette());
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault();
-        dispatch({ type: 'TOGGLE_FIND' });
+      if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+        event.preventDefault();
+        dispatch(macCalcActions.toggleFind());
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
+      if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+        event.preventDefault();
         execAction('bold');
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-        e.preventDefault();
+      if ((event.ctrlKey || event.metaKey) && event.key === 'i') {
+        event.preventDefault();
         execAction('italic');
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
         execAction('copy');
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
         execAction('paste');
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        e.preventDefault();
+      if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+        event.preventDefault();
         execAction('select-all');
         return;
       }
 
       if (editing) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
+        if (event.key === 'Enter') {
+          event.preventDefault();
           navigate(1, 0);
-        } else if (e.key === 'Tab') {
-          e.preventDefault();
-          navigate(0, e.shiftKey ? -1 : 1);
+        } else if (event.key === 'Tab') {
+          event.preventDefault();
+          navigate(0, event.shiftKey ? -1 : 1);
         }
         return;
       }
 
-      switch (e.key) {
+      switch (event.key) {
         case 'ArrowUp':
-          e.preventDefault();
+          event.preventDefault();
           navigate(-1, 0);
           break;
         case 'ArrowDown':
-          e.preventDefault();
+          event.preventDefault();
           navigate(1, 0);
           break;
         case 'ArrowLeft':
-          e.preventDefault();
+          event.preventDefault();
           navigate(0, -1);
           break;
         case 'ArrowRight':
-          e.preventDefault();
+          event.preventDefault();
           navigate(0, 1);
           break;
         case 'Enter':
-          e.preventDefault();
+          event.preventDefault();
           startEdit(sel.r, sel.c);
           break;
         case 'Tab':
-          e.preventDefault();
-          navigate(0, e.shiftKey ? -1 : 1);
+          event.preventDefault();
+          navigate(0, event.shiftKey ? -1 : 1);
           break;
         case 'Delete':
         case 'Backspace':
-          e.preventDefault();
+          event.preventDefault();
           execAction('clear-cell');
           break;
         case 'F2':
-          e.preventDefault();
+          event.preventDefault();
           startEdit(sel.r, sel.c);
           break;
         default:
-          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            startEdit(sel.r, sel.c, e.key);
+          if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            startEdit(sel.r, sel.c, event.key);
           }
       }
     },
-    [editing, sel, navigate, startEdit, execAction, showPalette],
+    [dispatch, editing, execAction, navigate, sel, showPalette, startEdit],
   );
 
-  // Mouse selection
-  const handleCellMouseDown = (
-    r: number,
-    c: number,
-    e: React.MouseEvent,
-  ) => {
-    if (e.detail === 2) {
-      startEdit(r, c);
+  const handleCellMouseDown = useCallback(
+    (r: number, c: number, event: React.MouseEvent) => {
+      if (event.detail === 2) {
+        startEdit(r, c);
+        return;
+      }
+      dispatch(macCalcActions.commitEdit());
+      if (event.shiftKey) {
+        dispatch(macCalcActions.setSelection({ r, c }));
+        dispatch(
+          macCalcActions.setSelectionRange({
+            r1: sel.r,
+            c1: sel.c,
+            r2: r,
+            c2: c,
+          }),
+        );
+      } else {
+        dispatch(macCalcActions.setSelection({ r, c }));
+        dispatch(macCalcActions.setSelectionRange(null));
+        dispatch(macCalcActions.startDrag({ r, c }));
+      }
+    },
+    [dispatch, sel, startEdit],
+  );
+
+  const handleCellMouseEnter = useCallback(
+    (r: number, c: number) => {
+      if (isDragging && dragStart) {
+        dispatch(
+          macCalcActions.setSelectionRange({
+            r1: dragStart.r,
+            c1: dragStart.c,
+            r2: r,
+            c2: c,
+          }),
+        );
+      }
+    },
+    [dispatch, dragStart, isDragging],
+  );
+
+  useEffect(() => {
+    const onMouseUp = () => dispatch(macCalcActions.endDrag());
+    window.addEventListener('mouseup', onMouseUp);
+    return () => window.removeEventListener('mouseup', onMouseUp);
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!gridRef.current) {
       return;
     }
-    dispatch({ type: 'COMMIT_EDIT' });
-    if (e.shiftKey) {
-      dispatch({ type: 'SET_SEL', r, c });
-      dispatch({
-        type: 'SET_SEL_RANGE',
-        range: { r1: sel.r, c1: sel.c, r2: r, c2: c },
-      });
-    } else {
-      dispatch({ type: 'SET_SEL', r, c });
-      dispatch({ type: 'SET_SEL_RANGE', range: null });
-      dispatch({ type: 'START_DRAG', r, c });
-    }
-  };
-
-  const handleCellMouseEnter = (r: number, c: number) => {
-    if (isDragging && dragStart) {
-      dispatch({
-        type: 'SET_SEL_RANGE',
-        range: { r1: dragStart.r, c1: dragStart.c, r2: r, c2: c },
-      });
-    }
-  };
-
-  useEffect(() => {
-    const up = () => dispatch({ type: 'END_DRAG' });
-    window.addEventListener('mouseup', up);
-    return () => window.removeEventListener('mouseup', up);
-  }, []);
-
-  // Auto-scroll selected cell into view
-  useEffect(() => {
-    if (!gridRef.current) return;
     const grid = gridRef.current;
-    const left =
-      ROW_HEADER_W +
-      colWidths.slice(0, sel.c).reduce((a, b) => a + b, 0);
+    const left = ROW_HEADER_W + colWidths.slice(0, sel.c).reduce((sum, width) => sum + width, 0);
     const top = HEADER_H + sel.r * ROW_H;
-    if (left < grid.scrollLeft + ROW_HEADER_W)
+    if (left < grid.scrollLeft + ROW_HEADER_W) {
       grid.scrollLeft = left - ROW_HEADER_W;
-    if (left + colWidths[sel.c] > grid.scrollLeft + grid.clientWidth)
-      grid.scrollLeft =
-        left + colWidths[sel.c] - grid.clientWidth + 10;
-    if (top < grid.scrollTop + HEADER_H)
+    }
+    if (left + colWidths[sel.c] > grid.scrollLeft + grid.clientWidth) {
+      grid.scrollLeft = left + colWidths[sel.c] - grid.clientWidth + 10;
+    }
+    if (top < grid.scrollTop + HEADER_H) {
       grid.scrollTop = top - HEADER_H;
-    if (top + ROW_H > grid.scrollTop + grid.clientHeight)
+    }
+    if (top + ROW_H > grid.scrollTop + grid.clientHeight) {
       grid.scrollTop = top + ROW_H - grid.clientHeight + 10;
-  }, [sel, colWidths]);
+    }
+  }, [colWidths, sel]);
 
-  // Column resize
-  const handleColResizeStart = (colIdx: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX;
-    const startW = colWidths[colIdx];
-    const onMove = (ev: MouseEvent) => {
-      const diff = ev.clientX - startX;
-      dispatch({ type: 'RESIZE_COL', col: colIdx, width: startW + diff });
-    };
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
+  const handleColResizeStart = useCallback(
+    (colIndex: number, event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const startX = event.clientX;
+      const startWidth = colWidths[colIndex];
+      const onMove = (moveEvent: MouseEvent) => {
+        const diff = moveEvent.clientX - startX;
+        dispatch(
+          macCalcActions.resizeColumn({
+            col: colIndex,
+            width: startWidth + diff,
+          }),
+        );
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    [colWidths, dispatch],
+  );
 
-  const totalW =
-    ROW_HEADER_W + colWidths.reduce((a, b) => a + b, 0);
-  const totalH = HEADER_H + NUM_ROWS * ROW_H;
+  const totalWidth = ROW_HEADER_W + colWidths.reduce((sum, width) => sum + width, 0);
+  const totalHeight = HEADER_H + NUM_ROWS * ROW_H;
   const currentCell = getCell(sel.r, sel.c);
   const formulaDisplay = editing ? editVal : currentCell.raw;
 
   return (
     <div data-part={P.calculator}>
-      {/* Toolbar */}
       <WidgetToolbar>
         <Btn
           onClick={() => execAction('bold')}
@@ -769,18 +647,14 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         </Btn>
         <Btn
           onClick={() => execAction('align-center')}
-          data-state={
-            currentCell.align === 'center' ? 'active' : undefined
-          }
+          data-state={currentCell.align === 'center' ? 'active' : undefined}
           style={{ fontSize: 12, padding: '2px 7px' }}
         >
           {'\u2AFF'}
         </Btn>
         <Btn
           onClick={() => execAction('align-right')}
-          data-state={
-            currentCell.align === 'right' ? 'active' : undefined
-          }
+          data-state={currentCell.align === 'right' ? 'active' : undefined}
           style={{ fontSize: 12, padding: '2px 7px' }}
         >
           {'\u2AF8'}
@@ -802,18 +676,14 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         </Btn>
         <Btn
           onClick={() => execAction('fmt-currency')}
-          data-state={
-            currentCell.fmt === 'currency' ? 'active' : undefined
-          }
+          data-state={currentCell.fmt === 'currency' ? 'active' : undefined}
           style={{ fontSize: 11, padding: '2px 7px' }}
         >
           $
         </Btn>
         <Btn
           onClick={() => execAction('fmt-percent')}
-          data-state={
-            currentCell.fmt === 'percent' ? 'active' : undefined
-          }
+          data-state={currentCell.fmt === 'percent' ? 'active' : undefined}
           style={{ fontSize: 11, padding: '2px 7px' }}
         >
           %
@@ -827,20 +697,19 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         </Btn>
         <div style={{ flex: 1 }} />
         <Btn
-          onClick={() => dispatch({ type: 'TOGGLE_FIND' })}
+          onClick={() => dispatch(macCalcActions.toggleFind())}
           style={{ fontSize: 12, padding: '2px 7px' }}
         >
           {'\uD83D\uDD0D'}
         </Btn>
         <Btn
-          onClick={() => dispatch({ type: 'SHOW_PALETTE' })}
+          onClick={() => dispatch(macCalcActions.showPalette())}
           style={{ fontSize: 11, padding: '2px 7px' }}
         >
           {'\u2318'}P
         </Btn>
       </WidgetToolbar>
 
-      {/* Formula Bar */}
       <div data-part={P.calcFormulaBar}>
         <div data-part={P.calcCellRef}>
           {cellId(sel.r, sel.c)}
@@ -850,23 +719,28 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         </span>
         <input
           value={formulaDisplay}
-          onChange={(e) => {
-            if (!editing) startEdit(sel.r, sel.c, e.target.value);
-            else dispatch({ type: 'SET_EDIT_VAL', val: e.target.value });
+          onChange={(event) => {
+            if (!editing) {
+              startEdit(sel.r, sel.c, event.target.value);
+            } else {
+              dispatch(macCalcActions.setEditValue(event.target.value));
+            }
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
               commitEdit();
               gridRef.current?.focus();
-            } else if (e.key === 'Escape') {
-              dispatch({ type: 'SET_EDITING', editing: false });
-              dispatch({ type: 'SET_EDIT_VAL', val: '' });
+            } else if (event.key === 'Escape') {
+              dispatch(macCalcActions.setEditing(false));
+              dispatch(macCalcActions.setEditValue(''));
               gridRef.current?.focus();
             }
           }}
           onFocus={() => {
-            if (!editing) startEdit(sel.r, sel.c);
+            if (!editing) {
+              startEdit(sel.r, sel.c);
+            }
           }}
           data-part={P.calcFormulaInput}
         />
@@ -874,18 +748,18 @@ export function MacCalc({ initialCells }: MacCalcProps) {
 
       {showFind && (
         <FindBar
+          query={findQuery}
           onFind={handleFind}
           onReplace={handleReplace}
           onReplaceAll={handleReplaceAll}
           onClose={() => {
-            dispatch({ type: 'HIDE_FIND' });
+            dispatch(macCalcActions.hideFind());
             gridRef.current?.focus();
           }}
           matchCount={matchCount}
         />
       )}
 
-      {/* Grid */}
       <div
         data-part={P.calcGrid}
         ref={gridRef}
@@ -894,9 +768,8 @@ export function MacCalc({ initialCells }: MacCalcProps) {
       >
         <div
           data-part={P.calcGridInner}
-          style={{ width: totalW, height: totalH }}
+          style={{ width: totalWidth, height: totalHeight }}
         >
-          {/* Column headers */}
           <div data-part={P.calcColHeaders}>
             <div
               data-part={P.calcCornerCell}
@@ -909,23 +782,22 @@ export function MacCalc({ initialCells }: MacCalcProps) {
                 key={c}
                 data-part={P.calcColHeader}
                 data-state={sel.c === c ? 'active' : undefined}
-                style={{
-                  width: colWidths[c],
-                  height: HEADER_H,
-                }}
+                style={{ width: colWidths[c], height: HEADER_H }}
               >
                 {colLabel(c)}
                 <div
-                  onMouseDown={(e) => handleColResizeStart(c, e)}
+                  onMouseDown={(event) => handleColResizeStart(c, event)}
                   data-part={P.calcColResize}
                 />
               </div>
             ))}
           </div>
 
-          {/* Rows */}
           {Array.from({ length: NUM_ROWS }, (_, r) => (
-            <div key={r} data-part={P.calcRow}>
+            <div
+              key={r}
+              data-part={P.calcRow}
+            >
               <div
                 data-part={P.calcRowHeader}
                 data-state={sel.r === r ? 'active' : undefined}
@@ -936,27 +808,22 @@ export function MacCalc({ initialCells }: MacCalcProps) {
               {Array.from({ length: NUM_COLS }, (_, c) => {
                 const cell = getCell(r, c);
                 const display = getCellDisplay(r, c);
-                const isSel = sel.r === r && sel.c === c;
-                const isInR = inRange(r, c) && !isSel;
-                const isErr =
-                  typeof display === 'string' &&
-                  display.startsWith('#');
+                const isSelected = sel.r === r && sel.c === c;
+                const isInRange = inRange(r, c) && !isSelected;
+                const isError = typeof display === 'string' && display.startsWith('#');
                 const isMatch =
-                  findQuery &&
-                  cell.raw
-                    .toLowerCase()
-                    .includes(findQuery.toLowerCase());
+                  findQuery && cell.raw.toLowerCase().includes(findQuery.toLowerCase());
 
                 return (
                   <div
                     key={c}
-                    onMouseDown={(e) => handleCellMouseDown(r, c, e)}
+                    onMouseDown={(event) => handleCellMouseDown(r, c, event)}
                     onMouseEnter={() => handleCellMouseEnter(r, c)}
                     data-part={P.calcCell}
                     data-state={
-                      isSel
+                      isSelected
                         ? 'selected'
-                        : isInR
+                        : isInRange
                           ? 'in-range'
                           : isMatch
                             ? 'match'
@@ -973,34 +840,29 @@ export function MacCalc({ initialCells }: MacCalcProps) {
                             : 'flex-start',
                       fontWeight: cell.bold ? 'bold' : 'normal',
                       fontStyle: cell.italic ? 'italic' : 'normal',
-                      color: isErr
-                        ? 'var(--hc-color-error, #880000)'
-                        : undefined,
+                      color: isError ? 'var(--hc-color-error, #880000)' : undefined,
                     }}
                   >
-                    {isSel && editing ? (
+                    {isSelected && editing ? (
                       <input
                         ref={editRef}
                         data-part={P.calcCellEdit}
                         value={editVal}
-                        onChange={(e) =>
-                          dispatch({
-                            type: 'SET_EDIT_VAL',
-                            val: e.target.value,
-                          })
+                        onChange={(event) =>
+                          dispatch(macCalcActions.setEditValue(event.target.value))
                         }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
                             navigate(1, 0);
                             gridRef.current?.focus();
-                          } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            navigate(0, e.shiftKey ? -1 : 1);
+                          } else if (event.key === 'Tab') {
+                            event.preventDefault();
+                            navigate(0, event.shiftKey ? -1 : 1);
                             gridRef.current?.focus();
-                          } else if (e.key === 'Escape') {
-                            dispatch({ type: 'SET_EDITING', editing: false });
-                            dispatch({ type: 'SET_EDIT_VAL', val: '' });
+                          } else if (event.key === 'Escape') {
+                            dispatch(macCalcActions.setEditing(false));
+                            dispatch(macCalcActions.setEditValue(''));
                             gridRef.current?.focus();
                           }
                         }}
@@ -1028,7 +890,6 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         </div>
       </div>
 
-      {/* Status Bar */}
       <WidgetStatusBar>
         <div style={{ display: 'flex', gap: 14 }}>
           <span style={{ fontWeight: 'bold' }}>
@@ -1037,31 +898,32 @@ export function MacCalc({ initialCells }: MacCalcProps) {
           {selRange &&
             (() => {
               const { r1, c1, r2, c2 } = getRange();
-              if (r1 === r2 && c1 === c2) return null;
-              const vals: number[] = [];
-              for (let r = r1; r <= r2; r++)
-                for (let c = c1; c <= c2; c++) {
-                  const d = getCellDisplay(r, c);
-                  const n = parseFloat(d.replace(/[$%,]/g, ''));
-                  if (!isNaN(n)) vals.push(n);
+              if (r1 === r2 && c1 === c2) {
+                return null;
+              }
+              const values: number[] = [];
+              for (let r = r1; r <= r2; r += 1) {
+                for (let c = c1; c <= c2; c += 1) {
+                  const display = getCellDisplay(r, c);
+                  const numeric = parseFloat(display.replace(/[$%,]/g, ''));
+                  if (!isNaN(numeric)) {
+                    values.push(numeric);
+                  }
                 }
-              return vals.length > 0 ? (
+              }
+              return values.length > 0 ? (
                 <>
                   <span>
                     {'\u03A3'}{' '}
-                    {vals
+                    {values
                       .reduce((a, b) => a + b, 0)
-                      .toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}
+                      .toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </span>
                   <span>
                     x{'\u0304'}{' '}
-                    {(
-                      vals.reduce((a, b) => a + b, 0) / vals.length
-                    ).toFixed(2)}
+                    {(values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)}
                   </span>
-                  <span># {vals.length}</span>
+                  <span># {values.length}</span>
                 </>
               ) : null;
             })()}
@@ -1078,21 +940,81 @@ export function MacCalc({ initialCells }: MacCalcProps) {
         </div>
       </WidgetStatusBar>
 
-      {/* Palette */}
       {showPalette && (
         <CommandPalette
           items={CALC_ACTIONS}
           onSelect={(id) => {
-            dispatch({ type: 'HIDE_PALETTE' });
+            dispatch(macCalcActions.hidePalette());
             execAction(id);
             setTimeout(() => gridRef.current?.focus(), 0);
           }}
           onClose={() => {
-            dispatch({ type: 'HIDE_PALETTE' });
+            dispatch(macCalcActions.hidePalette());
             gridRef.current?.focus();
           }}
         />
       )}
     </div>
   );
+}
+
+function StandaloneMacCalc({ initialCells }: MacCalcProps) {
+  const [state, dispatch] = useReducer(
+    macCalcReducer,
+    createMacCalcStateSeed({ initialCells }),
+  );
+
+  return (
+    <MacCalcInner
+      state={state}
+      dispatch={dispatch}
+    />
+  );
+}
+
+function ConnectedMacCalc({ initialCells }: MacCalcProps) {
+  const reduxDispatch = useDispatch();
+  const state = useSelector(selectMacCalcState);
+
+  useEffect(() => {
+    reduxDispatch(
+      macCalcActions.initializeIfNeeded({
+        initialCells,
+      }),
+    );
+  }, [initialCells, reduxDispatch]);
+
+  const effectiveState = state.initialized
+    ? state
+    : createMacCalcStateSeed({ initialCells });
+
+  const dispatch = useCallback(
+    (action: MacCalcAction) => {
+      reduxDispatch(action);
+    },
+    [reduxDispatch],
+  );
+
+  return (
+    <MacCalcInner
+      state={effectiveState}
+      dispatch={dispatch}
+    />
+  );
+}
+
+export function MacCalc({ initialCells }: MacCalcProps) {
+  const reduxContext = useContext(ReactReduxContext);
+  const store = reduxContext?.store;
+  const rootState = store?.getState();
+  const hasRegisteredSlice =
+    typeof rootState === 'object' &&
+    rootState !== null &&
+    MAC_CALC_STATE_KEY in (rootState as Record<string, unknown>);
+
+  if (hasRegisteredSlice) {
+    return <ConnectedMacCalc initialCells={initialCells} />;
+  }
+
+  return <StandaloneMacCalc initialCells={initialCells} />;
 }

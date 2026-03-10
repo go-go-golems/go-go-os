@@ -1,5 +1,14 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { Btn } from '@hypercard/engine';
+import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { ModalOverlay } from '../primitives/ModalOverlay';
 import { CommandPalette } from '../primitives/CommandPalette';
@@ -14,9 +23,19 @@ import {
   fmtTime,
   mkEventId,
 } from './types';
-import { INITIAL_EVENTS, EVENT_COLORS, makePaletteActions } from './sampleData';
+import { EVENT_COLORS, makePaletteActions } from './sampleData';
+import {
+  createMacCalendarStateSeed,
+  deserializeCalendarEvent,
+  MAC_CALENDAR_STATE_KEY,
+  macCalendarActions,
+  type MacCalendarAction,
+  type MacCalendarState,
+  macCalendarReducer,
+  selectMacCalendarState,
+  serializeCalendarEvent,
+} from './macCalendarState';
 
-// ── Event Modal ─────────────────────────────────────────────────────
 function EventModal({
   event,
   eventColors,
@@ -31,10 +50,10 @@ function EventModal({
   onClose: () => void;
 }) {
   const isNew = !event.id;
-  const defDate = event.date || new Date();
+  const defaultDate = event.date || new Date();
   const [title, setTitle] = useState(event.title || '');
   const [dateStr, setDateStr] = useState(
-    `${defDate.getFullYear()}-${String(defDate.getMonth() + 1).padStart(2, '0')}-${String(defDate.getDate()).padStart(2, '0')}`,
+    `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, '0')}-${String(defaultDate.getDate()).padStart(2, '0')}`,
   );
   const [hour, setHour] = useState(event.date ? event.date.getHours() : 9);
   const [minute, setMinute] = useState(event.date ? event.date.getMinutes() : 0);
@@ -63,7 +82,7 @@ function EventModal({
             <div data-part={P.calFieldLabel}>Title</div>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(event_) => setTitle(event_.target.value)}
               autoFocus
               data-part={P.calFieldInput}
             />
@@ -74,7 +93,7 @@ function EventModal({
               <input
                 type="date"
                 value={dateStr}
-                onChange={(e) => setDateStr(e.target.value)}
+                onChange={(event_) => setDateStr(event_.target.value)}
                 data-part={P.calFieldInput}
               />
             </div>
@@ -83,11 +102,14 @@ function EventModal({
               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 <select
                   value={hour}
-                  onChange={(e) => setHour(parseInt(e.target.value))}
+                  onChange={(event_) => setHour(parseInt(event_.target.value))}
                   data-part={P.calFieldInput}
                 >
                   {Array.from({ length: 24 }, (_, i) => (
-                    <option key={i} value={i}>
+                    <option
+                      key={i}
+                      value={i}
+                    >
                       {String(i).padStart(2, '0')}
                     </option>
                   ))}
@@ -95,11 +117,14 @@ function EventModal({
                 <span style={{ opacity: 0.5 }}>:</span>
                 <select
                   value={minute}
-                  onChange={(e) => setMinute(parseInt(e.target.value))}
+                  onChange={(event_) => setMinute(parseInt(event_.target.value))}
                   data-part={P.calFieldInput}
                 >
                   {[0, 15, 30, 45].map((m) => (
-                    <option key={m} value={m}>
+                    <option
+                      key={m}
+                      value={m}
+                    >
                       {String(m).padStart(2, '0')}
                     </option>
                   ))}
@@ -110,14 +135,14 @@ function EventModal({
           <div>
             <div data-part={P.calFieldLabel}>Duration</div>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-              {DURATION_OPTIONS.map((d) => (
+              {DURATION_OPTIONS.map((value) => (
                 <Btn
-                  key={d}
-                  onClick={() => setDuration(d)}
-                  data-state={duration === d ? 'active' : undefined}
+                  key={value}
+                  onClick={() => setDuration(value)}
+                  data-state={duration === value ? 'active' : undefined}
                   style={{ fontSize: 12, padding: '2px 8px' }}
                 >
-                  {d}m
+                  {value}m
                 </Btn>
               ))}
             </div>
@@ -125,13 +150,13 @@ function EventModal({
           <div>
             <div data-part={P.calFieldLabel}>Color</div>
             <div style={{ display: 'flex', gap: 6 }}>
-              {eventColors.map((c, i) => (
+              {eventColors.map((value, index) => (
                 <div
-                  key={i}
-                  onClick={() => setColor(i)}
+                  key={index}
+                  onClick={() => setColor(index)}
                   data-part={P.calColorSwatch}
-                  data-state={color === i ? 'active' : undefined}
-                  style={{ background: c }}
+                  data-state={color === index ? 'active' : undefined}
+                  style={{ background: value }}
                 />
               ))}
             </div>
@@ -150,17 +175,22 @@ function EventModal({
             </Btn>
           )}
           <div style={{ flex: 1 }} />
-          <Btn onClick={onClose} style={{ fontSize: 12 }}>
+          <Btn
+            onClick={onClose}
+            style={{ fontSize: 12 }}
+          >
             Cancel
           </Btn>
           <Btn
             onClick={() => {
-              if (!title.trim()) return;
-              const [y, mo, d] = dateStr.split('-').map(Number);
+              if (!title.trim()) {
+                return;
+              }
+              const [year, month, day] = dateStr.split('-').map(Number);
               onSave({
                 id: event.id || mkEventId(),
                 title,
-                date: new Date(y, mo - 1, d, hour, minute),
+                date: new Date(year, month - 1, day, hour, minute),
                 duration,
                 color,
               });
@@ -177,7 +207,6 @@ function EventModal({
   );
 }
 
-// ── Month View ──────────────────────────────────────────────────────
 function MonthView({
   year,
   month,
@@ -200,76 +229,74 @@ function MonthView({
   const daysInPrev = new Date(year, month, 0).getDate();
 
   const cells: { day: number; current: boolean; date: Date }[] = [];
-  for (let i = firstDay - 1; i >= 0; i--)
+  for (let i = firstDay - 1; i >= 0; i -= 1) {
     cells.push({
       day: daysInPrev - i,
       current: false,
       date: new Date(year, month - 1, daysInPrev - i),
     });
-  for (let d = 1; d <= daysInMonth; d++)
-    cells.push({ day: d, current: true, date: new Date(year, month, d) });
+  }
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push({ day, current: true, date: new Date(year, month, day) });
+  }
   while (cells.length < 42) {
-    const d = cells.length - firstDay - daysInMonth + 1;
-    cells.push({ day: d, current: false, date: new Date(year, month + 1, d) });
+    const day = cells.length - firstDay - daysInMonth + 1;
+    cells.push({ day, current: false, date: new Date(year, month + 1, day) });
   }
 
   const weeks: (typeof cells)[] = [];
-  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
+  }
 
   return (
     <div data-part={P.calBody}>
       <div data-part={P.calDayHeaders}>
-        {DAYS.map((d, i) => (
+        {DAYS.map((day, index) => (
           <div
-            key={d}
+            key={day}
             data-part={P.calDayHeader}
-            data-state={i === 0 || i === 6 ? 'weekend' : undefined}
+            data-state={index === 0 || index === 6 ? 'weekend' : undefined}
           >
-            {d}
+            {day}
           </div>
         ))}
       </div>
       <div data-part={P.calWeeks}>
-        {weeks.map((week, wi) => (
-          <div key={wi} data-part={P.calWeekRow}>
-            {week.map((cell, di) => {
+        {weeks.map((week, weekIndex) => (
+          <div
+            key={weekIndex}
+            data-part={P.calWeekRow}
+          >
+            {week.map((cell, dayIndex) => {
               const isToday = sameDay(cell.date, today);
-              const dayEvents = events.filter((e) => sameDay(e.date, cell.date));
+              const dayEvents = events.filter((event) => sameDay(event.date, cell.date));
               return (
                 <div
-                  key={di}
+                  key={dayIndex}
                   onClick={() => onDayClick(cell.date)}
                   data-part={P.calDayCell}
                   data-state={
-                    isToday
-                      ? 'today'
-                      : di === 0 || di === 6
-                        ? 'weekend'
-                        : undefined
+                    isToday ? 'today' : dayIndex === 0 || dayIndex === 6 ? 'weekend' : undefined
                   }
                   data-current={cell.current ? '' : undefined}
                 >
                   <div data-part={P.calDayNumber}>
                     {isToday && <span data-part={P.calTodayDot} />}
-                    <span data-muted={!cell.current ? '' : undefined}>
-                      {cell.day}
-                    </span>
+                    <span data-muted={!cell.current ? '' : undefined}>{cell.day}</span>
                   </div>
                   <div data-part={P.calDayEvents}>
-                    {dayEvents.slice(0, 3).map((ev) => (
+                    {dayEvents.slice(0, 3).map((event) => (
                       <div
-                        key={ev.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick(ev);
+                        key={event.id}
+                        onClick={(event_) => {
+                          event_.stopPropagation();
+                          onEventClick(event);
                         }}
                         data-part={P.calEventChip}
-                        style={{
-                          background:
-                            eventColors[ev.color % eventColors.length],
-                        }}
+                        style={{ background: eventColors[event.color % eventColors.length] }}
                       >
-                        {ev.title}
+                        {event.title}
                       </div>
                     ))}
                     {dayEvents.length > 3 && (
@@ -288,7 +315,6 @@ function MonthView({
   );
 }
 
-// ── Week View ───────────────────────────────────────────────────────
 const HOUR_HEIGHT = 52;
 
 function WeekView({
@@ -309,40 +335,43 @@ function WeekView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    return d;
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + i);
+    return date;
   });
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
+    }
   }, [weekStart]);
 
   const now = new Date();
-  const nowDay = days.findIndex((d) => sameDay(d, now));
+  const nowDay = days.findIndex((date) => sameDay(date, now));
   const nowOffset = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
 
   return (
     <div data-part={P.calBody}>
       <div data-part={P.calDayHeaders}>
         <div data-part={P.calTimeGutterHeader} />
-        {days.map((d, i) => {
-          const isT = sameDay(d, today);
+        {days.map((date, index) => {
+          const isToday = sameDay(date, today);
           return (
             <div
-              key={i}
+              key={index}
               data-part={P.calDayHeader}
-              data-state={
-                isT ? 'today' : i === 0 || i === 6 ? 'weekend' : undefined
-              }
+              data-state={isToday ? 'today' : index === 0 || index === 6 ? 'weekend' : undefined}
             >
-              <div style={{ fontSize: 12 }}>{DAYS[i]}</div>
-              <div style={{ fontSize: 18 }}>{d.getDate()}</div>
+              <div style={{ fontSize: 12 }}>{DAYS[index]}</div>
+              <div style={{ fontSize: 18 }}>{date.getDate()}</div>
             </div>
           );
         })}
       </div>
-      <div ref={scrollRef} data-part={P.calTimeGrid}>
+      <div
+        ref={scrollRef}
+        data-part={P.calTimeGrid}
+      >
         <div
           style={{
             display: 'flex',
@@ -351,66 +380,56 @@ function WeekView({
           }}
         >
           <div data-part={P.calTimeGutter}>
-            {hours.map((h) => (
+            {hours.map((hour) => (
               <div
-                key={h}
+                key={hour}
                 data-part={P.calTimeLabel}
                 style={{ height: HOUR_HEIGHT }}
               >
-                {fmtTime(h, 0)}
+                {fmtTime(hour, 0)}
               </div>
             ))}
           </div>
-          {days.map((day, di) => {
-            const dayEvents = events.filter((e) => sameDay(e.date, day));
-            const isT = sameDay(day, today);
+          {days.map((day, dayIndex) => {
+            const dayEvents = events.filter((event) => sameDay(event.date, day));
+            const isToday = sameDay(day, today);
             return (
               <div
-                key={di}
+                key={dayIndex}
                 data-part={P.calWeekDayCol}
-                data-state={isT ? 'today' : undefined}
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const y =
-                    e.clientY -
-                    rect.top +
-                    (scrollRef.current?.scrollTop || 0);
+                data-state={isToday ? 'today' : undefined}
+                onClick={(event_) => {
+                  const rect = event_.currentTarget.getBoundingClientRect();
+                  const y = event_.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
                   const clickHour = Math.floor(y / HOUR_HEIGHT);
-                  const min =
-                    Math.round(((y % HOUR_HEIGHT) / HOUR_HEIGHT) * 4) * 15;
+                  const minute = Math.round(((y % HOUR_HEIGHT) / HOUR_HEIGHT) * 4) * 15;
                   const clickDate = new Date(day);
-                  clickDate.setHours(clickHour, min >= 60 ? 0 : min);
+                  clickDate.setHours(clickHour, minute >= 60 ? 0 : minute);
                   onTimeClick(clickDate);
                 }}
               >
-                {hours.map((h) => (
+                {hours.map((hour) => (
                   <div
-                    key={h}
+                    key={hour}
                     data-part={P.calHourSlot}
                     style={{ height: HOUR_HEIGHT }}
                   />
                 ))}
-                {dayEvents.map((ev) => {
-                  const top =
-                    (ev.date.getHours() + ev.date.getMinutes() / 60) *
-                    HOUR_HEIGHT;
-                  const height = Math.max(
-                    20,
-                    (ev.duration / 60) * HOUR_HEIGHT,
-                  );
+                {dayEvents.map((event) => {
+                  const top = (event.date.getHours() + event.date.getMinutes() / 60) * HOUR_HEIGHT;
+                  const height = Math.max(20, (event.duration / 60) * HOUR_HEIGHT);
                   return (
                     <div
-                      key={ev.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEventClick(ev);
+                      key={event.id}
+                      onClick={(event_) => {
+                        event_.stopPropagation();
+                        onEventClick(event);
                       }}
                       data-part={P.calWeekEvent}
                       style={{
                         top,
                         height,
-                        background:
-                          eventColors[ev.color % eventColors.length],
+                        background: eventColors[event.color % eventColors.length],
                       }}
                     >
                       <div
@@ -421,17 +440,17 @@ function WeekView({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {ev.title}
+                        {event.title}
                       </div>
                       {height > 30 && (
                         <div style={{ opacity: 0.7, fontSize: 11 }}>
-                          {fmtTime(ev.date.getHours(), ev.date.getMinutes())}
+                          {fmtTime(event.date.getHours(), event.date.getMinutes())}
                         </div>
                       )}
                     </div>
                   );
                 })}
-                {di === nowDay && (
+                {dayIndex === nowDay && (
                   <div
                     data-part={P.calNowLine}
                     style={{ top: nowOffset }}
@@ -448,137 +467,164 @@ function WeekView({
   );
 }
 
-// ── Props ────────────────────────────────────────────────────────────
 export interface MacCalendarProps {
   initialEvents?: CalendarEvent[];
   initialView?: CalendarView;
   eventColors?: string[];
 }
 
-// ── Main Component ──────────────────────────────────────────────────
-export function MacCalendar({
-  initialEvents = INITIAL_EVENTS,
-  initialView = 'month',
-  eventColors = EVENT_COLORS,
-}: MacCalendarProps) {
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
-  const [view, setView] = useState<CalendarView>(initialView);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [editEvent, setEditEvent] = useState<Partial<CalendarEvent> | null>(
-    null,
-  );
-  const [showPalette, setShowPalette] = useState(false);
-
+function MacCalendarInner({
+  state,
+  dispatch,
+  eventColors,
+}: {
+  state: MacCalendarState;
+  dispatch: (action: MacCalendarAction) => void;
+  eventColors: string[];
+}) {
   const todayDate = new Date();
+  const events = useMemo(() => state.events.map(deserializeCalendarEvent), [state.events]);
+  const view = state.view;
+  const currentDate = useMemo(() => new Date(state.currentDateMs), [state.currentDateMs]);
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   const weekStart = useMemo(() => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - d.getDay());
-    d.setHours(0, 0, 0, 0);
-    return d;
+    const date = new Date(currentDate);
+    date.setDate(date.getDate() - date.getDay());
+    date.setHours(0, 0, 0, 0);
+    return date;
   }, [currentDate]);
 
-  const navigateMonth = (dir: number) =>
-    setCurrentDate(new Date(year, month + dir, 1));
-  const navigateWeek = (dir: number) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + dir * 7);
-    setCurrentDate(d);
-  };
-  const goToday = () => setCurrentDate(new Date());
-
-  const handleSave = (evt: CalendarEvent) => {
-    setEvents((prev) => {
-      const exists = prev.find((e) => e.id === evt.id);
-      if (exists) return prev.map((e) => (e.id === evt.id ? evt : e));
-      return [...prev, evt];
-    });
-  };
-  const handleDelete = (id: string) =>
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-
-  const actions = makePaletteActions(view);
-
-  const execAction = (id: string) => {
-    switch (id) {
-      case 'new-event':
-        setEditEvent({ date: new Date() });
-        break;
-      case 'today':
-        goToday();
-        break;
-      case 'month-view':
-        setView('month');
-        break;
-      case 'week-view':
-        setView('week');
-        break;
-      case 'prev':
-        view === 'month' ? navigateMonth(-1) : navigateWeek(-1);
-        break;
-      case 'next':
-        view === 'month' ? navigateMonth(1) : navigateWeek(1);
-        break;
+  const editEvent = useMemo<Partial<CalendarEvent> | null>(() => {
+    if (state.editingEventId) {
+      return events.find((event) => event.id === state.editingEventId) ?? null;
     }
-  };
+    if (state.draftDateMs != null) {
+      return { date: new Date(state.draftDateMs) };
+    }
+    return null;
+  }, [events, state.draftDateMs, state.editingEventId]);
+
+  const navigateMonth = useCallback(
+    (dir: number) => {
+      dispatch(macCalendarActions.setCurrentDateMs(new Date(year, month + dir, 1).getTime()));
+    },
+    [dispatch, month, year],
+  );
+
+  const navigateWeek = useCallback(
+    (dir: number) => {
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + dir * 7);
+      dispatch(macCalendarActions.setCurrentDateMs(date.getTime()));
+    },
+    [dispatch, weekStart],
+  );
+
+  const goToday = useCallback(() => {
+    dispatch(macCalendarActions.setCurrentDateMs(new Date().getTime()));
+  }, [dispatch]);
+
+  const handleSave = useCallback(
+    (event: CalendarEvent) => {
+      dispatch(macCalendarActions.saveEvent(serializeCalendarEvent(event)));
+      dispatch(macCalendarActions.closeEditor());
+    },
+    [dispatch],
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      dispatch(macCalendarActions.deleteEvent(id));
+      dispatch(macCalendarActions.closeEditor());
+    },
+    [dispatch],
+  );
+
+  const execAction = useCallback(
+    (id: string) => {
+      switch (id) {
+        case 'new-event':
+          dispatch(macCalendarActions.openNewEvent(new Date().getTime()));
+          break;
+        case 'today':
+          goToday();
+          break;
+        case 'month-view':
+          dispatch(macCalendarActions.setView('month'));
+          break;
+        case 'week-view':
+          dispatch(macCalendarActions.setView('week'));
+          break;
+        case 'prev':
+          view === 'month' ? navigateMonth(-1) : navigateWeek(-1);
+          break;
+        case 'next':
+          view === 'month' ? navigateMonth(1) : navigateWeek(1);
+          break;
+      }
+    },
+    [dispatch, goToday, navigateMonth, navigateWeek, view],
+  );
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (editEvent || showPalette) return;
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.shiftKey &&
-        e.key.toLowerCase() === 'p'
-      ) {
-        e.preventDefault();
-        setShowPalette(true);
-      } else if (e.key === 'n')
-        setEditEvent({ date: new Date() });
-      else if (e.key === 't') goToday();
-      else if (e.key === 'm') setView('month');
-      else if (e.key === 'w') setView('week');
-      else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
+    const handleKey = (event: KeyboardEvent) => {
+      if (editEvent || state.paletteOpen) {
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        dispatch(macCalendarActions.setPaletteOpen(true));
+      } else if (event.key === 'n') {
+        dispatch(macCalendarActions.openNewEvent(new Date().getTime()));
+      } else if (event.key === 't') {
+        goToday();
+      } else if (event.key === 'm') {
+        dispatch(macCalendarActions.setView('month'));
+      } else if (event.key === 'w') {
+        dispatch(macCalendarActions.setView('week'));
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
         view === 'month' ? navigateMonth(-1) : navigateWeek(-1);
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
         view === 'month' ? navigateMonth(1) : navigateWeek(1);
       }
     };
+
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [editEvent, showPalette, view, year, month]);
+  }, [dispatch, editEvent, goToday, navigateMonth, navigateWeek, state.paletteOpen, view]);
 
   const headerText =
     view === 'month'
       ? `${MONTHS[month]} ${year}`
       : `${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} \u2013 ${(() => {
-          const e = new Date(weekStart);
-          e.setDate(e.getDate() + 6);
-          return `${MONTHS[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
+          const end = new Date(weekStart);
+          end.setDate(end.getDate() + 6);
+          return `${MONTHS[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
         })()}`;
+
+  const paletteActions = makePaletteActions(view);
 
   return (
     <div data-part={P.calendar}>
-      {/* ── Toolbar ── */}
       <WidgetToolbar>
         <Btn
-          onClick={() =>
-            view === 'month' ? navigateMonth(-1) : navigateWeek(-1)
-          }
+          onClick={() => (view === 'month' ? navigateMonth(-1) : navigateWeek(-1))}
           style={{ fontSize: 14, padding: '2px 8px' }}
         >
           {'\u25C0'}
         </Btn>
-        <Btn onClick={goToday} style={{ fontSize: 12, padding: '3px 10px' }}>
+        <Btn
+          onClick={goToday}
+          style={{ fontSize: 12, padding: '3px 10px' }}
+        >
           Today
         </Btn>
         <Btn
-          onClick={() =>
-            view === 'month' ? navigateMonth(1) : navigateWeek(1)
-          }
+          onClick={() => (view === 'month' ? navigateMonth(1) : navigateWeek(1))}
           style={{ fontSize: 14, padding: '2px 8px' }}
         >
           {'\u25B6'}
@@ -587,14 +633,14 @@ export function MacCalendar({
         <div style={{ flex: 1 }} />
         <div data-part={P.calViewToggle}>
           <Btn
-            onClick={() => setView('month')}
+            onClick={() => dispatch(macCalendarActions.setView('month'))}
             data-state={view === 'month' ? 'active' : undefined}
             style={{ fontSize: 12, padding: '3px 10px' }}
           >
             {'\uD83D\uDCC6'} Month
           </Btn>
           <Btn
-            onClick={() => setView('week')}
+            onClick={() => dispatch(macCalendarActions.setView('week'))}
             data-state={view === 'week' ? 'active' : undefined}
             style={{ fontSize: 12, padding: '3px 10px' }}
           >
@@ -603,9 +649,11 @@ export function MacCalendar({
         </div>
         <Btn
           onClick={() =>
-            setEditEvent({
-              date: new Date(year, month, todayDate.getDate(), 9, 0),
-            })
+            dispatch(
+              macCalendarActions.openNewEvent(
+                new Date(year, month, todayDate.getDate(), 9, 0).getTime(),
+              ),
+            )
           }
           data-state="active"
           style={{ fontSize: 12, fontWeight: 'bold', padding: '3px 10px' }}
@@ -613,14 +661,13 @@ export function MacCalendar({
           {'\u2795'} New
         </Btn>
         <Btn
-          onClick={() => setShowPalette(true)}
+          onClick={() => dispatch(macCalendarActions.setPaletteOpen(true))}
           style={{ fontSize: 12, padding: '2px 7px', opacity: 0.6 }}
         >
           {'\u2318'}P
         </Btn>
       </WidgetToolbar>
 
-      {/* ── Calendar Body ── */}
       {view === 'month' ? (
         <MonthView
           year={year}
@@ -629,17 +676,13 @@ export function MacCalendar({
           eventColors={eventColors}
           today={todayDate}
           onDayClick={(date) =>
-            setEditEvent({
-              date: new Date(
-                date.getFullYear(),
-                date.getMonth(),
-                date.getDate(),
-                9,
-                0,
+            dispatch(
+              macCalendarActions.openNewEvent(
+                new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0).getTime(),
               ),
-            })
+            )
           }
-          onEventClick={(ev) => setEditEvent(ev)}
+          onEventClick={(event) => dispatch(macCalendarActions.editExistingEvent(event.id))}
         />
       ) : (
         <WeekView
@@ -647,48 +690,112 @@ export function MacCalendar({
           events={events}
           eventColors={eventColors}
           today={todayDate}
-          onTimeClick={(date) => setEditEvent({ date })}
-          onEventClick={(ev) => setEditEvent(ev)}
+          onTimeClick={(date) => dispatch(macCalendarActions.openNewEvent(date.getTime()))}
+          onEventClick={(event) => dispatch(macCalendarActions.editExistingEvent(event.id))}
         />
       )}
 
-      {/* ── Status Bar ── */}
       <WidgetStatusBar>
         <div style={{ display: 'flex', gap: 14 }}>
           <span>{events.length} events</span>
-          <span>
-            {events.filter((e) => sameDay(e.date, todayDate)).length} today
-          </span>
+          <span>{events.filter((event) => sameDay(event.date, todayDate)).length} today</span>
         </div>
         <span>
-          N = new {'\u00B7'} T = today {'\u00B7'} M/W = view {'\u00B7'}{' '}
-          {'\u2190\u2192'} = navigate
+          N = new {'\u00B7'} T = today {'\u00B7'} M/W = view {'\u00B7'} {'\u2190\u2192'} = navigate
         </span>
       </WidgetStatusBar>
 
-      {/* ── Event Modal ── */}
       {editEvent && (
         <EventModal
           event={editEvent}
           eventColors={eventColors}
           onSave={handleSave}
           onDelete={handleDelete}
-          onClose={() => setEditEvent(null)}
+          onClose={() => dispatch(macCalendarActions.closeEditor())}
         />
       )}
 
-      {/* ── Command Palette ── */}
-      {showPalette && (
+      {state.paletteOpen && (
         <CommandPalette
-          items={actions}
+          items={paletteActions}
           onSelect={(id) => {
-            setShowPalette(false);
+            dispatch(macCalendarActions.setPaletteOpen(false));
             execAction(id);
           }}
-          onClose={() => setShowPalette(false)}
+          onClose={() => dispatch(macCalendarActions.setPaletteOpen(false))}
           footer={false}
         />
       )}
     </div>
   );
+}
+
+function StandaloneMacCalendar(props: MacCalendarProps) {
+  const [state, dispatch] = useReducer(
+    macCalendarReducer,
+    createMacCalendarStateSeed({
+      initialEvents: props.initialEvents,
+      initialView: props.initialView,
+    }),
+  );
+
+  return (
+    <MacCalendarInner
+      state={state}
+      dispatch={dispatch}
+      eventColors={props.eventColors ?? EVENT_COLORS}
+    />
+  );
+}
+
+function ConnectedMacCalendar(props: MacCalendarProps) {
+  const reduxDispatch = useDispatch();
+  const state = useSelector(selectMacCalendarState);
+
+  useEffect(() => {
+    reduxDispatch(
+      macCalendarActions.initializeIfNeeded({
+        initialEvents: props.initialEvents,
+        initialView: props.initialView,
+      }),
+    );
+  }, [props.initialEvents, props.initialView, reduxDispatch]);
+
+  const effectiveState = state.initialized
+    ? state
+    : createMacCalendarStateSeed({
+        initialEvents: props.initialEvents,
+        initialView: props.initialView,
+      });
+
+  const dispatch = useCallback(
+    (action: MacCalendarAction) => {
+      reduxDispatch(action);
+    },
+    [reduxDispatch],
+  );
+
+  return (
+    <MacCalendarInner
+      state={effectiveState}
+      dispatch={dispatch}
+      eventColors={props.eventColors ?? EVENT_COLORS}
+    />
+  );
+}
+
+export function MacCalendar(props: MacCalendarProps) {
+  const reduxContext = useContext(ReactReduxContext);
+  const store = reduxContext?.store;
+  const rootState = store?.getState();
+  const hasRegisteredSlice =
+    typeof rootState === 'object' &&
+    rootState !== null &&
+    MAC_CALENDAR_STATE_KEY in (rootState as Record<string, unknown>);
+
+  if (hasRegisteredSlice) {
+    return <ConnectedMacCalendar {...props} />;
+  }
+
+  return <StandaloneMacCalendar {...props} />;
 }

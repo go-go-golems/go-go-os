@@ -1,0 +1,53 @@
+# Changelog
+
+## 2026-03-05
+
+- Initial workspace created
+- Completed Task 1: migrated `LogViewer` to a dedicated Redux slice, added reducer tests, and added store-seeded Storybook scenarios
+- Uploaded the current OS-17 bundle to reMarkable
+- Updated the OS-07 and OS-16 cleanup/migration guides with rollout lessons from `LogViewer` and `MacCalc`
+- Completed Task 2: migrated `MacCalc` to a dedicated Redux slice, added reducer tests, and added store-seeded Storybook scenarios
+- Refreshed the OS-17 reMarkable bundle after Task 2
+- Completed Task 3: migrated `MacCalendar` to a dedicated Redux slice, added reducer tests, and added store-seeded Storybook scenarios
+- Refreshed the OS-17 reMarkable bundle after Task 3
+- Completed Task 4: migrated `KanbanBoard` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded workflow stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 4 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task4`
+- Completed Task 5: migrated `DeepResearch` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded progress/report stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 5 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task5`
+- Completed Task 6: migrated `ChatBrowser` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded search/result stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 6 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task6`
+- Completed Task 7: migrated `GameFinder` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded browse/install/detail stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 7 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task7`
+- Completed Task 8: migrated `RetroMusicPlayer` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded playback/library stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 8 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task8`
+- Completed Task 9: migrated `StreamLauncher` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded browse/player stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 9 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task9`
+- Completed Task 10: migrated `SteamLauncher` to a dedicated Redux slice, added reducer tests, launcher wiring, and Redux-seeded library/install/launch stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 10 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task10`
+- Completed Task 11: migrated `YouTubeRetro` to a dedicated Redux slice, split the widget subcomponents into their own files, added reducer tests, launcher wiring, and Redux-seeded watch/filter stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 11 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task11`
+- Completed Task 12: migrated `NodeEditor` to a dedicated Redux slice, split the widget subcomponents into their own files, added reducer tests, launcher wiring, and Redux-seeded selection/document stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 12 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task12`
+- Completed Task 13: migrated `SystemModeler` to a dedicated Redux slice, split the widget subcomponents into their own files, added reducer tests, launcher wiring, and Redux-seeded topology/simulation stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 13 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task13`
+- Completed Task 14: migrated `GraphNavigator` to a partial Redux slice, split force-graph canvas behavior into its own file, and added Redux-seeded graph/filter stories
+- Completed Task 15: migrated `MacRepl` to a partial Redux slice, split command/input helpers into their own files, and added Redux-seeded history/error stories
+- Completed Task 16: migrated `LogicAnalyzer` to a partial Redux slice, split the canvas and controls into their own files, and added Redux-seeded capture/display stories
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 16 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task16`
+- Completed Task 17: migrated `ControlRoom` to a dedicated Redux slice, split the panel/telemetry helpers into their own files, and added Redux-seeded console states
+- Completed Task 18: migrated `ChartView` to a dedicated Redux slice, split canvas/legend helpers into their own files, and added Redux-seeded chart/dataset scenarios
+- Completed Task 19: migrated `MacWrite` to a dedicated Redux slice, split toolbar/find helpers into their own files, and added Redux-seeded document/find scenarios
+- Completed Task 20: migrated `Oscilloscope` to a dedicated Redux slice, split the display/controls into their own files, and added Redux-seeded waveform/display scenarios
+- Re-ran `docmgr doctor --ticket OS-17-RICH-WIDGET-REDUX-ROLLOUT --stale-after 30` after Task 20 with all checks passing
+- Uploaded the refreshed OS-17 bundle to reMarkable at `/ai/2026/03/05/OS-17-RICH-WIDGET-REDUX-ROLLOUT` as `OS-17-RICH-WIDGET-REDUX-ROLLOUT-2026-03-06-task20`

@@ -179,6 +179,33 @@ export const RICH_PARTS = {
   calFieldInput: 'cal-field-input',
   calColorSwatch: 'cal-color-swatch',
 
+  // MacSlides
+  macSlides: 'mac-slides',
+  msBody: 'ms-body',
+  msSidebar: 'ms-sidebar',
+  msSidebarHeader: 'ms-sidebar-header',
+  msSlideList: 'ms-slide-list',
+  msSlideThumb: 'ms-slide-thumb',
+  msSlideThumbPreview: 'ms-slide-thumb-preview',
+  msSlideThumbLabel: 'ms-slide-thumb-label',
+  msPane: 'ms-pane',
+  msPaneHeader: 'ms-pane-header',
+  msPaneMeta: 'ms-pane-meta',
+  msEditor: 'ms-editor',
+  msPreviewArea: 'ms-preview-area',
+  msSlideFrame: 'ms-slide-frame',
+  msSlideThumbContent: 'ms-slide-thumb-content',
+  msSlideContent: 'ms-slide-content',
+  msNavRow: 'ms-nav-row',
+  msToolbarButton: 'ms-toolbar-button',
+  msPaletteButton: 'ms-palette-button',
+  msToolbarSpacer: 'ms-toolbar-spacer',
+  msAlignToggle: 'ms-align-toggle',
+  msDeckStats: 'ms-deck-stats',
+  msPresentation: 'ms-presentation',
+  msPresentationFrame: 'ms-presentation-frame',
+  msPresentationStatus: 'ms-presentation-status',
+
   // Oscilloscope
   oscilloscope: 'oscilloscope',
   oscMain: 'osc-main',
@@ -654,6 +681,26 @@ export const RICH_PARTS = {
   crScopeMeta: 'cr-scope-meta',
   crResourceCol: 'cr-resource-col',
   crFooter: 'cr-footer',
+
+  // MermaidEditor
+  mermaidEditor: 'mermaid-editor',
+  meBody: 'me-body',
+  mePane: 'me-pane',
+  mePaneHeader: 'me-pane-header',
+  meEditor: 'me-editor',
+  meSplitter: 'me-splitter',
+  mePreviewArea: 'me-preview-area',
+  meDiagram: 'me-diagram',
+  meMessage: 'me-message',
+  meAbout: 'me-about',
+
+  // MacBrowser
+  macBrowser: 'mac-browser',
+  mbAddressBar: 'mb-address-bar',
+  mbBody: 'mb-body',
+  mbContent: 'mb-content',
+  mbEditor: 'mb-editor',
+  mbEmpty: 'mb-empty',
 } as const;
 
 export type RichPartName = (typeof RICH_PARTS)[keyof typeof RICH_PARTS];

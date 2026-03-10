@@ -1,11 +1,10 @@
 import { useCallback, useMemo, useState, type DragEvent } from 'react';
-import { Btn } from '@hypercard/engine';
-import { WidgetToolbar } from '../primitives/WidgetToolbar';
-import { Separator } from '../primitives/Separator';
-import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
 import { RICH_PARTS as P } from '../parts';
-import { ALL_PRIORITIES, ALL_TAGS, PRIORITY_LABELS, TAG_LABELS, type Priority, type TagId, type Task } from './types';
-import { KanbanTaskCard } from './KanbanTaskCard';
+import { type Priority, type TagId, type Task } from './types';
+import { KanbanHeaderBar } from './KanbanHeaderBar';
+import { KanbanFilterBar } from './KanbanFilterBar';
+import { KanbanLaneView } from './KanbanLaneView';
+import { KanbanStatusBar } from './KanbanStatusBar';
 import { KanbanTaskModal } from './KanbanTaskModal';
 import type { KanbanState } from './kanbanState';
 
@@ -44,6 +43,9 @@ export interface KanbanBoardViewProps {
   defaultNewColumnId?: string;
   emptyColumnMessage?: string;
   dropHintMessage?: string;
+  title?: string;
+  subtitle?: string;
+  primaryActionLabel?: string;
 }
 
 export function KanbanBoardView({
@@ -61,6 +63,9 @@ export function KanbanBoardView({
   defaultNewColumnId,
   emptyColumnMessage = 'No tasks',
   dropHintMessage = 'Drop here',
+  title = 'Kanban Board',
+  subtitle = 'Host-composed board shell',
+  primaryActionLabel = '+ New',
 }: KanbanBoardViewProps) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const {
@@ -113,60 +118,25 @@ export function KanbanBoardView({
     setDragOverCol(null);
   }, [onMoveTask]);
 
-  const hasFilters = Boolean(filterTag || filterPriority || searchQuery);
-
   return (
     <div data-part={P.kb}>
-      <WidgetToolbar>
-        <Btn
-          onClick={() => onOpenTaskEditor(createTaskSeed())}
-          style={{ fontSize: 10, fontWeight: 'bold' }}
-        >
-          + New
-        </Btn>
+      <KanbanHeaderBar
+        title={title}
+        subtitle={subtitle}
+        searchQuery={searchQuery}
+        primaryActionLabel={primaryActionLabel}
+        onPrimaryAction={() => onOpenTaskEditor(createTaskSeed())}
+        onSearchChange={onSearchChange}
+      />
 
-        <Separator />
-
-        <input
-          data-part="field-input"
-          value={searchQuery}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search..."
-          style={{ width: 120 }}
-        />
-
-        <Separator />
-
-        {ALL_TAGS.map((tag) => (
-          <Btn
-            key={tag}
-            onClick={() => onSetFilterTag(filterTag === tag ? null : tag)}
-            data-state={filterTag === tag ? 'active' : undefined}
-            style={{ fontSize: 9, padding: '1px 5px' }}
-          >
-            {TAG_LABELS[tag]}
-          </Btn>
-        ))}
-
-        <Separator />
-
-        {ALL_PRIORITIES.map((priority) => (
-          <Btn
-            key={priority}
-            onClick={() => onSetFilterPriority(filterPriority === priority ? null : priority)}
-            data-state={filterPriority === priority ? 'active' : undefined}
-            style={{ fontSize: 9, padding: '1px 5px' }}
-          >
-            {PRIORITY_LABELS[priority]}
-          </Btn>
-        ))}
-
-        {hasFilters && (
-          <Btn onClick={onClearFilters} style={{ fontSize: 9 }}>
-            ✕ Clear
-          </Btn>
-        )}
-      </WidgetToolbar>
+      <KanbanFilterBar
+        filterTag={filterTag}
+        filterPriority={filterPriority}
+        searchQuery={searchQuery}
+        onSetFilterTag={onSetFilterTag}
+        onSetFilterPriority={onSetFilterPriority}
+        onClearFilters={onClearFilters}
+      />
 
       <div data-part={P.kbBoard}>
         {columns.map((column) => {
@@ -176,74 +146,39 @@ export function KanbanBoardView({
           const collapsed = collapsedCols[column.id];
 
           return (
-            <div
+            <KanbanLaneView
               key={column.id}
-              data-part={P.kbColumn}
-              data-state={collapsed ? 'collapsed' : isOver ? 'drag-over' : undefined}
-              onDragOver={(event) => {
+              column={column}
+              tasks={colTasks}
+              total={total}
+              collapsed={collapsed}
+              isDragOver={isOver}
+              emptyColumnMessage={emptyColumnMessage}
+              dropHintMessage={dropHintMessage}
+              onOpenTaskEditor={(task) => onOpenTaskEditor({
+                ...createTaskSeed(column.id),
+                ...task,
+              })}
+              onToggleCollapsed={onToggleCollapsed}
+              onDragOver={(columnId, event) => {
                 event.preventDefault();
-                setDragOverCol(column.id);
+                setDragOverCol(columnId);
               }}
               onDragLeave={() => setDragOverCol(null)}
-              onDrop={(event) => handleDrop(column.id, event)}
-            >
-              <div
-                data-part={P.kbColumnHeader}
-                onClick={() => onToggleCollapsed(column.id)}
-              >
-                <span>
-                  {column.icon} {column.title}
-                </span>
-                {!collapsed && (
-                  <span data-part={P.kbColumnCount}>
-                    {colTasks.length}
-                    {colTasks.length !== total ? `/${total}` : ''}
-                    <span
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onOpenTaskEditor(createTaskSeed(column.id));
-                      }}
-                      style={{ cursor: 'pointer', marginLeft: 6 }}
-                    >
-                      +
-                    </span>
-                  </span>
-                )}
-              </div>
-              {!collapsed && (
-                <div data-part={P.kbColumnCards}>
-                  {colTasks.length === 0 && (
-                    <div
-                      style={{
-                        padding: '20px 8px',
-                        textAlign: 'center',
-                        opacity: 0.4,
-                        fontSize: 10,
-                      }}
-                    >
-                      {isOver ? dropHintMessage : emptyColumnMessage}
-                    </div>
-                  )}
-                  {colTasks.map((task) => (
-                    <KanbanTaskCard
-                      key={task.id}
-                      task={task}
-                      onEdit={onOpenTaskEditor}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+              onDrop={handleDrop}
+            />
           );
         })}
       </div>
 
-      <WidgetStatusBar>
-        <span>{tasks.length} total</span>
-        <span>{tasks.filter((task) => task.priority === 'high').length} high</span>
-        <span>{tasks.filter((task) => task.col === 'done').length} done</span>
-        {hasFilters && <span>filtered</span>}
-      </WidgetStatusBar>
+      <KanbanStatusBar
+        metrics={[
+          { label: 'total', value: tasks.length },
+          { label: 'high', value: tasks.filter((task) => task.priority === 'high').length },
+          { label: 'done', value: tasks.filter((task) => task.col === 'done').length },
+          ...(filterTag || filterPriority || searchQuery ? [{ label: 'state', value: 'filtered' }] : []),
+        ]}
+      />
 
       {editingTask && (
         <KanbanTaskModal

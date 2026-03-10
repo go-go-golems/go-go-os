@@ -74,6 +74,10 @@ export { SAMPLE_DOCUMENT } from './mac-write/sampleData';
 // KanbanBoard
 export { KanbanBoard, KanbanBoardFrame, type KanbanBoardProps } from './kanban/KanbanBoard';
 export { KanbanBoardView, type KanbanBoardViewProps } from './kanban/KanbanBoardView';
+export { KanbanHeaderBar, type KanbanHeaderBarProps } from './kanban/KanbanHeaderBar';
+export { KanbanFilterBar, type KanbanFilterBarProps } from './kanban/KanbanFilterBar';
+export { KanbanLaneView, type KanbanLaneViewProps } from './kanban/KanbanLaneView';
+export { KanbanStatusBar, type KanbanStatusBarProps, type KanbanStatusMetric } from './kanban/KanbanStatusBar';
 export { KanbanTaskCard, type KanbanTaskCardProps } from './kanban/KanbanTaskCard';
 export { KanbanTaskModal, type KanbanTaskModalProps } from './kanban/KanbanTaskModal';
 export {

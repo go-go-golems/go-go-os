@@ -25,18 +25,18 @@ function RuntimeMutationDemo() {
 
   const [status, setStatus] = useState<RuntimeStatus>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [cards, setCards] = useState<string[]>([]);
-  const [activeCardId, setActiveCardId] = useState('lowStock');
+  const [surfaces, setSurfaces] = useState<string[]>([]);
+  const [activeSurfaceId, setActiveSurfaceId] = useState('lowStock');
   const [lowStockLimit, setLowStockLimit] = useState(5);
   const [tree, setTree] = useState<UINode | null>(null);
   const [lastActions, setLastActions] = useState<RuntimeAction[]>([]);
 
   const stateFor = useCallback(
-    (cardId: string) => {
+    (surfaceId: string) => {
       const draft =
-        cardId === 'lowStock'
+        surfaceId === 'lowStock'
           ? { limit: lowStockLimit }
-          : cardId === 'onDemand'
+          : surfaceId === 'onDemand'
             ? { name: 'Add Deal' }
             : {};
 
@@ -49,8 +49,8 @@ function RuntimeMutationDemo() {
   );
 
   const renderRuntimeSurface = useCallback(
-    (cardId: string) => {
-      const nextTree = runtime.renderRuntimeSurface(SESSION_ID, cardId, stateFor(cardId));
+    (surfaceId: string) => {
+      const nextTree = runtime.renderRuntimeSurface(SESSION_ID, surfaceId, stateFor(surfaceId));
       setTree(nextTree);
     },
     [runtime, stateFor]
@@ -66,7 +66,7 @@ function RuntimeMutationDemo() {
           return;
         }
 
-        setCards(bundle.surfaces);
+        setSurfaces(bundle.surfaces);
         setStatus('ready');
         setError(null);
         renderRuntimeSurface('lowStock');
@@ -99,7 +99,7 @@ function RuntimeMutationDemo() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     }
-  }, [activeCardId, renderRuntimeSurface, status]);
+  }, [activeSurfaceId, renderRuntimeSurface, status]);
 
   const run = useCallback(
     (label: string, fn: () => void) => {
@@ -115,22 +115,22 @@ function RuntimeMutationDemo() {
         setError(`${label}: ${cause instanceof Error ? cause.message : String(cause)}`);
       }
     },
-    [activeCardId, renderRuntimeSurface, status]
+    [activeSurfaceId, renderRuntimeSurface, status]
   );
 
   const onEvent = useCallback(
     (handler: string, args?: unknown) => {
       run('eventRuntimeSurface', () => {
-        const actions = runtime.eventRuntimeSurface(SESSION_ID, activeCardId, handler, args, stateFor(activeCardId));
+        const actions = runtime.eventRuntimeSurface(SESSION_ID, activeSurfaceId, handler, args, stateFor(activeSurfaceId));
         setLastActions(actions);
 
         const hasBack = actions.some((action) => action.type === 'nav.back');
         if (hasBack) {
-          setActiveCardId('lowStock');
+          setActiveSurfaceId('lowStock');
         }
       });
     },
-    [activeCardId, run, runtime, stateFor]
+    [activeSurfaceId, run, runtime, stateFor]
   );
 
   if (status === 'loading') {
@@ -150,7 +150,7 @@ function RuntimeMutationDemo() {
       <div style={{ border: '1px solid #111', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ fontWeight: 700 }}>Runtime Mutations</div>
         <div style={{ fontSize: 12 }}>Session: {SESSION_ID}</div>
-        <div style={{ fontSize: 12 }}>Cards: {cards.join(', ') || '(none)'}</div>
+        <div style={{ fontSize: 12 }}>Surfaces: {surfaces.join(', ') || '(none)'}</div>
 
         <label style={{ fontSize: 12 }}>
           Low stock limit
@@ -167,8 +167,8 @@ function RuntimeMutationDemo() {
             onClick={() =>
               run('defineRuntimeSurface', () => {
                 const bundle = runtime.defineRuntimeSurface(SESSION_ID, 'onDemand', DYNAMIC_CARD);
-                setCards(bundle.surfaces);
-                setActiveCardId('onDemand');
+                setSurfaces(bundle.surfaces);
+                setActiveSurfaceId('onDemand');
               })
             }
           >
@@ -179,7 +179,7 @@ function RuntimeMutationDemo() {
             onClick={() =>
               run('defineRuntimeSurfaceRender', () => {
                 runtime.defineRuntimeSurfaceRender(SESSION_ID, 'lowStock', PATCHED_LOW_STOCK_RENDER);
-                setActiveCardId('lowStock');
+                setActiveSurfaceId('lowStock');
               })
             }
           >
@@ -198,9 +198,9 @@ function RuntimeMutationDemo() {
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {cards.map((cardId) => (
-            <Btn key={cardId} onClick={() => setActiveCardId(cardId)}>
-              show {cardId}
+          {surfaces.map((surfaceId) => (
+            <Btn key={surfaceId} onClick={() => setActiveSurfaceId(surfaceId)}>
+              show {surfaceId}
             </Btn>
           ))}
         </div>
@@ -208,7 +208,7 @@ function RuntimeMutationDemo() {
         {error ? (
           <div style={{ color: '#9f1d1d', fontSize: 12 }}>Error: {error}</div>
         ) : (
-          <div style={{ fontSize: 12 }}>Active card: {activeCardId}</div>
+          <div style={{ fontSize: 12 }}>Active surface: {activeSurfaceId}</div>
         )}
 
         <div style={{ fontSize: 12, whiteSpace: 'pre-wrap' }}>

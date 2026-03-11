@@ -18,7 +18,7 @@ vi.mock('../plugin-runtime/runtimeService', () => {
       };
     }
 
-    renderRuntimeSurface(_sessionId: string, _cardId: string, state: unknown) {
+    renderRuntimeSurface(_sessionId: string, _surfaceId: string, state: unknown) {
       const root = (state ?? {}) as Record<string, unknown>;
       const inventory = (root.inventory ?? {}) as Record<string, unknown>;
       const items = Array.isArray(inventory.items) ? inventory.items : [];

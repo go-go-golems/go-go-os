@@ -17,7 +17,7 @@ describe('BrowserDetailPanel mounted docs', () => {
         owner,
         slug: 'incident-command',
         title: 'Incident Command',
-        summary: 'Mounted runtime card docs.',
+        summary: 'Mounted runtime surface docs.',
         docType: 'example',
         content: '# Incident Command',
       },

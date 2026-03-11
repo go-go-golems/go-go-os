@@ -82,15 +82,15 @@ describe('docsMountAdapters', () => {
     const metadata = {
       packId: 'kanban.v1',
       cards: [
-        { id: 'kanbanIncidentCommand', packId: 'kanban.v1', title: 'Incident Command', source: 'defineCard(...)' },
+        { id: 'kanbanIncidentCommand', packId: 'kanban.v1', title: 'Incident Command', source: 'defineRuntimeSurface(...)' },
       ],
       docs: {
         files: [
           {
             package: {
               name: 'kanban.v1',
-              title: 'Kanban Runtime Pack',
-              category: 'runtime-pack',
+              title: 'Kanban Runtime Surface Type',
+              category: 'runtime-surface-type',
               description: 'Pack docs',
               prose: 'Package prose',
             },
@@ -119,6 +119,6 @@ describe('docsMountAdapters', () => {
     ]);
     expect(cardDoc?.path).toBe('/docs/objects/card/os-launcher/kanbanIncidentCommand');
     expect(cardDoc?.content).toContain('Card prose');
-    expect(cardDoc?.content).toContain('defineCard(...)');
+    expect(cardDoc?.content).toContain('defineRuntimeSurface(...)');
   });
 });

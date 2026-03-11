@@ -92,6 +92,11 @@ const COMMAND_HELP: Record<string, ReplHelpEntry> = {
     detail: 'Dispatch a handler on a runtime surface and print the resulting actions.',
     usage: 'event <surface-id> <handler> [args-json] [state-json]',
   },
+  'open-surface': {
+    title: 'open-surface',
+    detail: 'Emit a host effect requesting a window for a runtime surface.',
+    usage: 'open-surface <surface-id> [session-id]',
+  },
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -334,6 +339,33 @@ export function createHypercardReplDriver(
           );
           return { lines: formatJsonLines(actions) };
         }
+        case 'open-surface': {
+          const surfaceId = rest[0];
+          if (!surfaceId) {
+            throw new Error('Usage: open-surface <surface-id> [session-id]');
+          }
+          const { handle, sessionId } = getActiveSession(rest[1]);
+          return {
+            lines: [
+              {
+                type: 'system',
+                text: `Requested runtime surface window for ${sessionId}:${surfaceId}`,
+              },
+            ],
+            effects: [
+              {
+                type: 'open-window',
+                payload: {
+                  kind: 'runtime-surface',
+                  sessionId,
+                  stackId: handle.stackId,
+                  surfaceId,
+                  title: `${handle.stackId}:${surfaceId}`,
+                },
+              },
+            ],
+          };
+        }
         default:
           throw new Error(`Unknown HyperCard REPL command: ${command}`);
       }
@@ -371,7 +403,8 @@ export function createHypercardReplDriver(
               detail: session.stackId,
             }));
         case 'render':
-        case 'event': {
+        case 'event':
+        case 'open-surface': {
           const session = activeSessionId ? broker.getSession(activeSessionId) : null;
           const partial = tokens[1] ?? '';
           return session

@@ -134,6 +134,32 @@ describe('hypercardReplDriver', () => {
     );
     expect(rendered.lines[0]).toEqual({ type: 'output', text: '{' });
     expect(rendered.lines.some((line) => line.text.includes('"kind": "panel"'))).toBe(true);
+
+    await expect(
+      driver.execute('open-surface lowStock inventory@repl', {
+        lines: [],
+        historyStack: [],
+        envVars: {},
+        aliases: {},
+        uptimeMs: 0,
+      }),
+    ).resolves.toEqual({
+      lines: [
+        { type: 'system', text: 'Requested runtime surface window for inventory@repl:lowStock' },
+      ],
+      effects: [
+        {
+          type: 'open-window',
+          payload: {
+            kind: 'runtime-surface',
+            sessionId: 'inventory@repl',
+            stackId: 'inventory',
+            surfaceId: 'lowStock',
+            title: 'inventory:lowStock',
+          },
+        },
+      ],
+    });
   });
 
   it('exposes command and package-doc completions', () => {

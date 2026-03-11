@@ -14,12 +14,13 @@ import {
   type MacReplAction,
   type MacReplState,
 } from './replState';
-import type { ReplDriver, ReplDriverContext, TerminalLine } from './types';
+import type { ReplDriver, ReplDriverContext, ReplEffect, TerminalLine } from './types';
 
 export interface MacReplProps {
   initialLines?: TerminalLine[];
   prompt?: string;
   driver?: ReplDriver;
+  onEffects?: (effects: ReplEffect[]) => void;
 }
 
 function createInitialSeed(props: MacReplProps): MacReplState {
@@ -43,10 +44,12 @@ function MacReplFrame({
   state,
   dispatch,
   driver,
+  onEffects,
 }: {
   state: MacReplState;
   dispatch: (action: MacReplAction) => void;
   driver: ReplDriver;
+  onEffects?: (effects: ReplEffect[]) => void;
 }) {
   const [input, setInput] = useState('');
   const startTime = useRef(Date.now());
@@ -105,8 +108,11 @@ function MacReplFrame({
           dispatch(macReplActions.setAlias({ key, value }));
         });
       }
+      if (result.effects && result.effects.length > 0) {
+        onEffects?.(result.effects);
+      }
     },
-    [dispatch, driver, state],
+    [dispatch, driver, onEffects, state],
   );
 
   const handleSubmit = async () => {
@@ -236,7 +242,12 @@ function MacReplFrame({
 function StandaloneMacRepl(props: MacReplProps) {
   const [state, dispatch] = useReducer(macReplReducer, createInitialSeed(props));
   return (
-    <MacReplFrame state={state} dispatch={dispatch} driver={props.driver ?? BUILTIN_DEMO_REPL_DRIVER} />
+    <MacReplFrame
+      state={state}
+      dispatch={dispatch}
+      driver={props.driver ?? BUILTIN_DEMO_REPL_DRIVER}
+      onEffects={props.onEffects}
+    />
   );
 }
 
@@ -254,6 +265,7 @@ function ConnectedMacRepl(props: MacReplProps) {
       state={effectiveState}
       dispatch={(action) => reduxDispatch(action)}
       driver={props.driver ?? BUILTIN_DEMO_REPL_DRIVER}
+      onEffects={props.onEffects}
     />
   );
 }

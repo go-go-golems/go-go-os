@@ -62,7 +62,7 @@ afterEach(() => {
 });
 
 describe('RuntimeSurfaceDebugWindow', () => {
-  it('shows only the actively running card in plugin session actions', async () => {
+  it('shows built-in surface edit actions and only the actively running surface in session actions', async () => {
     const { createStore } = createAppStore({});
     const store = createStore();
 
@@ -113,8 +113,12 @@ describe('RuntimeSurfaceDebugWindow', () => {
     const sessionRow = Array.from(container.querySelectorAll('tr')).find((row) =>
       row.textContent?.includes('session-1'),
     );
+    const editButtons = Array.from(container.querySelectorAll('button')).filter((button) =>
+      button.textContent?.includes('Edit'),
+    );
 
     expect(sessionRow?.textContent).toContain('currentCard');
     expect(sessionRow?.textContent).not.toContain('cachedCard');
+    expect(editButtons).toHaveLength(3);
   });
 });

@@ -1,15 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Btn } from '@hypercard/engine';
-import { PluginCardRenderer } from '../runtime-host/PluginCardRenderer';
 import type { RuntimeAction } from './contracts';
 import DYNAMIC_CARD from './fixtures/dynamic-card.vm.js?raw';
 import INVENTORY_STACK from './fixtures/inventory-stack.vm.js?raw';
 import PATCHED_LOW_STOCK_HANDLER from './fixtures/patched-low-stock-handler.vm.js?raw';
 import PATCHED_LOW_STOCK_RENDER from './fixtures/patched-low-stock-render.vm.js?raw';
 import { QuickJSRuntimeService } from './runtimeService';
-import type { UINode } from './uiTypes';
-import { registerBuiltInHypercardRuntime } from '../runtimeDefaults';
+import {
+  clearRuntimePackages,
+  clearRuntimeSurfaceTypes,
+  registerRuntimePackage,
+  registerRuntimeSurfaceType,
+  renderRuntimeSurfaceTree,
+} from '..';
+import { TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE, TEST_UI_RUNTIME_PACKAGE } from '../testRuntimeUi';
 
 const SESSION_ID = 'story@runtime-mutation';
 const STACK_ID = 'inventory';
@@ -17,7 +22,10 @@ const STACK_ID = 'inventory';
 type RuntimeStatus = 'loading' | 'ready' | 'error';
 
 function RuntimeMutationDemo() {
-  registerBuiltInHypercardRuntime();
+  clearRuntimePackages();
+  clearRuntimeSurfaceTypes();
+  registerRuntimePackage(TEST_UI_RUNTIME_PACKAGE);
+  registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
 
   const runtimeRef = useRef<QuickJSRuntimeService | null>(null);
   if (!runtimeRef.current) {
@@ -31,7 +39,7 @@ function RuntimeMutationDemo() {
   const [surfaces, setSurfaces] = useState<string[]>([]);
   const [activeSurfaceId, setActiveSurfaceId] = useState('lowStock');
   const [lowStockLimit, setLowStockLimit] = useState(5);
-  const [tree, setTree] = useState<UINode | null>(null);
+  const [tree, setTree] = useState<unknown>(null);
   const [lastActions, setLastActions] = useState<RuntimeAction[]>([]);
 
   const stateFor = useCallback(
@@ -220,7 +228,7 @@ function RuntimeMutationDemo() {
       </div>
 
       <div style={{ border: '2px solid #000', minHeight: 380, background: '#fff', overflow: 'auto' }}>
-        {tree ? <PluginCardRenderer tree={tree} onEvent={onEvent} /> : <div style={{ padding: 12 }}>No output.</div>}
+        {tree ? renderRuntimeSurfaceTree('ui.card.v1', tree, onEvent) : <div style={{ padding: 12 }}>No output.</div>}
       </div>
     </div>
   );

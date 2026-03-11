@@ -6,13 +6,11 @@ import {
   registerRuntimePackage,
   resolveRuntimePackageInstallOrder,
 } from './runtimePackageRegistry';
-import { registerBuiltInRuntimePackages } from './defaultRuntimePackages';
-import { resetBuiltInHypercardRuntimeRegistrationForTest } from '../runtimeDefaults';
+import { TEST_UI_RUNTIME_PACKAGE } from '../testRuntimeUi';
 
 describe('runtimePackageRegistry', () => {
   beforeEach(() => {
     clearRuntimePackages();
-    resetBuiltInHypercardRuntimeRegistrationForTest();
   });
 
   it('can stay empty until packages are registered explicitly', () => {
@@ -21,14 +19,14 @@ describe('runtimePackageRegistry', () => {
   });
 
   it('registers only the built-in ui package explicitly', () => {
-    registerBuiltInRuntimePackages();
+    registerRuntimePackage(TEST_UI_RUNTIME_PACKAGE);
 
     expect(listRuntimePackages()).toEqual(['ui']);
     expect(getRuntimePackageOrThrow('ui').surfaceTypes).toEqual(['ui.card.v1']);
   });
 
   it('orders package installation by dependency', () => {
-    registerBuiltInRuntimePackages();
+    registerRuntimePackage(TEST_UI_RUNTIME_PACKAGE);
     registerRuntimePackage({
       packageId: 'demo',
       version: '1.0.0',

@@ -1,11 +1,10 @@
 {
-  "name": "@hypercard/kanban-runtime",
+  "name": "@hypercard/ui-runtime",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./theme": "./src/theme/index.ts"
+    ".": "./src/index.ts"
   },
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -17,9 +16,7 @@
   },
   "dependencies": {
     "@hypercard/engine": "workspace:*",
-    "@hypercard/hypercard-runtime": "workspace:*",
-    "@hypercard/rich-widgets": "workspace:*",
-    "@hypercard/ui-runtime": "workspace:*"
+    "@hypercard/hypercard-runtime": "workspace:*"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "^2.0.0",

@@ -6,13 +6,12 @@ import {
   clearRuntimeSurfaceTypes,
   listRuntimePackages,
   listRuntimeSurfaceTypes,
-  registerBuiltInHypercardRuntime,
   registerRuntimePackage,
   registerRuntimeSurfaceType,
   renderRuntimeSurfaceTree,
-  resetBuiltInHypercardRuntimeRegistrationForTest,
   validateRuntimeSurfaceTree,
 } from '@hypercard/hypercard-runtime';
+import { UI_CARD_V1_RUNTIME_SURFACE_TYPE, UI_RUNTIME_PACKAGE } from '../../ui-runtime/src';
 import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from './runtimeRegistration';
 
 const KANBAN_RUNTIME_BUNDLE = `
@@ -59,11 +58,11 @@ describe('kanban runtime definitions', () => {
   beforeEach(() => {
     clearRuntimePackages();
     clearRuntimeSurfaceTypes();
-    resetBuiltInHypercardRuntimeRegistrationForTest();
+    registerRuntimePackage(UI_RUNTIME_PACKAGE);
+    registerRuntimeSurfaceType(UI_CARD_V1_RUNTIME_SURFACE_TYPE);
   });
 
   it('registers the external kanban runtime package and surface type', () => {
-    registerBuiltInHypercardRuntime();
     registerRuntimePackage(KANBAN_RUNTIME_PACKAGE);
     registerRuntimeSurfaceType(KANBAN_V1_RUNTIME_SURFACE_TYPE);
 
@@ -72,7 +71,6 @@ describe('kanban runtime definitions', () => {
   });
 
   it('validates and renders kanban.v1 trees after explicit registration', () => {
-    registerBuiltInHypercardRuntime();
     registerRuntimePackage(KANBAN_RUNTIME_PACKAGE);
     registerRuntimeSurfaceType(KANBAN_V1_RUNTIME_SURFACE_TYPE);
 
@@ -110,7 +108,7 @@ describe('kanban runtime definitions', () => {
           },
         },
       ],
-    });
+    }) as { kind: string };
 
     expect(tree.kind).toBe('kanban.page');
     const markup = renderToStaticMarkup(<>{renderRuntimeSurfaceTree('kanban.v1', tree, () => {})}</>);
@@ -124,7 +122,8 @@ describe('kanban runtime definitions', () => {
       service.loadRuntimeBundle('kanban-demo', 'kanban-demo@missing', ['ui', 'kanban'], KANBAN_RUNTIME_BUNDLE)
     ).rejects.toThrow(/unknown runtime package/i);
 
-    registerBuiltInHypercardRuntime();
+    registerRuntimePackage(UI_RUNTIME_PACKAGE);
+    registerRuntimeSurfaceType(UI_CARD_V1_RUNTIME_SURFACE_TYPE);
     registerRuntimePackage(KANBAN_RUNTIME_PACKAGE);
     registerRuntimeSurfaceType(KANBAN_V1_RUNTIME_SURFACE_TYPE);
 
@@ -132,7 +131,7 @@ describe('kanban runtime definitions', () => {
     expect(bundle.surfaces).toEqual(expect.arrayContaining(['home', 'board']));
 
     const rawTree = service.renderRuntimeSurface('kanban-demo@one', 'board', {});
-    const tree = validateRuntimeSurfaceTree('kanban.v1', rawTree);
+    const tree = validateRuntimeSurfaceTree('kanban.v1', rawTree) as { kind: string };
     expect(tree.kind).toBe('kanban.page');
 
     service.disposeSession('kanban-demo@one');

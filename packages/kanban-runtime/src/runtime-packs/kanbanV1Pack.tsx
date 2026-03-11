@@ -10,7 +10,7 @@ import type {
   KanbanTaxonomy,
   Task,
 } from '../runtime';
-import type { PluginUIEventRef as UIEventRef } from '@hypercard/hypercard-runtime';
+import type { UIEventRef } from '@hypercard/ui-runtime';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

@@ -4,16 +4,15 @@ import {
   clearRuntimeSurfaceTypes,
   DEFAULT_RUNTIME_SURFACE_TYPE_ID,
   listRuntimeSurfaceTypes,
+  registerRuntimeSurfaceType,
   renderRuntimeSurfaceTree,
   validateRuntimeSurfaceTree,
 } from './runtimeSurfaceTypeRegistry';
-import { registerBuiltInRuntimeSurfaceTypes } from './defaultRuntimeSurfaceTypes';
-import { resetBuiltInHypercardRuntimeRegistrationForTest } from '../runtimeDefaults';
+import { TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE } from '../testRuntimeUi';
 
 describe('runtimeSurfaceTypeRegistry', () => {
   beforeEach(() => {
     clearRuntimeSurfaceTypes();
-    resetBuiltInHypercardRuntimeRegistrationForTest();
   });
 
   it('can stay empty until surface types are registered explicitly', () => {
@@ -24,12 +23,12 @@ describe('runtimeSurfaceTypeRegistry', () => {
   });
 
   it('registers the baseline ui surface type explicitly', () => {
-    registerBuiltInRuntimeSurfaceTypes();
+    registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
     expect(listRuntimeSurfaceTypes()).toEqual([DEFAULT_RUNTIME_SURFACE_TYPE_ID]);
   });
 
   it('validates and renders ui.card.v1 trees', () => {
-    registerBuiltInRuntimeSurfaceTypes();
+    registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
 
     const tree = validateRuntimeSurfaceTree(DEFAULT_RUNTIME_SURFACE_TYPE_ID, {
       kind: 'panel',
@@ -40,7 +39,7 @@ describe('runtimeSurfaceTypeRegistry', () => {
           props: { label: 'Open' },
         },
       ],
-    });
+    }) as { kind: string };
 
     expect(tree.kind).toBe('panel');
 
@@ -52,7 +51,7 @@ describe('runtimeSurfaceTypeRegistry', () => {
   });
 
   it('rejects unknown runtime surface types', () => {
-    registerBuiltInRuntimeSurfaceTypes();
+    registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
     expect(() => validateRuntimeSurfaceTree('missing.v1', { kind: 'panel', children: [] })).toThrow(/unknown runtime surface type/i);
   });
 });

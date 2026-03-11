@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Btn, DropdownMenu, GridBoard, SelectableDataTable } from '@hypercard/engine';
-import type { UIEventRef, UINode } from '../plugin-runtime/uiTypes';
+import type { UIEventRef, UINode } from './uiTypes';
 
-export interface PluginCardRendererProps {
+export interface UIRuntimeRendererProps {
   tree: UINode;
   onEvent: (handler: string, args?: unknown) => void;
 }
@@ -22,7 +22,7 @@ function mergeArgs(eventArgs: unknown, payload: Record<string, unknown>): unknow
   };
 }
 
-function eventHandler(ref: UIEventRef | undefined, onEvent: PluginCardRendererProps['onEvent'], payload?: unknown) {
+function eventHandler(ref: UIEventRef | undefined, onEvent: UIRuntimeRendererProps['onEvent'], payload?: unknown) {
   if (!ref) {
     return;
   }
@@ -35,7 +35,7 @@ function eventHandler(ref: UIEventRef | undefined, onEvent: PluginCardRendererPr
   onEvent(ref.handler, ref.args);
 }
 
-export function PluginCardRenderer({ tree, onEvent }: PluginCardRendererProps) {
+export function UIRuntimeRenderer({ tree, onEvent }: UIRuntimeRendererProps) {
   function toSelectableTableRows(node: Extract<UINode, { kind: 'selectableTable' }>) {
     const rowKeyIndex = node.props.rowKeyIndex ?? Number.NaN;
     const keyIndex = Number.isFinite(rowKeyIndex) ? Math.max(0, Math.floor(rowKeyIndex)) : 0;

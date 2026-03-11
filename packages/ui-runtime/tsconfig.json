@@ -18,14 +18,10 @@
       "@hypercard/engine": ["../engine/src"],
       "@hypercard/engine/*": ["../engine/src/*"],
       "@hypercard/hypercard-runtime": ["../hypercard-runtime/src"],
-      "@hypercard/hypercard-runtime/*": ["../hypercard-runtime/src/*"],
-      "@hypercard/ui-runtime": ["../ui-runtime/src"],
-      "@hypercard/ui-runtime/*": ["../ui-runtime/src/*"],
-      "@hypercard/rich-widgets": ["../rich-widgets/src"],
-      "@hypercard/rich-widgets/*": ["../rich-widgets/src/*"]
+      "@hypercard/hypercard-runtime/*": ["../hypercard-runtime/src/*"]
     }
   },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts", "src/**/*.stories.tsx", "src/__tests__"],
-  "references": [{ "path": "../engine" }, { "path": "../hypercard-runtime" }, { "path": "../ui-runtime" }, { "path": "../rich-widgets" }]
+  "references": [{ "path": "../engine" }, { "path": "../hypercard-runtime" }]
 }

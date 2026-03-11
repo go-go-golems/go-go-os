@@ -1,4 +1,4 @@
-import type { UIEventRef, UINode } from './uiTypes';
+import type { UIEventRef, UINode } from '../uiTypes';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

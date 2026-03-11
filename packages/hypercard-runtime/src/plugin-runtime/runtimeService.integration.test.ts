@@ -6,9 +6,9 @@ import LOOP_STACK from './fixtures/loop-stack.vm.js?raw';
 import PATCHED_LOW_STOCK_HANDLER from './fixtures/patched-low-stock-handler.vm.js?raw';
 import PATCHED_LOW_STOCK_RENDER from './fixtures/patched-low-stock-render.vm.js?raw';
 import { QuickJSRuntimeService } from './runtimeService';
-import { registerBuiltInHypercardRuntime, resetBuiltInHypercardRuntimeRegistrationForTest } from '../runtimeDefaults';
 import { clearRuntimePackages, registerRuntimePackage } from '../runtime-packages';
-import { clearRuntimeSurfaceTypes } from '../runtime-packs';
+import { clearRuntimeSurfaceTypes, registerRuntimeSurfaceType } from '../runtime-packs';
+import { TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE, TEST_UI_RUNTIME_PACKAGE } from '../testRuntimeUi';
 
 describe('QuickJSRuntimeService', () => {
   const services: QuickJSRuntimeService[] = [];
@@ -16,8 +16,8 @@ describe('QuickJSRuntimeService', () => {
   beforeEach(() => {
     clearRuntimePackages();
     clearRuntimeSurfaceTypes();
-    resetBuiltInHypercardRuntimeRegistrationForTest();
-    registerBuiltInHypercardRuntime();
+    registerRuntimePackage(TEST_UI_RUNTIME_PACKAGE);
+    registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
   });
 
   afterEach(() => {
@@ -46,7 +46,6 @@ describe('QuickJSRuntimeService', () => {
   it('fails bundle load when required runtime packages were not registered', async () => {
     clearRuntimePackages();
     clearRuntimeSurfaceTypes();
-    resetBuiltInHypercardRuntimeRegistrationForTest();
 
     const service = new QuickJSRuntimeService();
     services.push(service);

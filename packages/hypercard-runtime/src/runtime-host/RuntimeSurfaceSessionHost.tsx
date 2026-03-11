@@ -23,7 +23,6 @@ import {
   renderRuntimeSurfaceTree,
   validateRuntimeSurfaceTree,
 } from '../runtime-packs';
-import { registerBuiltInHypercardRuntime } from '../runtimeDefaults';
 
 type StoreState = Record<string, unknown>;
 
@@ -110,8 +109,6 @@ export function RuntimeSurfaceSessionHost({
   bundle,
   mode = 'interactive',
 }: RuntimeSurfaceSessionHostProps) {
-  registerBuiltInHypercardRuntime();
-
   const dispatch = useDispatch();
   const store = useStore<StoreState>();
 

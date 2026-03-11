@@ -13,7 +13,7 @@ describe('BrowserDetailPanel mounted docs', () => {
       {
         path: buildDocObjectPath('card', owner, 'incident-command'),
         mountPath,
-        kind: 'card',
+        kind: 'surface',
         owner,
         slug: 'incident-command',
         title: 'Incident Command',

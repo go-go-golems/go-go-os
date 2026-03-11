@@ -153,7 +153,7 @@ export function buildArtifactOpenWindowPayload(input: {
   artifactId: string;
   template?: string;
   title?: string;
-  stackId?: string;
+  bundleId?: string;
   runtimeCardId?: string;
 }): OpenWindowPayload | undefined {
   const artifactId = normalizeArtifactId(input.artifactId);
@@ -166,7 +166,7 @@ export function buildArtifactOpenWindowPayload(input: {
   }
   const safeKey = sanitizeArtifactKey(artifactId);
   const title = input.title?.trim() || `Artifact ${artifactId}`;
-  const stackId = cleanString(input.stackId) ?? 'inventory';
+  const bundleId = cleanString(input.bundleId) ?? 'inventory';
 
   return {
     id: `window:artifact:${safeKey}`,
@@ -174,11 +174,11 @@ export function buildArtifactOpenWindowPayload(input: {
     icon: '🃏',
     bounds: { x: 220, y: 50, w: 520, h: 420 },
     content: {
-      kind: 'card',
-      card: {
-        stackId,
-        cardId: runtimeCardId,
-        cardSessionId: `artifact-session:${safeKey}`,
+      kind: 'surface',
+      surface: {
+        bundleId,
+        surfaceId: runtimeCardId,
+        surfaceSessionId: `artifact-session:${safeKey}`,
         param: artifactId,
       },
     },

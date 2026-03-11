@@ -36,11 +36,11 @@ describe('dispatchRuntimeAction', () => {
         title: 'Home',
         bounds: { x: 100, y: 30, w: 420, h: 340 },
         content: {
-          kind: 'card',
-          card: {
-            stackId: 'inventory',
-            cardId: 'home',
-            cardSessionId: sessionId,
+          kind: 'surface',
+          surface: {
+            bundleId: 'inventory',
+            surfaceId: 'home',
+            surfaceSessionId: sessionId,
           },
         },
       }),
@@ -49,7 +49,7 @@ describe('dispatchRuntimeAction', () => {
     store.dispatch(
       registerRuntimeSession({
         sessionId,
-        stackId: 'inventory',
+        bundleId: 'inventory',
         status: 'ready',
         capabilities: {
           domain: ['inventory'],
@@ -75,7 +75,7 @@ describe('dispatchRuntimeAction', () => {
     dispatchRuntimeAction(
       {
         type: 'nav.go',
-        payload: { cardId: 'detail', param: 'A-1' },
+        payload: { surfaceId: 'detail', param: 'A-1' },
       },
       {
         dispatch: (action) => store.dispatch(action as never),
@@ -114,7 +114,7 @@ describe('dispatchRuntimeAction', () => {
     let state = store.getState();
 
     expect(state.inventory.events).toEqual([{ sku: 'A-1' }]);
-    expect(state.windowing.sessions[sessionId].nav).toEqual([{ card: 'home' }]);
+    expect(state.windowing.sessions[sessionId].nav).toEqual([{ surface: 'home', param: undefined }]);
     expect(state.notifications.toast).toBe('Reserved A-1');
 
     dispatchRuntimeAction(
@@ -153,11 +153,11 @@ describe('dispatchRuntimeAction', () => {
         title: 'Home',
         bounds: { x: 100, y: 30, w: 420, h: 340 },
         content: {
-          kind: 'card',
-          card: {
-            stackId: 'inventory',
-            cardId: 'home',
-            cardSessionId: sessionId,
+          kind: 'surface',
+          surface: {
+            bundleId: 'inventory',
+            surfaceId: 'home',
+            surfaceSessionId: sessionId,
           },
         },
       }),
@@ -166,7 +166,7 @@ describe('dispatchRuntimeAction', () => {
     store.dispatch(
       registerRuntimeSession({
         sessionId,
-        stackId: 'inventory',
+        bundleId: 'inventory',
         status: 'ready',
         capabilities: {
           system: ['nav.go'],
@@ -216,7 +216,7 @@ describe('dispatchRuntimeAction', () => {
     store.dispatch(
       registerRuntimeSession({
         sessionId,
-        stackId: 'domain-demo',
+        bundleId: 'domain-demo',
         status: 'ready',
         capabilities: {
           domain: ['domain-demo'],

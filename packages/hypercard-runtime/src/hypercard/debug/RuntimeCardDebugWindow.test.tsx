@@ -3,19 +3,19 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import type { CardStackDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
 import { createAppStore } from '../../app/createAppStore';
 import { registerRuntimeSession } from '../../features/runtimeSessions';
 import { RuntimeCardDebugWindow } from './RuntimeCardDebugWindow';
 
-const DEBUG_STACK: CardStackDefinition = {
+const DEBUG_STACK: RuntimeBundleDefinition = {
   id: 'os-launcher',
   name: 'go-go-os Launcher',
   icon: '🖥️',
-  homeCard: 'currentCard',
+  homeSurface: 'currentCard',
   plugin: { packageIds: [], bundleCode: '' },
-  cards: {
+  surfaces: {
     currentCard: {
       id: 'currentCard',
       type: 'plugin',
@@ -69,7 +69,7 @@ describe('RuntimeCardDebugWindow', () => {
     store.dispatch(
       registerRuntimeSession({
         sessionId: 'session-1',
-        stackId: 'os-launcher',
+        bundleId: 'os-launcher',
         status: 'ready',
         initialSurfaceState: {
           currentCard: { ready: true },
@@ -85,11 +85,11 @@ describe('RuntimeCardDebugWindow', () => {
         icon: '✅',
         bounds: { x: 32, y: 32, w: 320, h: 200 },
         content: {
-          kind: 'card',
-          card: {
-            stackId: 'os-launcher',
-            cardId: 'currentCard',
-            cardSessionId: 'session-1',
+          kind: 'surface',
+          surface: {
+            bundleId: 'os-launcher',
+            surfaceId: 'currentCard',
+            surfaceSessionId: 'session-1',
           },
         },
       }),
@@ -105,7 +105,7 @@ describe('RuntimeCardDebugWindow', () => {
     await act(async () => {
       root.render(
         <Provider store={store}>
-          <RuntimeCardDebugWindow ownerAppId="hypercard-runtime-debug" stacks={[DEBUG_STACK]} />
+          <RuntimeCardDebugWindow ownerAppId="hypercard-runtime-debug" bundles={[DEBUG_STACK]} />
         </Provider>,
       );
     });

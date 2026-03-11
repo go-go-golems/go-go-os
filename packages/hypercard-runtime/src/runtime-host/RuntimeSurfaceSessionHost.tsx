@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
-import type { CardStackDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@hypercard/engine';
 import { showToast } from '@hypercard/engine';
 import {
   registerRuntimeSession,
@@ -26,9 +26,9 @@ import {
 
 type StoreState = Record<string, unknown>;
 
-function getPluginConfig(stack: CardStackDefinition) {
-  if (stack.plugin && stack.plugin.bundleCode.length > 0) {
-    return stack.plugin;
+function getPluginConfig(bundle: RuntimeBundleDefinition) {
+  if (bundle.plugin && bundle.plugin.bundleCode.length > 0) {
+    return bundle.plugin;
   }
 
   return null;
@@ -43,7 +43,7 @@ function asArray<T>(value: unknown): T[] {
 }
 
 function projectRuntimeState(domains: Record<string, unknown>, opts: {
-  stackId: string;
+  bundleId: string;
   sessionId: string;
   surfaceId: string;
   windowId: string;
@@ -75,7 +75,7 @@ function projectRuntimeState(domains: Record<string, unknown>, opts: {
 
   return {
     self: {
-      stackId: opts.stackId,
+      bundleId: opts.bundleId,
       sessionId: opts.sessionId,
       surfaceId: opts.surfaceId,
       windowId: opts.windowId,
@@ -99,28 +99,28 @@ function projectRuntimeState(domains: Record<string, unknown>, opts: {
 export interface RuntimeSurfaceSessionHostProps {
   windowId: string;
   sessionId: string;
-  stack: CardStackDefinition;
+  bundle: RuntimeBundleDefinition;
   mode?: 'interactive' | 'preview';
 }
 
 export function RuntimeSurfaceSessionHost({
   windowId,
   sessionId,
-  stack,
+  bundle,
   mode = 'interactive',
 }: RuntimeSurfaceSessionHostProps) {
   const dispatch = useDispatch();
   const store = useStore<StoreState>();
 
-  const pluginConfig = useMemo(() => getPluginConfig(stack), [stack]);
+  const pluginConfig = useMemo(() => getPluginConfig(bundle), [bundle]);
   const currentNav = useSelector((state: StoreState) => selectSessionCurrentNav(state as any, sessionId));
   const navDepth = useSelector((state: StoreState) => selectSessionNavDepth(state as any, sessionId));
   const focusedWindowId = useSelector((state: StoreState) => selectFocusedWindowId(state as any));
 
-  // Accept surfaces from the static stack definition OR runtime-injected surfaces (not in stack.cards)
-  const currentSurfaceId = currentNav?.card && (stack.cards[currentNav.card] || hasRuntimeSurface(currentNav.card))
-    ? currentNav.card
-    : stack.homeCard;
+  // Accept surfaces from the static bundle definition OR runtime-injected surfaces.
+  const currentSurfaceId = currentNav?.surface && (bundle.surfaces[currentNav.surface] || hasRuntimeSurface(currentNav.surface))
+    ? currentNav.surface
+    : bundle.homeSurface;
   const runtimeSession = useSelector((state: StoreState) => selectRuntimeSession(state as any, sessionId));
   const sessionState = useSelector((state: StoreState) => selectRuntimeSessionState(state as any, sessionId));
   const surfaceState = useSelector((state: StoreState) => selectRuntimeSurfaceState(state as any, sessionId, currentSurfaceId));
@@ -152,12 +152,12 @@ export function RuntimeSurfaceSessionHost({
     dispatch(
       registerRuntimeSession({
         sessionId,
-        stackId: stack.id,
+        bundleId: bundle.id,
         status: 'loading',
         capabilities: pluginConfig.capabilities,
       })
     );
-  }, [dispatch, pluginConfig, runtimeSession, sessionId, stack.id]);
+  }, [dispatch, pluginConfig, runtimeSession, sessionId, bundle.id]);
 
   useEffect(() => {
     if (!pluginConfig || !runtimeSession) {
@@ -178,11 +178,11 @@ export function RuntimeSurfaceSessionHost({
       }
 
       try {
-        const bundle = await runtimeService.loadRuntimeBundle(stack.id, sessionId, config.packageIds, config.bundleCode);
+        const runtimeBundle = await runtimeService.loadRuntimeBundle(bundle.id, sessionId, config.packageIds, config.bundleCode);
         if (cancelled) {
           return;
         }
-        loadedBundleRef.current = bundle;
+        loadedBundleRef.current = runtimeBundle;
 
         dispatch(setRuntimeSessionStatus({ sessionId, status: 'ready' }));
 
@@ -205,11 +205,11 @@ export function RuntimeSurfaceSessionHost({
           }
         }
 
-        if (bundle.initialSessionState && typeof bundle.initialSessionState === 'object') {
+        if (runtimeBundle.initialSessionState && typeof runtimeBundle.initialSessionState === 'object') {
           dispatchRuntimeAction(
             {
               type: 'filters.patch',
-              payload: bundle.initialSessionState,
+              payload: runtimeBundle.initialSessionState,
             },
             {
               dispatch: (action) => dispatch(action as never),
@@ -221,8 +221,8 @@ export function RuntimeSurfaceSessionHost({
           );
         }
 
-        if (bundle.initialSurfaceState && typeof bundle.initialSurfaceState === 'object') {
-          for (const [surfaceId, value] of Object.entries(bundle.initialSurfaceState)) {
+        if (runtimeBundle.initialSurfaceState && typeof runtimeBundle.initialSurfaceState === 'object') {
+          for (const [surfaceId, value] of Object.entries(runtimeBundle.initialSurfaceState)) {
             if (typeof value === 'object' && value !== null) {
               dispatchRuntimeAction(
                 {
@@ -256,7 +256,7 @@ export function RuntimeSurfaceSessionHost({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, pluginConfig, runtimeSession, sessionId, stack.id, currentSurfaceId, windowId, store]);
+  }, [dispatch, pluginConfig, runtimeSession, sessionId, bundle.id, currentSurfaceId, windowId, store]);
 
   // Subscribe to the runtime surface registry and inject new surfaces as they arrive.
   useEffect(() => {
@@ -302,7 +302,7 @@ export function RuntimeSurfaceSessionHost({
   const projectState = useCallback(
     () =>
       projectRuntimeState(projectedDomains, {
-        stackId: stack.id,
+        bundleId: bundle.id,
         sessionId,
         surfaceId: currentSurfaceId,
         windowId,
@@ -315,7 +315,7 @@ export function RuntimeSurfaceSessionHost({
       }),
     [
       projectedDomains,
-      stack.id,
+      bundle.id,
       sessionId,
       currentSurfaceId,
       windowId,
@@ -415,7 +415,7 @@ export function RuntimeSurfaceSessionHost({
   );
 
   if (!pluginConfig) {
-    return <div style={{ padding: 12, color: '#9f1d1d' }}>Plugin stack configuration is required for this host.</div>;
+    return <div style={{ padding: 12, color: '#9f1d1d' }}>Plugin bundle configuration is required for this host.</div>;
   }
 
   if (!runtimeSession || runtimeSession.status === 'loading') {

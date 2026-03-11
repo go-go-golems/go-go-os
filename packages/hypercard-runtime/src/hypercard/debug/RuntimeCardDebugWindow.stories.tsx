@@ -2,19 +2,19 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useRef } from 'react';
 import { Provider } from 'react-redux';
 import { createAppStore } from '../../app/createAppStore';
-import type { CardStackDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@hypercard/engine';
 import { RuntimeCardDebugWindow } from './RuntimeCardDebugWindow';
 import { upsertArtifact } from '../artifacts/artifactsSlice';
 import { clearRuntimeSurfaceRegistry, registerRuntimeSurface } from '../../plugin-runtime';
 import { clearRegisteredRuntimeDebugStacks, registerRuntimeDebugStacks } from './runtimeDebugRegistry';
 
-const STORY_STACK: CardStackDefinition = {
+const STORY_STACK: RuntimeBundleDefinition = {
   id: 'inventory',
   name: 'Inventory',
   icon: '📦',
-  homeCard: 'home',
+  homeSurface: 'home',
   plugin: { packageIds: [], bundleCode: '' },
-  cards: {
+  surfaces: {
     home: {
       id: 'home',
       type: 'report',
@@ -32,13 +32,13 @@ const STORY_STACK: CardStackDefinition = {
   },
 };
 
-const SECOND_STACK: CardStackDefinition = {
+const SECOND_STACK: RuntimeBundleDefinition = {
   id: 'os-launcher',
   name: 'go-go-os Launcher',
   icon: '🖥️',
-  homeCard: 'home',
+  homeSurface: 'home',
   plugin: { packageIds: [], bundleCode: '' },
-  cards: {
+  surfaces: {
     home: {
       id: 'home',
       type: 'report',

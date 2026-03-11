@@ -12,16 +12,16 @@ describe('artifactRuntime', () => {
       artifactId: 'detailed_inventory_summary',
       runtimeCardId: 'runtimeDetailedInventorySummary',
       title: 'Detailed Inventory Summary',
-      stackId: 'inventory',
+      bundleId: 'inventory',
     });
 
     expect(payload).toBeTruthy();
     expect(payload?.dedupeKey).toBe('artifact:detailed_inventory_summary');
-    expect(payload?.content.kind).toBe('card');
-    expect(payload?.content.card?.cardId).toBe('runtimeDetailedInventorySummary');
-    expect(payload?.content.card?.stackId).toBe('inventory');
-    expect(payload?.content.card?.param).toBe('detailed_inventory_summary');
-    expect(payload?.content.card?.cardSessionId).toBe('artifact-session:detailed_inventory_summary');
+    expect(payload?.content.kind).toBe('surface');
+    expect(payload?.content.surface?.surfaceId).toBe('runtimeDetailedInventorySummary');
+    expect(payload?.content.surface?.bundleId).toBe('inventory');
+    expect(payload?.content.surface?.param).toBe('detailed_inventory_summary');
+    expect(payload?.content.surface?.surfaceSessionId).toBe('artifact-session:detailed_inventory_summary');
   });
 
   it('normalizes quoted artifact ids when building open payload', () => {
@@ -29,18 +29,18 @@ describe('artifactRuntime', () => {
       artifactId: '"sales-summary-2026-02-20"',
       runtimeCardId: 'runtimeSalesSummary',
       title: "Today's Sales Summary",
-      stackId: 'inventory',
+      bundleId: 'inventory',
     });
 
     expect(payload?.dedupeKey).toBe('artifact:sales-summary-2026-02-20');
-    expect(payload?.content.card?.param).toBe('sales-summary-2026-02-20');
+    expect(payload?.content.surface?.param).toBe('sales-summary-2026-02-20');
   });
 
   it('returns undefined when runtime card id is missing', () => {
     const payload = buildArtifactOpenWindowPayload({
       artifactId: 'sales-summary-2026-02-20',
       title: "Today's Sales Summary",
-      stackId: 'inventory',
+      bundleId: 'inventory',
     });
 
     expect(payload).toBeUndefined();

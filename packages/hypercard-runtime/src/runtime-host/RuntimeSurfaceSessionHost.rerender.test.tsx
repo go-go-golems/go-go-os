@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAppStore } from '../app/createAppStore';
-import type { CardStackDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@hypercard/engine';
 import { RuntimeSurfaceSessionHost } from './RuntimeSurfaceSessionHost';
 
 vi.mock('../plugin-runtime/runtimeService', () => {
@@ -41,17 +41,17 @@ vi.mock('../plugin-runtime/runtimeService', () => {
   return { QuickJSRuntimeService: MockQuickJSRuntimeService };
 });
 
-const TEST_STACK: CardStackDefinition = {
+const TEST_STACK: RuntimeBundleDefinition = {
   id: 'runtime-rerender-stack',
   name: 'Runtime Rerender',
   icon: '🧪',
-  homeCard: 'home',
+  homeSurface: 'home',
   plugin: {
     packageIds: ['ui'],
     bundleCode:
       'defineRuntimeBundle(() => ({ id: "mock-plugin", title: "Mock Plugin", packageIds: ["ui"], surfaces: { home: { render() { return null; } } } }));',
   },
-  cards: {
+  surfaces: {
     home: {
       id: 'home',
       type: 'plugin',
@@ -63,8 +63,8 @@ const TEST_STACK: CardStackDefinition = {
 };
 
 function createTestStack(
-  capabilities?: NonNullable<CardStackDefinition['plugin']>['capabilities'],
-): CardStackDefinition {
+  capabilities?: NonNullable<RuntimeBundleDefinition['plugin']>['capabilities'],
+): RuntimeBundleDefinition {
   return {
     ...TEST_STACK,
     plugin: {
@@ -113,7 +113,7 @@ async function waitForText(container: HTMLElement, text: string, timeoutMs = 300
 }
 
 describe('RuntimeSurfaceSessionHost rerender invalidation', () => {
-  async function renderAndUpdateCount(stack: CardStackDefinition) {
+  async function renderAndUpdateCount(stack: RuntimeBundleDefinition) {
     const { createStore } = createAppStore({ inventory: inventoryReducer });
     const store = createStore();
 
@@ -127,7 +127,7 @@ describe('RuntimeSurfaceSessionHost rerender invalidation', () => {
     await act(async () => {
       root.render(
         <Provider store={store}>
-          <RuntimeSurfaceSessionHost windowId="window:runtime-rerender" sessionId="session-rerender" stack={stack} />
+          <RuntimeSurfaceSessionHost windowId="window:runtime-rerender" sessionId="session-rerender" bundle={stack} />
         </Provider>,
       );
     });

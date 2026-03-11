@@ -38,13 +38,13 @@ function toSystemAction(action: RuntimeAction, context: ActionDispatchContext): 
       return null;
     }
 
-    const card = action.payload.cardId;
-    if (typeof card !== 'string' || card.length === 0) {
+    const surface = action.payload.surfaceId;
+    if (typeof surface !== 'string' || surface.length === 0) {
       return null;
     }
 
     const param = typeof action.payload.param === 'string' ? action.payload.param : undefined;
-    return sessionNavGo({ sessionId: context.sessionId, card, param });
+    return sessionNavGo({ sessionId: context.sessionId, surface, param });
   }
 
   if (action.type === 'notify.show') {

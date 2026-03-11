@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import type { Meta, StoryObj } from '@storybook/react';
 import { type ReactNode, useMemo } from 'react';
 import { windowingReducer, openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import { notificationsReducer, type CardStackDefinition } from '@hypercard/engine';
+import { notificationsReducer, type RuntimeBundleDefinition } from '@hypercard/engine';
 import { DesktopShell, type DesktopIconDef, type DesktopContribution, type DesktopCommandHandler } from '@hypercard/engine/desktop-react';
 
 import { LogViewer } from '../log-viewer/LogViewer';
@@ -133,15 +133,15 @@ const ICON_OPEN_COMMANDS: DesktopCommandHandler[] = WIDGETS.map((wDef): DesktopC
 }));
 
 // ---------------------------------------------------------------------------
-// Minimal stack (the shell requires one, even if we don't use cards)
+// Minimal bundle (the shell requires one, even if we don't use cards)
 // ---------------------------------------------------------------------------
 
-const SHELL_STACK: CardStackDefinition = {
+const SHELL_BUNDLE: RuntimeBundleDefinition = {
   id: 'rich-widgets-desktop',
   name: 'Rich Widgets Desktop',
   icon: '\uD83D\uDDA5\uFE0F',
-  homeCard: 'empty',
-  cards: {
+  homeSurface: 'empty',
+  surfaces: {
     empty: {
       id: 'empty',
       type: 'report',
@@ -229,7 +229,7 @@ function RichWidgetsDesktopFrame({
     <SeededStoreProvider createStore={createStore} seedStore={seedStore}>
       <div style={{ width: 1200, height: 800 }}>
         <DesktopShell
-          stack={SHELL_STACK}
+          bundle={SHELL_BUNDLE}
           icons={DESKTOP_ICONS}
           renderAppWindow={renderAppWindow}
           contributions={contributions}

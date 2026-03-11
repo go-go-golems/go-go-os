@@ -46,11 +46,11 @@ function buildWorkspaceWindowPayload(reason: LaunchReason): OpenWindowPayload {
       h: 700,
     },
     content: {
-      kind: 'card',
-      card: {
-        stackId: STACK.id,
-        cardId: STACK.homeCard,
-        cardSessionId: `${BOOK_TRACKER_SESSION_PREFIX}${instanceId}`,
+      kind: 'surface',
+      surface: {
+        bundleId: STACK.id,
+        surfaceId: STACK.homeSurface,
+        surfaceSessionId: `${BOOK_TRACKER_SESSION_PREFIX}${instanceId}`,
       },
     },
     dedupeKey: reason === 'startup' ? 'book-tracker-debug:startup' : undefined,
@@ -60,13 +60,13 @@ function buildWorkspaceWindowPayload(reason: LaunchReason): OpenWindowPayload {
 function createBookTrackerCardAdapter(): WindowContentAdapter {
   return {
     id: 'book-tracker-debug.card-window',
-    canRender: (window) => window.content.kind === 'card' && window.content.card?.stackId === STACK.id,
+    canRender: (window) => window.content.kind === 'surface' && window.content.surface?.bundleId === STACK.id,
     render: (window) => {
-      const cardRef = window.content.card;
-      if (window.content.kind !== 'card' || !cardRef || cardRef.stackId !== STACK.id) {
+      const cardRef = window.content.surface;
+      if (window.content.kind !== 'surface' || !cardRef || cardRef.bundleId !== STACK.id) {
         return null;
       }
-      return <RuntimeSurfaceSessionHost windowId={window.id} sessionId={cardRef.cardSessionId} stack={STACK} />;
+      return <RuntimeSurfaceSessionHost windowId={window.id} sessionId={cardRef.surfaceSessionId} bundle={STACK} />;
     },
   };
 }

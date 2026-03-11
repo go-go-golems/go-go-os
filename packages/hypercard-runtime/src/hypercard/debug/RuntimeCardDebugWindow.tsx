@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import { type CardStackDefinition } from '@hypercard/engine';
+import { type RuntimeBundleDefinition } from '@hypercard/engine';
 import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import {
   getPendingRuntimeSurfaces,
@@ -17,7 +17,7 @@ interface StoreSlice {
   hypercardArtifacts?: { byId: Record<string, ArtifactRecord> };
   runtimeSessions?: {
     sessions: Record<string, {
-      stackId: string;
+      bundleId: string;
       status: string;
       error?: string;
       surfaceState: Record<string, Record<string, unknown>>;
@@ -26,7 +26,7 @@ interface StoreSlice {
   windowing?: {
     sessions: Record<string, {
       nav?: Array<{
-        card?: string;
+        surface?: string;
         param?: string;
       }>;
     }>;
@@ -35,7 +35,7 @@ interface StoreSlice {
 
 export interface RuntimeCardDebugWindowProps {
   ownerAppId: string;
-  stacks?: CardStackDefinition[];
+  bundles?: RuntimeBundleDefinition[];
   initialStackId?: string;
 }
 
@@ -46,24 +46,24 @@ function nextDebugSessionId(prefix: string): string {
   return `${prefix}${Date.now()}`;
 }
 
-function buildStackCardWindowPayload(stack: CardStackDefinition, cardId: string): OpenWindowPayload | null {
-  const card = stack.cards[cardId];
-  if (!card) {
+function buildBundleSurfaceWindowPayload(bundle: RuntimeBundleDefinition, surfaceId: string): OpenWindowPayload | null {
+  const surface = bundle.surfaces[surfaceId];
+  if (!surface) {
     return null;
   }
 
-  const sessionId = nextDebugSessionId(`runtime-debug:${stack.id}:${cardId}:`);
+  const sessionId = nextDebugSessionId(`runtime-debug:${bundle.id}:${surfaceId}:`);
   return {
-    id: `window:runtime-debug:${stack.id}:${cardId}:${sessionId}`,
-    title: card.title ?? cardId,
-    icon: card.icon ?? '📄',
+    id: `window:runtime-debug:${bundle.id}:${surfaceId}:${sessionId}`,
+    title: surface.title ?? surfaceId,
+    icon: surface.icon ?? '📄',
     bounds: { x: 180, y: 56, w: 960, h: 700 },
     content: {
-      kind: 'card',
-      card: {
-        stackId: stack.id,
-        cardId,
-        cardSessionId: sessionId,
+      kind: 'surface',
+      surface: {
+        bundleId: bundle.id,
+        surfaceId,
+        surfaceSessionId: sessionId,
       },
     },
   };
@@ -112,18 +112,18 @@ function Badge({ text, color }: { text: string; color: string }) {
 
 export function RuntimeCardDebugWindow({
   ownerAppId,
-  stacks,
+  bundles,
   initialStackId,
 }: RuntimeCardDebugWindowProps) {
   const dispatch = useDispatch();
   const [registryCards, setRegistryCards] = useState<RuntimeSurfaceDefinition[]>(getPendingRuntimeSurfaces());
   const registeredStacks = useRegisteredRuntimeDebugStacks();
-  const availableStacks = useMemo(
-    () => (stacks && stacks.length > 0 ? [...stacks] : registeredStacks),
-    [registeredStacks, stacks],
+  const availableBundles = useMemo(
+    () => (bundles && bundles.length > 0 ? [...bundles] : registeredStacks),
+    [bundles, registeredStacks],
   );
   const [selectedStackId, setSelectedStackId] = useState<string | null>(
-    initialStackId ?? availableStacks[0]?.id ?? null,
+    initialStackId ?? availableBundles[0]?.id ?? null,
   );
 
   useEffect(() => {
@@ -133,35 +133,35 @@ export function RuntimeCardDebugWindow({
 
   useEffect(() => {
     const candidateId =
-      (selectedStackId && availableStacks.some((stack) => stack.id === selectedStackId))
+      (selectedStackId && availableBundles.some((bundle) => bundle.id === selectedStackId))
         ? selectedStackId
-        : initialStackId ?? availableStacks[0]?.id ?? null;
+        : initialStackId ?? availableBundles[0]?.id ?? null;
     if (candidateId !== selectedStackId) {
       setSelectedStackId(candidateId);
     }
-  }, [availableStacks, initialStackId, selectedStackId]);
+  }, [availableBundles, initialStackId, selectedStackId]);
 
   const artifacts = useSelector((s: StoreSlice) => s.hypercardArtifacts?.byId ?? {});
   const sessions = useSelector((s: StoreSlice) => s.runtimeSessions?.sessions ?? {});
   const windowingSessions = useSelector((s: StoreSlice) => s.windowing?.sessions ?? {});
-  const stacksById = useMemo(
-    () => new Map(availableStacks.map((stack) => [stack.id, stack])),
-    [availableStacks],
+  const bundlesById = useMemo(
+    () => new Map(availableBundles.map((bundle) => [bundle.id, bundle])),
+    [availableBundles],
   );
 
-  const activeStack = availableStacks.find((stack) => stack.id === selectedStackId) ?? availableStacks[0];
-  const stackCards = activeStack ? Object.values(activeStack.cards) : [];
+  const activeBundle = availableBundles.find((bundle) => bundle.id === selectedStackId) ?? availableBundles[0];
+  const bundleSurfaces = activeBundle ? Object.values(activeBundle.surfaces) : [];
   const runtimeArtifacts = Object.values(artifacts).filter(a => a.runtimeCardId);
 
   const td: React.CSSProperties = { padding: '3px 8px', fontSize: 11, borderBottom: '1px solid #ccc', verticalAlign: 'top', color: '#111' };
   const th: React.CSSProperties = { ...td, fontWeight: 700, background: '#e8e8f0', position: 'sticky', top: 0, color: '#111' };
 
-  const launchStackCard = (stackId: string, cardId: string) => {
-    const stack = stacksById.get(stackId);
-    if (!stack) {
+  const launchBundleSurface = (bundleId: string, surfaceId: string) => {
+    const bundle = bundlesById.get(bundleId);
+    if (!bundle) {
       return;
     }
-    const payload = buildStackCardWindowPayload(stack, cardId);
+    const payload = buildBundleSurfaceWindowPayload(bundle, surfaceId);
     if (!payload) {
       return;
     }
@@ -172,8 +172,8 @@ export function RuntimeCardDebugWindow({
     const entries = Object.entries(sessions).map(([sessionId, session]) => {
       const nav = windowingSessions[sessionId]?.nav;
       const navCard =
-        Array.isArray(nav) && nav.length > 0 && typeof nav[nav.length - 1]?.card === 'string'
-          ? nav[nav.length - 1]?.card ?? null
+        Array.isArray(nav) && nav.length > 0 && typeof nav[nav.length - 1]?.surface === 'string'
+          ? nav[nav.length - 1]?.surface ?? null
           : null;
       const fallbackCard = Object.keys(session.surfaceState ?? {})[0] ?? null;
       return [sessionId, navCard ?? fallbackCard] as const;
@@ -183,25 +183,25 @@ export function RuntimeCardDebugWindow({
 
   return (
     <div style={{ padding: 12, fontFamily: 'monospace', fontSize: 12, color: '#111', overflow: 'auto', height: '100%' }}>
-      <Section title={activeStack ? `📇 Stack: ${activeStack.name} (${activeStack.id})` : '📇 Stack: (none provided)'}>
-        {availableStacks.length > 1 && (
+      <Section title={activeBundle ? `📦 Bundle: ${activeBundle.name} (${activeBundle.id})` : '📦 Bundle: (none provided)'}>
+        {availableBundles.length > 1 && (
           <label style={{ display: 'grid', gap: 4, marginBottom: 8, fontSize: 11 }}>
-            <span style={{ color: '#555' }}>Selected stack</span>
+            <span style={{ color: '#555' }}>Selected bundle</span>
             <select
-              value={activeStack?.id ?? ''}
+              value={activeBundle?.id ?? ''}
               onChange={(event) => setSelectedStackId(event.target.value)}
               style={{ width: 260, padding: '4px 6px', fontFamily: 'inherit', fontSize: 12 }}
             >
-              {availableStacks.map((stack) => (
-                <option key={stack.id} value={stack.id}>
-                  {stack.name} ({stack.id})
+              {availableBundles.map((bundle) => (
+                <option key={bundle.id} value={bundle.id}>
+                  {bundle.name} ({bundle.id})
                 </option>
               ))}
             </select>
           </label>
         )}
         <div style={{ fontSize: 11, color: '#555', marginBottom: 6 }}>
-          homeCard: <code>{activeStack?.homeCard ?? '—'}</code> · {stackCards.length} predefined cards
+          homeSurface: <code>{activeBundle?.homeSurface ?? '—'}</code> · {bundleSurfaces.length} predefined surfaces
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -214,7 +214,7 @@ export function RuntimeCardDebugWindow({
             </tr>
           </thead>
           <tbody>
-            {stackCards.map(c => (
+            {bundleSurfaces.map(c => (
               <tr key={c.id}>
                 <td style={td}>{c.icon}</td>
                 <td style={td}><code>{c.id}</code></td>
@@ -223,7 +223,7 @@ export function RuntimeCardDebugWindow({
                 <td style={td}>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button
-                      onClick={() => launchStackCard(activeStack.id, c.id)}
+                      onClick={() => activeBundle && launchBundleSurface(activeBundle.id, c.id)}
                       style={{
                         fontSize: 10,
                         padding: '1px 6px',
@@ -258,23 +258,23 @@ export function RuntimeCardDebugWindow({
         </table>
       </Section>
 
-      <Section title={`🃏 Runtime Card Registry (${registryCards.length})`}>
+      <Section title={`🃏 Runtime Surface Registry (${registryCards.length})`}>
         <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
-          Injected runtime cards from artifacts and ad-hoc registration appear here. Built-in stack cards are listed above.
+          Injected runtime surfaces from artifacts and ad-hoc registration appear here. Built-in bundle surfaces are listed above.
         </div>
         {registryCards.length === 0 ? (
-          <div style={{ fontSize: 11, color: '#555' }}>No runtime cards registered yet.</div>
+          <div style={{ fontSize: 11, color: '#555' }}>No runtime surfaces registered yet.</div>
         ) : (
-          registryCards.map(card => (
-            <div key={card.cardId} style={{ marginBottom: 12, border: '1px solid #ccc', borderRadius: 4, padding: 8 }}>
+          registryCards.map((surface) => (
+            <div key={surface.cardId} style={{ marginBottom: 12, border: '1px solid #ccc', borderRadius: 4, padding: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <code style={{ fontWeight: 700 }}>{card.cardId}</code>
+                <code style={{ fontWeight: 700 }}>{surface.cardId}</code>
                 <Badge text="registered" color="#2d6a4f" />
                 <span style={{ fontSize: 10, color: '#555' }}>
-                  {new Date(card.registeredAt).toLocaleTimeString()}
+                  {new Date(surface.registeredAt).toLocaleTimeString()}
                 </span>
                 <button
-                  onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: card.cardId }, card.code)}
+                  onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: surface.cardId }, surface.code)}
                   style={{
                     fontSize: 10, padding: '1px 6px', borderRadius: 3,
                     border: '1px solid #999', background: '#f0f0f0', cursor: 'pointer',
@@ -285,26 +285,26 @@ export function RuntimeCardDebugWindow({
                 </button>
               </div>
               <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>
-                code: {card.code.length} chars, {card.code.split('\n').length} lines
+                code: {surface.code.length} chars, {surface.code.split('\n').length} lines
               </div>
-              <CodePreview code={card.code} />
+              <CodePreview code={surface.code} />
             </div>
           ))
         )}
       </Section>
 
-      <Section title={`🗃 Artifacts with Runtime Cards (${runtimeArtifacts.length})`}>
+      <Section title={`🗃 Artifacts with Runtime Surfaces (${runtimeArtifacts.length})`}>
         {runtimeArtifacts.length === 0 ? (
-          <div style={{ fontSize: 11, color: '#555' }}>No artifacts with runtime card code.</div>
+          <div style={{ fontSize: 11, color: '#555' }}>No artifacts with runtime surface code.</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th style={th}>Artifact ID</th>
-                <th style={th}>Card ID</th>
+                <th style={th}>Surface ID</th>
                 <th style={th}>Title</th>
                 <th style={th}>Injection</th>
-                <th style={th}>Code</th>
+                <th style={th}>Source</th>
               </tr>
             </thead>
             <tbody>
@@ -336,9 +336,9 @@ export function RuntimeCardDebugWindow({
             <thead>
               <tr>
                 <th style={th}>Session ID</th>
-                <th style={th}>Stack</th>
+                <th style={th}>Bundle</th>
                 <th style={th}>Status</th>
-                <th style={th}>Current Card</th>
+                <th style={th}>Current Surface</th>
                 <th style={th}>Actions</th>
               </tr>
             </thead>
@@ -346,7 +346,7 @@ export function RuntimeCardDebugWindow({
               {Object.entries(sessions).map(([sid, s]) => (
                 <tr key={sid}>
                   <td style={td}><code>{sid}</code></td>
-                  <td style={td}>{s.stackId}</td>
+                  <td style={td}>{s.bundleId}</td>
                   <td style={td}>
                     {s.status === 'ready' && <Badge text="ready" color="#2d6a4f" />}
                     {s.status === 'loading' && <Badge text="loading" color="#e67e22" />}
@@ -362,17 +362,17 @@ export function RuntimeCardDebugWindow({
                   </td>
                   <td style={td}>
                     {(() => {
-                      const currentCardId = sessionCurrentCardIds.get(sid);
-                      if (!currentCardId) {
+                      const currentSurfaceId = sessionCurrentCardIds.get(sid);
+                      if (!currentSurfaceId) {
                         return <span style={{ color: '#555' }}>—</span>;
                       }
-                      const stack = stacksById.get(s.stackId);
-                      const card = stack?.cards[currentCardId];
-                      const source = card ? cardSource(card) : null;
+                      const bundle = bundlesById.get(s.bundleId);
+                      const surface = bundle?.surfaces[currentSurfaceId];
+                      const source = surface ? cardSource(surface) : null;
                       return (
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                           <button
-                            onClick={() => launchStackCard(s.stackId, currentCardId)}
+                            onClick={() => launchBundleSurface(s.bundleId, currentSurfaceId)}
                             style={{
                               fontSize: 10,
                               padding: '1px 6px',
@@ -386,7 +386,7 @@ export function RuntimeCardDebugWindow({
                           </button>
                           {source ? (
                             <button
-                              onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: currentCardId }, source)}
+                              onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: currentSurfaceId }, source)}
                               style={{
                                 fontSize: 10,
                                 padding: '1px 6px',

@@ -44,7 +44,7 @@ export interface SystemIntentEnvelope {
 }
 
 export interface RuntimeSessionRecord {
-  stackId: string;
+  bundleId: string;
   status: RuntimeSessionStatus;
   error: string | null;
   sessionState: Record<string, unknown>;
@@ -66,7 +66,7 @@ export interface RuntimeSessionsStateSlice {
 
 interface RegisterSessionPayload {
   sessionId: string;
-  stackId: string;
+  bundleId: string;
   initialSessionState?: Record<string, unknown>;
   initialSurfaceState?: Record<string, Record<string, unknown>>;
   capabilities?: Partial<CapabilityPolicy>;
@@ -191,7 +191,7 @@ const runtimeSessionsSlice = createSlice({
       const payload = action.payload;
 
       state.sessions[payload.sessionId] = {
-        stackId: payload.stackId,
+        bundleId: payload.bundleId,
         status: payload.status ?? 'loading',
         error: null,
         sessionState: payload.initialSessionState ? { ...payload.initialSessionState } : {},

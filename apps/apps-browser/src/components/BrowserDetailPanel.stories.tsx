@@ -39,7 +39,7 @@ const arcDocs: DocObject[] = [
   {
     path: buildDocObjectPath('card', 'arc-agi', 'incident-command'),
     mountPath: arcCardMountPath,
-    kind: 'card',
+    kind: 'surface',
     owner: 'arc-agi',
     slug: 'incident-command',
     title: 'Incident Command',

@@ -71,7 +71,7 @@ export function HypercardCardRenderer({ e, ctx }: { e: RenderEntity; ctx?: Rende
   const artifactId = cardArtifactId(props);
   const cardId = runtimeCardId(props);
   const cardCode = runtimeCardCode(props);
-  const stackId = props.stackId ? String(props.stackId) : undefined;
+  const bundleId = props.stackId ? String(props.stackId) : undefined;
   const hasRuntimeSurface = cardId.trim().length > 0;
   const hasCardCode = cardCode.trim().length > 0;
   const canOpenArtifact = Boolean(normalizeArtifactId(artifactId) && hasRuntimeSurface && status !== 'streaming' && status !== 'pending');
@@ -82,7 +82,7 @@ export function HypercardCardRenderer({ e, ctx }: { e: RenderEntity; ctx?: Rende
       artifactId,
       title,
       runtimeCardId: cardId,
-      stackId,
+      bundleId,
     });
     if (!payload) {
       return;

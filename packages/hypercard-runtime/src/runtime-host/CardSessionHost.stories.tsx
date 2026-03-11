@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
 import { createAppStore } from '../app/createAppStore';
-import type { CardDefinition, CardStackDefinition } from '@hypercard/engine';
+import type { RuntimeSurfaceMeta, RuntimeBundleDefinition } from '@hypercard/engine';
 import { openWindow } from '@hypercard/engine/desktop-core';
 import CHAT_PLUGIN_BUNDLE from './fixtures/CardSessionHost.chat.vm.js?raw';
 import LIST_PLUGIN_BUNDLE from './fixtures/CardSessionHost.list.vm.js?raw';
@@ -15,7 +15,7 @@ interface PluginCardMeta {
   icon: string;
 }
 
-function toPluginCard(card: PluginCardMeta): CardDefinition {
+function toPluginCard(card: PluginCardMeta): RuntimeSurfaceMeta {
   return {
     id: card.id,
     type: 'plugin',
@@ -32,16 +32,16 @@ function createPluginStack(options: {
   id: string;
   name: string;
   icon: string;
-  homeCard: string;
+  homeSurface: string;
   packageIds?: string[];
   bundleCode: string;
-  cards: PluginCardMeta[];
-}): CardStackDefinition {
+  surfaces: PluginCardMeta[];
+}): RuntimeBundleDefinition {
   return {
     id: options.id,
     name: options.name,
     icon: options.icon,
-    homeCard: options.homeCard,
+    homeSurface: options.homeSurface,
     plugin: {
       packageIds: options.packageIds ?? ['ui'],
       bundleCode: options.bundleCode,
@@ -49,7 +49,7 @@ function createPluginStack(options: {
         system: ['nav.go', 'nav.back', 'notify.show'],
       },
     },
-    cards: Object.fromEntries(options.cards.map((card) => [card.id, toPluginCard(card)])),
+    surfaces: Object.fromEntries(options.surfaces.map((card) => [card.id, toPluginCard(card)])),
   };
 }
 
@@ -57,9 +57,9 @@ const NAV_STACK = createPluginStack({
   id: 'nav-demo',
   name: 'Nav Demo',
   icon: '🧭',
-  homeCard: 'list',
+  homeSurface: 'list',
   bundleCode: NAV_PLUGIN_BUNDLE,
-  cards: [
+  surfaces: [
     { id: 'list', title: 'Item List', icon: '📋' },
     { id: 'detail', title: 'Item Detail', icon: '📄' },
   ],
@@ -69,45 +69,46 @@ const CHAT_STACK = createPluginStack({
   id: 'chat-demo',
   name: 'Chat Demo',
   icon: '💬',
-  homeCard: 'chat',
+  homeSurface: 'chat',
   bundleCode: CHAT_PLUGIN_BUNDLE,
-  cards: [{ id: 'chat', title: 'Assistant', icon: '💬' }],
+  surfaces: [{ id: 'chat', title: 'Assistant', icon: '💬' }],
 });
 
 const REPORT_STACK = createPluginStack({
   id: 'report-demo',
   name: 'Report Demo',
   icon: '📊',
-  homeCard: 'report',
+  homeSurface: 'report',
   bundleCode: REPORT_PLUGIN_BUNDLE,
-  cards: [{ id: 'report', title: 'Monthly Report', icon: '📊' }],
+  surfaces: [{ id: 'report', title: 'Monthly Report', icon: '📊' }],
 });
 
 const LIST_STACK = createPluginStack({
   id: 'list-demo',
   name: 'List Demo',
   icon: '📋',
-  homeCard: 'browse',
+  homeSurface: 'browse',
   bundleCode: LIST_PLUGIN_BUNDLE,
-  cards: [{ id: 'browse', title: 'Browse Items', icon: '📋' }],
+  surfaces: [{ id: 'browse', title: 'Browse Items', icon: '📋' }],
 });
 
 const { createStore } = createAppStore({});
 
-function createStoreWithSession(stack: CardStackDefinition, sessionId: string, cardId?: string) {
+function createStoreWithSession(stack: RuntimeBundleDefinition, sessionId: string, surfaceId?: string) {
   const store = createStore();
+  const resolvedSurfaceId = surfaceId ?? stack.homeSurface;
 
   store.dispatch(
     openWindow({
       id: `window:${sessionId}`,
-      title: stack.cards[cardId ?? stack.homeCard]?.title ?? 'Window',
+      title: stack.surfaces[resolvedSurfaceId]?.title ?? 'Window',
       bounds: { x: 0, y: 0, w: 400, h: 300 },
       content: {
-        kind: 'card',
-        card: {
-          stackId: stack.id,
-          cardId: cardId ?? stack.homeCard,
-          cardSessionId: sessionId,
+        kind: 'surface',
+        surface: {
+          bundleId: stack.id,
+          surfaceId: resolvedSurfaceId,
+          surfaceSessionId: sessionId,
         },
       },
     })
@@ -117,7 +118,7 @@ function createStoreWithSession(stack: CardStackDefinition, sessionId: string, c
 }
 
 function RuntimeSurfaceSessionHostWrapper(props: RuntimeSurfaceSessionHostProps) {
-  const store = createStoreWithSession(props.stack, props.sessionId);
+  const store = createStoreWithSession(props.bundle, props.sessionId);
   return (
     <Provider store={store}>
       <div style={{ width: 440, height: 380, border: '2px solid #000', overflow: 'auto', background: '#fff' }}>
@@ -142,7 +143,7 @@ export const NavigableMenu: Story = {
   args: {
     windowId: 'window:s1',
     sessionId: 's1',
-    stack: NAV_STACK,
+    bundle: NAV_STACK,
   },
 };
 
@@ -150,7 +151,7 @@ export const ChatCard: Story = {
   args: {
     windowId: 'window:s2',
     sessionId: 's2',
-    stack: CHAT_STACK,
+    bundle: CHAT_STACK,
   },
 };
 
@@ -158,7 +159,7 @@ export const ReportCard: Story = {
   args: {
     windowId: 'window:s3',
     sessionId: 's3',
-    stack: REPORT_STACK,
+    bundle: REPORT_STACK,
   },
 };
 
@@ -166,7 +167,7 @@ export const ListCard: Story = {
   args: {
     windowId: 'window:s4',
     sessionId: 's4',
-    stack: LIST_STACK,
+    bundle: LIST_STACK,
   },
 };
 
@@ -174,7 +175,7 @@ export const PreviewMode: Story = {
   args: {
     windowId: 'window:s5',
     sessionId: 's5',
-    stack: NAV_STACK,
+    bundle: NAV_STACK,
     mode: 'preview',
   },
 };
@@ -183,7 +184,7 @@ export const TwoSessionsIsolated: Story = {
   args: {
     windowId: 'window:session-a',
     sessionId: 'session-a',
-    stack: NAV_STACK,
+    bundle: NAV_STACK,
   },
   render: () => {
     const storeA = createStoreWithSession(NAV_STACK, 'session-a');
@@ -196,7 +197,7 @@ export const TwoSessionsIsolated: Story = {
           </div>
           <Provider store={storeA}>
             <div style={{ width: 380, height: 340, border: '2px solid #000', overflow: 'auto', background: '#fff' }}>
-              <RuntimeSurfaceSessionHost windowId="window:session-a" sessionId="session-a" stack={NAV_STACK} />
+              <RuntimeSurfaceSessionHost windowId="window:session-a" sessionId="session-a" bundle={NAV_STACK} />
             </div>
           </Provider>
         </div>
@@ -206,7 +207,7 @@ export const TwoSessionsIsolated: Story = {
           </div>
           <Provider store={storeB}>
             <div style={{ width: 380, height: 340, border: '2px solid #000', overflow: 'auto', background: '#fff' }}>
-              <RuntimeSurfaceSessionHost windowId="window:session-b" sessionId="session-b" stack={NAV_STACK} />
+              <RuntimeSurfaceSessionHost windowId="window:session-b" sessionId="session-b" bundle={NAV_STACK} />
             </div>
           </Provider>
         </div>

@@ -128,7 +128,7 @@ describe('RuntimeSurfaceDebugWindow', () => {
     expect(editButtons).toHaveLength(3);
   });
 
-  it('shows registered JS sessions in a separate debug section', async () => {
+  it('shows JS-session summary and directs operators to Task Manager', async () => {
     const broker = createJsSessionBroker();
     await broker.spawnSession({ sessionId: 'js-1', title: 'Scratch Pad' });
     registerJsSessionDebugSource({
@@ -157,8 +157,7 @@ describe('RuntimeSurfaceDebugWindow', () => {
 
     const text = container.textContent ?? '';
     expect(text).toContain('JS Sessions (1)');
-    expect(text).toContain('js-1');
-    expect(text).toContain('JavaScript REPL');
-    expect(text).toContain('Scratch Pad');
+    expect(text).toContain('1 JS session across 1 source');
+    expect(text).toContain('Open Task Manager');
   });
 });

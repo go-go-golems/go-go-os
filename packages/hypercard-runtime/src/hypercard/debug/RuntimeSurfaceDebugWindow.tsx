@@ -14,6 +14,7 @@ import { openCodeEditor } from '../editor/editorLaunch';
 import { useRegisteredRuntimeDebugStacks } from './runtimeDebugRegistry';
 import { useRegisteredJsSessionDebugSources } from './jsSessionDebugRegistry';
 import type { JsSessionSummary } from '../../plugin-runtime/jsSessionService';
+import { buildTaskManagerWindowPayload } from '../task-manager/taskManagerApp';
 
 interface StoreSlice {
   hypercardArtifacts?: { byId: Record<string, ArtifactRecord> };
@@ -440,79 +441,28 @@ export function RuntimeSurfaceDebugWindow({
 
       <Section title={`🧪 JS Sessions (${jsSessions.length})`}>
         <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
-          Blank JavaScript REPL sessions live outside the runtime-surface host, so they are tracked separately here.
+          Plain JavaScript sessions no longer get a full operator table here. Use <strong>Task Manager</strong> for reset/dispose/focus actions and cross-source session management.
         </div>
-        {jsSessions.length === 0 ? (
-          <div style={{ fontSize: 11, color: '#555' }}>No active JS sessions.</div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={th}>Session ID</th>
-                <th style={th}>Source</th>
-                <th style={th}>Title</th>
-                <th style={th}>Globals</th>
-                <th style={th}>Created</th>
-                <th style={th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jsSessions.map((session) => {
-                const source = jsSessionSources.find((entry) => entry.id === session.sourceId);
-                return (
-                  <tr key={`${session.sourceId}:${session.sessionId}`}>
-                    <td style={td}><code>{session.sessionId}</code></td>
-                    <td style={td}>{session.sourceTitle}</td>
-                    <td style={td}>{session.title}</td>
-                    <td style={td}>
-                      <code style={{ fontSize: 10 }}>
-                        {session.globalNames.slice(0, 6).join(', ') || '—'}
-                      </code>
-                      {session.globalNames.length > 6 ? (
-                        <div style={{ fontSize: 10, color: '#555' }}>+{session.globalNames.length - 6} more</div>
-                      ) : null}
-                    </td>
-                    <td style={td}>{new Date(session.createdAt).toLocaleTimeString()}</td>
-                    <td style={td}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button
-                          onClick={() => {
-                            void source?.broker.resetSession(session.sessionId);
-                          }}
-                          style={{
-                            fontSize: 10,
-                            padding: '1px 6px',
-                            borderRadius: 3,
-                            border: '1px solid #999',
-                            background: '#f0f0f0',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ↺ Reset
-                        </button>
-                        <button
-                          onClick={() => {
-                            source?.broker.disposeSession(session.sessionId);
-                          }}
-                          style={{
-                            fontSize: 10,
-                            padding: '1px 6px',
-                            borderRadius: 3,
-                            border: '1px solid #999',
-                            background: '#f0f0f0',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ✕ Dispose
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 11, color: '#555' }}>
+            {jsSessions.length === 0
+              ? 'No active JS sessions.'
+              : `${jsSessions.length} JS session${jsSessions.length === 1 ? '' : 's'} across ${jsSessionSources.length} source${jsSessionSources.length === 1 ? '' : 's'}.`}
+          </div>
+          <button
+            onClick={() => dispatch(openWindow(buildTaskManagerWindowPayload()))}
+            style={{
+              fontSize: 10,
+              padding: '1px 6px',
+              borderRadius: 3,
+              border: '1px solid #999',
+              background: '#f0f0f0',
+              cursor: 'pointer',
+            }}
+          >
+            🗂️ Open Task Manager
+          </button>
+        </div>
       </Section>
     </div>
   );

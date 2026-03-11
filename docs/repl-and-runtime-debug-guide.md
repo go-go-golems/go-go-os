@@ -33,9 +33,10 @@ And there are also two distinct debug surfaces:
 
 - `Stacks & Cards`
   - bundle/surface-oriented runtime debugger
-  - now also shows a separate `JS Sessions` section
-- future task-manager style views
-  - should aggregate multiple broker/session sources without forcing them into one data model
+  - now keeps only a compact JS-session summary and links operators into `Task Manager`
+- `Task Manager`
+  - shared operator/session-manager window
+  - aggregates multiple broker/session sources without forcing them into one data model
 
 The key architectural rule is:
 
@@ -215,21 +216,24 @@ That is why the `JavaScript REPL` sessions do not belong in the runtime-surface 
 
 They can be visible in the same debugging UI, but the storage model should stay separate.
 
-## 7. `Stacks & Cards` and the New `JS Sessions` Section
+## 7. `Stacks & Cards` and the Task Manager Split
 
 Main files:
 
 - [packages/hypercard-runtime/src/hypercard/debug/RuntimeSurfaceDebugWindow.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/debug/RuntimeSurfaceDebugWindow.tsx)
 - [packages/hypercard-runtime/src/hypercard/debug/runtimeDebugRegistry.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/debug/runtimeDebugRegistry.ts)
 - [packages/hypercard-runtime/src/hypercard/debug/jsSessionDebugRegistry.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/debug/jsSessionDebugRegistry.ts)
+- [packages/hypercard-runtime/src/hypercard/task-manager/TaskManagerWindow.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/task-manager/TaskManagerWindow.tsx)
+- [apps/os-launcher/src/app/taskManagerModule.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/taskManagerModule.tsx)
 
-`Stacks & Cards` now combines three data sources:
+`Stacks & Cards` still reads three data sources:
 
 1. bundle metadata
 2. runtime-surface session state from Redux
 3. JS session summaries from registered `JsSessionBroker`s
 
-The third source is intentionally an external registry, not Redux.
+The third source is intentionally an external registry, not Redux, but it is no longer rendered as a
+full operator table there.
 
 ### Why the registry exists
 
@@ -247,30 +251,39 @@ Those are behaviorful objects and should not be serialized into Redux. Instead:
 
 That is the same basic pattern used elsewhere for mounted docs providers.
 
-### Current operator actions
+### Current window responsibilities
 
-The `JS Sessions` section currently supports:
+`Stacks & Cards` is still the right tool for:
 
-- viewing active JS session ids
-- viewing source title and session title
-- viewing a truncated global-name list
-- resetting a session
-- disposing a session
+- bundle and predefined surface catalog
+- runtime-surface registry inspection
+- artifact/runtime-surface inspection
+- source editing
+- current runtime-surface session inspection
 
-That is intentionally smaller than the runtime-surface tooling.
+The compact `JS Sessions` section now only:
+
+- shows the current JS-session count
+- reminds the operator that JS sessions are external/broker-owned
+- opens `Task Manager` for actual session operations
 
 ## 8. Task Manager vs `Stacks & Cards`
 
-Your instinct about a task-manager style window is reasonable.
+The codebase now has both windows, and they have different jobs.
 
-The right long-term model is probably:
+Use this rule:
 
-- keep `Stacks & Cards` focused on bundles/surfaces/source editing
-- add a more general “Sessions” or “Task Manager” window that can aggregate:
-  - runtime-surface sessions
-  - plain JS sessions
-  - future REPL sessions for other languages
-  - maybe long-running tool tasks
+- if the user wants to inspect bundles, surfaces, artifacts, or built-in source:
+  use `Stacks & Cards`
+- if the user wants to manage live sessions across different source systems:
+  use `Task Manager`
+
+`Task Manager` is allowed to show:
+
+- runtime-surface sessions
+- plain JS sessions
+- future REPL sessions for other languages
+- later, maybe long-running tool tasks
 
 Conceptually:
 
@@ -281,8 +294,13 @@ Session Manager
   future language/tool session sources
 ```
 
-That future view should probably depend on a generic external session-source registry rather than
-overloading `RuntimeSurfaceDebugWindow` forever.
+That separation is why APP-25 introduced:
+
+- `TaskManagerSource`
+- `TaskManagerRow`
+- `TaskManagerAction`
+
+instead of trying to keep extending `RuntimeSurfaceDebugWindow` forever.
 
 ## 9. Host Registration Pattern
 

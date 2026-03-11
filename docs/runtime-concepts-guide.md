@@ -801,7 +801,8 @@ Main examples:
 - `JsSessionBroker`
 - `JsSessionService`
 - the `JavaScript REPL`
-- `JS Sessions` inside `Stacks & Cards`
+- `Task Manager`
+- the compact `JS Sessions` handoff inside `Stacks & Cards`
 
 This side of the world is about:
 
@@ -814,10 +815,15 @@ This side of the world is about:
 Diagram:
 
 ```text
-RuntimeSurfaceDebugWindow
+Stacks & Cards
   -> runtime-surface Redux state
   -> runtime debug stack registry
-  -> JS session debug registry
+  -> JS session debug registry (summary only)
+
+Task Manager
+  -> TaskManagerSource registry
+  -> runtime-session source adapter
+  -> JS-session source adapter
 
 JS session debug registry
   -> JsSessionBroker objects
@@ -828,6 +834,7 @@ The important rule is:
 
 - runtime-surface sessions live in runtime-core state
 - plain JS sessions live in broker-owned external state
+- operator windows may show both, but they should do so through summary adapters rather than one fake shared reducer
 
 That split is intentional.
 

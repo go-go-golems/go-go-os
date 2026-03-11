@@ -111,6 +111,56 @@ describe('TaskManagerWindow', () => {
     expect(text).toContain('Scratch Pad');
   });
 
+  it('renders a single runtime-only source cleanly', async () => {
+    registerTaskManagerSource(
+      createSource({
+        id: 'runtime',
+        title: 'Runtime Sessions',
+        rows: [
+          {
+            id: 'session-1',
+            kind: 'runtime-session',
+            sourceId: 'runtime',
+            sourceTitle: 'Runtime Sessions',
+            title: 'Inventory · report',
+            status: 'ready',
+            details: { bundleId: 'inventory' },
+            actions: [{ id: 'open', label: 'Open', intent: 'open' }],
+          },
+        ],
+      }),
+    );
+
+    const container = await renderWindow();
+    expect(container.textContent).toContain('runtime-session: 1');
+    expect(container.textContent).toContain('Inventory · report');
+  });
+
+  it('renders a single js-only source cleanly', async () => {
+    registerTaskManagerSource(
+      createSource({
+        id: 'js',
+        title: 'JavaScript Sessions',
+        rows: [
+          {
+            id: 'js-1',
+            kind: 'js-session',
+            sourceId: 'js',
+            sourceTitle: 'JavaScript Sessions',
+            title: 'Sandbox',
+            status: 'ready',
+            details: { globals: '8' },
+            actions: [{ id: 'focus', label: 'Focus', intent: 'focus' }],
+          },
+        ],
+      }),
+    );
+
+    const container = await renderWindow();
+    expect(container.textContent).toContain('js-session: 1');
+    expect(container.textContent).toContain('Sandbox');
+  });
+
   it('invokes row actions through the owning source', async () => {
     const invoke = vi.fn();
     registerTaskManagerSource(

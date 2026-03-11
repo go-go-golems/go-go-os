@@ -19,6 +19,8 @@ interface RuntimeSessionTaskManagerState {
 }
 
 interface RuntimeSessionTaskManagerSourceOptions {
+  sourceId?: string;
+  sourceTitle?: string;
   getState: () => RuntimeSessionTaskManagerState;
   dispatch: (action: unknown) => void;
   bundles: RuntimeBundleDefinition[];
@@ -78,13 +80,15 @@ export function createRuntimeSessionTaskManagerSource(
   options: RuntimeSessionTaskManagerSourceOptions,
 ): TaskManagerSource {
   const bundlesById = new Map(options.bundles.map((bundle) => [bundle.id, bundle]));
+  const sourceId = options.sourceId ?? 'runtime-sessions';
+  const sourceTitle = options.sourceTitle ?? 'Runtime Sessions';
 
   return {
     sourceId() {
-      return 'runtime-sessions';
+      return sourceId;
     },
     title() {
-      return 'Runtime Sessions';
+      return sourceTitle;
     },
     listRows() {
       const state = options.getState();
@@ -97,8 +101,8 @@ export function createRuntimeSessionTaskManagerSource(
         return {
           id: sessionId,
           kind: 'runtime-session',
-          sourceId: 'runtime-sessions',
-          sourceTitle: 'Runtime Sessions',
+          sourceId,
+          sourceTitle,
           title: `${bundle?.name ?? session.bundleId}${currentSurface.surfaceId ? ` · ${currentSurface.surfaceId}` : ''}`,
           status: session.status,
           details: {

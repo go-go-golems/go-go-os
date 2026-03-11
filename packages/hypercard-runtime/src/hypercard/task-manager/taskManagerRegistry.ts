@@ -39,6 +39,16 @@ export function registerTaskManagerSource(source: TaskManagerSource): void {
   refreshAndEmit();
 }
 
+export function unregisterTaskManagerSource(sourceId: string): void {
+  if (!registeredSources.has(sourceId)) {
+    return;
+  }
+  sourceUnsubscribes.get(sourceId)?.();
+  sourceUnsubscribes.delete(sourceId);
+  registeredSources.delete(sourceId);
+  refreshAndEmit();
+}
+
 export function clearTaskManagerSources(): void {
   if (registeredSources.size === 0) {
     return;

@@ -1,7 +1,7 @@
-import { ProgressBar } from '../primitives/ProgressBar';
-import { Sparkline } from '../primitives/Sparkline';
-import { RICH_PARTS as P } from '../parts';
+import { ProgressBar } from '@hypercard/rich-widgets';
+import { Sparkline } from '@hypercard/rich-widgets';
 import type { KanbanHighlight } from './types';
+import { KANBAN_PARTS as P } from './parts';
 
 export interface KanbanHighlightsProps {
   items: KanbanHighlight[];

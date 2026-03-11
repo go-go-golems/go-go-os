@@ -12,7 +12,7 @@ import {
 } from './kanbanState';
 import { KANBAN_EXAMPLE_BOARDS } from './exampleBoards';
 import { DEFAULT_KANBAN_TAXONOMY } from './types';
-import '@hypercard/rich-widgets/theme';
+import '@hypercard/kanban-runtime/theme';
 
 const meta: Meta<typeof KanbanBoard> = {
   title: 'RichWidgets/Kanban/Board',

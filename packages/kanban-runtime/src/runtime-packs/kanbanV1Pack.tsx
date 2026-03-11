@@ -1,4 +1,4 @@
-import { KanbanBoardView } from '@hypercard/rich-widgets/kanban-runtime';
+import { KanbanBoardView } from '../KanbanBoardView';
 import type {
   KanbanState,
   Column,
@@ -9,8 +9,8 @@ import type {
   KanbanStatusMetric,
   KanbanTaxonomy,
   Task,
-} from '@hypercard/rich-widgets/kanban-runtime';
-import type { UIEventRef } from '../plugin-runtime/uiTypes';
+} from '../runtime';
+import type { PluginUIEventRef as UIEventRef } from '@hypercard/hypercard-runtime';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

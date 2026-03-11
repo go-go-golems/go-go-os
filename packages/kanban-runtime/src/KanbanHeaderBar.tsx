@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Btn } from '@hypercard/engine';
-import { WidgetToolbar } from '../primitives/WidgetToolbar';
-import { Separator } from '../primitives/Separator';
+import { WidgetToolbar } from '@hypercard/rich-widgets';
+import { Separator } from '@hypercard/rich-widgets';
 
 export interface KanbanHeaderBarProps {
   title?: string;

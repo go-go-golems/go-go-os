@@ -1,6 +1,6 @@
 import { Btn } from '@hypercard/engine';
-import { WidgetToolbar } from '../primitives/WidgetToolbar';
-import { Separator } from '../primitives/Separator';
+import { WidgetToolbar } from '@hypercard/rich-widgets';
+import { Separator } from '@hypercard/rich-widgets';
 import { formatKanbanOption, type KanbanPriorityId, type KanbanIssueTypeId, type KanbanTaxonomy } from './types';
 
 export interface KanbanFilterBarProps {

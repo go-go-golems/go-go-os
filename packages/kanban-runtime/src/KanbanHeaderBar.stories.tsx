@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { KanbanHeaderBar } from './KanbanHeaderBar';
-import '@hypercard/rich-widgets/theme';
+import '@hypercard/kanban-runtime/theme';
 
 const meta: Meta<typeof KanbanHeaderBar> = {
   title: 'RichWidgets/Kanban/HeaderBar',

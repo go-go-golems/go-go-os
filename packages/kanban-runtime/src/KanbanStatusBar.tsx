@@ -1,4 +1,4 @@
-import { WidgetStatusBar } from '../primitives/WidgetStatusBar';
+import { WidgetStatusBar } from '@hypercard/rich-widgets';
 
 export interface KanbanStatusMetric {
   label: string;

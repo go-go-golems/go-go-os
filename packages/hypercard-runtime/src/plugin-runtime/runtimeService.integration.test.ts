@@ -2,55 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import COLUMN_STACK from './fixtures/column-stack.vm.js?raw';
 import DYNAMIC_CARD from './fixtures/dynamic-card.vm.js?raw';
 import INVENTORY_STACK from './fixtures/inventory-stack.vm.js?raw';
-import KANBAN_CARD from './fixtures/kanban-card.vm.js?raw';
 import LOOP_STACK from './fixtures/loop-stack.vm.js?raw';
 import PATCHED_LOW_STOCK_HANDLER from './fixtures/patched-low-stock-handler.vm.js?raw';
 import PATCHED_LOW_STOCK_RENDER from './fixtures/patched-low-stock-render.vm.js?raw';
 import { QuickJSRuntimeService } from './runtimeService';
-import { validateRuntimeSurfaceTree } from '../runtime-packs';
 import { registerBuiltInHypercardRuntime, resetBuiltInHypercardRuntimeRegistrationForTest } from '../runtimeDefaults';
-import { clearRuntimePackages } from '../runtime-packages';
+import { clearRuntimePackages, registerRuntimePackage } from '../runtime-packages';
 import { clearRuntimeSurfaceTypes } from '../runtime-packs';
-
-const BUILTIN_KANBAN_STACK = `
-defineRuntimeBundle(({ ui }) => ({
-  id: 'builtin-kanban',
-  title: 'Built-in Kanban',
-  packageIds: ['ui', 'kanban'],
-  surfaces: {
-    home: {
-      render() {
-        return ui.text('home');
-      },
-    },
-  },
-}));
-
-defineRuntimeSurface('board', ({ widgets }) => ({
-  render() {
-    return widgets.kanban.page(
-      widgets.kanban.taxonomy({
-        issueTypes: [{ id: 'task', label: 'Task', icon: '🧩' }],
-        priorities: [{ id: 'medium', label: 'Medium', icon: '●' }],
-        labels: [{ id: 'docs', label: 'Docs', icon: '📚' }],
-      }),
-      widgets.kanban.header({
-        title: 'Built-in Kanban',
-        searchQuery: '',
-      }),
-      widgets.kanban.board({
-        columns: [{ id: 'todo', title: 'To Do', icon: '📋' }],
-        tasks: [],
-        editingTask: null,
-        collapsedCols: {},
-      }),
-      widgets.kanban.status({
-        metrics: [{ label: 'total', value: 0 }],
-      }),
-    );
-  },
-}), 'kanban.v1');
-`;
 
 describe('QuickJSRuntimeService', () => {
   const services: QuickJSRuntimeService[] = [];
@@ -227,76 +185,6 @@ describe('QuickJSRuntimeService', () => {
     ]);
   });
 
-  it('supports kanban.v1 dynamic cards', async () => {
-    const service = new QuickJSRuntimeService();
-    services.push(service);
-
-    await service.loadRuntimeBundle('builtin-kanban', 'builtin-kanban@dynamic', ['ui', 'kanban'], BUILTIN_KANBAN_STACK);
-
-    const bundle = service.defineRuntimeSurface('builtin-kanban@dynamic', 'sprintBoard', KANBAN_CARD, 'kanban.v1');
-    expect(bundle.surfaces).toContain('sprintBoard');
-
-    const rawTree = service.renderRuntimeSurface('builtin-kanban@dynamic', 'sprintBoard', {
-      app_kanban: {
-        taxonomy: {
-          issueTypes: [{ id: 'feature', label: 'Feature', icon: '✨' }],
-          priorities: [{ id: 'high', label: 'High', icon: '▲' }],
-          labels: [{ id: 'frontend', label: 'Frontend', icon: '🖼️' }],
-        },
-        columns: [{ id: 'todo', title: 'To Do', icon: '📋' }],
-        tasks: [
-          {
-            id: 'task-1',
-            col: 'todo',
-            title: 'Ship pack registry',
-            desc: 'Validate kanban.v1 render path',
-            type: 'feature',
-            labels: ['frontend'],
-            priority: 'high',
-          },
-        ],
-        editingTask: null,
-        filterType: null,
-        filterPriority: null,
-        searchQuery: '',
-        collapsedCols: {},
-      },
-    });
-    const tree = validateRuntimeSurfaceTree('kanban.v1', rawTree);
-    expect(tree.kind).toBe('kanban.page');
-
-    const actions = service.eventRuntimeSurface(
-      'builtin-kanban@dynamic',
-      'sprintBoard',
-      'moveTask',
-      { id: 'task-1', col: 'done' },
-      {},
-    );
-    expect(actions).toEqual([
-      {
-        type: 'kanban/move-task',
-        payload: { id: 'task-1', col: 'done' },
-      },
-    ]);
-  });
-
-  it('reports surface type metadata for built-in runtime bundle surfaces defined with defineRuntimeSurface', async () => {
-    const service = new QuickJSRuntimeService();
-    services.push(service);
-
-    const bundle = await service.loadRuntimeBundle('builtin-kanban', 'builtin-kanban@one', ['ui', 'kanban'], BUILTIN_KANBAN_STACK);
-    expect(bundle.surfaces).toEqual(expect.arrayContaining(['home', 'board']));
-    expect(bundle.packageIds).toEqual(['ui', 'kanban']);
-    expect(bundle.surfaceTypes).toMatchObject({
-      home: 'ui.card.v1',
-      board: 'kanban.v1',
-    });
-
-    const rawTree = service.renderRuntimeSurface('builtin-kanban@one', 'board', {});
-    const tree = validateRuntimeSurfaceTree('kanban.v1', rawTree);
-    expect(tree.kind).toBe('kanban.page');
-  });
-
   it('rejects unknown runtime surface types during surface definition', async () => {
     const service = new QuickJSRuntimeService();
     services.push(service);
@@ -304,16 +192,22 @@ describe('QuickJSRuntimeService', () => {
     await service.loadRuntimeBundle('inventory', 'inventory@bad-pack', ['ui'], INVENTORY_STACK);
 
     expect(() =>
-      service.defineRuntimeSurface('inventory@bad-pack', 'broken', KANBAN_CARD, 'missing.v1')
+      service.defineRuntimeSurface('inventory@bad-pack', 'broken', DYNAMIC_CARD, 'missing.v1')
     ).toThrow(/unknown runtime surface type/i);
   });
 
   it('rejects bundle loads when declared package ids do not match installed packages', async () => {
     const service = new QuickJSRuntimeService();
     services.push(service);
+    registerRuntimePackage({
+      packageId: 'demo',
+      version: '1.0.0',
+      installPrelude: '',
+      surfaceTypes: [],
+    });
 
     await expect(
-      service.loadRuntimeBundle('inventory', 'inventory@mismatch', ['ui', 'kanban'], INVENTORY_STACK)
+      service.loadRuntimeBundle('inventory', 'inventory@mismatch', ['ui', 'demo'], INVENTORY_STACK)
     ).rejects.toThrow(/packageIds mismatch/i);
   });
 });

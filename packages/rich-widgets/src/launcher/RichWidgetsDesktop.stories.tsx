@@ -8,7 +8,6 @@ import { DesktopShell, type DesktopIconDef, type DesktopContribution, type Deskt
 import { LogViewer } from '../log-viewer/LogViewer';
 import { ChartView } from '../chart-view/ChartView';
 import { MacWrite } from '../mac-write/MacWrite';
-import { KanbanBoard } from '../kanban/KanbanBoard';
 import { MacRepl } from '../repl/MacRepl';
 import { NodeEditor } from '../node-editor/NodeEditor';
 import { Oscilloscope } from '../oscilloscope/Oscilloscope';
@@ -25,7 +24,6 @@ import { YouTubeRetro } from '../youtube-retro/YouTubeRetro';
 import { ChatBrowser } from '../chat-browser/ChatBrowser';
 import { SystemModeler } from '../system-modeler/SystemModeler';
 import { ControlRoom } from '../control-room/ControlRoom';
-import { KANBAN_EXAMPLE_BOARDS } from '../kanban/exampleBoards';
 import {
   SeededStoreProvider,
   composeSeedStores,
@@ -49,15 +47,6 @@ const WIDGETS: WidgetDef[] = [
   { id: 'log-viewer', name: 'Log Viewer', icon: '\uD83D\uDCCB', w: 900, h: 600, render: () => <LogViewer /> },
   { id: 'chart-view', name: 'Chart View', icon: '\uD83D\uDCC8', w: 800, h: 560, render: () => <ChartView /> },
   { id: 'mac-write', name: 'MacWrite', icon: '\u270D\uFE0F', w: 800, h: 620, render: () => <MacWrite /> },
-  { id: 'kanban-board', name: 'Kanban Board', icon: '\uD83D\uDCCB', w: 960, h: 640, render: () => <KanbanBoard /> },
-  ...KANBAN_EXAMPLE_BOARDS.map((board) => ({
-    id: board.id,
-    name: board.name,
-    icon: board.icon,
-    w: 960,
-    h: 640,
-    render: () => <KanbanBoard {...board.props} />,
-  })),
   { id: 'mac-repl', name: 'MacRepl', icon: '\uD83D\uDCBB', w: 720, h: 480, render: () => <MacRepl /> },
   { id: 'node-editor', name: 'Node Editor', icon: '\uD83D\uDD17', w: 900, h: 600, render: () => <NodeEditor /> },
   { id: 'oscilloscope', name: 'Oscilloscope', icon: '\uD83D\uDCDF', w: 800, h: 560, render: () => <Oscilloscope /> },

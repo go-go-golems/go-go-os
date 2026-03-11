@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Btn } from '@hypercard/engine';
-import { ModalOverlay } from '../primitives/ModalOverlay';
-import { RICH_PARTS as P } from '../parts';
+import { ModalOverlay } from '@hypercard/rich-widgets';
 import type { Column, KanbanPriorityId, KanbanLabelId, KanbanTaxonomy, Task } from './types';
 import { formatKanbanOption } from './types';
+import { KANBAN_PARTS as P } from './parts';
 
 let idSeq = 0;
 const mkId = () => `task-${Date.now()}-${++idSeq}`;

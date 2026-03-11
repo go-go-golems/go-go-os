@@ -1,6 +1,6 @@
 import type { KanbanTaxonomy, Task } from './types';
-import { RICH_PARTS as P } from '../parts';
 import { findKanbanOption, formatKanbanOption } from './types';
+import { KANBAN_PARTS as P } from './parts';
 
 export interface KanbanTaskCardProps {
   task: Task;

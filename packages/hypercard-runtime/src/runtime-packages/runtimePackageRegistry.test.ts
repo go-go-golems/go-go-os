@@ -3,6 +3,7 @@ import {
   clearRuntimePackages,
   getRuntimePackageOrThrow,
   listRuntimePackages,
+  registerRuntimePackage,
   resolveRuntimePackageInstallOrder,
 } from './runtimePackageRegistry';
 import { registerBuiltInRuntimePackages } from './defaultRuntimePackages';
@@ -19,17 +20,23 @@ describe('runtimePackageRegistry', () => {
     expect(() => getRuntimePackageOrThrow('ui')).toThrow(/unknown runtime package/i);
   });
 
-  it('registers built-in ui and kanban packages explicitly', () => {
+  it('registers only the built-in ui package explicitly', () => {
     registerBuiltInRuntimePackages();
 
-    expect(listRuntimePackages()).toEqual(expect.arrayContaining(['ui', 'kanban']));
+    expect(listRuntimePackages()).toEqual(['ui']);
     expect(getRuntimePackageOrThrow('ui').surfaceTypes).toEqual(['ui.card.v1']);
-    expect(getRuntimePackageOrThrow('kanban').surfaceTypes).toEqual(['kanban.v1']);
   });
 
   it('orders package installation by dependency', () => {
     registerBuiltInRuntimePackages();
-    expect(resolveRuntimePackageInstallOrder(['kanban', 'ui'])).toEqual(['ui', 'kanban']);
+    registerRuntimePackage({
+      packageId: 'demo',
+      version: '1.0.0',
+      installPrelude: '',
+      surfaceTypes: ['demo.v1'],
+      dependencies: ['ui'],
+    });
+    expect(resolveRuntimePackageInstallOrder(['demo', 'ui'])).toEqual(['ui', 'demo']);
   });
 
   it('throws for unknown runtime packages', () => {

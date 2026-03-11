@@ -3,7 +3,7 @@ import { KanbanBoardView } from './KanbanBoardView';
 import { createKanbanStateSeed } from './kanbanState';
 import { fixedFrameDecorator, fullscreenDecorator } from '../storybook/frameDecorators';
 import { INITIAL_COLUMNS, INITIAL_TASKS } from './sampleData';
-import '@hypercard/rich-widgets/theme';
+import '@hypercard/kanban-runtime/theme';
 
 const meta: Meta<typeof KanbanBoardView> = {
   title: 'RichWidgets/Kanban/BoardView',

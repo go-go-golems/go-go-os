@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState, type DragEvent } from 'react';
-import { RICH_PARTS as P } from '../parts';
 import { type KanbanPriorityId, type KanbanIssueTypeId, type Task } from './types';
 import { KanbanHeaderBar } from './KanbanHeaderBar';
 import { KanbanFilterBar } from './KanbanFilterBar';
@@ -9,6 +8,7 @@ import { KanbanHighlights } from './KanbanHighlights';
 import { KanbanTaskModal } from './KanbanTaskModal';
 import type { KanbanState } from './kanbanState';
 import type { KanbanHighlight } from './types';
+import { KANBAN_PARTS as P } from './parts';
 
 function filterTasks(tasks: Task[], filterType: KanbanIssueTypeId | null, filterPriority: KanbanPriorityId | null, searchQuery: string) {
   const normalizedQuery = searchQuery.toLowerCase();

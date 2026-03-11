@@ -3,7 +3,7 @@ import { KanbanTaskModal } from './KanbanTaskModal';
 import { fixedFrameDecorator } from '../storybook/frameDecorators';
 import { INITIAL_COLUMNS, INITIAL_TASKS } from './sampleData';
 import { DEFAULT_KANBAN_TAXONOMY } from './types';
-import '@hypercard/rich-widgets/theme';
+import '@hypercard/kanban-runtime/theme';
 
 const meta: Meta<typeof KanbanTaskModal> = {
   title: 'RichWidgets/Kanban/TaskModal',

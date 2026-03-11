@@ -1,7 +1,7 @@
 import type { DragEvent } from 'react';
-import { RICH_PARTS as P } from '../parts';
 import type { Column, KanbanTaxonomy, Task } from './types';
 import { KanbanTaskCard } from './KanbanTaskCard';
+import { KANBAN_PARTS as P } from './parts';
 
 export interface KanbanLaneViewProps {
   column: Column;

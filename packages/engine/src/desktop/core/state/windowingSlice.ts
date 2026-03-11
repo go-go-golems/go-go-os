@@ -139,11 +139,19 @@ const windowingSlice = createSlice({
       const win = state.windows[action.payload.id];
       if (!win) return;
 
+      const nextMinW =
+        action.payload.minW !== undefined ? Math.max(win.baseMinW, action.payload.minW) : win.minW;
+      const nextMinH =
+        action.payload.minH !== undefined ? Math.max(win.baseMinH, action.payload.minH) : win.minH;
+      if (nextMinW === win.minW && nextMinH === win.minH) {
+        return;
+      }
+
       if (action.payload.minW !== undefined) {
-        win.minW = Math.max(win.baseMinW, action.payload.minW);
+        win.minW = nextMinW;
       }
       if (action.payload.minH !== undefined) {
-        win.minH = Math.max(win.baseMinH, action.payload.minH);
+        win.minH = nextMinH;
       }
 
       // Clamp bounds so a window never stays smaller than the new minimum

@@ -272,6 +272,18 @@ describe('windowingReducer', () => {
     });
   });
 
+  describe('updateWindowMinSize', () => {
+    it('is a no-op when the computed minimum size does not change', () => {
+      const originalState = reduce(openWindow(cardWindow('w1', 'browse')));
+      const nextState = windowingReducer(
+        originalState,
+        updateWindowMinSize({ id: 'w1', minW: 180, minH: 120 }),
+      );
+
+      expect(nextState).toBe(originalState);
+    });
+  });
+
   // ── moveWindow ──
 
   describe('moveWindow', () => {

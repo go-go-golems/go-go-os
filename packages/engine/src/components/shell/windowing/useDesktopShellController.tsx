@@ -681,9 +681,21 @@ export function useDesktopShellController({
 
   const handleContentMinSize = useCallback(
     (windowId: string, size: ContentMinSize) => {
+      const state = store.getState() as ShellState;
+      const win = state.windowing.windows[windowId];
+      if (!win) {
+        return;
+      }
+
+      const nextMinW = Math.max(win.baseMinW, size.minW);
+      const nextMinH = Math.max(win.baseMinH, size.minH);
+      if (win.minW === nextMinW && win.minH === nextMinH) {
+        return;
+      }
+
       dispatch(updateWindowMinSize({ id: windowId, minW: size.minW, minH: size.minH }));
     },
-    [dispatch],
+    [dispatch, store],
   );
 
   const { beginMove, beginResize } = useWindowInteractionController({

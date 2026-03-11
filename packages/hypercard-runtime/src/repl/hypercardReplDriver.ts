@@ -612,15 +612,12 @@ export function createHypercardReplDriver(
             throw new Error('Usage: open-surface <surface-id> [session-id]');
           }
           const active = getActiveSession(rest[1]);
-          if (!active.summary.writable) {
-            throw new Error(`open-surface is only supported for spawned runtime sessions right now: ${active.sessionId}`);
-          }
           const { handle, sessionId } = active;
           return {
             lines: [
               {
                 type: 'system',
-                text: `Requested runtime surface window for ${sessionId}:${surfaceId}`,
+                text: `Requested runtime surface window for ${sessionId}:${surfaceId}${active.summary.writable ? '' : ' (read-only attached view)'}`,
               },
             ],
             effects: [

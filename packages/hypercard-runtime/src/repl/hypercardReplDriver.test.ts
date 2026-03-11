@@ -368,7 +368,23 @@ describe('hypercardReplDriver', () => {
         context,
       ),
     ).rejects.toThrow(/read-only/i);
-    await expect(driver.execute('open-surface lowStock', context)).rejects.toThrow(/spawned runtime sessions/i);
+    await expect(driver.execute('open-surface lowStock', context)).resolves.toEqual({
+      lines: [
+        { type: 'system', text: 'Requested runtime surface window for inventory@live:lowStock (read-only attached view)' },
+      ],
+      effects: [
+        {
+          type: 'open-window',
+          payload: {
+            kind: 'runtime-surface',
+            sessionId: 'inventory@live',
+            stackId: 'inventory',
+            surfaceId: 'lowStock',
+            title: 'inventory:lowStock',
+          },
+        },
+      ],
+    });
   });
 
   it('exposes command and package-doc completions', () => {

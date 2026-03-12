@@ -138,6 +138,10 @@ export class QuickJSRuntimeService {
   private getVmOrThrow(sessionId: SessionId): SessionVm {
     const vm = this.vms.get(sessionId);
     if (!vm) {
+      console.error('[QuickJSRuntimeService] Runtime session not found', {
+        sessionId,
+        availableSessions: Array.from(this.vms.keys()),
+      });
       throw new Error(`Runtime session not found: ${sessionId}`);
     }
     return vm;

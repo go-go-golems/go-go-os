@@ -166,12 +166,21 @@ export function RuntimeSurfaceSessionHost({
       return;
     }
 
-    if (runtimeSession.status !== 'loading') {
+    const runtimeService = runtimeServiceRef.current;
+    if (!runtimeService) {
+      return;
+    }
+
+    const runtimeStatus = runtimeSession.status;
+    const recoveringReadySession =
+      runtimeStatus === 'ready' &&
+      !runtimeService.health().sessions.includes(sessionId);
+
+    if (runtimeStatus !== 'loading' && !recoveringReadySession) {
       return;
     }
 
     let cancelled = false;
-    const runtimeService = runtimeServiceRef.current;
     const config = pluginConfig;
 
     async function loadBundle() {
@@ -180,13 +189,24 @@ export function RuntimeSurfaceSessionHost({
       }
 
       try {
+        if (recoveringReadySession) {
+          console.warn('[RuntimeSurfaceSessionHost] Recovering ready runtime session into fresh service', {
+            sessionId,
+            bundleId: bundle.id,
+            currentSurfaceId,
+            serviceSessions: runtimeService.health().sessions,
+          });
+        }
+
         const runtimeBundle = await runtimeService.loadRuntimeBundle(bundle.id, sessionId, config.packageIds, config.bundleCode);
         if (cancelled) {
           return;
         }
         loadedBundleRef.current = runtimeBundle;
 
-        dispatch(setRuntimeSessionStatus({ sessionId, status: 'ready' }));
+        if (runtimeStatus === 'loading') {
+          dispatch(setRuntimeSessionStatus({ sessionId, status: 'ready' }));
+        }
 
         // Inject any runtime surfaces that were registered before the session loaded
         if (runtimeService) {
@@ -207,7 +227,11 @@ export function RuntimeSurfaceSessionHost({
           }
         }
 
-        if (runtimeBundle.initialSessionState && typeof runtimeBundle.initialSessionState === 'object') {
+        if (
+          runtimeStatus === 'loading' &&
+          runtimeBundle.initialSessionState &&
+          typeof runtimeBundle.initialSessionState === 'object'
+        ) {
           dispatchRuntimeAction(
             {
               type: 'filters.patch',
@@ -223,7 +247,11 @@ export function RuntimeSurfaceSessionHost({
           );
         }
 
-        if (runtimeBundle.initialSurfaceState && typeof runtimeBundle.initialSurfaceState === 'object') {
+        if (
+          runtimeStatus === 'loading' &&
+          runtimeBundle.initialSurfaceState &&
+          typeof runtimeBundle.initialSurfaceState === 'object'
+        ) {
           for (const [surfaceId, value] of Object.entries(runtimeBundle.initialSurfaceState)) {
             if (typeof value === 'object' && value !== null) {
               dispatchRuntimeAction(
@@ -249,6 +277,12 @@ export function RuntimeSurfaceSessionHost({
 
         const message = error instanceof Error ? error.message : String(error);
         loadedBundleRef.current = null;
+        console.error('[RuntimeSurfaceSessionHost] Failed to load or recover runtime session', {
+          sessionId,
+          bundleId: bundle.id,
+          recoveringReadySession,
+          message,
+        });
         dispatch(setRuntimeSessionStatus({ sessionId, status: 'error', error: message }));
       }
     }

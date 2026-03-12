@@ -14,6 +14,13 @@ import { RuntimeSurfaceSessionHost } from './RuntimeSurfaceSessionHost';
 
 vi.mock('../plugin-runtime/runtimeService', () => {
   class MockQuickJSRuntimeService {
+    health() {
+      return {
+        ready: true as const,
+        sessions: ['session-rerender', 'session-attach', 'session-stable'],
+      };
+    }
+
     getSessionGlobalNames() {
       return ['console', 'inventory'];
     }

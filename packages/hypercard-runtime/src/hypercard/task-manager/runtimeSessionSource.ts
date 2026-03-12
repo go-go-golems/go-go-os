@@ -25,6 +25,7 @@ interface RuntimeSessionTaskManagerSourceOptions {
   dispatch: (action: unknown) => void;
   bundles: RuntimeBundleDefinition[];
   ownerAppId: string;
+  focusJsConsole?: (sessionId: string) => void;
   subscribe: (listener: () => void) => () => void;
 }
 
@@ -113,6 +114,7 @@ export function createRuntimeSessionTaskManagerSource(
           },
           actions: [
             { id: 'open', label: 'Open', intent: 'open' },
+            { id: 'js-console', label: 'JS Console', intent: 'custom' },
             { id: 'inspect', label: 'Inspect', intent: 'inspect' },
           ],
         } satisfies TaskManagerRow;
@@ -133,6 +135,11 @@ export function createRuntimeSessionTaskManagerSource(
             }),
           ),
         );
+        return;
+      }
+
+      if (actionId === 'js-console') {
+        options.focusJsConsole?.(rowId);
         return;
       }
 

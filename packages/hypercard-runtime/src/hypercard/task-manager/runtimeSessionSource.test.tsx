@@ -63,10 +63,12 @@ describe('runtimeSessionTaskManagerSource', () => {
 
   it('dispatches open and inspect actions', () => {
     const dispatch = vi.fn();
+    const focusJsConsole = vi.fn();
     const source = createRuntimeSessionTaskManagerSource({
       bundles: [INVENTORY_BUNDLE],
       ownerAppId: 'hypercard-runtime-debug',
       dispatch,
+      focusJsConsole,
       subscribe: () => () => {},
       getState: () => ({
         runtimeSessions: {
@@ -94,9 +96,11 @@ describe('runtimeSessionTaskManagerSource', () => {
     });
 
     source.invoke('open', 'session-1');
+    source.invoke('js-console', 'session-1');
     source.invoke('inspect', 'session-1');
 
     expect(dispatch).toHaveBeenCalledTimes(2);
+    expect(focusJsConsole).toHaveBeenCalledWith('session-1');
     expect(dispatch.mock.calls[0][0].type).toBe('windowing/openWindow');
     expect(dispatch.mock.calls[0][0].payload.content.kind).toBe('surface');
     expect(dispatch.mock.calls[0][0].payload.content.surface.surfaceId).toBe('home');

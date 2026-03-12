@@ -11,6 +11,8 @@ import { createJsSessionBroker, type JsSessionBroker } from './jsSessionBroker';
 
 export interface JsReplDriverOptions {
   broker?: JsSessionBroker;
+  initialSessionId?: string | null;
+  initialOrigin?: 'spawned' | 'attached-runtime' | null;
 }
 
 const JS_KEYWORDS = [
@@ -160,8 +162,8 @@ function promptForSession(sessionId: string | null, origin: 'spawned' | 'attache
 
 export function createJsReplDriver(options: JsReplDriverOptions = {}): ReplDriver {
   const broker = options.broker ?? createJsSessionBroker();
-  let activeSessionId: string | null = null;
-  let activeOrigin: 'spawned' | 'attached-runtime' | null = null;
+  let activeSessionId: string | null = options.initialSessionId ?? null;
+  let activeOrigin: 'spawned' | 'attached-runtime' | null = options.initialOrigin ?? null;
   let sessionCounter = 1;
 
   function requireSession(sessionIdArg?: string) {

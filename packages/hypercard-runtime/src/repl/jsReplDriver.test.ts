@@ -156,4 +156,33 @@ describe('jsReplDriver', () => {
     await expect(driver.execute(':reset runtime-1', CONTEXT)).rejects.toThrow(/cannot be reset/i);
     await expect(driver.execute(':dispose runtime-1', CONTEXT)).rejects.toThrow(/cannot be disposed/i);
   });
+
+  it('can start already attached to a runtime-backed JS session', async () => {
+    registerAttachedJsSession({
+      handle: {
+        sessionId: 'runtime-2',
+        stackId: 'inventory',
+        origin: 'attached-runtime',
+        writable: true,
+        evaluate: () => ({ value: 'object', valueType: 'string', logs: [] }),
+        inspectGlobals: () => ['console', 'ui'],
+      },
+      summary: {
+        sessionId: 'runtime-2',
+        stackId: 'inventory',
+        title: 'Inventory Runtime 2',
+        origin: 'attached-runtime',
+        writable: true,
+      },
+    });
+
+    const driver = createJsReplDriver({
+      initialSessionId: 'runtime-2',
+      initialOrigin: 'attached-runtime',
+    });
+
+    await expect(driver.execute('typeof ui', CONTEXT)).resolves.toEqual({
+      lines: [{ type: 'output', text: 'object' }],
+    });
+  });
 });

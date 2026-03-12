@@ -134,9 +134,35 @@ export function RuntimeSurfaceSessionHost({
 
   const loadedBundleRef = useRef<RuntimeBundleMeta | null>(null);
   const isPreview = mode === 'preview';
-  const localRuntimeReady =
-    loadedBundleRef.current !== null ||
-    DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId) !== null;
+  const localRuntimeReady = DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId) !== null;
+
+  const readRuntimeBundleMeta = useCallback(
+    (runtimeHandle: ReturnType<typeof DEFAULT_RUNTIME_SESSION_MANAGER.getSession>) => {
+      if (loadedBundleRef.current) {
+        return loadedBundleRef.current;
+      }
+      if (!runtimeHandle) {
+        return null;
+      }
+      try {
+        const runtimeBundle = runtimeHandle.getBundleMeta();
+        loadedBundleRef.current = runtimeBundle;
+        return runtimeBundle;
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+
+  const resolveSurfacePackId = useCallback(
+    (surfaceId: string, runtimeHandle: ReturnType<typeof DEFAULT_RUNTIME_SESSION_MANAGER.getSession>) => {
+      const runtimeSurface = getPendingRuntimeSurfaces().find((surface) => surface.surfaceId === surfaceId);
+      const runtimeBundle = readRuntimeBundleMeta(runtimeHandle);
+      return normalizeRuntimeSurfaceTypeId(runtimeSurface?.packId ?? runtimeBundle?.surfaceTypes?.[surfaceId]);
+    },
+    [readRuntimeBundleMeta],
+  );
 
   useEffect(() => {
     if (!pluginConfig) {
@@ -365,9 +391,9 @@ export function RuntimeSurfaceSessionHost({
     ]
   );
 
-  const renderOutcome = useMemo<{ tree: unknown | null; error: string | null }>(() => {
+  const renderOutcome = useMemo<{ tree: unknown | null; packId: string | null; error: string | null }>(() => {
     if (!pluginConfig || !runtimeSession || runtimeSession.status !== 'ready' || !localRuntimeReady) {
-      return { tree: null, error: null };
+      return { tree: null, packId: null, error: null };
     }
 
     const projectedState = projectState();
@@ -375,26 +401,28 @@ export function RuntimeSurfaceSessionHost({
     try {
       const runtimeHandle = DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId);
       if (!runtimeHandle) {
-        return { tree: null, error: null };
+        return { tree: null, packId: null, error: null };
       }
+      const packId = resolveSurfacePackId(currentSurfaceId, runtimeHandle);
       return {
         tree: (() => {
-          const runtimeSurface = getPendingRuntimeSurfaces().find((surface) => surface.surfaceId === currentSurfaceId);
-          const packId = normalizeRuntimeSurfaceTypeId(runtimeSurface?.packId ?? loadedBundleRef.current?.surfaceTypes?.[currentSurfaceId]);
           const rawTree = runtimeHandle.renderSurface(currentSurfaceId, projectedState);
           return rawTree === null ? null : validateRuntimeSurfaceTree(packId, rawTree);
         })(),
+        packId,
         error: null,
       };
     } catch (error) {
       return {
         tree: null,
+        packId: null,
         error: error instanceof Error ? error.message : String(error),
       };
     }
-  }, [currentSurfaceId, localRuntimeReady, pluginConfig, projectState, runtimeSession, sessionId]);
+  }, [currentSurfaceId, localRuntimeReady, pluginConfig, projectState, resolveSurfacePackId, runtimeSession, sessionId]);
 
   const tree = renderOutcome.tree;
+  const packId = renderOutcome.packId;
   const renderError = renderOutcome.error;
   const lastRenderErrorRef = useRef<string | null>(null);
 
@@ -478,8 +506,9 @@ export function RuntimeSurfaceSessionHost({
     return <div style={{ padding: 12 }}>No plugin output for surface: {currentSurfaceId}</div>;
   }
 
-  const runtimeSurface = getPendingRuntimeSurfaces().find((surface) => surface.surfaceId === currentSurfaceId);
-  const packId = normalizeRuntimeSurfaceTypeId(runtimeSurface?.packId ?? loadedBundleRef.current?.surfaceTypes?.[currentSurfaceId]);
+  if (!packId) {
+    return <div style={{ padding: 12, color: '#9f1d1d' }}>Runtime render error: Missing runtime surface type id for {currentSurfaceId}</div>;
+  }
 
   return <>{renderRuntimeSurfaceTree(packId, tree, emitRuntimeEvent)}</>;
 }

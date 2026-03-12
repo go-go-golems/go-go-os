@@ -4,6 +4,7 @@ import {
   clearRuntimeSurfaceTypes,
   DEFAULT_RUNTIME_SURFACE_TYPE_ID,
   listRuntimeSurfaceTypes,
+  normalizeRuntimeSurfaceTypeId,
   registerRuntimeSurfaceType,
   renderRuntimeSurfaceTree,
   validateRuntimeSurfaceTree,
@@ -53,5 +54,11 @@ describe('runtimeSurfaceTypeRegistry', () => {
   it('rejects unknown runtime surface types', () => {
     registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
     expect(() => validateRuntimeSurfaceTree('missing.v1', { kind: 'panel', children: [] })).toThrow(/unknown runtime surface type/i);
+  });
+
+  it('fails explicitly when runtime surface type id is missing', () => {
+    expect(() => normalizeRuntimeSurfaceTypeId()).toThrow(/required/i);
+    expect(() => normalizeRuntimeSurfaceTypeId('')).toThrow(/required/i);
+    expect(() => normalizeRuntimeSurfaceTypeId('   ')).toThrow(/required/i);
   });
 });

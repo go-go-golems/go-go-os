@@ -28,11 +28,14 @@ export function clearRuntimeSurfaceTypes(): void {
 
 export function normalizeRuntimeSurfaceTypeId(packId?: string | null): string {
   if (typeof packId !== 'string') {
-    return DEFAULT_RUNTIME_SURFACE_TYPE_ID;
+    throw new Error('Runtime surface type id is required');
   }
 
   const trimmed = packId.trim();
-  return trimmed.length > 0 ? trimmed : DEFAULT_RUNTIME_SURFACE_TYPE_ID;
+  if (trimmed.length === 0) {
+    throw new Error('Runtime surface type id is required');
+  }
+  return trimmed;
 }
 
 export function getRuntimeSurfaceTypeOrThrow(packId?: string | null): RuntimeSurfaceTypeDefinition<unknown> {

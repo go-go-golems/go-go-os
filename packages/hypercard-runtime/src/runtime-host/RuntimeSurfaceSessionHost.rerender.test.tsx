@@ -14,6 +14,8 @@ import { TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE, TEST_UI_RUNTIME_PACKAGE } from '.
 import { RuntimeSurfaceSessionHost } from './RuntimeSurfaceSessionHost';
 
 vi.mock('../plugin-runtime/runtimeService', () => {
+  const surfaceTypeForSession = (sessionId: string) => (sessionId.includes('kanban') ? 'kanban.v1' : 'ui.card.v1');
+
   class MockQuickJSRuntimeService {
     health() {
       return {
@@ -35,6 +37,7 @@ vi.mock('../plugin-runtime/runtimeService', () => {
     }
 
     getRuntimeBundleMeta(sessionId: string) {
+      const surfaceType = surfaceTypeForSession(sessionId);
       return {
         stackId: 'runtime-rerender-stack',
         sessionId,
@@ -42,26 +45,34 @@ vi.mock('../plugin-runtime/runtimeService', () => {
         packageIds: ['ui'],
         surfaces: ['home'],
         surfaceTypes: {
-          home: 'ui.card.v1',
+          home: surfaceType,
         },
       };
     }
 
-    async loadRuntimeBundle() {
+    async loadRuntimeBundle(_stackId: string, sessionId: string) {
+      const surfaceType = surfaceTypeForSession(sessionId);
       return {
         stackId: 'runtime-rerender-stack',
-        sessionId: 'session-rerender',
+        sessionId,
         id: 'mock-plugin',
         title: 'Mock Plugin',
         packageIds: ['ui'],
         surfaces: ['home'],
         surfaceTypes: {
-          home: 'ui.card.v1',
+          home: surfaceType,
         },
       };
     }
 
-    renderRuntimeSurface(_sessionId: string, _surfaceId: string, state: unknown) {
+    renderRuntimeSurface(sessionId: string, _surfaceId: string, state: unknown) {
+      if (surfaceTypeForSession(sessionId) === 'kanban.v1') {
+        return {
+          kind: 'kanban.page',
+          title: 'Personal Planner',
+          sections: [],
+        };
+      }
       const root = (state ?? {}) as Record<string, unknown>;
       const inventory = (root.inventory ?? {}) as Record<string, unknown>;
       const items = Array.isArray(inventory.items) ? inventory.items : [];
@@ -104,6 +115,20 @@ const TEST_STACK: RuntimeBundleDefinition = {
     },
   },
 };
+
+const TEST_KANBAN_V1_RUNTIME_SURFACE_TYPE = {
+  packId: 'kanban.v1',
+  validateTree(value: unknown) {
+    const node = value as { kind?: string; title?: string };
+    if (typeof node !== 'object' || node === null || node.kind !== 'kanban.page') {
+      throw new Error("root.kind 'kanban.page' is required");
+    }
+    return node;
+  },
+  render({ tree }: { tree: { title?: string } }) {
+    return <div>Kanban title: {tree.title ?? 'Untitled'}</div>;
+  },
+} as const;
 
 function createTestStack(
   capabilities?: NonNullable<RuntimeBundleDefinition['plugin']>['capabilities'],
@@ -318,5 +343,57 @@ describe('RuntimeSurfaceSessionHost rerender invalidation', () => {
     expect(
       DEFAULT_RUNTIME_SESSION_MANAGER.listSessions().filter((entry) => entry.sessionId === 'session-strict'),
     ).toHaveLength(1);
+  });
+
+  it('rehydrates bundle metadata after host remount for non-default runtime surface packs', async () => {
+    registerRuntimePackage(TEST_UI_RUNTIME_PACKAGE);
+    registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
+    registerRuntimeSurfaceType(TEST_KANBAN_V1_RUNTIME_SURFACE_TYPE);
+
+    const { createStore } = createAppStore({ inventory: inventoryReducer });
+    const store = createStore();
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    containers.push(container);
+
+    const root = createRoot(container);
+    roots.push(root);
+
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <RuntimeSurfaceSessionHost
+            windowId="window:runtime-kanban"
+            sessionId="session-kanban-remount"
+            bundle={TEST_STACK}
+          />
+        </Provider>,
+      );
+    });
+
+    await waitForText(container, 'Kanban title: Personal Planner');
+    expect(DEFAULT_RUNTIME_SESSION_MANAGER.getSession('session-kanban-remount')).not.toBeNull();
+
+    await act(async () => {
+      root.render(<Provider store={store}><div>placeholder</div></Provider>);
+    });
+
+    expect(DEFAULT_RUNTIME_SESSION_MANAGER.getSession('session-kanban-remount')).not.toBeNull();
+
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <RuntimeSurfaceSessionHost
+            windowId="window:runtime-kanban"
+            sessionId="session-kanban-remount"
+            bundle={TEST_STACK}
+          />
+        </Provider>,
+      );
+    });
+
+    await waitForText(container, 'Kanban title: Personal Planner');
+    expect(container.textContent).not.toContain("Runtime render error: root.kind 'kanban.page' is not supported");
   });
 });

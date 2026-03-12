@@ -25,6 +25,8 @@ export interface RuntimeSessionManagerHandle {
   readonly sessionId: SessionId;
   readonly bundleId: StackId;
   getBundleMeta(): RuntimeBundleMeta;
+  evaluateSessionJs(code: string): ReturnType<QuickJSRuntimeService['evaluateSessionJs']>;
+  getSessionGlobalNames(): string[];
   renderSurface(surfaceId: RuntimeSurfaceId, state: unknown): unknown;
   eventSurface(surfaceId: RuntimeSurfaceId, handler: string, args: unknown, state: unknown): RuntimeAction[];
   defineSurface(surfaceId: RuntimeSurfaceId, code: string, packId?: string): RuntimeBundleMeta;
@@ -150,6 +152,12 @@ export function createRuntimeSessionManager(
         }
         return cloneBundleMeta(record.bundle);
       },
+      evaluateSessionJs(code) {
+        return runtimeService.evaluateSessionJs(sessionId, code);
+      },
+      getSessionGlobalNames() {
+        return runtimeService.getSessionGlobalNames(sessionId);
+      },
       renderSurface(surfaceId, state) {
         return runtimeService.renderRuntimeSurface(sessionId, surfaceId, state);
       },
@@ -206,6 +214,10 @@ export function createRuntimeSessionManager(
       record.pendingLoad = runtimeService
         .loadRuntimeBundle(request.bundleId, request.sessionId, request.packageIds, request.bundleCode)
         .then((bundle) => {
+          if (records.get(request.sessionId) !== record) {
+            runtimeService.disposeSession(request.sessionId);
+            return bundle;
+          }
           record.bundle = bundle;
           record.status = 'ready';
           record.error = undefined;
@@ -214,6 +226,9 @@ export function createRuntimeSessionManager(
           return bundle;
         })
         .catch((error) => {
+          if (records.get(request.sessionId) !== record) {
+            return Promise.reject(error);
+          }
           record.status = 'error';
           record.error = error instanceof Error ? error.message : String(error);
           record.pendingLoad = null;

@@ -7,6 +7,7 @@ import { createAppStore } from '../app/createAppStore';
 import type { RuntimeBundleDefinition } from '@hypercard/engine';
 import { getAttachedJsSession, clearAttachedJsSessions } from '../repl/attachedJsSessionRegistry';
 import { getAttachedRuntimeSession, clearAttachedRuntimeSessions } from '../repl/attachedRuntimeSessionRegistry';
+import { DEFAULT_RUNTIME_SESSION_MANAGER } from '../runtime-session-manager';
 import { clearRuntimePackages, registerRuntimePackage } from '../runtime-packages';
 import { clearRuntimeSurfaceTypes, registerRuntimeSurfaceType } from '../runtime-packs';
 import { TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE, TEST_UI_RUNTIME_PACKAGE } from '../testRuntimeUi';
@@ -141,6 +142,7 @@ afterEach(() => {
   }
   clearAttachedJsSessions();
   clearAttachedRuntimeSessions();
+  DEFAULT_RUNTIME_SESSION_MANAGER.clear();
   clearRuntimePackages();
   clearRuntimeSurfaceTypes();
 });

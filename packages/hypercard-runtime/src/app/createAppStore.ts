@@ -10,6 +10,7 @@ import { windowingReducer } from '@hypercard/engine/desktop-core';
 import { runtimeSessionsReducer } from '../features/runtimeSessions/runtimeSessionsSlice';
 import { createArtifactProjectionMiddleware } from '../hypercard/artifacts/artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from '../hypercard/artifacts/artifactsSlice';
+import { createRuntimeSessionLifecycleMiddleware } from './runtimeSessionLifecycleMiddleware';
 
 /** Options for `createAppStore`. */
 export interface CreateAppStoreOptions {
@@ -73,12 +74,20 @@ export function createAppStore<T extends Record<string, Reducer>>(
 
   function createStore() {
     const artifactProjectionMiddleware = createArtifactProjectionMiddleware();
+    const runtimeSessionLifecycleMiddleware = createRuntimeSessionLifecycleMiddleware();
     const store = configureStore({
       reducer,
       middleware: (getDefault) =>
         perfMiddleware
-          ? getDefault().concat(artifactProjectionMiddleware.middleware, perfMiddleware)
-          : getDefault().concat(artifactProjectionMiddleware.middleware),
+          ? getDefault().concat(
+              artifactProjectionMiddleware.middleware,
+              runtimeSessionLifecycleMiddleware.middleware,
+              perfMiddleware,
+            )
+          : getDefault().concat(
+              artifactProjectionMiddleware.middleware,
+              runtimeSessionLifecycleMiddleware.middleware,
+            ),
     });
 
     // Start frame monitor when diagnostics are enabled

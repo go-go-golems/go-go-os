@@ -4,7 +4,6 @@ import type { RuntimeBundleDefinition } from '@hypercard/engine';
 import { showToast } from '@hypercard/engine';
 import {
   registerRuntimeSession,
-  removeRuntimeSession,
   resolveCapabilityPolicy,
   selectRuntimeSurfaceState,
   selectProjectedRuntimeDomains,
@@ -16,9 +15,9 @@ import { selectFocusedWindowId, selectSessionCurrentNav, selectSessionNavDepth }
 import { markRuntimeSurfaceInjectionResults } from '../hypercard/artifacts/artifactsSlice';
 import type { RuntimeBundleMeta, RuntimeAction } from '../plugin-runtime/contracts';
 import { getPendingRuntimeSurfaces, hasRuntimeSurface, injectPendingRuntimeSurfacesWithReport, onRegistryChange } from '../plugin-runtime/runtimeSurfaceRegistry';
-import { QuickJSRuntimeService } from '../plugin-runtime/runtimeService';
 import { registerAttachedJsSession, unregisterAttachedJsSession } from '../repl/attachedJsSessionRegistry';
 import { registerAttachedRuntimeSession, unregisterAttachedRuntimeSession } from '../repl/attachedRuntimeSessionRegistry';
+import { DEFAULT_RUNTIME_SESSION_MANAGER } from '../runtime-session-manager';
 import { dispatchRuntimeAction } from './pluginIntentRouting';
 import {
   normalizeRuntimeSurfaceTypeId,
@@ -135,15 +134,11 @@ export function RuntimeSurfaceSessionHost({
     shallowEqual,
   );
 
-  const runtimeServiceRef = useRef<QuickJSRuntimeService | null>(null);
   const loadedBundleRef = useRef<RuntimeBundleMeta | null>(null);
   const isPreview = mode === 'preview';
-  if (!runtimeServiceRef.current) {
-    runtimeServiceRef.current = new QuickJSRuntimeService();
-  }
   const localRuntimeReady =
     loadedBundleRef.current !== null ||
-    runtimeServiceRef.current.health().sessions.includes(sessionId);
+    DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId) !== null;
 
   useEffect(() => {
     if (!pluginConfig) {
@@ -169,15 +164,8 @@ export function RuntimeSurfaceSessionHost({
       return;
     }
 
-    const runtimeService = runtimeServiceRef.current;
-    if (!runtimeService) {
-      return;
-    }
-
     const runtimeStatus = runtimeSession.status;
-    const recoveringReadySession =
-      runtimeStatus === 'ready' &&
-      !runtimeService.health().sessions.includes(sessionId);
+    const recoveringReadySession = runtimeStatus === 'ready' && !localRuntimeReady;
 
     if (runtimeStatus !== 'loading' && !recoveringReadySession) {
       return;
@@ -187,24 +175,26 @@ export function RuntimeSurfaceSessionHost({
     const config = pluginConfig;
 
     async function loadBundle() {
-      if (!runtimeService) {
-        return;
-      }
-
       try {
         if (recoveringReadySession) {
           console.warn('[RuntimeSurfaceSessionHost] Recovering ready runtime session into fresh service', {
             sessionId,
             bundleId: bundle.id,
             currentSurfaceId,
-            serviceSessions: runtimeService.health().sessions,
+            serviceSessions: DEFAULT_RUNTIME_SESSION_MANAGER.listSessions().map((session) => session.sessionId),
           });
         }
 
-        const runtimeBundle = await runtimeService.loadRuntimeBundle(bundle.id, sessionId, config.packageIds, config.bundleCode);
+        const runtimeHandle = await DEFAULT_RUNTIME_SESSION_MANAGER.ensureSession({
+          bundleId: bundle.id,
+          sessionId,
+          packageIds: config.packageIds,
+          bundleCode: config.bundleCode,
+        });
         if (cancelled) {
           return;
         }
+        const runtimeBundle = runtimeHandle.getBundleMeta();
         loadedBundleRef.current = runtimeBundle;
 
         if (runtimeStatus === 'loading') {
@@ -212,22 +202,24 @@ export function RuntimeSurfaceSessionHost({
         }
 
         // Inject any runtime surfaces that were registered before the session loaded
-        if (runtimeService) {
-          const report = injectPendingRuntimeSurfacesWithReport(runtimeService, sessionId);
-          if (report.injected.length > 0 || report.failed.length > 0) {
-            dispatch(
-              markRuntimeSurfaceInjectionResults({
-                injectedSurfaceIds: report.injected,
-                failed: report.failed.map((item) => ({ surfaceId: item.surfaceId, error: item.error })),
-              }),
-            );
-          }
-          if (report.injected.length > 0) {
-            console.log(
-              `[RuntimeSurfaceSessionHost] Injected ${report.injected.length} runtime surfaces into ${sessionId}:`,
-              report.injected,
-            );
-          }
+        const report = injectPendingRuntimeSurfacesWithReport({
+          defineRuntimeSurface(_runtimeSessionId, surfaceId, code, packId) {
+            return runtimeHandle.defineSurface(surfaceId, code, packId);
+          },
+        }, sessionId);
+        if (report.injected.length > 0 || report.failed.length > 0) {
+          dispatch(
+            markRuntimeSurfaceInjectionResults({
+              injectedSurfaceIds: report.injected,
+              failed: report.failed.map((item) => ({ surfaceId: item.surfaceId, error: item.error })),
+            }),
+          );
+        }
+        if (report.injected.length > 0) {
+          console.log(
+            `[RuntimeSurfaceSessionHost] Injected ${report.injected.length} runtime surfaces into ${sessionId}:`,
+            report.injected,
+          );
         }
 
         if (
@@ -295,19 +287,23 @@ export function RuntimeSurfaceSessionHost({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, pluginConfig, runtimeSession, sessionId, bundle.id, currentSurfaceId, windowId, store]);
+  }, [bundle.id, currentSurfaceId, dispatch, localRuntimeReady, pluginConfig, runtimeSession, sessionId, store, windowId]);
 
   // Subscribe to the runtime surface registry and inject new surfaces as they arrive.
   useEffect(() => {
     if (!pluginConfig || !runtimeSession || runtimeSession.status !== 'ready' || !localRuntimeReady) {
       return;
     }
-    const runtimeService = runtimeServiceRef.current;
-    if (!runtimeService) {
+    const runtimeHandle = DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId);
+    if (!runtimeHandle) {
       return;
     }
     return onRegistryChange(() => {
-      const report = injectPendingRuntimeSurfacesWithReport(runtimeService, sessionId);
+      const report = injectPendingRuntimeSurfacesWithReport({
+        defineRuntimeSurface(_runtimeSessionId, surfaceId, code, packId) {
+          return runtimeHandle.defineSurface(surfaceId, code, packId);
+        },
+      }, sessionId);
       if (report.injected.length > 0 || report.failed.length > 0) {
         dispatch(
           markRuntimeSurfaceInjectionResults({
@@ -330,12 +326,12 @@ export function RuntimeSurfaceSessionHost({
       return;
     }
 
-    const runtimeService = runtimeServiceRef.current;
-    if (!runtimeService) {
+    const runtimeHandle = DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId);
+    if (!runtimeHandle) {
       return;
     }
 
-    const meta = loadedBundleRef.current ?? runtimeService.getRuntimeBundleMeta(sessionId);
+    const meta = loadedBundleRef.current ?? runtimeHandle.getBundleMeta();
 
     registerAttachedRuntimeSession({
       handle: {
@@ -344,13 +340,13 @@ export function RuntimeSurfaceSessionHost({
         origin: 'attached',
         writable: false,
         getBundleMeta() {
-          return loadedBundleRef.current ?? runtimeService.getRuntimeBundleMeta(sessionId);
+          return loadedBundleRef.current ?? runtimeHandle.getBundleMeta();
         },
         renderSurface(surfaceId, state) {
-          return runtimeService.renderRuntimeSurface(sessionId, surfaceId, state);
+          return runtimeHandle.renderSurface(surfaceId, state);
         },
         eventSurface(surfaceId, handler, args, state) {
-          return runtimeService.eventRuntimeSurface(sessionId, surfaceId, handler, args, state);
+          return runtimeHandle.eventSurface(surfaceId, handler, args, state);
         },
         defineSurface() {
           throw new Error(`Attached runtime session ${sessionId} is read-only`);
@@ -385,10 +381,10 @@ export function RuntimeSurfaceSessionHost({
         origin: 'attached-runtime',
         writable: true,
         evaluate(code) {
-          return runtimeService.evaluateSessionJs(sessionId, code);
+          return runtimeHandle.evaluateSessionJs(code);
         },
         inspectGlobals() {
-          return runtimeService.getSessionGlobalNames(sessionId);
+          return runtimeHandle.getSessionGlobalNames();
         },
       },
       summary: {
@@ -407,13 +403,21 @@ export function RuntimeSurfaceSessionHost({
   }, [bundle.id, isPreview, localRuntimeReady, pluginConfig, runtimeSession, sessionId]);
 
   useEffect(() => {
+    if (!pluginConfig || !runtimeSession || runtimeSession.status !== 'ready' || !localRuntimeReady) {
+      return;
+    }
+    const runtimeHandle = DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId);
+    if (!runtimeHandle) {
+      return;
+    }
+    return runtimeHandle.attachView(windowId);
+  }, [localRuntimeReady, pluginConfig, runtimeSession, sessionId, windowId]);
+
+  useEffect(() => {
     return () => {
-      const runtimeService = runtimeServiceRef.current;
-      runtimeService?.disposeSession(sessionId);
       loadedBundleRef.current = null;
-      dispatch(removeRuntimeSession({ sessionId }));
     };
-  }, [dispatch, sessionId]);
+  }, []);
 
   const projectState = useCallback(
     () =>
@@ -452,11 +456,15 @@ export function RuntimeSurfaceSessionHost({
     const projectedState = projectState();
 
     try {
+      const runtimeHandle = DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId);
+      if (!runtimeHandle) {
+        return { tree: null, error: null };
+      }
       return {
         tree: (() => {
           const runtimeSurface = getPendingRuntimeSurfaces().find((surface) => surface.surfaceId === currentSurfaceId);
           const packId = normalizeRuntimeSurfaceTypeId(runtimeSurface?.packId ?? loadedBundleRef.current?.surfaceTypes?.[currentSurfaceId]);
-          const rawTree = runtimeServiceRef.current?.renderRuntimeSurface(sessionId, currentSurfaceId, projectedState) ?? null;
+          const rawTree = runtimeHandle.renderSurface(currentSurfaceId, projectedState);
           return rawTree === null ? null : validateRuntimeSurfaceTree(packId, rawTree);
         })(),
         error: null,
@@ -496,8 +504,11 @@ export function RuntimeSurfaceSessionHost({
       let actions: RuntimeAction[];
       try {
         const projectedState = projectState();
-        actions = runtimeServiceRef.current?.eventRuntimeSurface(
-          sessionId,
+        const runtimeHandle = DEFAULT_RUNTIME_SESSION_MANAGER.getSession(sessionId);
+        if (!runtimeHandle) {
+          return;
+        }
+        actions = runtimeHandle.eventSurface(
           currentSurfaceId,
           handler,
           args,

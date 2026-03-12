@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -280,5 +280,43 @@ describe('RuntimeSurfaceSessionHost rerender invalidation', () => {
     expect(attached).toBeTruthy();
     expect(() => attached?.handle.getBundleMeta()).not.toThrow();
     expect(attached?.summary.title).toBe('Mock Plugin');
+  });
+
+  it('survives StrictMode remount/effect replay without losing the managed runtime session', async () => {
+    registerRuntimePackage(TEST_UI_RUNTIME_PACKAGE);
+    registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
+
+    const { createStore } = createAppStore({ inventory: inventoryReducer });
+    const store = createStore();
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    containers.push(container);
+
+    const root = createRoot(container);
+    roots.push(root);
+
+    await act(async () => {
+      root.render(
+        <StrictMode>
+          <Provider store={store}>
+            <RuntimeSurfaceSessionHost windowId="window:runtime-strict" sessionId="session-strict" bundle={TEST_STACK} />
+          </Provider>
+        </StrictMode>,
+      );
+    });
+
+    await waitForText(container, 'Count: 0');
+    expect(DEFAULT_RUNTIME_SESSION_MANAGER.getSession('session-strict')).not.toBeNull();
+    expect(getAttachedRuntimeSession('session-strict')?.summary.sessionId).toBe('session-strict');
+
+    await act(async () => {
+      store.dispatch({ type: 'inventory/setItems', payload: [{ sku: 'B-1' }] });
+    });
+
+    await waitForText(container, 'Count: 1');
+    expect(
+      DEFAULT_RUNTIME_SESSION_MANAGER.listSessions().filter((entry) => entry.sessionId === 'session-strict'),
+    ).toHaveLength(1);
   });
 });

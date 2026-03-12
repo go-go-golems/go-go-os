@@ -6,6 +6,7 @@ export * from './repl/attachedRuntimeSessionRegistry';
 export * from './repl/jsReplDriver';
 export * from './repl/jsSessionBroker';
 export * from './repl/runtimeBroker';
+export * from './runtime-session-manager';
 export * from './features/runtimeSessions';
 export * from './hypercard';
 export * from './hypercard/debug/runtimeDebugApp';

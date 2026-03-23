@@ -103,7 +103,7 @@ const TEST_STACK: RuntimeBundleDefinition = {
   plugin: {
     packageIds: ['ui'],
     bundleCode:
-      'defineRuntimeBundle(() => ({ id: "mock-plugin", title: "Mock Plugin", packageIds: ["ui"], surfaces: { home: { render() { return null; } } } }));',
+      'defineRuntimeBundle(() => ({ id: "mock-plugin", title: "Mock Plugin", packageIds: ["ui"], surfaces: { home: { packId: "ui.card.v1", render() { return null; } } } }));',
   },
   surfaces: {
     home: {

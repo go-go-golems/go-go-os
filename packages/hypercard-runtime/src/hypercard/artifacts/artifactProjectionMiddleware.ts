@@ -21,7 +21,7 @@ function projectArtifactFromEntity(dispatch: (action: unknown) => unknown, entit
     }),
   );
 
-  if (upsert.runtimeSurfaceId && upsert.runtimeSurfaceCode) {
+  if (upsert.runtimeSurfaceId && upsert.runtimeSurfaceCode && upsert.packId) {
     registerRuntimeSurface(upsert.runtimeSurfaceId, upsert.runtimeSurfaceCode, upsert.packId);
   }
 }

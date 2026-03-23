@@ -11,7 +11,7 @@
 export interface RuntimeSurfaceDefinition {
   surfaceId: string;
   code: string;
-  packId?: string;
+  packId: string;
   registeredAt: number;
 }
 
@@ -29,11 +29,15 @@ const registry = new Map<string, RuntimeSurfaceDefinition>();
 const listeners = new Set<() => void>();
 
 /** Register a runtime surface definition for injection into future sessions. */
-export function registerRuntimeSurface(surfaceId: string, code: string, packId?: string): void {
+export function registerRuntimeSurface(surfaceId: string, code: string, packId: string): void {
+  const normalizedPackId = typeof packId === 'string' ? packId.trim() : '';
+  if (!normalizedPackId) {
+    throw new Error(`runtime surface packId is required for ${surfaceId}`);
+  }
   registry.set(surfaceId, {
     surfaceId,
     code,
-    packId: typeof packId === 'string' && packId.trim().length > 0 ? packId.trim() : undefined,
+    packId: normalizedPackId,
     registeredAt: Date.now(),
   });
   listeners.forEach((fn) => fn());
@@ -72,14 +76,14 @@ export function clearRuntimeSurfaceRegistry(): void {
  * Returns the list of surface IDs that were successfully injected.
  */
 export function injectPendingRuntimeSurfaces(
-  service: { defineRuntimeSurface(sessionId: string, surfaceId: string, code: string, packId?: string): unknown },
+  service: { defineRuntimeSurface(sessionId: string, surfaceId: string, code: string, packId: string): unknown },
   sessionId: string,
 ): string[] {
   return injectPendingRuntimeSurfacesWithReport(service, sessionId).injected;
 }
 
 export function injectPendingRuntimeSurfacesWithReport(
-  service: { defineRuntimeSurface(sessionId: string, surfaceId: string, code: string, packId?: string): unknown },
+  service: { defineRuntimeSurface(sessionId: string, surfaceId: string, code: string, packId: string): unknown },
   sessionId: string,
 ): RuntimeSurfaceInjectionResult {
   const injected: string[] = [];

@@ -7,6 +7,7 @@ defineRuntimeBundle(({ ui }) => {
     initialSurfaceState: { lowStock: { limit: 5 } },
     surfaces: {
       lowStock: {
+        packId: 'ui.card.v1',
         render({ state }) {
           return ui.panel([
             ui.text('Filter: ' + String(state?.filters?.filter ?? 'all')),

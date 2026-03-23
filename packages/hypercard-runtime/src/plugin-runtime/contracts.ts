@@ -104,6 +104,7 @@ export interface DefineRuntimeSurfaceRequest {
   sessionId: SessionId;
   surfaceId: RuntimeSurfaceId;
   code: string;
+  packId: string;
 }
 
 export interface DefineRuntimeSurfaceRenderRequest {

@@ -47,6 +47,7 @@ defineRuntimeBundle(({ ui }) => {
     packageIds: ["ui"],
     surfaces: {
       list: {
+        packId: 'ui.card.v1',
         render() {
           return ui.panel([
             ui.text('Items'),
@@ -63,6 +64,7 @@ defineRuntimeBundle(({ ui }) => {
         },
       },
       detail: {
+        packId: 'ui.card.v1',
         render({ state }) {
           const current = item(navParam(state));
           return ui.panel([

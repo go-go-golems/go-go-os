@@ -220,14 +220,16 @@ export class QuickJSRuntimeService {
     }
   }
 
-  defineRuntimeSurface(sessionId: SessionId, surfaceId: RuntimeSurfaceId, code: string, packId?: string): RuntimeBundleMeta {
+  defineRuntimeSurface(sessionId: SessionId, surfaceId: RuntimeSurfaceId, code: string, packId: string): RuntimeBundleMeta {
     const bundle = this.getBundleOrThrow(sessionId);
-    if (typeof packId === 'string' && packId.trim().length > 0) {
-      getRuntimeSurfaceTypeOrThrow(packId);
+    const normalizedPackId = typeof packId === 'string' ? packId.trim() : '';
+    if (!normalizedPackId) {
+      throw new Error(`Runtime surface packId is required for ${surfaceId}`);
     }
+    getRuntimeSurfaceTypeOrThrow(normalizedPackId);
     this.sessionService.runCode(
       sessionId,
-      `globalThis.__runtimeBundleHost.defineRuntimeSurface(${toJsLiteral(surfaceId)}, (${code}), ${toJsLiteral(packId)})`,
+      `globalThis.__runtimeBundleHost.defineRuntimeSurface(${toJsLiteral(surfaceId)}, (${code}), ${toJsLiteral(normalizedPackId)})`,
       `${sessionId}.define-runtime-surface.js`,
       this.options.loadTimeoutMs
     );

@@ -59,6 +59,7 @@ const SAMPLE_CODE = `({ ui }) => ({
 export const Empty: Story = {
   args: {
     surfaceId: 'newSurface',
+    packId: 'ui.card.v1',
     initialCode: '({ ui }) => ({\\n  render() {\\n    return ui.panel([ui.text(\"Hello\")]);\\n  }\\n})',
   },
 };
@@ -66,6 +67,7 @@ export const Empty: Story = {
 export const PrefilledCode: Story = {
   args: {
     surfaceId: 'inventoryBrowser',
+    packId: 'ui.card.v1',
     initialCode: SAMPLE_CODE,
   },
 };
@@ -73,11 +75,12 @@ export const PrefilledCode: Story = {
 export const AlreadyRegistered: Story = {
   args: {
     surfaceId: 'registeredSurface',
+    packId: 'ui.card.v1',
     initialCode: SAMPLE_CODE,
   },
   decorators: [
     (Story) => {
-      registerRuntimeSurface('registeredSurface', SAMPLE_CODE);
+      registerRuntimeSurface('registeredSurface', SAMPLE_CODE, 'ui.card.v1');
       return <Story />;
     },
   ],

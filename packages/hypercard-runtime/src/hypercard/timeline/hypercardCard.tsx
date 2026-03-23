@@ -40,6 +40,15 @@ function runtimeSurfaceCode(props: Record<string, unknown>): string {
   return stringField(props, 'runtimeSurfaceCode') ?? stringField(card ?? {}, 'code') ?? '';
 }
 
+function runtimeSurfacePackId(props: Record<string, unknown>): string {
+  const payload = artifactPayload(props);
+  const payloadData = artifactData(props);
+  const runtime =
+    recordField(payload ?? {}, 'runtime') ??
+    recordField(payloadData ?? {}, 'runtime');
+  return stringField(props, 'packId') ?? stringField(runtime ?? {}, 'pack') ?? '';
+}
+
 function titleFromArtifactCard(props: Record<string, unknown>): string {
   const payload = artifactPayload(props);
   return (
@@ -72,10 +81,18 @@ export function HypercardCardRenderer({ e, ctx }: { e: RenderEntity; ctx?: Rende
   const artifactId = artifactIdFromCardArtifact(props);
   const surfaceId = runtimeSurfaceId(props);
   const surfaceCode = runtimeSurfaceCode(props);
+  const surfacePackId = runtimeSurfacePackId(props);
   const bundleId = props.stackId ? String(props.stackId) : undefined;
   const hasRuntimeSurface = surfaceId.trim().length > 0;
   const hasSurfaceCode = surfaceCode.trim().length > 0;
-  const canOpenArtifact = Boolean(normalizeArtifactId(artifactId) && hasRuntimeSurface && status !== 'streaming' && status !== 'pending');
+  const hasSurfacePackId = surfacePackId.trim().length > 0;
+  const canOpenArtifact = Boolean(
+    normalizeArtifactId(artifactId) &&
+    hasRuntimeSurface &&
+    hasSurfacePackId &&
+    status !== 'streaming' &&
+    status !== 'pending'
+  );
   const canEditCode = hasRuntimeSurface && hasSurfaceCode && status !== 'streaming' && status !== 'pending';
 
   const openArtifact = () => {
@@ -95,7 +112,7 @@ export function HypercardCardRenderer({ e, ctx }: { e: RenderEntity; ctx?: Rende
     if (!hasRuntimeSurface || !hasSurfaceCode) {
       return;
     }
-    openCodeEditor(dispatch, { ownerAppId: 'inventory', surfaceId }, surfaceCode);
+    openCodeEditor(dispatch, { ownerAppId: 'inventory', surfaceId }, surfaceCode, surfacePackId);
   };
 
   return (

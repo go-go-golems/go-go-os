@@ -5,6 +5,7 @@ defineRuntimeBundle(({ ui }) => {
     packageIds: ["ui"],
     surfaces: {
       report: {
+        packId: 'ui.card.v1',
         render() {
           return ui.panel([
             ui.text('Monthly Report'),

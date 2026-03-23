@@ -14,6 +14,7 @@ defineRuntimeBundle(({ ui }) => {
     packageIds: ["ui"],
     surfaces: {
       browse: {
+        packId: 'ui.card.v1',
         render() {
           return ui.panel([
             ui.text('Browse Items'),

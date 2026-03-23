@@ -303,7 +303,7 @@ export function RuntimeSurfaceDebugWindow({
                   {new Date(surface.registeredAt).toLocaleTimeString()}
                 </span>
                 <button
-                  onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: surface.surfaceId }, surface.code)}
+                  onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: surface.surfaceId }, surface.code, surface.packId)}
                   style={{
                     fontSize: 10, padding: '1px 6px', borderRadius: 3,
                     border: '1px solid #999', background: '#f0f0f0', cursor: 'pointer',
@@ -415,7 +415,7 @@ export function RuntimeSurfaceDebugWindow({
                           </button>
                           {source ? (
                             <button
-                              onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: currentSurfaceId }, source)}
+                              onClick={() => openCodeEditor(dispatch, { ownerAppId, surfaceId: currentSurfaceId }, source, s.surfaceTypes?.[currentSurfaceId])}
                               style={{
                                 fontSize: 10,
                                 padding: '1px 6px',

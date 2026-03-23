@@ -33,7 +33,7 @@ export interface RuntimeSessionHandle {
   getBundleMeta(): RuntimeBundleMeta;
   renderSurface(surfaceId: RuntimeSurfaceId, state: unknown): unknown;
   eventSurface(surfaceId: RuntimeSurfaceId, handler: string, args: unknown, state: unknown): RuntimeAction[];
-  defineSurface(surfaceId: RuntimeSurfaceId, code: string, packId?: string): RuntimeBundleMeta;
+  defineSurface(surfaceId: RuntimeSurfaceId, code: string, packId: string): RuntimeBundleMeta;
   defineSurfaceRender(surfaceId: RuntimeSurfaceId, code: string): RuntimeBundleMeta;
   defineSurfaceHandler(surfaceId: RuntimeSurfaceId, handler: string, code: string): RuntimeBundleMeta;
   dispose(): boolean;

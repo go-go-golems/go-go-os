@@ -5,6 +5,7 @@ defineRuntimeBundle(({ ui }) => {
     packageIds: ["ui"],
     surfaces: {
       loop: {
+        packId: 'ui.card.v1',
         render() {
           while (true) {}
         },

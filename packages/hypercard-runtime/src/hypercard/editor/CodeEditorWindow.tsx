@@ -11,10 +11,11 @@ import { hasRuntimeSurface, registerRuntimeSurface } from '../../plugin-runtime'
 export interface CodeEditorWindowProps {
   surfaceId: string;
   initialCode: string;
+  packId?: string;
   onSave?: (surfaceId: string, code: string) => void;
 }
 
-export function CodeEditorWindow({ surfaceId, initialCode, onSave }: CodeEditorWindowProps) {
+export function CodeEditorWindow({ surfaceId, initialCode, packId, onSave }: CodeEditorWindowProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [status, setStatus] = useState<{ type: 'idle' | 'saved' | 'error'; message?: string }>({ type: 'idle' });
@@ -90,14 +91,18 @@ export function CodeEditorWindow({ surfaceId, initialCode, onSave }: CodeEditorW
 
     const code = view.state.doc.toString();
     try {
-      registerRuntimeSurface(surfaceId, code);
+      const normalizedPackId = typeof packId === 'string' ? packId.trim() : '';
+      if (!normalizedPackId) {
+        throw new Error(`Runtime surface packId is required for ${surfaceId}`);
+      }
+      registerRuntimeSurface(surfaceId, code, normalizedPackId);
       setStatus({ type: 'saved', message: `Injected ${surfaceId} — ${code.length} chars` });
       setDirty(false);
       onSave?.(surfaceId, code);
     } catch (err) {
       setStatus({ type: 'error', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [surfaceId, onSave]);
+  }, [packId, surfaceId, onSave]);
 
   handleSaveRef.current = handleSave;
 
@@ -152,7 +157,7 @@ export function CodeEditorWindow({ surfaceId, initialCode, onSave }: CodeEditorW
             <span style={{ color: '#e06c75' }}>✗ {status.message}</span>
           )}
           {status.type === 'idle' && (
-            <span style={{ color: '#666' }}>Ctrl+S to save & inject</span>
+            <span style={{ color: '#666' }}>{packId ? 'Ctrl+S to save & inject' : 'Runtime surface packId required before injection'}</span>
           )}
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -169,10 +174,11 @@ export function CodeEditorWindow({ surfaceId, initialCode, onSave }: CodeEditorW
           </button>
           <button
             onClick={handleSave}
+            disabled={!packId}
             style={{
               padding: '3px 10px', fontSize: 11, borderRadius: 3,
               border: '1px solid #2d6a4f', background: '#2d6a4f', color: '#fff',
-              cursor: 'pointer', fontWeight: 600,
+              cursor: packId ? 'pointer' : 'default', fontWeight: 600, opacity: packId ? 1 : 0.5,
             }}
           >
             💾 Save &amp; Inject

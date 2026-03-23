@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
-export const DEFAULT_RUNTIME_SURFACE_TYPE_ID = 'ui.card.v1' as const;
+export const UI_CARD_V1_RUNTIME_SURFACE_TYPE_ID = 'ui.card.v1' as const;
 
-export type RuntimeSurfaceTypeId = typeof DEFAULT_RUNTIME_SURFACE_TYPE_ID | string;
+export type RuntimeSurfaceTypeId = typeof UI_CARD_V1_RUNTIME_SURFACE_TYPE_ID | string;
 export type RuntimeSurfaceTree = unknown;
 
 export interface RuntimeSurfaceTypeRendererProps<TTree> {

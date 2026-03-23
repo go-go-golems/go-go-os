@@ -101,6 +101,9 @@ describe('HypercardCardRenderer', () => {
             artifact: {
               id: 'artifact-card-2',
             },
+            runtime: {
+              pack: 'ui.card.v1',
+            },
             card: {
               id: 'runtime-drilldown',
               code: '({ ui }) => ({ render() { return ui.text("ready"); } })',

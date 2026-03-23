@@ -18,6 +18,7 @@ defineRuntimeBundle(({ ui }) => {
     },
     surfaces: {
       chat: {
+        packId: 'ui.card.v1',
         render({ state }) {
           const draftState = asRecord(state?.draft);
           const messages = Array.isArray(draftState.messages) ? draftState.messages : [];

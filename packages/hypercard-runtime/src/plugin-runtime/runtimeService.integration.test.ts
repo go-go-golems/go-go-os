@@ -167,7 +167,7 @@ describe('QuickJSRuntimeService', () => {
 
     await service.loadRuntimeBundle('inventory', 'inventory@dynamic', ['ui'], INVENTORY_STACK);
 
-    const withDynamicCard = service.defineRuntimeSurface('inventory@dynamic', 'onDemand', DYNAMIC_CARD);
+    const withDynamicCard = service.defineRuntimeSurface('inventory@dynamic', 'onDemand', DYNAMIC_CARD, 'ui.card.v1');
     expect(withDynamicCard.surfaces).toContain('onDemand');
 
     const dynamicTree = service.renderRuntimeSurface('inventory@dynamic', 'onDemand', { draft: { name: 'Backorder' } });
@@ -215,6 +215,17 @@ describe('QuickJSRuntimeService', () => {
     expect(() =>
       service.defineRuntimeSurface('inventory@bad-pack', 'broken', DYNAMIC_CARD, 'missing.v1')
     ).toThrow(/unknown runtime surface type/i);
+  });
+
+  it('rejects missing runtime surface types during surface definition', async () => {
+    const service = new QuickJSRuntimeService();
+    services.push(service);
+
+    await service.loadRuntimeBundle('inventory', 'inventory@missing-pack', ['ui'], INVENTORY_STACK);
+
+    expect(() =>
+      service.defineRuntimeSurface('inventory@missing-pack', 'broken', DYNAMIC_CARD, '')
+    ).toThrow(/packid is required/i);
   });
 
   it('rejects bundle loads when declared package ids do not match installed packages', async () => {

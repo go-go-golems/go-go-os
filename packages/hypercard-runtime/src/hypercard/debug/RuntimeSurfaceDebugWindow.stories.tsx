@@ -64,10 +64,12 @@ function RuntimeSurfaceDebugStory() {
     registerRuntimeSurface(
       'lowStockDrilldown',
       '({ ui }) => ({ render() { return ui.panel([ui.text(\"Low Stock\")]); } })',
+      'ui.card.v1',
     );
     registerRuntimeSurface(
       'inventorySummary',
       '({ ui }) => ({ render() { return ui.panel([ui.text(\"Summary\")]); } })',
+      'ui.card.v1',
     );
 
     storeRef.current?.dispatch(
@@ -79,6 +81,7 @@ function RuntimeSurfaceDebugStory() {
         data: { threshold: 5 },
         runtimeSurfaceId: 'lowStockDrilldown',
         runtimeSurfaceCode: '({ ui }) => ({ render() { return ui.text(\"ok\"); } })',
+        packId: 'ui.card.v1',
         updatedAt: Date.now(),
       }),
     );

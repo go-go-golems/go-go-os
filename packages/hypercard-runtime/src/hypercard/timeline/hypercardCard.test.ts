@@ -59,6 +59,9 @@ describe('hypercard card timeline projection', () => {
                     id: 'artifact-card-1',
                     data: { sku: 'WA-100' },
                   },
+                  runtime: {
+                    pack: 'ui.card.v1',
+                  },
                   card: {
                     id: 'runtime-low-stock',
                     code: '({ ui }) => ({ render() { return ui.text("low stock"); } })',

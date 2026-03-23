@@ -177,7 +177,7 @@ function RuntimeMutationDemo() {
           <Btn
             onClick={() =>
               run('defineRuntimeSurface', () => {
-                const bundle = runtime.defineRuntimeSurface(SESSION_ID, 'onDemand', DYNAMIC_CARD);
+                const bundle = runtime.defineRuntimeSurface(SESSION_ID, 'onDemand', DYNAMIC_CARD, 'ui.card.v1');
                 setSurfaces(bundle.surfaces);
                 setActiveSurfaceId('onDemand');
               })

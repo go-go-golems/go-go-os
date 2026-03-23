@@ -74,8 +74,16 @@ function assertSurfacesMap() {
   return __runtimeBundle.surfaces;
 }
 
+function normalizeRuntimeSurfacePackId(surfaceId, packId) {
+  const normalizedPackId = typeof packId === 'string' ? packId.trim() : '';
+  if (!normalizedPackId) {
+    throw new Error('Runtime surface packId is required for surface: ' + String(surfaceId));
+  }
+  return normalizedPackId;
+}
+
 function normalizeRuntimeSurfaceDefinition(surfaceId, definitionOrFactory, packId) {
-  const normalizedPackId = typeof packId === 'string' && packId.trim().length > 0 ? packId.trim() : 'ui.card.v1';
+  const normalizedPackId = normalizeRuntimeSurfacePackId(surfaceId, packId);
   const definition =
     typeof definitionOrFactory === 'function'
       ? definitionOrFactory(collectRuntimePackageApis())
@@ -168,7 +176,7 @@ globalThis.__runtimeBundleHost = {
       surfaceTypes: Object.fromEntries(
         Object.entries(__runtimeBundle.surfaces).map(([key, surface]) => [
           key,
-          typeof surface?.packId === 'string' && surface.packId.length > 0 ? surface.packId : 'ui.card.v1',
+          normalizeRuntimeSurfacePackId(key, surface?.packId),
         ]),
       ),
     };

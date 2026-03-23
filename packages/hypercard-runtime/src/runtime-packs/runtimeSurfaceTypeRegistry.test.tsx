@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   clearRuntimeSurfaceTypes,
-  DEFAULT_RUNTIME_SURFACE_TYPE_ID,
   listRuntimeSurfaceTypes,
   normalizeRuntimeSurfaceTypeId,
   registerRuntimeSurfaceType,
   renderRuntimeSurfaceTree,
+  UI_CARD_V1_RUNTIME_SURFACE_TYPE_ID,
   validateRuntimeSurfaceTree,
 } from './runtimeSurfaceTypeRegistry';
 import { TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE } from '../testRuntimeUi';
@@ -18,20 +18,20 @@ describe('runtimeSurfaceTypeRegistry', () => {
 
   it('can stay empty until surface types are registered explicitly', () => {
     expect(listRuntimeSurfaceTypes()).toEqual([]);
-    expect(() => validateRuntimeSurfaceTree(DEFAULT_RUNTIME_SURFACE_TYPE_ID, { kind: 'panel', children: [] })).toThrow(
+    expect(() => validateRuntimeSurfaceTree(UI_CARD_V1_RUNTIME_SURFACE_TYPE_ID, { kind: 'panel', children: [] })).toThrow(
       /unknown runtime surface type/i
     );
   });
 
   it('registers the baseline ui surface type explicitly', () => {
     registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
-    expect(listRuntimeSurfaceTypes()).toEqual([DEFAULT_RUNTIME_SURFACE_TYPE_ID]);
+    expect(listRuntimeSurfaceTypes()).toEqual([UI_CARD_V1_RUNTIME_SURFACE_TYPE_ID]);
   });
 
   it('validates and renders ui.card.v1 trees', () => {
     registerRuntimeSurfaceType(TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE);
 
-    const tree = validateRuntimeSurfaceTree(DEFAULT_RUNTIME_SURFACE_TYPE_ID, {
+    const tree = validateRuntimeSurfaceTree(UI_CARD_V1_RUNTIME_SURFACE_TYPE_ID, {
       kind: 'panel',
       children: [
         { kind: 'text', text: 'Hello runtime surface' },
@@ -45,7 +45,7 @@ describe('runtimeSurfaceTypeRegistry', () => {
     expect(tree.kind).toBe('panel');
 
     const markup = renderToStaticMarkup(
-      <>{renderRuntimeSurfaceTree(DEFAULT_RUNTIME_SURFACE_TYPE_ID, tree, () => {})}</>,
+      <>{renderRuntimeSurfaceTree(UI_CARD_V1_RUNTIME_SURFACE_TYPE_ID, tree, () => {})}</>,
     );
     expect(markup).toContain('Hello runtime surface');
     expect(markup).toContain('Open');

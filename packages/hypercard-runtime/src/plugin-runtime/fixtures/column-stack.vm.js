@@ -5,6 +5,7 @@ defineRuntimeBundle(({ ui }) => {
     packageIds: ["ui"],
     surfaces: {
       main: {
+        packId: 'ui.card.v1',
         render() {
           return ui.column([
             ui.text('top'),

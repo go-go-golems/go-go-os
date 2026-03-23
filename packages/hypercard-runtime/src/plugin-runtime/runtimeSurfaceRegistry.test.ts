@@ -33,7 +33,7 @@ describe('runtimeSurfaceRegistry', () => {
   });
 
   it('unregisters surfaces', () => {
-    registerRuntimeSurface('lowStock', 'code');
+    registerRuntimeSurface('lowStock', 'code', 'ui.card.v1');
     unregisterRuntimeSurface('lowStock');
     expect(hasRuntimeSurface('lowStock')).toBe(false);
     expect(getPendingRuntimeSurfaces()).toHaveLength(0);
@@ -42,29 +42,29 @@ describe('runtimeSurfaceRegistry', () => {
   it('notifies listeners on change', () => {
     const listener = vi.fn();
     const unsub = onRegistryChange(listener);
-    registerRuntimeSurface('a', 'code-a');
+    registerRuntimeSurface('a', 'code-a', 'ui.card.v1');
     expect(listener).toHaveBeenCalledTimes(1);
     unregisterRuntimeSurface('a');
     expect(listener).toHaveBeenCalledTimes(2);
     unsub();
-    registerRuntimeSurface('b', 'code-b');
+    registerRuntimeSurface('b', 'code-b', 'ui.card.v1');
     expect(listener).toHaveBeenCalledTimes(2); // no more calls after unsub
   });
 
   it('injects pending surfaces into a service', () => {
     registerRuntimeSurface('lowStock', 'code-a', 'ui.card.v1');
-    registerRuntimeSurface('catBrowser', 'code-b');
+    registerRuntimeSurface('catBrowser', 'code-b', 'kanban.v1');
     const service = { defineRuntimeSurface: vi.fn() };
     const injected = injectPendingRuntimeSurfaces(service, 'session-1');
     expect(injected).toEqual(['lowStock', 'catBrowser']);
     expect(service.defineRuntimeSurface).toHaveBeenCalledTimes(2);
     expect(service.defineRuntimeSurface).toHaveBeenCalledWith('session-1', 'lowStock', 'code-a', 'ui.card.v1');
-    expect(service.defineRuntimeSurface).toHaveBeenCalledWith('session-1', 'catBrowser', 'code-b', undefined);
+    expect(service.defineRuntimeSurface).toHaveBeenCalledWith('session-1', 'catBrowser', 'code-b', 'kanban.v1');
   });
 
   it('continues injecting if one surface fails', () => {
-    registerRuntimeSurface('bad', 'syntax error');
-    registerRuntimeSurface('good', 'valid code');
+    registerRuntimeSurface('bad', 'syntax error', 'ui.card.v1');
+    registerRuntimeSurface('good', 'valid code', 'ui.card.v1');
     const service = {
       defineRuntimeSurface: vi.fn().mockImplementation((_s, surfaceId) => {
         if (surfaceId === 'bad') throw new Error('syntax error');
@@ -76,8 +76,8 @@ describe('runtimeSurfaceRegistry', () => {
   });
 
   it('returns injection failure details with report helper', () => {
-    registerRuntimeSurface('bad', 'syntax error');
-    registerRuntimeSurface('good', 'valid code');
+    registerRuntimeSurface('bad', 'syntax error', 'ui.card.v1');
+    registerRuntimeSurface('good', 'valid code', 'ui.card.v1');
     const service = {
       defineRuntimeSurface: vi.fn().mockImplementation((_s, surfaceId) => {
         if (surfaceId === 'bad') throw new Error('syntax error');
@@ -86,5 +86,9 @@ describe('runtimeSurfaceRegistry', () => {
     const report = injectPendingRuntimeSurfacesWithReport(service, 'session-1');
     expect(report.injected).toEqual(['good']);
     expect(report.failed).toEqual([{ surfaceId: 'bad', error: 'syntax error' }]);
+  });
+
+  it('rejects registration without a pack id', () => {
+    expect(() => registerRuntimeSurface('broken', 'code', '')).toThrow(/packid is required/i);
   });
 });

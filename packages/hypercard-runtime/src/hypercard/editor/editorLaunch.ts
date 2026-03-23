@@ -14,6 +14,7 @@ import {
 } from './runtimeSurfaceRef';
 
 const pendingCode = new Map<string, string>();
+const pendingPackIds = new Map<string, string>();
 type WindowDispatch = (action: ReturnType<typeof openWindow>) => unknown;
 
 function codeKey(ref: RuntimeSurfaceRef): string {
@@ -34,8 +35,11 @@ export function buildCodeEditorWindowPayload(ref: RuntimeSurfaceRef): OpenWindow
 }
 
 /** Stash code for a runtime surface editor and open the window. */
-export function openCodeEditor(dispatch: WindowDispatch, ref: RuntimeSurfaceRef, code: string): void {
+export function openCodeEditor(dispatch: WindowDispatch, ref: RuntimeSurfaceRef, code: string, packId?: string): void {
   pendingCode.set(codeKey(ref), code);
+  if (typeof packId === 'string' && packId.trim().length > 0) {
+    pendingPackIds.set(codeKey(ref), packId.trim());
+  }
   dispatch(openWindow(buildCodeEditorWindowPayload(ref)));
 }
 
@@ -51,4 +55,16 @@ export function getEditorInitialCode(ref: RuntimeSurfaceRef): string {
   const surfaces = getPendingRuntimeSurfaces();
   const found = surfaces.find((surface) => surface.surfaceId === ref.surfaceId);
   return found?.code ?? `// No code found for surface: ${ref.surfaceId}\n`;
+}
+
+export function getEditorInitialPackId(ref: RuntimeSurfaceRef): string | undefined {
+  const key = codeKey(ref);
+  const stashed = pendingPackIds.get(key);
+  if (stashed !== undefined) {
+    pendingPackIds.delete(key);
+    return stashed;
+  }
+  const surfaces = getPendingRuntimeSurfaces();
+  const found = surfaces.find((surface) => surface.surfaceId === ref.surfaceId);
+  return found?.packId;
 }

@@ -102,4 +102,80 @@ describe('artifactProjectionMiddleware', () => {
     expect(artifact.runtimeSurfaceId).toBe('runtimeInventoryStatus');
     expect(artifact.packId).toBe('ui.card.v1');
   });
+
+  it('does not register or queue runtime surfaces while a card entity is still streaming', async () => {
+    const store = createStore();
+
+    store.dispatch(
+      timelineSlice.actions.upsertEntity({
+        convId: 'conv-3',
+        entity: {
+          id: 'evt-card:streaming',
+          kind: 'hypercard.card.v2',
+          createdAt: 4,
+          props: {
+            status: 'streaming',
+            result: {
+              title: 'Streaming Card',
+              data: {
+                artifact: {
+                  id: 'artifact-streaming',
+                },
+                runtime: {
+                  pack: 'ui.card.v1',
+                },
+                card: {
+                  id: 'runtimeStreamingCard',
+                  code: '({ ui }) => ({ render() { return ui.text("partial"); } })',
+                },
+              },
+            },
+          },
+        },
+      }),
+    );
+    await flushListeners();
+
+    const streamingArtifact = store.getState().hypercardArtifacts.byId['artifact-streaming'];
+    expect(streamingArtifact).toBeDefined();
+    expect(streamingArtifact.runtimeSurfaceId).toBe('runtimeStreamingCard');
+    expect(streamingArtifact.injectionStatus).toBeUndefined();
+    expect(hasRuntimeSurface('runtimeStreamingCard')).toBe(false);
+
+    store.dispatch(
+      timelineSlice.actions.upsertEntity({
+        convId: 'conv-3',
+        entity: {
+          id: 'evt-card:streaming',
+          kind: 'hypercard.card.v2',
+          createdAt: 4,
+          updatedAt: 5,
+          props: {
+            status: 'success',
+            result: {
+              title: 'Streaming Card',
+              data: {
+                artifact: {
+                  id: 'artifact-streaming',
+                },
+                runtime: {
+                  pack: 'ui.card.v1',
+                },
+                card: {
+                  id: 'runtimeStreamingCard',
+                  code: '({ ui }) => ({ render() { return ui.text("final"); } })',
+                },
+              },
+            },
+          },
+        },
+      }),
+    );
+    await flushListeners();
+
+    const finalArtifact = store.getState().hypercardArtifacts.byId['artifact-streaming'];
+    expect(finalArtifact.runtimeSurfaceId).toBe('runtimeStreamingCard');
+    expect(finalArtifact.injectionStatus).toBe('pending');
+    expect(hasRuntimeSurface('runtimeStreamingCard')).toBe(true);
+  });
 });

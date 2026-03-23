@@ -4,6 +4,15 @@ import { registerRuntimeSurface } from '../../plugin-runtime';
 import { extractArtifactUpsertFromTimelineEntity } from './artifactRuntime';
 import { upsertArtifact } from './artifactsSlice';
 
+function runtimeSurfaceEntityIsFinal(entity: TimelineEntity): boolean {
+  const rawStatus = entity.props?.status;
+  if (typeof rawStatus !== 'string') {
+    return true;
+  }
+  const status = rawStatus.trim().toLowerCase();
+  return status !== 'streaming' && status !== 'pending';
+}
+
 function projectArtifactFromEntity(dispatch: (action: unknown) => unknown, entity: TimelineEntity | undefined) {
   if (!entity) {
     return;
@@ -14,14 +23,19 @@ function projectArtifactFromEntity(dispatch: (action: unknown) => unknown, entit
     return;
   }
 
+  const queueForInjection =
+    runtimeSurfaceEntityIsFinal(entity) &&
+    Boolean(upsert.runtimeSurfaceId && upsert.runtimeSurfaceCode && upsert.packId);
+
   dispatch(
     upsertArtifact({
       ...upsert,
       updatedAt: Date.now(),
+      queueForInjection,
     }),
   );
 
-  if (upsert.runtimeSurfaceId && upsert.runtimeSurfaceCode && upsert.packId) {
+  if (queueForInjection && upsert.runtimeSurfaceId && upsert.runtimeSurfaceCode && upsert.packId) {
     registerRuntimeSurface(upsert.runtimeSurfaceId, upsert.runtimeSurfaceCode, upsert.packId);
   }
 }

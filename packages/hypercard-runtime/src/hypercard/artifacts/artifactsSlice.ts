@@ -55,6 +55,7 @@ const artifactsSlice = createSlice({
         runtimeSurfaceId?: string;
         runtimeSurfaceCode?: string;
         packId?: string;
+        queueForInjection?: boolean;
       }>,
     ) {
       const id = cleanString(action.payload.id);
@@ -73,6 +74,7 @@ const artifactsSlice = createSlice({
       const runtimeSurfaceId = cleanString(action.payload.runtimeSurfaceId) ?? existing?.runtimeSurfaceId;
       const runtimeSurfaceCode = cleanString(action.payload.runtimeSurfaceCode) ?? existing?.runtimeSurfaceCode;
       const packId = cleanString(action.payload.packId) ?? existing?.packId;
+      const queueForInjection = action.payload.queueForInjection === true;
       state.byId[id] = {
         id,
         title,
@@ -83,7 +85,10 @@ const artifactsSlice = createSlice({
         runtimeSurfaceId,
         runtimeSurfaceCode,
         packId,
-        injectionStatus: runtimeSurfaceCode ? (existing?.injectionStatus ?? 'pending') : existing?.injectionStatus,
+        injectionStatus:
+          runtimeSurfaceCode && queueForInjection
+            ? (existing?.injectionStatus ?? 'pending')
+            : existing?.injectionStatus,
         injectionError: existing?.injectionError,
       };
     },

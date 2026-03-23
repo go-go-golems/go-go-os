@@ -106,4 +106,30 @@ describe('artifactsSlice', () => {
     expect(state.byId['artifact-pack']?.packId).toBe('kanban.v1');
     expect(state.byId['artifact-pack']?.runtimeSurfaceId).toBe('runtime-pack');
   });
+
+  it('only marks runtime surfaces pending once projection queued them for injection', () => {
+    const state = reduce([
+      upsertArtifact({
+        id: 'artifact-streaming',
+        title: 'Streaming Artifact',
+        source: 'card',
+        runtimeSurfaceId: 'runtime-streaming',
+        runtimeSurfaceCode: 'code-streaming',
+        packId: 'ui.card.v1',
+        updatedAt: 10,
+      }),
+      upsertArtifact({
+        id: 'artifact-streaming',
+        source: 'card',
+        runtimeSurfaceId: 'runtime-streaming',
+        runtimeSurfaceCode: 'code-streaming',
+        packId: 'ui.card.v1',
+        queueForInjection: true,
+        updatedAt: 20,
+      }),
+    ]);
+
+    expect(state.byId['artifact-streaming']?.injectionStatus).toBe('pending');
+    expect(state.byId['artifact-streaming']?.updatedAt).toBe(20);
+  });
 });

@@ -27,7 +27,12 @@
     "registry": "https://npm.pkg.github.com"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./contracts/appManifest": "./src/contracts/appManifest.ts",
+    "./contracts/launchableAppModule": "./src/contracts/launchableAppModule.ts",
+    "./contracts/launcherHostContext": "./src/contracts/launcherHostContext.ts",
+    "./contracts/launcherRenderContext": "./src/contracts/launcherRenderContext.ts",
+    "./runtime/appKey": "./src/runtime/appKey.ts"
   },
   "main": "src/index.ts",
   "types": "src/index.ts",

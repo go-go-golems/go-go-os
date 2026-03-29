@@ -1,9 +1,6 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import {
-  formatAppKey,
-  type LaunchableAppModule,
-  type LaunchableAppRenderParams,
-} from '@go-go-golems/os-shell';
+import { type LaunchableAppModule, type LaunchableAppRenderParams } from '@go-go-golems/os-shell/contracts/launchableAppModule';
+import { formatAppKey } from '@go-go-golems/os-shell/runtime/appKey';
 import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import { DesktopIconLayer, type DesktopIconDef } from '@go-go-golems/os-core/desktop-react';
 import { useMemo, useState, type ReactNode } from 'react';

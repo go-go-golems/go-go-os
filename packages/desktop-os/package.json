@@ -10,6 +10,7 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "tsc -b",
+    "build:dist": "node ../../scripts/packages/build-dist.mjs",
     "typecheck": "tsc -b",
     "lint": "biome check src",
     "test": "vitest run",

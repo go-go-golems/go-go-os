@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Btn, DropdownMenu, GridBoard, SelectableDataTable } from '@go-go-golems/os-core';
+import type { GridSelection } from '@go-go-golems/os-core';
 import type { UIEventRef, UINode } from './uiTypes';
 
 export interface UIRuntimeRendererProps {
@@ -156,7 +157,7 @@ export function UIRuntimeRenderer({ tree, onEvent }: UIRuntimeRendererProps) {
           key={keyHint}
           options={node.props.options}
           selected={selected}
-          onSelect={(index) =>
+          onSelect={(index: number) =>
             eventHandler(node.props.onSelect, onEvent, {
               index,
               value: String(node.props.options[index] ?? ''),
@@ -186,20 +187,20 @@ export function UIRuntimeRenderer({ tree, onEvent }: UIRuntimeRendererProps) {
           searchText={node.props.searchText}
           searchPlaceholder={node.props.searchPlaceholder}
           emptyMessage={node.props.emptyMessage}
-          onSelectionChange={(selectedRowKeys) =>
+          onSelectionChange={(selectedRowKeys: string[]) =>
             eventHandler(node.props.onSelectionChange, onEvent, {
               selectedRowKeys,
             })
           }
           onSearchTextChange={
             node.props.onSearchChange
-              ? (value) =>
+              ? (value: string) =>
                   eventHandler(node.props.onSearchChange, onEvent, {
                     value,
                   })
               : undefined
           }
-          onRowClick={(row) =>
+          onRowClick={(row: Record<string, unknown>) =>
             eventHandler(node.props.onRowClick, onEvent, {
               rowIndex: Number(row.__rowIndex ?? -1),
               rowKey: String(row.id ?? ''),
@@ -220,7 +221,7 @@ export function UIRuntimeRenderer({ tree, onEvent }: UIRuntimeRendererProps) {
           selectedIndex={node.props.selectedIndex}
           cellSize={node.props.cellSize}
           disabled={node.props.disabled}
-          onSelect={(selection) => eventHandler(node.props.onSelect, onEvent, selection)}
+          onSelect={(selection: GridSelection) => eventHandler(node.props.onSelect, onEvent, selection)}
         />
       );
     }

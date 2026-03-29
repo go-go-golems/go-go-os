@@ -16,6 +16,7 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "tsc -b",
+    "build:dist": "node ../../scripts/packages/build-dist.mjs",
     "typecheck": "tsc -b",
     "test": "node ../../scripts/storybook/check-taxonomy.mjs && vitest run",
     "test:watch": "node ../../scripts/storybook/check-taxonomy.mjs && vitest"

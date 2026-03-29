@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { mkdir, readdir, copyFile, rm } from 'node:fs/promises';
+import { mkdir, readdir, copyFile, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
 const packageDir = process.cwd();
 const srcDir = path.join(packageDir, 'src');
 const distDir = path.join(packageDir, 'dist');
+const packageJsonPath = path.join(packageDir, 'package.json');
+const tsconfigPath = path.join(packageDir, 'tsconfig.json');
+const tempTsconfigPath = path.join(packageDir, '.tsconfig.build-dist.tmp.json');
 const assetSuffixes = ['.css', '.vm.js'];
 
 function isAssetFile(filename) {
@@ -30,9 +33,63 @@ async function walkAssets(dir) {
   return files;
 }
 
+function rewritePathTarget(target) {
+  if (target.endsWith('/src/index.ts')) {
+    return target.replace(/\/src\/index\.ts$/, '/dist/index.d.ts');
+  }
+  if (target.endsWith('/src/*')) {
+    return target.replace(/\/src\/\*$/, '/dist/*');
+  }
+  if (target.endsWith('/src')) {
+    return target.replace(/\/src$/, '/dist/index.d.ts');
+  }
+  return target;
+}
+
+async function writeBuildTsconfig() {
+  const [packageJsonRaw, tsconfigRaw] = await Promise.all([
+    readFile(packageJsonPath, 'utf8'),
+    readFile(tsconfigPath, 'utf8'),
+  ]);
+
+  const packageJson = JSON.parse(packageJsonRaw);
+  const tsconfig = JSON.parse(tsconfigRaw);
+  const packageName = String(packageJson.name ?? '').trim();
+  const currentPaths = tsconfig.compilerOptions?.paths ?? {};
+  const rewrittenPaths = {};
+
+  for (const [key, values] of Object.entries(currentPaths)) {
+    if (!Array.isArray(values)) {
+      rewrittenPaths[key] = values;
+      continue;
+    }
+
+    const isSelfAlias =
+      key === packageName ||
+      key === `${packageName}/*`;
+
+    rewrittenPaths[key] = isSelfAlias
+      ? values
+      : values.map((value) => (typeof value === 'string' ? rewritePathTarget(value) : value));
+  }
+
+  const buildTsconfig = {
+    ...tsconfig,
+    references: undefined,
+    compilerOptions: {
+      ...(tsconfig.compilerOptions ?? {}),
+      declarationMap: false,
+      sourceMap: false,
+      paths: rewrittenPaths,
+    },
+  };
+
+  await writeFile(tempTsconfigPath, `${JSON.stringify(buildTsconfig, null, 2)}\n`, 'utf8');
+}
+
 function runTscBuild() {
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(npmCommand, ['exec', 'tsc', '-b', '--force'], {
+  const result = spawnSync(npmCommand, ['exec', '--', 'tsc', '-p', tempTsconfigPath], {
     cwd: packageDir,
     stdio: 'inherit',
   });
@@ -54,6 +111,9 @@ async function copyAssets() {
 }
 
 await rm(distDir, { recursive: true, force: true });
+await rm(tempTsconfigPath, { force: true });
+await writeBuildTsconfig();
 runTscBuild();
 const copiedCount = await copyAssets();
+await rm(tempTsconfigPath, { force: true });
 console.log(`Copied ${copiedCount} asset file(s) into ${path.relative(packageDir, distDir) || 'dist'}.`);

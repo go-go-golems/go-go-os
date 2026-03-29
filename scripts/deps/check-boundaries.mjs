@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = resolve(thisFile, '../../..');
-const engineSrcDir = join(repoRoot, 'packages/engine/src');
+const engineSrcDir = join(repoRoot, 'packages/os-core/src');
 const shellControllerFile = join(engineSrcDir, 'components/shell/windowing/useDesktopShellController.tsx');
 
 const forbiddenSpecifiers = ['@go-go-golems/os-scripting', '@go-go-golems/os-chat'];

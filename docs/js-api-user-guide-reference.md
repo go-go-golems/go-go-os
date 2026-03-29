@@ -96,7 +96,7 @@ and not the older `stack` / `card` terminology in runtime core.
 
 Main barrel:
 
-- `packages/engine/src/index.ts`
+- `packages/os-core/src/index.ts`
 
 Use this package when you need:
 
@@ -121,7 +121,7 @@ import '@go-go-golems/os-core/theme/modern.css';
 
 Main barrel:
 
-- `packages/hypercard-runtime/src/index.ts`
+- `packages/os-scripting/src/index.ts`
 
 Use this package when you need:
 
@@ -154,13 +154,13 @@ Use this package when you need:
 
 Main file:
 
-- `packages/ui-runtime/src/index.ts`
+- `packages/os-ui-cards/src/index.ts`
 
 ### `@go-go-golems/os-repl`
 
 Main barrel:
 
-- `packages/repl/src/index.ts`
+- `packages/os-repl/src/index.ts`
 
 Use this package when you need:
 
@@ -189,7 +189,7 @@ Use this package when you need:
 
 Main file:
 
-- `packages/kanban-runtime/src/index.ts`
+- `packages/os-kanban/src/index.ts`
 
 ## 4. The Most Important Public Types
 
@@ -199,7 +199,7 @@ These are the types new developers most often need first.
 
 Source:
 
-- `packages/engine/src/cards/types.ts`
+- `packages/os-core/src/cards/types.ts`
 
 Definition:
 
@@ -246,7 +246,7 @@ The `plugin.packageIds` field is not documentation only. It is part of runtime l
 
 Source:
 
-- `packages/engine/src/components/shell/windowing/desktopShellTypes.ts`
+- `packages/os-core/src/components/shell/windowing/desktopShellTypes.ts`
 
 Definition:
 
@@ -275,7 +275,7 @@ This is the core host-shell composition prop set. In practice:
 
 Source:
 
-- `packages/engine/src/desktop/core/state/types.ts`
+- `packages/os-core/src/desktop/core/state/types.ts`
 
 Definition:
 
@@ -320,7 +320,7 @@ content: {
 
 Source:
 
-- `packages/hypercard-runtime/src/runtime-packages/runtimePackageRegistry.ts`
+- `packages/os-scripting/src/runtime-packages/runtimePackageRegistry.ts`
 
 Definition:
 
@@ -349,7 +349,7 @@ A package can contribute:
 
 Source:
 
-- `packages/hypercard-runtime/src/runtime-packs/runtimeSurfaceTypeRegistry.tsx`
+- `packages/os-scripting/src/runtime-packs/runtimeSurfaceTypeRegistry.tsx`
 
 Definition:
 
@@ -430,7 +430,7 @@ Important rule:
 
 Source:
 
-- `packages/engine/src/app/generateCardStories.tsx`
+- `packages/os-core/src/app/generateCardStories.tsx`
 
 ```tsx
 import { createStoryHelpers } from '@go-go-golems/os-core';
@@ -500,8 +500,8 @@ This section covers the public API families exported by `@go-go-golems/os-core`.
 
 Source:
 
-- `packages/engine/src/app/index.ts`
-- `packages/engine/src/app/generateCardStories.tsx`
+- `packages/os-core/src/app/index.ts`
+- `packages/os-core/src/app/generateCardStories.tsx`
 
 Exports:
 
@@ -515,7 +515,7 @@ Exports:
 
 Source:
 
-- `packages/engine/src/desktop/react/index.ts`
+- `packages/os-core/src/desktop/react/index.ts`
 
 Important exports:
 
@@ -543,7 +543,7 @@ Use these when:
 
 Source:
 
-- `packages/engine/src/desktop/core/state/index.ts`
+- `packages/os-core/src/desktop/core/state/index.ts`
 
 Important exports:
 
@@ -576,7 +576,7 @@ These are the APIs to use when you are writing reducers, launchers, or app-shell
 
 Source:
 
-- `packages/engine/src/components/widgets/index.ts`
+- `packages/os-core/src/components/widgets/index.ts`
 
 Important exports include:
 
@@ -618,7 +618,7 @@ That distinction matters:
 
 Source:
 
-- `packages/engine/src/types.ts`
+- `packages/os-core/src/types.ts`
 
 Important types:
 
@@ -636,7 +636,7 @@ Use these for generic host widgets such as data tables, forms, list/detail views
 
 Source:
 
-- `packages/engine/src/theme/index.ts`
+- `packages/os-core/src/theme/index.ts`
 
 Load once at app entry:
 
@@ -668,8 +668,8 @@ This package is the runtime core. It is where QuickJS sessions, registries, and 
 
 Source:
 
-- `packages/hypercard-runtime/src/runtime-packages/runtimePackageRegistry.ts`
-- `packages/hypercard-runtime/src/runtime-packs/runtimeSurfaceTypeRegistry.tsx`
+- `packages/os-scripting/src/runtime-packages/runtimePackageRegistry.ts`
+- `packages/os-scripting/src/runtime-packs/runtimeSurfaceTypeRegistry.tsx`
 
 Runtime package API:
 
@@ -702,7 +702,7 @@ These registries are module-global today. That means:
 
 Source:
 
-- `packages/hypercard-runtime/src/plugin-runtime/runtimeService.ts`
+- `packages/os-scripting/src/plugin-runtime/runtimeService.ts`
 
 Core class:
 
@@ -767,7 +767,7 @@ QuickJSRuntimeService
 
 Source:
 
-- `packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js`
+- `packages/os-scripting/src/plugin-runtime/stack-bootstrap.vm.js`
 
 This file defines the globals that exist inside the QuickJS VM:
 
@@ -809,9 +809,9 @@ Use `RuntimeSurfaceSessionHost` when you need to mount a runtime-authored surfac
 
 Source:
 
-- `packages/hypercard-runtime/src/plugin-runtime/jsSessionService.ts`
-- `packages/hypercard-runtime/src/repl/jsSessionBroker.ts`
-- `packages/hypercard-runtime/src/repl/jsReplDriver.ts`
+- `packages/os-scripting/src/plugin-runtime/jsSessionService.ts`
+- `packages/os-scripting/src/repl/jsSessionBroker.ts`
+- `packages/os-scripting/src/repl/jsReplDriver.ts`
 
 Core types:
 
@@ -850,7 +850,7 @@ This is the base UI DSL package.
 
 Source entry:
 
-- `packages/ui-runtime/src/index.ts`
+- `packages/os-ui-cards/src/index.ts`
 
 Important exports:
 
@@ -890,7 +890,7 @@ This is the richer Kanban DSL package.
 
 Source entry:
 
-- `packages/kanban-runtime/src/index.ts`
+- `packages/os-kanban/src/index.ts`
 
 Important exports:
 
@@ -1075,8 +1075,8 @@ Examples:
 2. Read `docs/runtime-concepts-guide.md`.
 3. Read `docs/hypercard-runtime-pack-playbook.md`.
 4. Read one concrete package:
-   - `packages/ui-runtime/src/index.ts`
-   - `packages/kanban-runtime/src/index.ts`
+   - `packages/os-ui-cards/src/index.ts`
+   - `packages/os-kanban/src/index.ts`
 5. Read one host app bootstrap:
    - `apps/os-launcher/src/App.tsx`
    - `apps/os-launcher/src/app/registerRuntimePackages.ts`
@@ -1084,36 +1084,36 @@ Examples:
    - `apps/os-launcher/src/domain/stack.ts`
    - `apps/os-launcher/src/domain/pluginBundle.ts`
 7. Then read runtime core:
-   - `packages/hypercard-runtime/src/plugin-runtime/runtimeService.ts`
-   - `packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js`
+   - `packages/os-scripting/src/plugin-runtime/runtimeService.ts`
+   - `packages/os-scripting/src/plugin-runtime/stack-bootstrap.vm.js`
 
 ## 15. Short File Reference Map
 
 If you need to jump straight into code, start here:
 
 - engine barrel:
-  - `packages/engine/src/index.ts`
+  - `packages/os-core/src/index.ts`
 - engine desktop shell:
-  - `packages/engine/src/components/shell/windowing/DesktopShell.tsx`
-  - `packages/engine/src/components/shell/windowing/desktopShellTypes.ts`
+  - `packages/os-core/src/components/shell/windowing/DesktopShell.tsx`
+  - `packages/os-core/src/components/shell/windowing/desktopShellTypes.ts`
 - desktop state/actions:
-  - `packages/engine/src/desktop/core/state/index.ts`
-  - `packages/engine/src/desktop/core/state/types.ts`
+  - `packages/os-core/src/desktop/core/state/index.ts`
+  - `packages/os-core/src/desktop/core/state/types.ts`
 - story helpers:
-  - `packages/engine/src/app/generateCardStories.tsx`
+  - `packages/os-core/src/app/generateCardStories.tsx`
 - runtime core barrel:
-  - `packages/hypercard-runtime/src/index.ts`
+  - `packages/os-scripting/src/index.ts`
 - runtime service:
-  - `packages/hypercard-runtime/src/plugin-runtime/runtimeService.ts`
+  - `packages/os-scripting/src/plugin-runtime/runtimeService.ts`
 - runtime bootstrap:
-  - `packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js`
+  - `packages/os-scripting/src/plugin-runtime/stack-bootstrap.vm.js`
 - runtime package registry:
-  - `packages/hypercard-runtime/src/runtime-packages/runtimePackageRegistry.ts`
+  - `packages/os-scripting/src/runtime-packages/runtimePackageRegistry.ts`
 - runtime surface-type registry:
-  - `packages/hypercard-runtime/src/runtime-packs/runtimeSurfaceTypeRegistry.tsx`
+  - `packages/os-scripting/src/runtime-packs/runtimeSurfaceTypeRegistry.tsx`
 - UI package:
-  - `packages/ui-runtime/src/index.ts`
+  - `packages/os-ui-cards/src/index.ts`
 - Kanban package:
-  - `packages/kanban-runtime/src/index.ts`
+  - `packages/os-kanban/src/index.ts`
 
 That set of files is enough to reconstruct the current architecture from source.

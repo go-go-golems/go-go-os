@@ -21,6 +21,7 @@ defineRuntimeBundle(({ ui }) => ({
   packageIds: ['ui', 'kanban'],
   surfaces: {
     home: {
+      packId: 'ui.card.v1',
       render() {
         return ui.text('home');
       },

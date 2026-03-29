@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import { type RuntimeBundleDefinition } from '@hypercard/engine';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { type RuntimeBundleDefinition } from '@go-go-golems/os-core';
+import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import {
   getPendingRuntimeSurfaces,
   onRegistryChange,
   type RuntimeSurfaceDefinition,
 } from '../../plugin-runtime';
-import { SyntaxHighlight } from '@hypercard/chat-runtime';
+import { SyntaxHighlight } from '@go-go-golems/os-chat';
 import type { ArtifactRecord } from '../artifacts/artifactsSlice';
 import { openCodeEditor } from '../editor/editorLaunch';
 import { useRegisteredRuntimeDebugStacks } from './runtimeDebugRegistry';
@@ -23,6 +23,7 @@ interface StoreSlice {
       bundleId: string;
       status: string;
       error?: string;
+      surfaceTypes?: Record<string, string>;
       surfaceState: Record<string, Record<string, unknown>>;
     }>;
   };

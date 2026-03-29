@@ -1,14 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 import type { Meta, StoryObj } from '@storybook/react';
 import { type ReactNode, useMemo } from 'react';
-import { windowingReducer, openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import { notificationsReducer, type RuntimeBundleDefinition } from '@hypercard/engine';
-import { DesktopShell, type DesktopIconDef, type DesktopContribution, type DesktopCommandHandler } from '@hypercard/engine/desktop-react';
+import { windowingReducer, openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
+import { notificationsReducer, type RuntimeBundleDefinition } from '@go-go-golems/os-core';
+import { DesktopShell, type DesktopIconDef, type DesktopContribution, type DesktopCommandHandler } from '@go-go-golems/os-core/desktop-react';
 
 import { LogViewer } from '../log-viewer/LogViewer';
 import { ChartView } from '../chart-view/ChartView';
 import { MacWrite } from '../mac-write/MacWrite';
-import { MacRepl } from '@hypercard/repl';
+import { MacRepl } from '@go-go-golems/os-repl';
 import { NodeEditor } from '../node-editor/NodeEditor';
 import { Oscilloscope } from '../oscilloscope/Oscilloscope';
 import { LogicAnalyzer } from '../logic-analyzer/LogicAnalyzer';

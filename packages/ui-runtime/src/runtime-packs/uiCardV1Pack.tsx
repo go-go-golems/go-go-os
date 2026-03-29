@@ -1,4 +1,4 @@
-import type { RuntimeSurfaceTypeDefinition } from '@hypercard/hypercard-runtime';
+import type { RuntimeSurfaceTypeDefinition } from '@go-go-golems/os-scripting';
 import { UIRuntimeRenderer } from '../UIRuntimeRenderer';
 import type { UINode } from '../uiTypes';
 import { validateUINode } from './uiSchema';

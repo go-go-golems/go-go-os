@@ -10,7 +10,7 @@ import {
   chartViewReducer,
   createChartViewStateSeed,
 } from './chartViewState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof ChartView> = {
   title: 'RichWidgets/ChartView',

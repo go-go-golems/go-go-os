@@ -1,5 +1,5 @@
 import { useEffect, useState, type RefObject } from 'react';
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import { RICH_PARTS as P } from '../parts';
 import { EmptyState } from '../primitives/EmptyState';
 import { createDeck } from './markdown';

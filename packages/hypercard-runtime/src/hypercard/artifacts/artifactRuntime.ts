@@ -1,6 +1,6 @@
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import type { OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import type { ArtifactSource } from './artifactsSlice';
-import { recordField, stringField, structuredRecordFromUnknown } from '@hypercard/chat-runtime';
+import { recordField, stringField, structuredRecordFromUnknown } from '@go-go-golems/os-chat';
 
 export interface ArtifactUpsert {
   id: string;

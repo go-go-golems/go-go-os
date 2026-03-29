@@ -5,7 +5,7 @@ import type {
   ReplExecutionResult,
   ReplHelpEntry,
   TerminalLine,
-} from '@hypercard/repl';
+} from '@go-go-golems/os-repl';
 import { getAttachedRuntimeSession, listAttachedRuntimeSessions } from './attachedRuntimeSessionRegistry';
 import { getRuntimePackageOrThrow, listRuntimePackages } from '../runtime-packages/runtimePackageRegistry';
 import { listRuntimeSurfaceTypes } from '../runtime-packs/runtimeSurfaceTypeRegistry';
@@ -26,44 +26,44 @@ export interface HypercardReplDriverOptions {
 }
 
 interface RuntimePackageDocSymbol {
-  name: string;
-  summary?: string;
-  prose?: string;
+  readonly name: string;
+  readonly summary?: string;
+  readonly prose?: string;
 }
 
 interface RuntimePackageDocFile {
-  package?: {
-    name?: string;
-    title?: string;
-    description?: string;
-    prose?: string;
+  readonly package?: {
+    readonly name?: string;
+    readonly title?: string;
+    readonly description?: string;
+    readonly prose?: string;
   };
-  symbols?: RuntimePackageDocSymbol[];
+  readonly symbols?: readonly RuntimePackageDocSymbol[];
 }
 
 interface RuntimePackageDocsMetadata {
-  packId?: string;
-  docs?: {
-    files?: RuntimePackageDocFile[];
+  readonly packId?: string;
+  readonly docs?: {
+    readonly files?: readonly RuntimePackageDocFile[];
   };
 }
 
 interface RuntimeBundleDocSymbol {
-  name: string;
-  summary?: string;
-  prose?: string;
+  readonly name: string;
+  readonly summary?: string;
+  readonly prose?: string;
 }
 
 interface RuntimeBundleDocFile {
-  file_path?: string;
-  symbols?: RuntimeBundleDocSymbol[];
+  readonly file_path?: string;
+  readonly symbols?: readonly RuntimeBundleDocSymbol[];
 }
 
 interface RuntimeBundleDocsMetadata {
-  packId?: string;
-  docs?: {
-    files?: RuntimeBundleDocFile[];
-    by_symbol?: Record<string, RuntimeBundleDocSymbol>;
+  readonly packId?: string;
+  readonly docs?: {
+    readonly files?: readonly RuntimeBundleDocFile[];
+    readonly by_symbol?: Readonly<Record<string, RuntimeBundleDocSymbol>>;
   };
 }
 

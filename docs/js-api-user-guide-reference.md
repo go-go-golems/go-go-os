@@ -23,34 +23,34 @@ There are several JavaScript and TypeScript package layers in this workspace, an
 
 At a high level:
 
-- `@hypercard/engine` gives you the desktop shell, windowing state/actions, generic widgets, theming, and Storybook helpers.
-- `@hypercard/hypercard-runtime` gives you the runtime core: runtime sessions, runtime bundle loading, runtime package registration, runtime surface-type registration, runtime debug windows, and runtime-host plumbing.
-- `@hypercard/ui-runtime` gives you the concrete `ui` runtime package and the `ui.card.v1` runtime surface type.
-- `@hypercard/kanban-runtime` gives you the concrete `kanban` runtime package and the `kanban.v1` runtime surface type.
-- `@hypercard/repl` gives you the reusable REPL shell: transcript, prompt, completions, history, and effect delivery.
+- `@go-go-golems/os-core` gives you the desktop shell, windowing state/actions, generic widgets, theming, and Storybook helpers.
+- `@go-go-golems/os-scripting` gives you the runtime core: runtime sessions, runtime bundle loading, runtime package registration, runtime surface-type registration, runtime debug windows, and runtime-host plumbing.
+- `@go-go-golems/os-ui-cards` gives you the concrete `ui` runtime package and the `ui.card.v1` runtime surface type.
+- `@go-go-golems/os-kanban` gives you the concrete `kanban` runtime package and the `kanban.v1` runtime surface type.
+- `@go-go-golems/os-repl` gives you the reusable REPL shell: transcript, prompt, completions, history, and effect delivery.
 
 That means the architecture is intentionally layered:
 
 ```text
-@hypercard/engine
+@go-go-golems/os-core
   desktop shell + widgets + theming + story helpers
 
-@hypercard/hypercard-runtime
+@go-go-golems/os-scripting
   generic runtime lifecycle + registries + host/runtime bridge
 
-@hypercard/repl
+@go-go-golems/os-repl
   reusable shell for multiple REPL profiles
 
-@hypercard/ui-runtime
+@go-go-golems/os-ui-cards
   concrete base UI DSL package
 
-@hypercard/kanban-runtime
+@go-go-golems/os-kanban
   concrete Kanban DSL package
 ```
 
 The single most important architectural rule is:
 
-- `@hypercard/hypercard-runtime` owns generic runtime infrastructure;
+- `@go-go-golems/os-scripting` owns generic runtime infrastructure;
 - concrete runtime DSL packages live outside it and are registered explicitly by the host app.
 
 ## 2. The Mental Model You Should Use
@@ -92,7 +92,7 @@ and not the older `stack` / `card` terminology in runtime core.
 
 ## 3. Package Map
 
-### `@hypercard/engine`
+### `@go-go-golems/os-core`
 
 Main barrel:
 
@@ -110,14 +110,14 @@ Use this package when you need:
 Main import patterns:
 
 ```ts
-import { createStoryHelpers, DataTable, Btn } from '@hypercard/engine';
-import { DesktopShell } from '@hypercard/engine/desktop-react';
-import { openWindow, closeWindow, windowingReducer } from '@hypercard/engine/desktop-core';
-import '@hypercard/engine/theme';
-import '@hypercard/engine/theme/modern.css';
+import { createStoryHelpers, DataTable, Btn } from '@go-go-golems/os-core';
+import { DesktopShell } from '@go-go-golems/os-core/desktop-react';
+import { openWindow, closeWindow, windowingReducer } from '@go-go-golems/os-core/desktop-core';
+import '@go-go-golems/os-core/theme';
+import '@go-go-golems/os-core/theme/modern.css';
 ```
 
-### `@hypercard/hypercard-runtime`
+### `@go-go-golems/os-scripting`
 
 Main barrel:
 
@@ -140,10 +140,10 @@ import {
   registerRuntimeSurfaceType,
   RuntimeSurfaceSessionHost,
   buildRuntimeDebugWindowPayload,
-} from '@hypercard/hypercard-runtime';
+} from '@go-go-golems/os-scripting';
 ```
 
-### `@hypercard/ui-runtime`
+### `@go-go-golems/os-ui-cards`
 
 Use this package when you need:
 
@@ -156,7 +156,7 @@ Main file:
 
 - `packages/ui-runtime/src/index.ts`
 
-### `@hypercard/repl`
+### `@go-go-golems/os-repl`
 
 Main barrel:
 
@@ -174,10 +174,10 @@ Use this package when you need:
 Main import patterns:
 
 ```ts
-import { MacRepl, type ReplDriver } from '@hypercard/repl';
+import { MacRepl, type ReplDriver } from '@go-go-golems/os-repl';
 ```
 
-### `@hypercard/kanban-runtime`
+### `@go-go-golems/os-kanban`
 
 Use this package when you need:
 
@@ -384,9 +384,9 @@ Examples:
 Use this when you already have a `RuntimeBundleDefinition` and want to render it in a host shell.
 
 ```tsx
-import { DesktopShell } from '@hypercard/engine/desktop-react';
-import '@hypercard/engine/theme';
-import '@hypercard/engine/theme/modern.css';
+import { DesktopShell } from '@go-go-golems/os-core/desktop-react';
+import '@go-go-golems/os-core/theme';
+import '@go-go-golems/os-core/theme/modern.css';
 
 export function App() {
   return <DesktopShell bundle={MY_BUNDLE} />;
@@ -410,9 +410,9 @@ DesktopShell
 Use this when your app has runtime-authored surfaces.
 
 ```ts
-import { registerRuntimePackage, registerRuntimeSurfaceType } from '@hypercard/hypercard-runtime';
-import { UI_RUNTIME_PACKAGE, UI_CARD_V1_RUNTIME_SURFACE_TYPE } from '@hypercard/ui-runtime';
-import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from '@hypercard/kanban-runtime';
+import { registerRuntimePackage, registerRuntimeSurfaceType } from '@go-go-golems/os-scripting';
+import { UI_RUNTIME_PACKAGE, UI_CARD_V1_RUNTIME_SURFACE_TYPE } from '@go-go-golems/os-ui-cards';
+import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from '@go-go-golems/os-kanban';
 
 registerRuntimePackage(UI_RUNTIME_PACKAGE);
 registerRuntimeSurfaceType(UI_CARD_V1_RUNTIME_SURFACE_TYPE);
@@ -433,7 +433,7 @@ Source:
 - `packages/engine/src/app/generateCardStories.tsx`
 
 ```tsx
-import { createStoryHelpers } from '@hypercard/engine';
+import { createStoryHelpers } from '@go-go-golems/os-core';
 
 const { storeDecorator, createStory, FullApp } = createStoryHelpers({
   bundle: MY_BUNDLE,
@@ -466,7 +466,7 @@ What `createStoryHelpers(...)` gives you:
 Use the desktop-core state actions:
 
 ```ts
-import { openWindow, closeWindow } from '@hypercard/engine/desktop-core';
+import { openWindow, closeWindow } from '@go-go-golems/os-core/desktop-core';
 
 dispatch(openWindow({
   id: 'window:inventory:report',
@@ -492,9 +492,9 @@ Use this API when:
 - an app launches a shared debug window;
 - a non-runtime host wants to open an app window.
 
-## 6. `@hypercard/engine` API Reference
+## 6. `@go-go-golems/os-core` API Reference
 
-This section covers the public API families exported by `@hypercard/engine`.
+This section covers the public API families exported by `@go-go-golems/os-core`.
 
 ### 6.1 App Helpers
 
@@ -611,8 +611,8 @@ These are normal React host widgets. They are not the same thing as VM-side DSL 
 
 That distinction matters:
 
-- `GridBoard` is a host React widget from `@hypercard/engine`;
-- `ui.gridBoard(...)` is a VM-side structured node constructor exposed through `@hypercard/ui-runtime`.
+- `GridBoard` is a host React widget from `@go-go-golems/os-core`;
+- `ui.gridBoard(...)` is a VM-side structured node constructor exposed through `@go-go-golems/os-ui-cards`.
 
 ### 6.5 Generic Shared Types
 
@@ -641,13 +641,13 @@ Source:
 Load once at app entry:
 
 ```ts
-import '@hypercard/engine/theme';
+import '@go-go-golems/os-core/theme';
 ```
 
 Optional theme layer:
 
 ```ts
-import '@hypercard/engine/theme/modern.css';
+import '@go-go-golems/os-core/theme/modern.css';
 ```
 
 What the base theme loads:
@@ -660,7 +660,7 @@ What the base theme loads:
 
 If you forget the theme import, the shell and widgets still render, but they will look broken or unstyled.
 
-## 7. `@hypercard/hypercard-runtime` API Reference
+## 7. `@go-go-golems/os-scripting` API Reference
 
 This package is the runtime core. It is where QuickJS sessions, registries, and runtime-host plumbing live.
 
@@ -844,7 +844,7 @@ Important rule:
 - the broker owns the live session handles
 - debug UIs should consume summaries and subscriptions, not serialize broker objects into Redux
 
-## 8. `@hypercard/ui-runtime` Reference
+## 8. `@go-go-golems/os-ui-cards` Reference
 
 This is the base UI DSL package.
 
@@ -884,7 +884,7 @@ What it does not own:
 - bundle loading
 - app startup
 
-## 9. `@hypercard/kanban-runtime` Reference
+## 9. `@go-go-golems/os-kanban` Reference
 
 This is the richer Kanban DSL package.
 
@@ -1016,8 +1016,8 @@ Important concepts:
 
 Typical ownership split:
 
-- `@hypercard/ui-runtime` owns `ui.card.v1` docs
-- `@hypercard/kanban-runtime` owns `kanban.v1` docs
+- `@go-go-golems/os-ui-cards` owns `ui.card.v1` docs
+- `@go-go-golems/os-kanban` owns `kanban.v1` docs
 - `os-launcher` owns docs for its concrete demo surfaces
 - Inventory owns docs for its concrete `ui.card.v1` surfaces
 

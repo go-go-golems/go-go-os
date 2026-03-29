@@ -43,7 +43,7 @@ export function createMacBrowserStateSeed(
 }
 
 function materializeMacBrowserState(seed: MacBrowserStateInput): MacBrowserState {
-  if (seed && typeof seed === 'object' && 'url' in seed && 'customPages' in seed) {
+  if (seed && typeof seed === 'object' && 'initialized' in seed) {
     return {
       ...seed,
       history: [...seed.history],

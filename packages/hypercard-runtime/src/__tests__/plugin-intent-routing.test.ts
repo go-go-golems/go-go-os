@@ -1,8 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { describe, expect, it } from 'vitest';
-import { notificationsReducer } from '@hypercard/engine';
+import { notificationsReducer } from '@go-go-golems/os-core';
 import { runtimeSessionsReducer, registerRuntimeSession } from '../features/runtimeSessions';
-import { openWindow, windowingReducer } from '@hypercard/engine/desktop-core';
+import { openWindow, windowingReducer } from '@go-go-golems/os-core/desktop-core';
 import { dispatchRuntimeAction } from '../runtime-host/pluginIntentRouting';
 
 function inventoryReducer(state = { events: [] as unknown[] }, action: { type: string; payload?: unknown }) {

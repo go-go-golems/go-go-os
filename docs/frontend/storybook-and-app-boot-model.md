@@ -43,7 +43,7 @@ Because of this, Storybook should be treated as a shared frontend platform artif
 
 ## Alias ownership
 
-`@hypercard/engine` aliasing for Storybook is configured in:
+`@go-go-golems/os-core` aliasing for Storybook is configured in:
 
 - `.storybook/main.ts`
 

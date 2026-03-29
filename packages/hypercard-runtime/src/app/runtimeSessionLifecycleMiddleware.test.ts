@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import INVENTORY_STACK from '../plugin-runtime/fixtures/inventory-stack.vm.js?raw';
-import { closeWindow, openWindow } from '@hypercard/engine/desktop-core';
+import { closeWindow, openWindow } from '@go-go-golems/os-core/desktop-core';
 import { createAppStore } from './createAppStore';
 import { registerRuntimeSession, selectRuntimeSession } from '../features/runtimeSessions';
 import {
@@ -13,8 +13,8 @@ import { clearRuntimeSurfaceTypes, registerRuntimeSurfaceType } from '../runtime
 import { TEST_UI_CARD_V1_RUNTIME_SURFACE_TYPE, TEST_UI_RUNTIME_PACKAGE } from '../testRuntimeUi';
 import { createRuntimeSessionLifecycleMiddleware } from './runtimeSessionLifecycleMiddleware';
 import { configureStore } from '@reduxjs/toolkit';
-import { debugReducer, notificationsReducer } from '@hypercard/engine';
-import { windowingReducer } from '@hypercard/engine/desktop-core';
+import { debugReducer, notificationsReducer } from '@go-go-golems/os-core';
+import { windowingReducer } from '@go-go-golems/os-core/desktop-core';
 import { runtimeSessionsReducer } from '../features/runtimeSessions/runtimeSessionsSlice';
 import { hypercardArtifactsReducer } from '../hypercard/artifacts/artifactsSlice';
 

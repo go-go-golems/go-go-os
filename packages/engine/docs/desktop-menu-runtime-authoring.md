@@ -1,6 +1,6 @@
 # Desktop Menu Runtime Authoring Guide
 
-This guide covers how app modules should integrate with the desktop shell menu runtime in `@hypercard/engine`.
+This guide covers how app modules should integrate with the desktop shell menu runtime in `@go-go-golems/os-core`.
 
 ## Goals
 

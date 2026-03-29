@@ -1,4 +1,4 @@
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   buildRuntimeDebugWindowPayload,

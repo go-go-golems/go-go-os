@@ -1,5 +1,5 @@
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
+import type { OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import { RuntimeSurfaceDebugWindow } from './RuntimeSurfaceDebugWindow';
 
 export const HYPERCARD_RUNTIME_DEBUG_APP_ID = 'hypercard-runtime-debug';

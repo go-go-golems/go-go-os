@@ -64,7 +64,7 @@ export function createOscilloscopeStateSeed(
 }
 
 function materializeOscilloscopeState(seed: OscilloscopeStateInput): OscilloscopeState {
-  if (seed && typeof seed === 'object' && 'waveform' in seed && 'frequency' in seed) {
+  if (seed && typeof seed === 'object' && 'initialized' in seed) {
     return { ...seed };
   }
   return createOscilloscopeStateSeed(seed);

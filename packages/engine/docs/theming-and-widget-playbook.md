@@ -770,7 +770,7 @@ export const DESKTOP_THEME_MACOS1 = 'theme-macos1';
 This gives consuming code a type-safe way to reference the theme:
 
 ```tsx
-import { DESKTOP_THEME_MACOS1 } from '@hypercard/engine/desktop-theme-macos1';
+import { DESKTOP_THEME_MACOS1 } from '@go-go-golems/os-core/desktop-theme-macos1';
 
 <HyperCardTheme theme={DESKTOP_THEME_MACOS1}>
   {children}
@@ -912,7 +912,7 @@ npx storybook dev -p 6006 --config-dir ../../.storybook --no-open
 Then create a quick test story or use the theme decorator in an existing one:
 
 ```tsx
-import { HyperCardTheme } from '@hypercard/engine';
+import { HyperCardTheme } from '@go-go-golems/os-core';
 import '../../../packages/engine/src/theme/desktop/theme/macos-aqua.css';
 
 export const AquaThemed: Story = {
@@ -931,8 +931,8 @@ export const AquaThemed: Story = {
 ### Step 5: Use in an App
 
 ```tsx
-import { DesktopShell } from '@hypercard/engine';
-import '@hypercard/engine/theme';
+import { DesktopShell } from '@go-go-golems/os-core';
+import '@go-go-golems/os-core/theme';
 import './theme/desktop/theme/macos-aqua.css';
 
 function App() {
@@ -943,7 +943,7 @@ function App() {
 Or use the entry module:
 
 ```tsx
-import { DESKTOP_THEME_MACOS_AQUA } from '@hypercard/engine/desktop-theme-macos-aqua';
+import { DESKTOP_THEME_MACOS_AQUA } from '@go-go-golems/os-core/desktop-theme-macos-aqua';
 
 function App() {
   return <DesktopShell stack={myStack} themeClass={DESKTOP_THEME_MACOS_AQUA} />;

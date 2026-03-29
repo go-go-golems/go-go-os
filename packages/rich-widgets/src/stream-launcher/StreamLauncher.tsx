@@ -6,7 +6,7 @@ import {
   useRef,
   type FC,
 } from 'react';
-import { Btn, RadioButton } from '@hypercard/engine';
+import { Btn, RadioButton } from '@go-go-golems/os-core';
 import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { EmptyState } from '../primitives/EmptyState';

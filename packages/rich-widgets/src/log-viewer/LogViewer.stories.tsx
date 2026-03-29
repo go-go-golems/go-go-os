@@ -10,7 +10,7 @@ import {
   logViewerActions,
   logViewerReducer,
 } from './logViewerState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof LogViewer> = {
   title: 'RichWidgets/LogViewer',

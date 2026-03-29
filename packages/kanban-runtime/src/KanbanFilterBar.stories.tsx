@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { KanbanFilterBar } from './KanbanFilterBar';
 import { DEFAULT_KANBAN_TAXONOMY } from './types';
-import '@hypercard/kanban-runtime/theme';
+import '@go-go-golems/os-kanban/theme';
 
 const meta: Meta<typeof KanbanFilterBar> = {
   title: 'RichWidgets/Kanban/FilterBar',

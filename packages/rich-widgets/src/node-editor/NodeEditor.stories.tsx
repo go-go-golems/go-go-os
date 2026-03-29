@@ -10,7 +10,7 @@ import {
   nodeEditorActions,
   nodeEditorReducer,
 } from './nodeEditorState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof NodeEditor> = {
   title: 'RichWidgets/NodeEditor',

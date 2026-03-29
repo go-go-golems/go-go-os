@@ -1,5 +1,5 @@
-import { ProgressBar } from '@hypercard/rich-widgets';
-import { Sparkline } from '@hypercard/rich-widgets';
+import { ProgressBar } from '@go-go-golems/os-widgets';
+import { Sparkline } from '@go-go-golems/os-widgets';
 import type { KanbanHighlight } from './types';
 import { KANBAN_PARTS as P } from './parts';
 

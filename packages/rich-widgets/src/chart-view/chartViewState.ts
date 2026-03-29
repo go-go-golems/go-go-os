@@ -28,7 +28,7 @@ export function createChartViewStateSeed(
 }
 
 function materializeChartViewState(seed: ChartViewStateInput): ChartViewState {
-  if (seed && typeof seed === 'object' && 'chartType' in seed && 'datasetKey' in seed) {
+  if (seed && typeof seed === 'object' && 'initialized' in seed) {
     return { ...seed };
   }
   return createChartViewStateSeed(seed);

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useReducer, useRef } from 'react';
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { GraphCanvas } from './GraphCanvas';

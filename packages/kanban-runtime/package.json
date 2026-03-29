@@ -1,5 +1,5 @@
 {
-  "name": "@hypercard/kanban-runtime",
+  "name": "@go-go-golems/os-kanban",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,10 +16,10 @@
     "test:watch": "vitest src"
   },
   "dependencies": {
-    "@hypercard/engine": "workspace:*",
-    "@hypercard/hypercard-runtime": "workspace:*",
-    "@hypercard/rich-widgets": "workspace:*",
-    "@hypercard/ui-runtime": "workspace:*"
+    "@go-go-golems/os-core": "workspace:*",
+    "@go-go-golems/os-scripting": "workspace:*",
+    "@go-go-golems/os-widgets": "workspace:*",
+    "@go-go-golems/os-ui-cards": "workspace:*"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "^2.0.0",

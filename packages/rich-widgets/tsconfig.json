@@ -15,9 +15,9 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@hypercard/engine": ["../engine/src/index.ts"],
-      "@hypercard/repl": ["../repl/src/index.ts"],
-      "@hypercard/rich-widgets/*": ["./src/*"]
+      "@go-go-golems/os-core": ["../engine/src/index.ts"],
+      "@go-go-golems/os-repl": ["../repl/src/index.ts"],
+      "@go-go-golems/os-widgets/*": ["./src/*"]
     }
   },
   "include": ["src"],

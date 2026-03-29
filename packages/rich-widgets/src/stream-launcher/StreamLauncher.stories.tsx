@@ -10,7 +10,7 @@ import {
   streamLauncherReducer,
   STREAM_LAUNCHER_STATE_KEY,
 } from './streamLauncherState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof StreamLauncher> = {
   title: 'RichWidgets/StreamLauncher',

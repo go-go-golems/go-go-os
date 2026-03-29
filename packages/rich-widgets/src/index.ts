@@ -96,7 +96,7 @@ export {
   BUILT_IN_COMMANDS,
   FORTUNES,
   INITIAL_LINES,
-} from '@hypercard/repl';
+} from '@go-go-golems/os-repl';
 
 // NodeEditor
 export { NodeEditor, type NodeEditorProps } from './node-editor/NodeEditor';
@@ -320,7 +320,6 @@ export { drawGameArt } from './game-finder/gameArt';
 // StreamLauncher
 export { StreamLauncher } from './stream-launcher/StreamLauncher';
 export {
-  type StreamLauncherProps,
   STREAM_LAUNCHER_STATE_KEY,
   createStreamLauncherStateSeed,
   selectStreamLauncherState,
@@ -328,6 +327,7 @@ export {
   streamLauncherReducer,
 } from './stream-launcher/streamLauncherState';
 export {
+  type StreamLauncherProps,
   type Stream,
   type StreamStatus,
   type ThumbType,
@@ -342,7 +342,6 @@ export { drawStreamThumb } from './stream-launcher/streamArt';
 // SteamLauncher
 export { SteamLauncher } from './steam-launcher/SteamLauncher';
 export {
-  type SteamLauncherProps,
   STEAM_LAUNCHER_STATE_KEY,
   createSteamLauncherStateSeed,
   selectSteamLauncherState,
@@ -350,6 +349,7 @@ export {
   steamLauncherReducer,
 } from './steam-launcher/steamLauncherState';
 export {
+  type SteamLauncherProps,
   type SteamGame,
   type Friend,
   type FriendStatus,

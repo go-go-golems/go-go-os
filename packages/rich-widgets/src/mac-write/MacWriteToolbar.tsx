@@ -1,4 +1,4 @@
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';
 import { Separator } from '../primitives/Separator';
 import type { FormatAction, ViewMode } from './types';

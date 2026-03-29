@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
 import { createRuntimeSessionTaskManagerSource } from './runtimeSessionSource';
 import {
   WINDOW_OWNED_RUNTIME_SESSION,

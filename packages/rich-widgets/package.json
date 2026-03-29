@@ -1,5 +1,5 @@
 {
-  "name": "@hypercard/rich-widgets",
+  "name": "@go-go-golems/os-widgets",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,11 +17,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@hypercard/repl": "workspace:*"
+    "@go-go-golems/os-repl": "workspace:*"
   },
   "peerDependencies": {
-    "@hypercard/desktop-os": "workspace:*",
-    "@hypercard/engine": "workspace:*",
+    "@go-go-golems/os-shell": "workspace:*",
+    "@go-go-golems/os-core": "workspace:*",
     "@reduxjs/toolkit": "^2.0.0",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",

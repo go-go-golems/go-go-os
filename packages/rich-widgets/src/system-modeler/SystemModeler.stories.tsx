@@ -10,7 +10,7 @@ import {
   systemModelerReducer,
   SYSTEM_MODELER_STATE_KEY,
 } from './systemModelerState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof SystemModeler> = {
   title: 'RichWidgets/SystemModeler',

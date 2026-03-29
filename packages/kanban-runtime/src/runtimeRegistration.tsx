@@ -3,7 +3,7 @@ import { KANBAN_RUNTIME_DOCS_METADATA } from './docsMetadata';
 import {
   type RuntimePackageDefinition,
   type RuntimeSurfaceTypeDefinition,
-} from '@hypercard/hypercard-runtime';
+} from '@go-go-golems/os-scripting';
 import { KanbanV1Renderer, type KanbanV1Node, validateKanbanV1Node } from './runtime-packs/kanbanV1Pack';
 
 export const KANBAN_RUNTIME_PACKAGE: RuntimePackageDefinition = {

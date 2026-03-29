@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAppStore } from '../app/createAppStore';
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
 import { getAttachedJsSession, clearAttachedJsSessions } from '../repl/attachedJsSessionRegistry';
 import { getAttachedRuntimeSession, clearAttachedRuntimeSessions } from '../repl/attachedRuntimeSessionRegistry';
 import { DEFAULT_RUNTIME_SESSION_MANAGER } from '../runtime-session-manager';

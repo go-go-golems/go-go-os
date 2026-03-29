@@ -1,4 +1,4 @@
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import { RICH_PARTS as P } from '../parts';
 import { ModalOverlay } from '../primitives/ModalOverlay';
 import type { BlockInstance } from './types';

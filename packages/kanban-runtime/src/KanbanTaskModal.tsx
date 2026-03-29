@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Btn } from '@hypercard/engine';
-import { ModalOverlay } from '@hypercard/rich-widgets';
+import { Btn } from '@go-go-golems/os-core';
+import { ModalOverlay } from '@go-go-golems/os-widgets';
 import type { Column, KanbanPriorityId, KanbanLabelId, KanbanTaxonomy, Task } from './types';
 import { formatKanbanOption } from './types';
 import { KANBAN_PARTS as P } from './parts';

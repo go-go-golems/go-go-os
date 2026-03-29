@@ -1,7 +1,7 @@
-import { showToast } from '@hypercard/engine';
+import { showToast } from '@go-go-golems/os-core';
 import { authorizeDomainIntent, authorizeSystemIntent } from '../features/runtimeSessions';
 import { ingestRuntimeAction } from '../features/runtimeSessions';
-import { closeWindow, sessionNavBack, sessionNavGo } from '@hypercard/engine/desktop-core';
+import { closeWindow, sessionNavBack, sessionNavGo } from '@go-go-golems/os-core/desktop-core';
 import type { RuntimeAction } from '../plugin-runtime/contracts';
 import type { CapabilityPolicy } from '../features/runtimeSessions';
 import { getRuntimeActionDomain, getRuntimeActionKind } from '../plugin-runtime/contracts';

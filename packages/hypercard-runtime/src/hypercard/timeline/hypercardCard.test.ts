@@ -8,7 +8,7 @@ import {
   handleSem,
   resetChatModulesRegistrationForTest,
   timelineSlice,
-} from '@hypercard/chat-runtime';
+} from '@go-go-golems/os-chat';
 import { clearRuntimeSurfaceRegistry, hasRuntimeSurface } from '../../plugin-runtime/runtimeSurfaceRegistry';
 import { createArtifactProjectionMiddleware } from '../artifacts/artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from '../artifacts/artifactsSlice';

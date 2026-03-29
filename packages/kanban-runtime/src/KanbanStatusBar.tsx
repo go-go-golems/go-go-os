@@ -1,4 +1,4 @@
-import { WidgetStatusBar } from '@hypercard/rich-widgets';
+import { WidgetStatusBar } from '@go-go-golems/os-widgets';
 
 export interface KanbanStatusMetric {
   label: string;

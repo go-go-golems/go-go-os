@@ -1,4 +1,4 @@
-import type { DesktopIconDef } from '@hypercard/engine/desktop-react';
+import type { DesktopIconDef } from '@go-go-golems/os-core/desktop-react';
 import type { AppRegistry } from '../registry/createAppRegistry';
 
 export interface LauncherFolderIconOptions {

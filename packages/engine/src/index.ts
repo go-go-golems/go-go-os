@@ -1,11 +1,11 @@
-// @hypercard/engine — barrel exports
+// @go-go-golems/os-core — barrel exports
 //
 // USAGE:
-//   import { DataTable, Btn, ... } from '@hypercard/engine';
-//   import { DesktopShell } from '@hypercard/engine/desktop-react';
-//   import { openWindow } from '@hypercard/engine/desktop-core';
-//   import '@hypercard/engine/theme';                    // load default desktop/widget css packs
-//   import '@hypercard/engine/theme/modern.css';         // optional theme layer
+//   import { DataTable, Btn, ... } from '@go-go-golems/os-core';
+//   import { DesktopShell } from '@go-go-golems/os-core/desktop-react';
+//   import { openWindow } from '@go-go-golems/os-core/desktop-core';
+//   import '@go-go-golems/os-core/theme';                    // load default desktop/widget css packs
+//   import '@go-go-golems/os-core/theme/modern.css';         // optional theme layer
 //
 
 // ── App utilities ──

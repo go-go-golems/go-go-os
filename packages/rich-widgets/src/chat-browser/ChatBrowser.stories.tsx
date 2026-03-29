@@ -10,7 +10,7 @@ import {
   chatBrowserReducer,
   createChatBrowserStateSeed,
 } from './chatBrowserState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof ChatBrowser> = {
   title: 'RichWidgets/ChatBrowser',

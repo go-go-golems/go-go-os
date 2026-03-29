@@ -38,7 +38,7 @@ export function toStoryParam(value: unknown): string | undefined {
  *
  * @example
  * ```tsx
- * import { createStoryHelpers } from '@hypercard/engine';
+ * import { createStoryHelpers } from '@go-go-golems/os-core';
  *
  * const { storeDecorator, createStory, FullApp } = createStoryHelpers({ ... });
  *

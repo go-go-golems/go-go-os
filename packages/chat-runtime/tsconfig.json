@@ -15,8 +15,8 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@hypercard/engine": ["../engine/src"],
-      "@hypercard/engine/*": ["../engine/src/*"]
+      "@go-go-golems/os-core": ["../engine/src"],
+      "@go-go-golems/os-core/*": ["../engine/src/*"]
     }
   },
   "include": ["src"],

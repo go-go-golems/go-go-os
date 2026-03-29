@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { timelineSlice, type TimelineEntity } from '@hypercard/chat-runtime';
+import { timelineSlice, type TimelineEntity } from '@go-go-golems/os-chat';
 import { clearRuntimeSurfaceRegistry, hasRuntimeSurface } from '../../plugin-runtime';
 import { createArtifactProjectionMiddleware } from './artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from './artifactsSlice';

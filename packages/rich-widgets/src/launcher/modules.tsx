@@ -3,9 +3,9 @@ import {
   formatAppKey,
   type LaunchableAppModule,
   type LaunchableAppRenderParams,
-} from '@hypercard/desktop-os';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import { DesktopIconLayer, type DesktopIconDef } from '@hypercard/engine/desktop-react';
+} from '@go-go-golems/os-shell';
+import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
+import { DesktopIconLayer, type DesktopIconDef } from '@go-go-golems/os-core/desktop-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { RICH_PARTS } from '../parts';
 import {
@@ -28,11 +28,11 @@ import {
   MAC_WRITE_STATE_KEY,
   macWriteReducer,
 } from '../mac-write/macWriteState';
-import { MacRepl } from '@hypercard/repl';
+import { MacRepl } from '@go-go-golems/os-repl';
 import {
   MAC_REPL_STATE_KEY,
   macReplReducer,
-} from '@hypercard/repl';
+} from '@go-go-golems/os-repl';
 import { NodeEditor } from '../node-editor/NodeEditor';
 import {
   NODE_EDITOR_STATE_KEY,

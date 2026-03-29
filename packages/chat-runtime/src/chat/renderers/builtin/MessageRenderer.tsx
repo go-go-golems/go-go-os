@@ -2,7 +2,7 @@ import { type MouseEvent, useMemo } from 'react';
 import {
   useDesktopWindowId,
   useOpenDesktopContextMenu,
-} from '@hypercard/engine/desktop-react';
+} from '@go-go-golems/os-core/desktop-react';
 import type { RenderContext, RenderEntity } from '../types';
 import { useRegisterMessageContextActions } from '../../runtime/contextActions';
 

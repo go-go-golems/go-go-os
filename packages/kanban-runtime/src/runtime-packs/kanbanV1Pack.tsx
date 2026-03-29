@@ -10,7 +10,7 @@ import type {
   KanbanTaxonomy,
   Task,
 } from '../runtime';
-import type { UIEventRef } from '@hypercard/ui-runtime';
+import type { UIEventRef } from '@go-go-golems/os-ui-cards';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

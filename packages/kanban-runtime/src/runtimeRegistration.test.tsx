@@ -10,7 +10,7 @@ import {
   registerRuntimeSurfaceType,
   renderRuntimeSurfaceTree,
   validateRuntimeSurfaceTree,
-} from '@hypercard/hypercard-runtime';
+} from '@go-go-golems/os-scripting';
 import { UI_CARD_V1_RUNTIME_SURFACE_TYPE, UI_RUNTIME_PACKAGE } from '../../ui-runtime/src';
 import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from './runtimeRegistration';
 

@@ -1,4 +1,4 @@
-import { CORE_APP_REDUCER_KEYS, type CreateAppStoreOptions, createAppStore } from '@hypercard/hypercard-runtime';
+import { CORE_APP_REDUCER_KEYS, type CreateAppStoreOptions, createAppStore } from '@go-go-golems/os-scripting';
 import type { Reducer } from '@reduxjs/toolkit';
 import type { AppStateKey } from '../contracts/appManifest';
 import type { LaunchableAppModule } from '../contracts/launchableAppModule';

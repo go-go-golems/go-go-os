@@ -10,7 +10,7 @@ import {
   macCalendarActions,
   macCalendarReducer,
 } from './macCalendarState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof MacCalendar> = {
   title: 'RichWidgets/MacCalendar',

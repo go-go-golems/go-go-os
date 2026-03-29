@@ -1,4 +1,4 @@
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import type { OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import { TaskManagerWindow } from './TaskManagerWindow';
 
 export const HYPERCARD_TASK_MANAGER_APP_ID = 'hypercard-task-manager';

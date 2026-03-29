@@ -15,14 +15,14 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@hypercard/engine": ["../engine/src"],
-      "@hypercard/engine/*": ["../engine/src/*"],
-      "@hypercard/hypercard-runtime": ["../hypercard-runtime/src"],
-      "@hypercard/hypercard-runtime/*": ["../hypercard-runtime/src/*"],
-      "@hypercard/ui-runtime": ["../ui-runtime/src"],
-      "@hypercard/ui-runtime/*": ["../ui-runtime/src/*"],
-      "@hypercard/rich-widgets": ["../rich-widgets/src"],
-      "@hypercard/rich-widgets/*": ["../rich-widgets/src/*"]
+      "@go-go-golems/os-core": ["../engine/src"],
+      "@go-go-golems/os-core/*": ["../engine/src/*"],
+      "@go-go-golems/os-scripting": ["../hypercard-runtime/src"],
+      "@go-go-golems/os-scripting/*": ["../hypercard-runtime/src/*"],
+      "@go-go-golems/os-ui-cards": ["../ui-runtime/src"],
+      "@go-go-golems/os-ui-cards/*": ["../ui-runtime/src/*"],
+      "@go-go-golems/os-widgets": ["../rich-widgets/src"],
+      "@go-go-golems/os-widgets/*": ["../rich-widgets/src/*"]
     }
   },
   "include": ["src"],

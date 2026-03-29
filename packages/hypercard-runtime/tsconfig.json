@@ -15,12 +15,12 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@hypercard/engine": ["../engine/src"],
-      "@hypercard/engine/*": ["../engine/src/*"],
-      "@hypercard/chat-runtime": ["../chat-runtime/src"],
-      "@hypercard/chat-runtime/*": ["../chat-runtime/src/*"],
-      "@hypercard/repl": ["../repl/src"],
-      "@hypercard/repl/*": ["../repl/src/*"]
+      "@go-go-golems/os-core": ["../engine/src"],
+      "@go-go-golems/os-core/*": ["../engine/src/*"],
+      "@go-go-golems/os-chat": ["../chat-runtime/src"],
+      "@go-go-golems/os-chat/*": ["../chat-runtime/src/*"],
+      "@go-go-golems/os-repl": ["../repl/src"],
+      "@go-go-golems/os-repl/*": ["../repl/src/*"]
     }
   },
   "include": ["src"],

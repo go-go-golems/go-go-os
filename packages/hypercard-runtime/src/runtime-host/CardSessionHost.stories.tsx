@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Provider } from 'react-redux';
 import { createAppStore } from '../app/createAppStore';
-import type { RuntimeSurfaceMeta, RuntimeBundleDefinition } from '@hypercard/engine';
-import { openWindow } from '@hypercard/engine/desktop-core';
+import type { RuntimeSurfaceMeta, RuntimeBundleDefinition } from '@go-go-golems/os-core';
+import { openWindow } from '@go-go-golems/os-core/desktop-core';
 import CHAT_PLUGIN_BUNDLE from './fixtures/CardSessionHost.chat.vm.js?raw';
 import LIST_PLUGIN_BUNDLE from './fixtures/CardSessionHost.list.vm.js?raw';
 import NAV_PLUGIN_BUNDLE from './fixtures/CardSessionHost.nav.vm.js?raw';

@@ -1,5 +1,5 @@
 import { createListenerMiddleware } from '@reduxjs/toolkit';
-import { closeWindow, type WindowInstance } from '@hypercard/engine/desktop-core';
+import { closeWindow, type WindowInstance } from '@go-go-golems/os-core/desktop-core';
 import { removeRuntimeSession } from '../features/runtimeSessions';
 import {
   DEFAULT_RUNTIME_SESSION_MANAGER,

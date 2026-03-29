@@ -43,7 +43,7 @@ export function createMermaidEditorStateSeed(
 function materializeMermaidEditorState(
   seed: MermaidEditorStateInput,
 ): MermaidEditorState {
-  if (seed && typeof seed === 'object' && 'code' in seed && 'presetId' in seed) {
+  if (seed && typeof seed === 'object' && 'initialized' in seed) {
     return { ...seed };
   }
   return createMermaidEditorStateSeed(seed);

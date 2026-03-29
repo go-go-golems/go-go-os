@@ -10,7 +10,7 @@ import {
   graphNavigatorReducer,
   GRAPH_NAVIGATOR_STATE_KEY,
 } from './graphNavigatorState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof GraphNavigator> = {
   title: 'RichWidgets/GraphNavigator',

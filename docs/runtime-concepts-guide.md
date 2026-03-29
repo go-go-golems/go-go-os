@@ -127,7 +127,7 @@ The workspace now has a clear layer split.
 
 Main package:
 
-- `@hypercard/engine`
+- `@go-go-golems/os-core`
 
 Responsibilities:
 
@@ -149,7 +149,7 @@ Key files:
 
 Main package:
 
-- `@hypercard/hypercard-runtime`
+- `@go-go-golems/os-scripting`
 
 Responsibilities:
 
@@ -172,8 +172,8 @@ Key files:
 
 Current first-party examples:
 
-- `@hypercard/ui-runtime`
-- `@hypercard/kanban-runtime`
+- `@go-go-golems/os-ui-cards`
+- `@go-go-golems/os-kanban`
 
 Responsibilities:
 

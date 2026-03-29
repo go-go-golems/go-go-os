@@ -57,7 +57,7 @@ export function createChatBrowserStateSeed(
 }
 
 function materializeChatBrowserState(seed: ChatBrowserStateInput): ChatBrowserState {
-  if (seed && typeof seed === 'object' && 'conversations' in seed && 'searchParams' in seed) {
+  if (seed && typeof seed === 'object' && 'initialized' in seed) {
     return {
       ...seed,
       conversations: seed.conversations.map(cloneConversation),

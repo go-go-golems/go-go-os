@@ -1,5 +1,5 @@
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import type { DesktopContribution } from '@hypercard/engine/desktop-react';
+import type { OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
+import type { DesktopContribution } from '@go-go-golems/os-core/desktop-react';
 import type { Reducer } from '@reduxjs/toolkit';
 import type { ReactNode } from 'react';
 import type { AppManifest, AppStateKey, LaunchReason } from './appManifest';

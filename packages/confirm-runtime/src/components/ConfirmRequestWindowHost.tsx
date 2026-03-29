@@ -9,10 +9,10 @@ import {
   SelectableDataTable,
   SelectableList,
   type ColumnConfig,
-} from '@hypercard/engine';
+} from '@go-go-golems/os-core';
 import { useEffect, useState } from 'react';
 import type { ConfirmRequest, ConfirmScriptView, SubmitResponsePayload, SubmitScriptEventPayload } from '../types';
-import type { JsonSchemaNode } from '@hypercard/engine';
+import type { JsonSchemaNode } from '@go-go-golems/os-core';
 
 export interface ConfirmRequestWindowHostProps {
   request: ConfirmRequest;

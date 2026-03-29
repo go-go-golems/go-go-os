@@ -53,7 +53,7 @@ export function createControlRoomStateSeed(
 }
 
 function materializeControlRoomState(seed: ControlRoomStateInput): ControlRoomState {
-  if (seed && typeof seed === 'object' && 'switches' in seed && 'logs' in seed) {
+  if (seed && typeof seed === 'object' && 'initialized' in seed) {
     return {
       ...seed,
       switches: { ...seed.switches },

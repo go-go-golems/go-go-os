@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Btn, DropdownMenu, GridBoard, SelectableDataTable } from '@hypercard/engine';
+import { Btn, DropdownMenu, GridBoard, SelectableDataTable } from '@go-go-golems/os-core';
 import type { UIEventRef, UINode } from './uiTypes';
 
 export interface UIRuntimeRendererProps {

@@ -13,7 +13,7 @@ import {
   SeededStoreProvider,
   type SeedStore,
 } from '../../rich-widgets/src/storybook/seededStore';
-import '@hypercard/repl/theme';
+import '@go-go-golems/os-repl/theme';
 
 const meta: Meta<typeof MacRepl> = {
   title: 'Repl/MacRepl',

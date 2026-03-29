@@ -10,10 +10,10 @@
     "outDir": "dist",
     "rootDir": "src",
     "paths": {
-      "@hypercard/chat-runtime": ["../../packages/chat-runtime/src"],
-      "@hypercard/desktop-os": ["../../packages/desktop-os/src"],
-      "@hypercard/engine": ["../../packages/engine/src"],
-      "@hypercard/hypercard-runtime": ["../../packages/hypercard-runtime/src"]
+      "@go-go-golems/os-chat": ["../../packages/chat-runtime/src"],
+      "@go-go-golems/os-shell": ["../../packages/desktop-os/src"],
+      "@go-go-golems/os-core": ["../../packages/engine/src"],
+      "@go-go-golems/os-scripting": ["../../packages/hypercard-runtime/src"]
     }
   },
   "include": ["src"],

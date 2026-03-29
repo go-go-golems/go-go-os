@@ -51,8 +51,8 @@ Examples:
 
 These belong in:
 
-- `@hypercard/ui-runtime`
-- `@hypercard/kanban-runtime`
+- `@go-go-golems/os-ui-cards`
+- `@go-go-golems/os-kanban`
 
 ### Bundle-owned authored surface source and docs
 

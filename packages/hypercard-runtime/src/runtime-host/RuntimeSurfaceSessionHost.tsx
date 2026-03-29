@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
-import { showToast } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
+import { showToast } from '@go-go-golems/os-core';
 import {
   registerRuntimeSession,
   resolveCapabilityPolicy,
@@ -11,7 +11,7 @@ import {
   selectRuntimeSessionState,
   setRuntimeSessionStatus,
 } from '../features/runtimeSessions';
-import { selectFocusedWindowId, selectSessionCurrentNav, selectSessionNavDepth } from '@hypercard/engine/desktop-core';
+import { selectFocusedWindowId, selectSessionCurrentNav, selectSessionNavDepth } from '@go-go-golems/os-core/desktop-core';
 import { markRuntimeSurfaceInjectionResults } from '../hypercard/artifacts/artifactsSlice';
 import type { RuntimeBundleMeta, RuntimeAction } from '../plugin-runtime/contracts';
 import { getPendingRuntimeSurfaces, hasRuntimeSurface, injectPendingRuntimeSurfacesWithReport, onRegistryChange } from '../plugin-runtime/runtimeSurfaceRegistry';

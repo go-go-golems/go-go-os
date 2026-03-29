@@ -9,7 +9,7 @@ import {
   deepResearchActions,
   deepResearchReducer,
 } from './deepResearchState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof DeepResearch> = {
   title: 'RichWidgets/DeepResearch',

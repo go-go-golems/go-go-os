@@ -10,7 +10,7 @@ import {
   logicAnalyzerReducer,
   LOGIC_ANALYZER_STATE_KEY,
 } from './logicAnalyzerState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof LogicAnalyzer> = {
   title: 'RichWidgets/LogicAnalyzer',

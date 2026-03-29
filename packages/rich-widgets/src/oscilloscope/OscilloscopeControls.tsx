@@ -1,4 +1,4 @@
-import { Btn, Checkbox } from '@hypercard/engine';
+import { Btn, Checkbox } from '@go-go-golems/os-core';
 import { RICH_PARTS as P } from '../parts';
 import { LabeledSlider } from '../primitives/LabeledSlider';
 import { Separator } from '../primitives/Separator';
@@ -107,7 +107,7 @@ export function OscilloscopeControls({
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
             <span>CH2 (Sine)</span>
-            <Checkbox checked={channel2} onChange={onChannel2Change} label="ON" />
+            <Checkbox checked={channel2} onChange={() => onChannel2Change(!channel2)} label="ON" />
           </div>
           {channel2 && (
             <>
@@ -129,9 +129,9 @@ export function OscilloscopeControls({
           Defaults
         </Btn>
         <Separator />
-        <Checkbox checked={showGrid} onChange={onShowGridChange} label="Grid" />
-        <Checkbox checked={showCrosshair} onChange={onShowCrosshairChange} label="Cursor" />
-        <Checkbox checked={phosphor} onChange={onPhosphorChange} label="Phosphor" />
+        <Checkbox checked={showGrid} onChange={() => onShowGridChange(!showGrid)} label="Grid" />
+        <Checkbox checked={showCrosshair} onChange={() => onShowCrosshairChange(!showCrosshair)} label="Cursor" />
+        <Checkbox checked={phosphor} onChange={() => onPhosphorChange(!phosphor)} label="Phosphor" />
       </WidgetToolbar>
     </>
   );

@@ -8,7 +8,7 @@ import {
   macBrowserReducer,
   MAC_BROWSER_STATE_KEY,
 } from './macBrowserState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof MacBrowser> = {
   title: 'RichWidgets/MacBrowser',

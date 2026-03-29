@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react';
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';

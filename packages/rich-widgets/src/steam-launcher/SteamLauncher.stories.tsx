@@ -10,7 +10,7 @@ import {
   steamLauncherReducer,
   STEAM_LAUNCHER_STATE_KEY,
 } from './steamLauncherState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof SteamLauncher> = {
   title: 'RichWidgets/SteamLauncher',

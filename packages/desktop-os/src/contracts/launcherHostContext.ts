@@ -1,4 +1,4 @@
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import type { OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 
 export interface LauncherHostContext {
   dispatch: (action: unknown) => unknown;

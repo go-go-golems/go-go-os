@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Btn, Chip } from '@hypercard/engine';
+import { Btn, Chip } from '@go-go-golems/os-core';
 import type { ChatMessage } from './types';
 
 export interface StreamingChatViewProps {

@@ -14,7 +14,7 @@ import {
   macSlidesActions,
   macSlidesReducer,
 } from './macSlidesState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const alignmentDeck = [
   '<!-- align: center -->\n# Centered Title\n\nThis deck starts centered.',

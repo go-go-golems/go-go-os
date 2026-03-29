@@ -1,5 +1,5 @@
 import './primitives.css';
-import '@hypercard/repl/theme';
+import '@go-go-golems/os-repl/theme';
 import './rich-widgets-launcher.css';
 import './sparkline.css';
 import './log-viewer.css';

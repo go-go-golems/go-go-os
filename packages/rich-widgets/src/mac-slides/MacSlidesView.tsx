@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import { RICH_PARTS as P } from '../parts';
 import { CommandPalette, type PaletteItem } from '../primitives/CommandPalette';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';

@@ -5,8 +5,8 @@ import {
   initDiagnostics,
   notificationsReducer,
   startFrameMonitor,
-} from '@hypercard/engine';
-import { windowingReducer } from '@hypercard/engine/desktop-core';
+} from '@go-go-golems/os-core';
+import { windowingReducer } from '@go-go-golems/os-core/desktop-core';
 import { runtimeSessionsReducer } from '../features/runtimeSessions/runtimeSessionsSlice';
 import { createArtifactProjectionMiddleware } from '../hypercard/artifacts/artifactProjectionMiddleware';
 import { hypercardArtifactsReducer } from '../hypercard/artifacts/artifactsSlice';

@@ -10,7 +10,7 @@ import {
   musicPlayerActions,
   musicPlayerReducer,
 } from './musicPlayerState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof RetroMusicPlayer> = {
   title: 'RichWidgets/RetroMusicPlayer',

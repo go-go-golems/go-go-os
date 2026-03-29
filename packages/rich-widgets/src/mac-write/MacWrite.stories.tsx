@@ -11,7 +11,7 @@ import {
   macWriteActions,
   macWriteReducer,
 } from './macWriteState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof MacWrite> = {
   title: 'RichWidgets/MacWrite',

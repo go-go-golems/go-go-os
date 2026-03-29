@@ -4,7 +4,7 @@ import {
   useDesktopWindowId,
   useOpenDesktopContextMenu,
   type DesktopActionEntry,
-} from '@hypercard/engine/desktop-react';
+} from '@go-go-golems/os-core/desktop-react';
 import {
   getTimelineRendererRegistryVersion,
   resolveTimelineRenderers,

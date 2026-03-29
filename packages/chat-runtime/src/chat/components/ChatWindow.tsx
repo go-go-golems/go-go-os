@@ -1,5 +1,5 @@
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import { Btn, Chip } from '@hypercard/engine';
+import { Btn, Chip } from '@go-go-golems/os-core';
 
 export interface ChatWindowProps {
   timelineContent: ReactNode;

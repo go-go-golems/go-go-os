@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useRef } from 'react';
 import { Provider } from 'react-redux';
 import { createAppStore } from '../../app/createAppStore';
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
 import { RuntimeSurfaceDebugWindow } from './RuntimeSurfaceDebugWindow';
 import { upsertArtifact } from '../artifacts/artifactsSlice';
 import { clearRuntimeSurfaceRegistry, registerRuntimeSurface } from '../../plugin-runtime';

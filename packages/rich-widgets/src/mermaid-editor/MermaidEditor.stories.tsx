@@ -9,7 +9,7 @@ import {
   mermaidEditorReducer,
   MERMAID_EDITOR_STATE_KEY,
 } from './mermaidEditorState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof MermaidEditor> = {
   title: 'RichWidgets/MermaidEditor',

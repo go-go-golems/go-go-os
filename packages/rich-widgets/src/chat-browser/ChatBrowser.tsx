@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useReducer } from 'react';
-import { Btn, Checkbox } from '@hypercard/engine';
+import { Btn, Checkbox } from '@go-go-golems/os-core';
 import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { RICH_PARTS as P } from '../parts';
 import { EmptyState } from '../primitives/EmptyState';

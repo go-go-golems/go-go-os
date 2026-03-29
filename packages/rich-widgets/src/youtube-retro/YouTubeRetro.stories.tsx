@@ -10,7 +10,7 @@ import {
   youTubeRetroReducer,
   YOUTUBE_RETRO_STATE_KEY,
 } from './youTubeRetroState';
-import '@hypercard/rich-widgets/theme';
+import '@go-go-golems/os-widgets/theme';
 
 const meta: Meta<typeof YouTubeRetro> = {
   title: 'RichWidgets/YouTubeRetro',

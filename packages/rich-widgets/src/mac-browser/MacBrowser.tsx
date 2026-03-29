@@ -1,4 +1,4 @@
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import { useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { ReactReduxContext, useDispatch, useSelector } from 'react-redux';
 import { WidgetStatusBar } from '../primitives/WidgetStatusBar';

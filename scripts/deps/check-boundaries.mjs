@@ -8,7 +8,7 @@ const repoRoot = resolve(thisFile, '../../..');
 const engineSrcDir = join(repoRoot, 'packages/engine/src');
 const shellControllerFile = join(engineSrcDir, 'components/shell/windowing/useDesktopShellController.tsx');
 
-const forbiddenSpecifiers = ['@hypercard/hypercard-runtime', '@hypercard/chat-runtime'];
+const forbiddenSpecifiers = ['@go-go-golems/os-scripting', '@go-go-golems/os-chat'];
 const sourceExtensions = new Set(['.ts', '.tsx']);
 const errors = [];
 

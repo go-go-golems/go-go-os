@@ -1,5 +1,5 @@
 {
-  "name": "@hypercard/desktop-os",
+  "name": "@go-go-golems/os-shell",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,8 +16,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@hypercard/engine": "workspace:*",
-    "@hypercard/hypercard-runtime": "workspace:*"
+    "@go-go-golems/os-core": "workspace:*",
+    "@go-go-golems/os-scripting": "workspace:*"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "^2.0.0",

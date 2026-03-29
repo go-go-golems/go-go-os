@@ -4,7 +4,7 @@ import {
   useRegisterContextActions,
   type DesktopActionEntry,
   type DesktopContextTargetRef,
-} from '@hypercard/engine/desktop-react';
+} from '@go-go-golems/os-core/desktop-react';
 
 export function useRegisterConversationContextActions(
   conversationId: string | null | undefined,

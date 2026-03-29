@@ -5,7 +5,7 @@
  * code here before dispatching openWindow, and the editor reads it on mount.
  */
 
-import { type OpenWindowPayload, openWindow } from '@hypercard/engine/desktop-core';
+import { type OpenWindowPayload, openWindow } from '@go-go-golems/os-core/desktop-core';
 import { getPendingRuntimeSurfaces } from '../../plugin-runtime';
 import {
   buildRuntimeSurfaceEditorAppKey,

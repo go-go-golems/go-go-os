@@ -1,4 +1,4 @@
-import { Btn, Checkbox } from '@hypercard/engine';
+import { Btn, Checkbox } from '@go-go-golems/os-core';
 import { RICH_PARTS as P } from '../parts';
 import { LabeledSlider } from '../primitives/LabeledSlider';
 import { WidgetToolbar } from '../primitives/WidgetToolbar';

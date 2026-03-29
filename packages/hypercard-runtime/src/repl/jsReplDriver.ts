@@ -5,7 +5,7 @@ import type {
   ReplExecutionResult,
   ReplHelpEntry,
   TerminalLine,
-} from '@hypercard/repl';
+} from '@go-go-golems/os-repl';
 import { getAttachedJsSession, listAttachedJsSessions } from './attachedJsSessionRegistry';
 import { createJsSessionBroker, type JsSessionBroker } from './jsSessionBroker';
 

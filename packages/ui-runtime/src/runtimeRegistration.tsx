@@ -1,4 +1,4 @@
-import type { RuntimePackageDefinition } from '@hypercard/hypercard-runtime';
+import type { RuntimePackageDefinition } from '@go-go-golems/os-scripting';
 import uiPackagePrelude from './runtime-packages/ui.package.vm.js?raw';
 import { UI_RUNTIME_DOCS_METADATA } from './docsMetadata';
 import { UI_CARD_V1_RUNTIME_SURFACE_TYPE } from './runtime-packs/uiCardV1Pack';

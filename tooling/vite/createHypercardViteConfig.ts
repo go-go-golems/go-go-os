@@ -44,9 +44,9 @@ export function createHypercardViteConfig(options: HypercardViteConfigOptions = 
     plugins: [react()],
     resolve: {
       alias: {
-        '@hypercard/engine': path.resolve(__dirname, '../../packages/engine/src'),
-        '@hypercard/desktop-os': path.resolve(__dirname, '../../packages/desktop-os/src'),
-        '@hypercard/confirm-runtime': path.resolve(__dirname, '../../packages/confirm-runtime/src'),
+        '@go-go-golems/os-core': path.resolve(__dirname, '../../packages/engine/src'),
+        '@go-go-golems/os-shell': path.resolve(__dirname, '../../packages/desktop-os/src'),
+        '@go-go-golems/os-confirm': path.resolve(__dirname, '../../packages/confirm-runtime/src'),
       },
     },
   } as {

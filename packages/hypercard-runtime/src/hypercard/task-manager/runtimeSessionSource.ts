@@ -1,5 +1,5 @@
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
+import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import type { TaskManagerRow, TaskManagerSource } from './types';
 import { buildRuntimeDebugWindowPayload } from '../debug/runtimeDebugApp';
 import {

@@ -2,7 +2,7 @@ import type {
   DesktopCommandContext,
   DesktopCommandHandler,
   DesktopContribution,
-} from '@hypercard/engine/desktop-react';
+} from '@go-go-golems/os-core/desktop-react';
 import type { LaunchReason } from '../contracts/appManifest';
 import type { LaunchableAppModule } from '../contracts/launchableAppModule';
 import type { LauncherHostContext } from '../contracts/launcherHostContext';

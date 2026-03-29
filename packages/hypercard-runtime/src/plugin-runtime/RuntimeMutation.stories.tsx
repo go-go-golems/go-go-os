@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Btn } from '@hypercard/engine';
+import { Btn } from '@go-go-golems/os-core';
 import type { RuntimeAction } from './contracts';
 import DYNAMIC_CARD from './fixtures/dynamic-card.vm.js?raw';
 import INVENTORY_STACK from './fixtures/inventory-stack.vm.js?raw';

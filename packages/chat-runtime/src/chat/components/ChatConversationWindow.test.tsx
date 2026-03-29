@@ -9,8 +9,8 @@ import { chatWindowReducer } from '../state/chatWindowSlice';
 import { timelineReducer, timelineSlice } from '../state/timelineSlice';
 import { ensureChatModulesRegistered } from '../runtime/registerChatModules';
 
-vi.mock('@hypercard/engine/desktop-react', async () => {
-  const actual = await vi.importActual<object>('@hypercard/engine/desktop-react');
+vi.mock('@go-go-golems/os-core/desktop-react', async () => {
+  const actual = await vi.importActual<object>('@go-go-golems/os-core/desktop-react');
   return {
     ...actual,
     useDesktopWindowId: () => undefined,

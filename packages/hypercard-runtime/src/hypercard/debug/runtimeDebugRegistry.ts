@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
 
 const registeredStacks = new Map<string, RuntimeBundleDefinition>();
 const listeners = new Set<() => void>();

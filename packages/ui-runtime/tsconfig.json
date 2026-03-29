@@ -15,10 +15,10 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@hypercard/engine": ["../engine/src"],
-      "@hypercard/engine/*": ["../engine/src/*"],
-      "@hypercard/hypercard-runtime": ["../hypercard-runtime/src"],
-      "@hypercard/hypercard-runtime/*": ["../hypercard-runtime/src/*"]
+      "@go-go-golems/os-core": ["../engine/src"],
+      "@go-go-golems/os-core/*": ["../engine/src/*"],
+      "@go-go-golems/os-scripting": ["../hypercard-runtime/src"],
+      "@go-go-golems/os-scripting/*": ["../hypercard-runtime/src/*"]
     }
   },
   "include": ["src"],

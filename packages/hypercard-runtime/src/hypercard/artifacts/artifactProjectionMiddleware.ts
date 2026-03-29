@@ -1,11 +1,14 @@
 import { createListenerMiddleware, type PayloadAction } from '@reduxjs/toolkit';
-import { timelineSlice, type TimelineEntity } from '@hypercard/chat-runtime';
+import { timelineSlice, type TimelineEntity } from '@go-go-golems/os-chat';
 import { registerRuntimeSurface } from '../../plugin-runtime';
 import { extractArtifactUpsertFromTimelineEntity } from './artifactRuntime';
 import { upsertArtifact } from './artifactsSlice';
 
 function runtimeSurfaceEntityIsFinal(entity: TimelineEntity): boolean {
-  const rawStatus = entity.props?.status;
+  const rawStatus =
+    entity.props && typeof entity.props === 'object'
+      ? (entity.props as Record<string, unknown>).status
+      : undefined;
   if (typeof rawStatus !== 'string') {
     return true;
   }

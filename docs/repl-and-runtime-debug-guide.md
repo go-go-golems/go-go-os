@@ -49,7 +49,7 @@ model.
 ## 2. Conceptual Split
 
 ```text
-@hypercard/repl
+@go-go-golems/os-repl
   reusable shell
   transcript
   history
@@ -74,7 +74,7 @@ debug UI
 
 Each layer should stay independently reusable.
 
-## 3. `@hypercard/repl`: The Shared Shell
+## 3. `@go-go-golems/os-repl`: The Shared Shell
 
 Main files:
 

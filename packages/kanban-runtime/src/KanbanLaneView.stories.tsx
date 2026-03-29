@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { KanbanLaneView } from './KanbanLaneView';
 import { INITIAL_COLUMNS, INITIAL_TASKS } from './sampleData';
 import { DEFAULT_KANBAN_TAXONOMY } from './types';
-import '@hypercard/kanban-runtime/theme';
+import '@go-go-golems/os-kanban/theme';
 
 const meta: Meta<typeof KanbanLaneView> = {
   title: 'RichWidgets/Kanban/LaneView',

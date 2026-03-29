@@ -41,7 +41,7 @@ export function createMacWriteStateSeed(
 }
 
 function materializeMacWriteState(seed: MacWriteStateInput): MacWriteState {
-  if (seed && typeof seed === 'object' && 'content' in seed && 'viewMode' in seed) {
+  if (seed && typeof seed === 'object' && 'initialized' in seed) {
     return { ...seed };
   }
   return createMacWriteStateSeed(seed);
